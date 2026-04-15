@@ -94,8 +94,26 @@
 - `00-system/系统总说明怎么写.md`
 - `00-system/项目与base差异怎么记录.md`
 - `checklists/核心模块修改前检查.md`
+- `skills/cool-project-stack/references/code-organization.md`（代码组织、模块复用、中文注释要求）
 
-### 4. 我要准备交付
+### 4. 我做的功能会拆成多期，文档怎么放
+先看：
+
+- `03-功能开发怎么走.md`
+- 模块文档目录：`01-modules/模块名/`
+- 对应模块下的 `README.md`
+- 当前版本对应的需求 / 设计 / 实施文档
+- 当前版本对应的任务执行卡
+
+记住：
+
+- 多期功能默认放在同一个模块目录下，不要把每一期散落到 `docs/` 根目录
+- 模块 `README.md` 必须负责串联版本规划、阅读顺序、当前版本入口
+- 写模块入口时，优先参考模板：`skills/cool-project-stack/templates/module-readme-template.md`
+- 版本文档按版本拆，长期共用内容留在模块级文档
+- 新版本如果基于旧版本增强，优先写“继承什么、调整什么”，不要整份复制重写
+
+### 5. 我要准备交付
 先看：
 
 - `checklists/03-交付前检查.md`
@@ -126,14 +144,22 @@ docs/
     项目与base差异怎么记录.md
   01-modules/
     模块名/
-      01-requirements.md
-      02-product-design.md
-      03-technical-design.md
-      04-database.md
-      05-api.md
-      06-implementation.md
-      07-test-checklist.md
-      08-delivery.md
+      README.md
+      constraints.md        # 长期约束说明（可选）
+      entities.md           # 稳定后的核心实体说明（可选）
+      v0.1-requirements.md
+      v0.1-design.md
+      v0.1-database.md
+      v0.1-implementation.md
+      v0.1-task-card.md
+      v0.2-requirements.md
+      v0.2-design.md
+      v0.2-implementation.md
+      v0.2-task-card.md
+      v1.0-requirements.md
+      v1.0-design.md
+      v1.0-test-checklist.md
+      v1.0-delivery.md
 ```
 
 ## 文档怎么分
@@ -172,13 +198,13 @@ docs/
 
 ### `01-modules/`
 放模块级文档：
-- 需求
-- 设计
-- 数据库
-- API
-- 开发实施
-- 测试
-- 交付
+- 模块 README（背景、版本规划、阅读顺序、当前版本入口）
+- 长期约束说明
+- 稳定后的核心实体说明或模块总览
+- 各版本的需求、设计、数据库、API、开发实施、测试、交付文档
+- 各版本或各任务自己的执行卡
+
+如果一个功能会拆成多期，默认放在同一个模块目录下，由模块 `README.md` 串联所有版本，不要把每一期文档散落到别处。
 
 ## 一句话记住
 
