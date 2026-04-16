@@ -35,6 +35,12 @@
    - 给每个阶段化任务配一张统一执行卡
    - 重点看当前阶段、待确认点、下一步动作怎么记录
 
+### PostgreSQL / 后端开发必看
+
+- `00-system/PostgreSQL后端开发规范.md`
+  - Midway + TypeORM + PostgreSQL + Cool Admin 的通用后端开发规范
+  - 改 entity、controller、service、分页、排序、QueryBuilder 前建议先看
+
 ### 第三组：开发过程中随时看
 
 8. `checklists/`
