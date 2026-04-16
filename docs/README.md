@@ -37,6 +37,12 @@
 
 ### PostgreSQL / 后端开发必看
 
+- `00-system/项目专属坑位文档维护机制.md`
+  - 定义每个项目什么时候应该维护项目专属坑位文档
+  - 用户说“把这个坑记录一下”时，AI 默认应按这份机制处理
+- `00-system/项目专属坑位与兼容记录-模板.md`
+  - 每个项目都可复制使用的项目专属坑位文档模板
+
 - `00-system/PostgreSQL后端开发规范.md`
   - 仅在项目数据库使用 PostgreSQL 时启用的后端开发规范
   - 改 entity、controller、service、分页、排序、QueryBuilder 前建议先看
