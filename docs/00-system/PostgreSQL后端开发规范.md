@@ -1,6 +1,8 @@
 # PostgreSQL 后端开发规范（基座通用）
 
-这份规范适用于基于以下技术栈开发的后端项目：
+这份规范**只在项目使用 PostgreSQL 作为数据库时启用**。
+
+适用技术栈：
 
 - Midway
 - TypeORM
@@ -18,6 +20,26 @@
 
 ## 1. 适用范围
 
+### 1.1 什么时候启用这份规范
+
+只有在项目数据库是 **PostgreSQL** 时，才默认遵守本规范。
+
+如果当前项目使用的是：
+
+- MySQL
+- MariaDB
+- SQLite
+- 其他非 PostgreSQL 数据库
+
+则**不要机械套用本规范里的 PostgreSQL 特定限制**。
+
+也就是说：
+
+- 通用的工程习惯可以参考
+- 但 `PostgreSQL` 相关的字段名、排序、大小写、默认排序透传风险，只在 PostgreSQL 项目里重点执行
+
+### 1.2 PostgreSQL 项目里，哪些场景要特别遵守
+
 当你在下面这些场景里写代码时，默认要遵守本规范：
 
 - 新增后端模块
@@ -32,6 +54,9 @@
 ---
 
 ## 2. 核心原则
+
+> 注意：本章里的强约束，默认只针对 PostgreSQL 项目。
+
 
 ### 2.1 优先用框架标准能力，不要先手搓 SQL
 
@@ -356,7 +381,7 @@ ORDER BY createTime DESC
 
 ## 8. AI 编码约束（强制）
 
-如果你是 AI agent，在这个技术栈下写后端代码，默认遵守：
+如果你是 AI agent，且当前项目数据库是 PostgreSQL，在这个技术栈下写后端代码，默认遵守：
 
 1. 不要猜 PostgreSQL 字段名
 2. 不要直接透传前端 `order/sort`
@@ -407,6 +432,6 @@ npx tsc -p tsconfig.json --noEmit
 
 ## 10. 一句话总结
 
-在 Midway + TypeORM + PostgreSQL + Cool Admin 项目里写后端代码时：
+在 **Midway + TypeORM + PostgreSQL + Cool Admin** 项目里写后端代码时：
 
 **优先标准写法，少猜字段名；自定义分页必须自己管排序；局部问题不要污染全局基础层。**

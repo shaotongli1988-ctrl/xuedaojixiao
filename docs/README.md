@@ -38,7 +38,7 @@
 ### PostgreSQL / 后端开发必看
 
 - `00-system/PostgreSQL后端开发规范.md`
-  - Midway + TypeORM + PostgreSQL + Cool Admin 的通用后端开发规范
+  - 仅在项目数据库使用 PostgreSQL 时启用的后端开发规范
   - 改 entity、controller、service、分页、排序、QueryBuilder 前建议先看
 
 ### 第三组：开发过程中随时看
