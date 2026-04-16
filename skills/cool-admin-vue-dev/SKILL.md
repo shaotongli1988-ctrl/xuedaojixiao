@@ -20,7 +20,7 @@ description: 适用于 cool-admin-vue 8.x 后台模块、CRUD 页面、表单、
 3. `../../cool-admin-vue/.cursor/rules/anti-pattern.mdc`
 4. `../../cool-admin-vue/.cursor/rules/module.mdc`
 5. 按任务类型补读：
-   - CRUD 页面：`../../cool-admin-vue/.cursor/rules/crud.mdc`
+   - CRUD 页面：`../../cool-admin-vue/.cursor/rules/crud-template.mdc`、`../../cool-admin-vue/.cursor/rules/crud.mdc`
    - 搜索：`../../cool-admin-vue/.cursor/rules/search.mdc`、`../../cool-admin-vue/.cursor/rules/adv-search.mdc`
    - 表格：`../../cool-admin-vue/.cursor/rules/table.mdc`
    - 表单或弹窗：`../../cool-admin-vue/.cursor/rules/form.mdc`、`../../cool-admin-vue/.cursor/rules/upsert.mdc`

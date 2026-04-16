@@ -1,0 +1,238 @@
+---
+description: cool-admin-vue 标准 CRUD 页面模板（参考 modules/demo/views/crud）
+globs: *.vue, *.ts, *.tsx
+---
+
+# cool-admin-vue 标准 CRUD 页面模板
+
+本规则用于在 `cool-admin-vue` 中创建**标准后台 CRUD 页面、搜索、表格、弹窗新增/编辑**。
+
+优先参考：
+
+1. 当前项目同类页面
+2. `src/modules/demo/views/crud`
+3. `https://vue.cool-admin.com/`
+
+如果是普通后台管理页面，默认按下面模板组织。
+
+## 标准页面结构
+
+优先采用：
+
+- `cl-crud`
+- `cl-table`
+- `cl-search-key` 或 `cl-search`
+- `cl-pagination`
+- `cl-upsert`
+- `useCrud`
+- `useTable`
+- `useUpsert`
+- `useSearch`
+
+一个最常见的标准 CRUD 页面通常至少有：
+
+- 刷新按钮
+- 新增按钮
+- 批量删除按钮（如适用）
+- 搜索入口
+- 列表表格
+- 分页
+- 新增/编辑表单
+
+## 页面模板
+
+```vue
+<template>
+  <cl-crud ref="Crud">
+    <cl-row>
+      <cl-refresh-btn />
+      <cl-add-btn />
+      <cl-multi-delete-btn />
+      <cl-flex1 />
+      <cl-search-key />
+    </cl-row>
+
+    <cl-row>
+      <cl-table ref="Table" />
+    </cl-row>
+
+    <cl-row>
+      <cl-flex1 />
+      <cl-pagination />
+    </cl-row>
+
+    <cl-upsert ref="Upsert" />
+  </cl-crud>
+</template>
+
+<script setup lang="ts">
+import { useCrud, useTable, useUpsert } from '@cool-vue/crud';
+
+const Crud = useCrud(
+  {
+    service: 'xxx'
+  },
+  app => {
+    app.refresh();
+  }
+);
+
+const Table = useTable({
+  columns: []
+});
+
+const Upsert = useUpsert({
+  items: []
+});
+</script>
+```
+
+## Crud 模板
+
+适用于页面主流程组织。
+
+```ts
+const Crud = useCrud(
+  {
+    service: 'test'
+  },
+  app => {
+    app.refresh({
+      size: 10
+    });
+  }
+);
+```
+
+要求：
+
+- 标准后台页面优先使用 `useCrud`
+- `service` 优先复用项目已有服务
+- 首次加载优先通过 `app.refresh()` 触发
+- 不要自己重写一套列表页主流程
+
+## Table 模板
+
+适用于列表展示。
+
+```ts
+const Table = useTable({
+  autoHeight: false,
+  contextMenu: ['refresh'],
+  columns: [
+    {
+      type: 'selection'
+    },
+    {
+      label: '姓名',
+      prop: 'name',
+      minWidth: 140
+    },
+    {
+      type: 'op',
+      buttons: ['edit', 'delete']
+    }
+  ]
+});
+```
+
+要求：
+
+- 标准列表优先使用 `useTable`
+- 操作列优先使用内置 `op`
+- 字典优先复用 `dict.get(...)`
+- 不要先写自定义表格状态机
+
+## Upsert 模板
+
+适用于新增/编辑表单。
+
+```ts
+const Upsert = useUpsert({
+  items: [
+    {
+      label: '姓名',
+      prop: 'name',
+      component: {
+        name: 'el-input'
+      }
+    }
+  ]
+});
+```
+
+要求：
+
+- 标准新增/编辑优先使用 `useUpsert`
+- 普通字段直接按 `items` 配置组织
+- 不要默认自己重写一套 dialog + formData + submitLoading
+
+## 搜索模板
+
+### 轻搜索
+
+普通列表页优先：
+
+- `cl-search-key`
+
+### 复杂搜索
+
+需要多个条件时再补：
+
+- `cl-search`
+- `cl-adv-search`
+- `useSearch`
+- `useAdvSearch`
+
+要求：
+
+- 先用轻量搜索
+- 复杂筛选再升级
+- 不要一开始就手写复杂搜索表单
+
+## service 接入原则
+
+优先使用项目已有的 service 能力。
+
+示意：
+
+```ts
+const { service } = useCool();
+```
+
+如果当前页面属于标准后台模块：
+
+- 优先用现有 service
+- 优先跟随 demo/service 示例
+- 不要为普通 CRUD 页面重造一套请求封装层
+
+## 标准开发步骤
+
+开发普通后台 CRUD 页面时，默认顺序：
+
+1. 先找 `src/modules/demo/views/crud` 中最接近的示例
+2. 先确定 service 来源
+3. 再配置 `useCrud`
+4. 再配置 `useTable`
+5. 再配置 `useUpsert`
+6. 最后视情况补 `cl-search` / `cl-adv-search`
+
+## 不要这样写
+
+以下情况优先判定为跑偏：
+
+- 标准 CRUD 页面却不用 `cl-crud`
+- 自己手写列表、分页、弹窗、提交、查询整套状态流
+- 普通后台页面重新封装一套请求体系
+- 明明 demo 已有模式，还改写成通用 Vue 复杂架构
+- 一个简单后台页面拆出大量自定义 composable
+
+## 最终目标
+
+让 AI 或开发者在写后台 CRUD 页面时，默认产出：
+
+- 接近 `src/modules/demo/views/crud`
+- 接近官方文档
+- 列表/搜索/表单关系清楚
+- 复用 cool 封装
+- 不把普通页面写复杂
