@@ -1,0 +1,108 @@
+---
+description: cool-admin-vue EPS / Service 注册规则（只允许自动生成 EPS）
+globs: *.vue, *.ts, *.tsx
+---
+
+# cool-admin-vue EPS / Service 注册规则
+
+本规则用于约束前端 API Service 的来源与注册方式。
+
+## 核心结论
+
+**只能使用自动生成的 EPS / service。**
+
+不再允许：
+
+- 手工 `createService(...)`
+- 手工 `createXXXService()`
+- 手工拼接 namespace
+- 手工补 permission / _permission
+- 手工补 search 元信息
+- 手工把 service 挂到全局 `service.xxx`
+
+也就是说，前端接口服务层的唯一推荐路径是：
+
+1. 后端接口稳定暴露
+2. EPS 自动收集/生成成功
+3. 前端通过自动生成的 `service.xxx` 调用
+
+## 参考优先级
+
+1. 当前项目中已接入自动 EPS 的模块
+2. cool-admin 官方机制与文档
+3. 当前 rules 文件
+
+## 正确路径
+
+### 页面调用
+
+```ts
+const { service } = useCool();
+
+service.xxx.yyy.page(...)
+service.xxx.yyy.info(...)
+service.xxx.yyy.add(...)
+```
+
+### 类型来源
+
+- `eps.d.ts`
+- `eps.json`
+- `virtual:eps`
+- 项目内已有的 EPS 生成链路
+
+## 强制要求
+
+- 新模块前端接口调用必须优先接入自动 EPS
+- 如果当前 `service.xxx` 不存在，先修 EPS 生成链路，不要手写 service 兜底
+- 页面、hooks、组件中不允许再新增自定义接口注册工厂
+- 权限标识、search 元信息等，优先依赖系统自动生成链路或标准能力，不再手工模拟一套
+
+## 明确禁止
+
+以下写法禁止继续新增：
+
+```ts
+function createService(...) {}
+function createTeacherService() {}
+new BaseService('admin/teacher/info')
+(service as any).teacher = ...
+```
+
+以及任何同类变体：
+
+- 自己拼 `/admin/xxx/yyy`
+- 自己维护 permission 映射
+- 自己维护 _permission 默认值
+- 自己维护 search 配置并挂到 service 上
+
+## 如果发现 `service.xxx` 不存在，应该怎么做
+
+正确处理顺序：
+
+1. 检查后端接口是否已经按模块方式暴露
+2. 检查 EPS 生成链路是否正常
+3. 检查 `eps.json` / `eps.d.ts` 是否更新
+4. 检查前端是否重新加载或重新生成
+5. 修复自动生成链路
+
+**不要因为自动 EPS 暂时没出来，就退回到手写 service.ts。**
+
+## 为什么要这样做
+
+因为手工创建 service 会带来这些问题：
+
+- 重复框架已有能力
+- 制造双轨制
+- 让项目偏离 cool-admin 官方范式
+- 让临时兜底层永久化
+- 让 AI 和开发者继续复制错误模式
+
+## 最终目标
+
+让基于这个 base 开发出来的前端模块统一遵循：
+
+- 接口来源唯一
+- 调用方式统一
+- 权限与接口元信息不手工重复维护
+- 不再通过手写 service 层兜底

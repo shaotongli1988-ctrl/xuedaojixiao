@@ -16,14 +16,17 @@ description: 适用于 cool-admin-vue 8.x 后台模块、CRUD 页面、表单、
 先按这个顺序读取本地规则：
 
 1. `../../cool-admin-vue/.cursorrules`
-2. `../../cool-admin-vue/.cursor/rules/dev-defaults.mdc`
-3. `../../cool-admin-vue/.cursor/rules/anti-pattern.mdc`
-4. `../../cool-admin-vue/.cursor/rules/module.mdc`
-5. 按任务类型补读：
+2. `../../cool-admin-vue/.cursor/rules/eps-service-rule.mdc`
+3. `../../cool-admin-vue/.cursor/rules/dev-defaults.mdc`
+4. `../../cool-admin-vue/.cursor/rules/anti-pattern.mdc`
+5. `../../cool-admin-vue/.cursor/rules/module.mdc`
+6. 按任务类型补读：
    - CRUD 页面：`../../cool-admin-vue/.cursor/rules/crud-template.mdc`、`../../cool-admin-vue/.cursor/rules/crud.mdc`
-   - 搜索：`../../cool-admin-vue/.cursor/rules/search-template.mdc`、`../../cool-admin-vue/.cursor/rules/search.mdc`、`../../cool-admin-vue/.cursor/rules/adv-search-template.mdc`、`../../cool-admin-vue/.cursor/rules/adv-search.mdc`
+   - 搜索：`../../cool-admin-vue/.cursor/rules/search-template.mdc`、`../../cool-admin-vue/.cursor/rules/search.mdc`
+   - 高级搜索：`../../cool-admin-vue/.cursor/rules/adv-search-template.mdc`、`../../cool-admin-vue/.cursor/rules/adv-search.mdc`
    - 表格：`../../cool-admin-vue/.cursor/rules/table.mdc`
-   - 表单或弹窗：`../../cool-admin-vue/.cursor/rules/form-template.mdc`、`../../cool-admin-vue/.cursor/rules/form.mdc`、`../../cool-admin-vue/.cursor/rules/upsert-template.mdc`、`../../cool-admin-vue/.cursor/rules/upsert.mdc`
+   - 独立表单：`../../cool-admin-vue/.cursor/rules/form-template.mdc`、`../../cool-admin-vue/.cursor/rules/form.mdc`
+   - 新增/编辑弹窗：`../../cool-admin-vue/.cursor/rules/upsert-template.mdc`、`../../cool-admin-vue/.cursor/rules/upsert.mdc`
 
 如果当前项目不是直接沿用模板仓库中的 `cool-admin-vue`，则优先读取当前项目中实际存在的同类模块，再回看模板。
 如果当前项目与 `base` 和本地规则都不足以覆盖问题，再回看官方文档 `https://vue.cool-admin.com`。
@@ -34,6 +37,8 @@ description: 适用于 cool-admin-vue 8.x 后台模块、CRUD 页面、表单、
 - 默认业务代码优先放在 `src/modules`
 - 通用能力或可复用能力再考虑 `src/plugins`
 - 开发前优先查找 `src/modules/demo` 中最接近的示例，先沿用 demo 的交互结构与组织方式
+- 前端接口调用只能使用自动生成的 EPS / `service.xxx`，不允许再手写 `createService` 或自定义 service 注册工厂
+- 如果 `service.xxx` 暂时不存在，优先修 EPS 生成链路，不用手工 service.ts 兜底
 - 标准后台管理页面默认优先使用 cool-admin 官方范式：
   - `cl-crud`
   - `cl-table`
