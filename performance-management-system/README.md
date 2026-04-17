@@ -23,6 +23,7 @@
 - [合并升级版需求与页面文档](/Users/shaotongli/Documents/xuedao/performance-management-system/docs/01-绩效管理系统-合并升级版需求与页面文档.md)
 - [项目文档入口](/Users/shaotongli/Documents/xuedao/performance-management-system/docs/README.md)
 - [项目执行流程（精简版）](/Users/shaotongli/Documents/xuedao/performance-management-system/docs/17-项目执行流程（精简版）.md)
+- [首期 GitHub 交付摘要](/Users/shaotongli/Documents/xuedao/performance-management-system/docs/29-首期GitHub交付摘要.md)
 
 ## 当前执行规则
 

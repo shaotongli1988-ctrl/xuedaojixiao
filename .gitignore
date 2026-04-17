@@ -1,5 +1,10 @@
 .DS_Store
 **/node_modules/
+cool-admin-midway/node_modules/
+cool-admin-midway/node_modules
+active
+closed
+completed
 **/dist/
 **/.shared-deps/
 **/dist_tsc/

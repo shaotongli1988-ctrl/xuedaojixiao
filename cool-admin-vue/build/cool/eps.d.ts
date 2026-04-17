@@ -961,26 +961,6 @@ declare namespace Eps {
 		description?: string;
 
 		/**
-		 * 生日
-		 */
-		birthday?: string;
-
-		/**
-		 * 省
-		 */
-		province?: string;
-
-		/**
-		 * 市
-		 */
-		city?: string;
-
-		/**
-		 * 区
-		 */
-		district?: string;
-
-		/**
 		 * 创建时间
 		 */
 		createTime?: string;
@@ -1049,6 +1029,41 @@ declare namespace Eps {
 	interface DictTypePageResponse {
 		pagination: PagePagination;
 		list: DictTypeEntity[];
+	}
+
+	interface PerformanceAssessmentPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceFeedbackPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceGoalPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceIndicatorPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformancePipPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformancePromotionPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceSalaryPageResponse {
+		pagination: PagePagination;
+		list: any[];
 	}
 
 	interface PluginInfoPageResponse {
@@ -1789,6 +1804,454 @@ declare namespace Eps {
 		request: Request;
 	}
 
+	interface PerformanceAssessment {
+		/**
+		 * 审批通过
+		 */
+		approve(data?: any): Promise<any>;
+
+		/**
+		 * 修改评估单
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * 删除评估单
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * 提交评估单
+		 */
+		submit(data?: any): Promise<any>;
+
+		/**
+		 * 审批驳回
+		 */
+		reject(data?: any): Promise<any>;
+
+		/**
+		 * 导出评估单
+		 */
+		export(data?: any): Promise<any>;
+
+		/**
+		 * 评估单分页
+		 */
+		page(data?: any): Promise<PerformanceAssessmentPageResponse>;
+
+		/**
+		 * 评估单详情
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 新增评估单
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			approve: string;
+			update: string;
+			delete: string;
+			submit: string;
+			reject: string;
+			export: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			approve: boolean;
+			update: boolean;
+			delete: boolean;
+			submit: boolean;
+			reject: boolean;
+			export: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceDashboard {
+		/**
+		 * 绩效驾驶舱汇总
+		 */
+		summary(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { summary: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: { summary: boolean };
+
+		request: Request;
+	}
+
+	interface PerformanceFeedback {
+		/**
+		 * 环评汇总
+		 */
+		summary(data?: any): Promise<any>;
+
+		/**
+		 * 提交环评反馈
+		 */
+		submit(data?: any): Promise<any>;
+
+		/**
+		 * 环评任务分页
+		 */
+		page(data?: any): Promise<PerformanceFeedbackPageResponse>;
+
+		/**
+		 * 环评任务详情
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 新增环评任务
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { summary: string; submit: string; page: string; info: string; add: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			summary: boolean;
+			submit: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceGoal {
+		/**
+		 * 更新目标进度
+		 */
+		progressUpdate(data?: any): Promise<any>;
+
+		/**
+		 * 修改目标
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * 删除目标
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * 导出目标
+		 */
+		export(data?: any): Promise<any>;
+
+		/**
+		 * 目标分页
+		 */
+		page(data?: any): Promise<PerformanceGoalPageResponse>;
+
+		/**
+		 * 目标详情
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 新增目标
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			progressUpdate: string;
+			update: string;
+			delete: string;
+			export: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			progressUpdate: boolean;
+			update: boolean;
+			delete: boolean;
+			export: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceIndicator {
+		/**
+		 * 修改指标
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * 删除指标
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * 指标分页
+		 */
+		page(data?: any): Promise<PerformanceIndicatorPageResponse>;
+
+		/**
+		 * 指标详情
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 新增指标
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { update: string; delete: string; page: string; info: string; add: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			update: boolean;
+			delete: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformancePip {
+		/**
+		 * 完成 PIP
+		 */
+		complete(data?: any): Promise<any>;
+
+		/**
+		 * 修改 PIP
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * 启动 PIP
+		 */
+		start(data?: any): Promise<any>;
+
+		/**
+		 * 提交 PIP 跟进
+		 */
+		track(data?: any): Promise<any>;
+
+		/**
+		 * 关闭 PIP
+		 */
+		close(data?: any): Promise<any>;
+
+		/**
+		 * PIP 分页
+		 */
+		page(data?: any): Promise<PerformancePipPageResponse>;
+
+		/**
+		 * PIP 详情
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 新增 PIP
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			complete: string;
+			update: string;
+			start: string;
+			track: string;
+			close: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			complete: boolean;
+			update: boolean;
+			start: boolean;
+			track: boolean;
+			close: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformancePromotion {
+		/**
+		 * 修改晋升单
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * 提交晋升单
+		 */
+		submit(data?: any): Promise<any>;
+
+		/**
+		 * 评审晋升单
+		 */
+		review(data?: any): Promise<any>;
+
+		/**
+		 * 晋升分页
+		 */
+		page(data?: any): Promise<PerformancePromotionPageResponse>;
+
+		/**
+		 * 晋升详情
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 新增晋升单
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			update: string;
+			submit: string;
+			review: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			update: boolean;
+			submit: boolean;
+			review: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceSalary {
+		/**
+		 * 新增薪资调整记录
+		 */
+		changeAdd(data?: any): Promise<any>;
+
+		/**
+		 * 确认薪资
+		 */
+		confirm(data?: any): Promise<any>;
+
+		/**
+		 * 归档薪资
+		 */
+		archive(data?: any): Promise<any>;
+
+		/**
+		 * 修改薪资
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * 薪资分页
+		 */
+		page(data?: any): Promise<PerformanceSalaryPageResponse>;
+
+		/**
+		 * 薪资详情
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 新增薪资
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			changeAdd: string;
+			confirm: string;
+			archive: string;
+			update: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			changeAdd: boolean;
+			confirm: boolean;
+			archive: boolean;
+			update: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
 	interface PluginInfo {
 		/**
 		 * 安装插件
@@ -2206,7 +2669,7 @@ declare namespace Eps {
 
 	type Request = (options: RequestOptions) => Promise<any>;
 
-	type DictKey = "brand" | "occupation";
+	type DictKey = string;
 
 	type Service = {
 		request: Request;
@@ -2226,6 +2689,16 @@ declare namespace Eps {
 		};
 		demo: { goods: DemoGoods; tenant: DemoTenant };
 		dict: { info: DictInfo; type: DictType };
+		performance: {
+			assessment: PerformanceAssessment;
+			dashboard: PerformanceDashboard;
+			feedback: PerformanceFeedback;
+			goal: PerformanceGoal;
+			indicator: PerformanceIndicator;
+			pip: PerformancePip;
+			promotion: PerformancePromotion;
+			salary: PerformanceSalary;
+		};
 		plugin: { info: PluginInfo };
 		recycle: { data: RecycleData };
 		space: { info: SpaceInfo; type: SpaceType };
