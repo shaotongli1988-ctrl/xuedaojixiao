@@ -185,8 +185,9 @@ function onKeyWordChange() {
 // 获取用户
 async function getUser() {
 	return service.base.sys.user.page({ size: 10000 }).then(res => {
-		users.value = res.list.map(e => {
+		users.value = (res.list || []).filter(Boolean).map(e => {
 			e.isUser = true;
+			e.roleIds = isArray(e.roleIds) ? e.roleIds : [];
 			return e;
 		});
 	});
@@ -223,7 +224,10 @@ async function getDept() {
 async function getRole() {
 	return service.base.sys.role.list().then(res => {
 		res.forEach(e => {
-			e.children = users.value.filter(u => u.roleIds.includes(e.id));
+			e.children = users.value.filter(u => {
+				const roleIds = isArray(u.roleIds) ? u.roleIds : [];
+				return roleIds.includes(e.id);
+			});
 		});
 
 		data.role = res as Item[];

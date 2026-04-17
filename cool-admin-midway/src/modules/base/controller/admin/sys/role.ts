@@ -29,7 +29,7 @@ import { BaseSysRoleService } from '../../../service/sys/role';
         [
           `(a.userId=:userId or a.id in (${roleIds.join(',')}))`,
           { userId },
-          username !== 'admin',
+          ctx.admin.isAdmin !== true,
         ],
       ];
     },

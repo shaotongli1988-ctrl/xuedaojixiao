@@ -115,6 +115,9 @@ export class PluginCenterService {
       'plugin',
       'hooks'
     );
+    if (!fs.existsSync(hooksPath)) {
+      return;
+    }
     for (const key of fs.readdirSync(hooksPath)) {
       const stat = fs.statSync(path.join(hooksPath, key));
       if (!stat.isDirectory()) {

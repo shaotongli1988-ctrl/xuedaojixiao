@@ -1,5 +1,21 @@
 import { execSync } from 'child_process';
 
+function envPort(): number | undefined {
+  const raw = process.env.COOL_ADMIN_PORT ?? process.env.PORT;
+
+  if (!raw) {
+    return undefined;
+  }
+
+  const parsed = Number(raw);
+
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error(`Invalid port value: ${raw}`);
+  }
+
+  return parsed;
+}
+
 /**
  * 同步检查端口是否可用（通过系统命令）
  * @param {number} port - 要检查的端口
@@ -33,6 +49,12 @@ function isPortAvailableSync(port: number): boolean {
  * @returns {number} - 可用的端口
  */
 export function availablePort(startPort: number): number {
+  const configuredPort = envPort();
+
+  if (configuredPort) {
+    return configuredPort;
+  }
+
   if (!process['pkg']) return startPort;
   let port = startPort;
   while (port <= 8010) {

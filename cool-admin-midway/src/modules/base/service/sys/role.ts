@@ -95,14 +95,15 @@ export class BaseSysRoleService extends BaseService {
   async info(id) {
     const info = await this.baseSysRoleEntity.findOneBy({ id });
     if (info) {
+      const isAdminRole = info.label === 'admin';
       const menus = await this.baseSysRoleMenuEntity.findBy(
-        id !== 1 ? { roleId: id } : {}
+        isAdminRole ? {} : { roleId: id }
       );
       const menuIdList = menus.map(e => {
         return parseInt(e.menuId + '');
       });
       const departments = await this.baseSysRoleDepartmentEntity.findBy(
-        id !== 1 ? { roleId: id } : {}
+        isAdminRole ? {} : { roleId: id }
       );
       const departmentIdList = departments.map(e => {
         return parseInt(e.departmentId + '');
@@ -117,13 +118,14 @@ export class BaseSysRoleService extends BaseService {
   }
 
   async list() {
+    const isAdmin = await this.baseSysPermsService.isAdmin(this.ctx.admin.roleIds);
     return this.baseSysRoleEntity
       .createQueryBuilder('a')
       .where(
         new Brackets(qb => {
-          qb.where('a.id !=:id', { id: 1 }); // 超级管理员的角色不展示
+          qb.where('a.label != :label', { label: 'admin' }); // 超级管理员的角色不展示
           // 如果不是超管，只能看到自己新建的或者自己有的角色
-          if (this.ctx.admin.username !== 'admin') {
+          if (!isAdmin) {
             qb.andWhere('(a.userId=:userId or a.id in (:...roleId))', {
               userId: this.ctx.admin.userId,
               roleId: this.ctx.admin.roleIds,

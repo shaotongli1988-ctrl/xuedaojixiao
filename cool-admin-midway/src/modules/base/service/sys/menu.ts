@@ -14,6 +14,7 @@ import * as fs from 'fs';
 import * as pathUtil from 'path';
 import { BaseSysRoleMenuEntity } from '../../entity/sys/role_menu';
 import { BaseSysUserRoleEntity } from '../../entity/sys/user_role';
+import { BaseSysRoleEntity } from '../../entity/sys/role';
 
 /**
  * 菜单
@@ -30,6 +31,12 @@ export class BaseSysMenuService extends BaseService {
   @InjectEntityModel(BaseSysRoleMenuEntity)
   baseSysRoleMenuEntity: Repository<BaseSysRoleMenuEntity>;
 
+  @InjectEntityModel(BaseSysUserRoleEntity)
+  baseSysUserRoleEntity: Repository<BaseSysUserRoleEntity>;
+
+  @InjectEntityModel(BaseSysRoleEntity)
+  baseSysRoleEntity: Repository<BaseSysRoleEntity>;
+
   @Inject()
   baseSysPermsService: BaseSysPermsService;
 
@@ -43,9 +50,10 @@ export class BaseSysMenuService extends BaseService {
    * 获得所有菜单
    */
   async list() {
+    const isAdmin = await this.baseSysPermsService.isAdmin(this.ctx.admin.roleIds);
     const menus = await this.getMenus(
       this.ctx.admin.roleIds,
-      this.ctx.admin.username === 'admin'
+      isAdmin
     );
     if (!_.isEmpty(menus)) {
       menus.forEach((e: any) => {
@@ -81,7 +89,8 @@ export class BaseSysMenuService extends BaseService {
     let perms = [];
     if (!_.isEmpty(roleIds)) {
       const find = await this.baseSysMenuEntity.createQueryBuilder('a');
-      if (!roleIds.includes(1)) {
+      const isAdmin = await this.baseSysPermsService.isAdmin(roleIds);
+      if (!isAdmin) {
         find.innerJoinAndSelect(
           BaseSysRoleMenuEntity,
           'b',
@@ -172,8 +181,16 @@ export class BaseSysMenuService extends BaseService {
     find.where('a.menuId = :menuId', { menuId: menuId });
     find.select('b.userId', 'userId');
     const users = await find.getRawMany();
-    // 刷新admin权限
-    await this.baseSysPermsService.refreshPerms(1);
+    const adminRoles = await this.baseSysRoleEntity.findBy({ label: 'admin' });
+    if (!_.isEmpty(adminRoles)) {
+      const adminRoleIds = adminRoles.map(role => role.id);
+      const adminUsers = await this.baseSysUserRoleEntity.findBy({
+        roleId: In(adminRoleIds),
+      });
+      for (const adminUser of _.uniqBy(adminUsers, 'userId')) {
+        await this.baseSysPermsService.refreshPerms(adminUser.userId);
+      }
+    }
     if (!_.isEmpty(users)) {
       // 刷新其他权限
       for (const user of _.uniqBy(users, 'userId')) {

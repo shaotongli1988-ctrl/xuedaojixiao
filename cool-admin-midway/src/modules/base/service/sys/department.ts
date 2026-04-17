@@ -1,4 +1,12 @@
-import { Inject, Provide } from '@midwayjs/core';
+import {
+  App,
+  ASYNC_CONTEXT_KEY,
+  ASYNC_CONTEXT_MANAGER_KEY,
+  AsyncContextManager,
+  IMidwayApplication,
+  Inject,
+  Provide,
+} from '@midwayjs/core';
 import { BaseService } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { In, Repository } from 'typeorm';
@@ -7,6 +15,15 @@ import * as _ from 'lodash';
 import { BaseSysRoleDepartmentEntity } from '../../entity/sys/role_department';
 import { BaseSysPermsService } from './perms';
 import { BaseSysUserEntity } from '../../entity/sys/user';
+import { Context } from '@midwayjs/koa';
+import * as jwt from 'jsonwebtoken';
+
+const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
+  return require('../../config').default({
+    app,
+    env: app?.getEnv?.(),
+  }).jwt;
+};
 
 /**
  * 描述
@@ -28,22 +45,68 @@ export class BaseSysDepartmentService extends BaseService {
   @Inject()
   ctx;
 
+  @App()
+  app: IMidwayApplication;
+
+  private get currentCtx() {
+    if (this.ctx?.admin) {
+      return this.ctx;
+    }
+    try {
+      const contextManager: AsyncContextManager = this.app
+        ?.getApplicationContext?.()
+        ?.get?.(ASYNC_CONTEXT_MANAGER_KEY);
+      const activeContext = contextManager
+        ?.active?.()
+        ?.getValue(ASYNC_CONTEXT_KEY) as Context;
+      return activeContext || this.ctx;
+    } catch (error) {
+      return this.ctx;
+    }
+  }
+
+  private get currentAdmin() {
+    if (this.currentCtx?.admin) {
+      return this.currentCtx.admin;
+    }
+    const token =
+      this.currentCtx?.get?.('Authorization') ||
+      this.currentCtx?.headers?.authorization;
+    if (!token) {
+      return undefined;
+    }
+    try {
+      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
+    } catch (error) {
+      return undefined;
+    }
+  }
+
   /**
    * 获得部门菜单
    */
   async list() {
+    const currentAdmin = this.currentAdmin;
+    if (!currentAdmin?.userId) {
+      return [];
+    }
+    const roleIds = Array.isArray(currentAdmin.roleIds) ? currentAdmin.roleIds : [];
+    const isAdmin =
+      typeof currentAdmin.isAdmin === 'boolean'
+        ? currentAdmin.isAdmin
+        : await this.baseSysPermsService.isAdmin(roleIds);
     // 部门权限
     const permsDepartmentArr = await this.baseSysPermsService.departmentIds(
-      this.ctx.admin.userId
+      Number(currentAdmin.userId)
     );
 
     // 过滤部门权限
     const find = this.baseSysDepartmentEntity.createQueryBuilder('a');
-    if (this.ctx.admin.username !== 'admin') {
+    if (!isAdmin) {
       find.andWhere('a.id in (:...ids)', {
         ids: !_.isEmpty(permsDepartmentArr) ? permsDepartmentArr : [null],
       });
-      find.orWhere('a.userId = :userId', { userId: this.ctx.admin.userId });
+      find.orWhere('a.userId = :userId', { userId: Number(currentAdmin.userId) });
     }
     find.addOrderBy('a.orderNum', 'ASC');
     const departments: BaseSysDepartmentEntity[] = await find.getMany();

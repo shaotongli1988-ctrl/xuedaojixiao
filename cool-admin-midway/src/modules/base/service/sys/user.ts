@@ -1,4 +1,13 @@
-import { Inject, InjectClient, Provide } from '@midwayjs/core';
+import {
+  App,
+  ASYNC_CONTEXT_KEY,
+  ASYNC_CONTEXT_MANAGER_KEY,
+  AsyncContextManager,
+  IMidwayApplication,
+  Inject,
+  InjectClient,
+  Provide,
+} from '@midwayjs/core';
 import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Equal, In, Repository } from 'typeorm';
@@ -10,6 +19,15 @@ import * as md5 from 'md5';
 import { BaseSysDepartmentEntity } from '../../entity/sys/department';
 import { CachingFactory, MidwayCache } from '@midwayjs/cache-manager';
 import { BaseSysRoleEntity } from '../../entity/sys/role';
+import { Context } from '@midwayjs/koa';
+import * as jwt from 'jsonwebtoken';
+
+const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
+  return require('../../config').default({
+    app,
+    env: app?.getEnv?.(),
+  }).jwt;
+};
 
 /**
  * 系统用户
@@ -34,13 +52,59 @@ export class BaseSysUserService extends BaseService {
   @Inject()
   ctx;
 
+  @App()
+  app: IMidwayApplication;
+
+  private get currentCtx() {
+    if (this.ctx?.admin) {
+      return this.ctx;
+    }
+    try {
+      const contextManager: AsyncContextManager = this.app
+        ?.getApplicationContext?.()
+        ?.get?.(ASYNC_CONTEXT_MANAGER_KEY);
+      const activeContext = contextManager
+        ?.active?.()
+        ?.getValue(ASYNC_CONTEXT_KEY) as Context;
+      return activeContext || this.ctx;
+    } catch (error) {
+      return this.ctx;
+    }
+  }
+
+  private get currentAdmin() {
+    if (this.currentCtx?.admin) {
+      return this.currentCtx.admin;
+    }
+    const token =
+      this.currentCtx?.get?.('Authorization') ||
+      this.currentCtx?.headers?.authorization;
+    if (!token) {
+      return undefined;
+    }
+    try {
+      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
+    } catch (error) {
+      return undefined;
+    }
+  }
+
   /**
    * 分页查询
    * @param query
    */
   async page(query) {
     const { keyWord, status, departmentIds = [] } = query;
-    const userId = this.ctx.admin.userId;
+    const currentAdmin = this.currentAdmin;
+    if (!currentAdmin?.userId) {
+      throw new CoolCommException('登录状态已失效，请重新登录');
+    }
+    const userId = Number(currentAdmin.userId);
+    const roleIds = Array.isArray(currentAdmin.roleIds) ? currentAdmin.roleIds : [];
+    const isAdmin =
+      typeof currentAdmin.isAdmin === 'boolean'
+        ? currentAdmin.isAdmin
+        : await this.baseSysPermsService.isAdmin(roleIds);
     const permsDepartmentArr = await this.baseSysPermsService.departmentIds(
       userId
     ); // 部门权限
@@ -64,7 +128,7 @@ export class BaseSysUserService extends BaseService {
             ])}
             ${this.setSql(true, 'and a.username != ?', ['admin'])}
             ${this.setSql(
-              this.ctx.admin.username !== 'admin',
+              !isAdmin,
               `and (a.departmentId in (?) or a.userId = ${userId})`,
               [!_.isEmpty(permsDepartmentArr) ? permsDepartmentArr : [null]]
             )} `;
@@ -72,14 +136,15 @@ export class BaseSysUserService extends BaseService {
     // 匹配角色
     if (!_.isEmpty(result.list)) {
       const userIds = result.list.map(e => e.id);
-      const roles: BaseSysRoleEntity[] = await this.nativeQuery(
-        'SELECT b.name, a.userId FROM base_sys_user_role a LEFT JOIN base_sys_role b ON a.roleId = b.id WHERE a.userId in (?) ',
+      const roles: Array<{ name: string; userId: number; roleId: number }> =
+        await this.nativeQuery(
+        'SELECT b.name, a.userId, a.roleId FROM base_sys_user_role a LEFT JOIN base_sys_role b ON a.roleId = b.id WHERE a.userId in (?) ',
         [userIds]
       );
       result.list.forEach(e => {
         const arr = roles.filter(a => a.userId == e.id);
 
-        e['roleIds'] = arr.map(a => a.userId);
+        e['roleIds'] = arr.map(a => Number(a.roleId));
         e['roleName'] = arr.map(a => a.name).join(',');
       });
     }

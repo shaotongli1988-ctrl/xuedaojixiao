@@ -15,8 +15,8 @@ export default {
         username: 'root',
         password: '123456',
         database: 'cool',
-        // 自动建表 注意：线上部署的时候不要使用，有可能导致数据丢失
-        synchronize: true,
+        // 本地联调复用既有库结构，避免历史 schema 漂移导致 dev 启动被 auto-sync 阻塞
+        synchronize: false,
         // 打印日志
         logging: false,
         // 字符集

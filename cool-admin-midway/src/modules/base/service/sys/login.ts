@@ -1,9 +1,17 @@
-import { Inject, Provide, Config, InjectClient } from '@midwayjs/core';
+import {
+  App,
+  ALL,
+  Config,
+  IMidwayApplication,
+  Inject,
+  Provide,
+  InjectClient,
+} from '@midwayjs/core';
 import { BaseService, CoolCommException } from '@cool-midway/core';
 import { LoginDTO } from '../../dto/login';
 import { v1 as uuid } from 'uuid';
 import { BaseSysUserEntity } from '../../entity/sys/user';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import * as md5 from 'md5';
 import { BaseSysRoleService } from './role';
@@ -15,6 +23,14 @@ import { Context } from '@midwayjs/koa';
 import { CachingFactory, MidwayCache } from '@midwayjs/cache-manager';
 import { Utils } from '../../../../comm/utils';
 import * as svgCaptcha from 'svg-captcha';
+import { BaseSysRoleEntity } from '../../entity/sys/role';
+
+const resolveBaseModuleConfig = (app?: IMidwayApplication) => {
+  return require('../../config').default({
+    app,
+    env: app?.getEnv?.(),
+  });
+};
 
 /**
  * 登录
@@ -26,6 +42,9 @@ export class BaseSysLoginService extends BaseService {
 
   @InjectEntityModel(BaseSysUserEntity)
   baseSysUserEntity: Repository<BaseSysUserEntity>;
+
+  @InjectEntityModel(BaseSysRoleEntity)
+  baseSysRoleEntity: Repository<BaseSysRoleEntity>;
 
   @Inject()
   baseSysRoleService: BaseSysRoleService;
@@ -42,8 +61,20 @@ export class BaseSysLoginService extends BaseService {
   @Inject()
   utils: Utils;
 
-  @Config('module.base')
-  coolConfig;
+  @Config(ALL)
+  allConfig;
+
+  @App()
+  app: IMidwayApplication;
+
+  private get jwtConfig() {
+    const moduleConfig =
+      this.allConfig?.module?.base || resolveBaseModuleConfig(this.app);
+    if (!moduleConfig?.jwt) {
+      throw new CoolCommException('系统登录配置缺失');
+    }
+    return moduleConfig.jwt;
+  }
 
   /**
    * 登录
@@ -69,18 +100,20 @@ export class BaseSysLoginService extends BaseService {
       if (_.isEmpty(roleIds)) {
         throw new CoolCommException('该用户未设置任何角色，无法登录~');
       }
+      const isAdmin = await this.resolveIsAdmin(roleIds);
 
       // 生成token
-      const { expire, refreshExpire } = this.coolConfig.jwt.token;
+      const { expire, refreshExpire } = this.jwtConfig.token;
       const result = {
         expire,
-        token: await this.generateToken(user, roleIds, expire),
+        token: await this.generateToken(user, roleIds, expire, false, isAdmin),
         refreshExpire,
         refreshToken: await this.generateToken(
           user,
           roleIds,
           refreshExpire,
-          true
+          true,
+          isAdmin
         ),
       };
 
@@ -88,7 +121,7 @@ export class BaseSysLoginService extends BaseService {
       const perms = await this.baseSysMenuService.getPerms(roleIds);
       const departments = await this.baseSysDepartmentService.getByRoleIds(
         roleIds,
-        user.username === 'admin'
+        isAdmin
       );
       await this.midwayCache.set(`admin:department:${user.id}`, departments);
       await this.midwayCache.set(`admin:perms:${user.id}`, perms);
@@ -153,7 +186,7 @@ export class BaseSysLoginService extends BaseService {
    * 退出登录
    */
   async logout() {
-    if (!this.coolConfig.jwt.sso) return;
+    if (!this.jwtConfig.sso) return;
     const { userId } = this.ctx.admin;
     await this.midwayCache.del(`admin:department:${userId}`);
     await this.midwayCache.del(`admin:perms:${userId}`);
@@ -184,7 +217,7 @@ export class BaseSysLoginService extends BaseService {
    * @param expire 过期
    * @param isRefresh 是否是刷新
    */
-  async generateToken(user, roleIds, expire, isRefresh?) {
+  async generateToken(user, roleIds, expire, isRefresh?, isAdmin = false) {
     await this.midwayCache.set(
       `admin:passwordVersion:${user.id}`,
       user.passwordV
@@ -192,6 +225,7 @@ export class BaseSysLoginService extends BaseService {
     const tokenInfo = {
       isRefresh: false,
       roleIds,
+      isAdmin,
       username: user.username,
       userId: user.id,
       passwordVersion: user.passwordV,
@@ -200,9 +234,17 @@ export class BaseSysLoginService extends BaseService {
     if (isRefresh) {
       tokenInfo.isRefresh = true;
     }
-    return jwt.sign(tokenInfo, this.coolConfig.jwt.secret, {
+    return jwt.sign(tokenInfo, this.jwtConfig.secret, {
       expiresIn: expire,
     });
+  }
+
+  private async resolveIsAdmin(roleIds: number[]) {
+    if (_.isEmpty(roleIds)) {
+      return false;
+    }
+    const roles = await this.baseSysRoleEntity.findBy({ id: In(roleIds) });
+    return roles.some(role => role.label === 'admin');
   }
 
   /**
@@ -210,23 +252,23 @@ export class BaseSysLoginService extends BaseService {
    * @param token
    */
   async refreshToken(token: string) {
-    const decoded = jwt.verify(token, this.coolConfig.jwt.secret);
+    const decoded = jwt.verify(token, this.jwtConfig.secret);
     if (decoded && decoded['isRefresh']) {
       delete decoded['exp'];
       delete decoded['iat'];
 
-      const { expire, refreshExpire } = this.coolConfig.jwt.token;
+      const { expire, refreshExpire } = this.jwtConfig.token;
       decoded['isRefresh'] = false;
       const result = {
         expire,
-        token: jwt.sign(decoded, this.coolConfig.jwt.secret, {
+        token: jwt.sign(decoded, this.jwtConfig.secret, {
           expiresIn: expire,
         }),
         refreshExpire,
         refreshToken: '',
       };
       decoded['isRefresh'] = true;
-      result.refreshToken = jwt.sign(decoded, this.coolConfig.jwt.secret, {
+      result.refreshToken = jwt.sign(decoded, this.jwtConfig.secret, {
         expiresIn: refreshExpire,
       });
       await this.midwayCache.set(

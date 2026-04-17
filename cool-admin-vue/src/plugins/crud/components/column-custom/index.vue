@@ -108,13 +108,21 @@ function sort(list: any[]) {
 	return orderBy(list, 'orderNum', 'asc');
 }
 
+function sanitizeSelection(value: unknown) {
+	if (!Array.isArray(value)) {
+		return [];
+	}
+
+	return value.filter(item => item && typeof item.prop === 'string');
+}
+
 // 刷新
 function refresh() {
 	if (!props.columns) {
 		return false;
 	}
 
-	const selection: any[] = storage.get(name);
+	const selection = sanitizeSelection(storage.get(name));
 
 	list.value = sort(
 		columns.value.map(e => {

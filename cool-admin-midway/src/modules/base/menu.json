@@ -939,5 +939,676 @@
                 ]
             }
         ]
+    },
+    {
+        "name": "绩效中心",
+        "router": "/performance",
+        "perms": null,
+        "type": 0,
+        "icon": "icon-community",
+        "orderNum": 1,
+        "viewPath": null,
+        "keepAlive": true,
+        "isShow": true,
+        "childMenus": [
+            {
+                "name": "绩效驾驶舱",
+                "router": "/data-center/dashboard",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-ppt",
+                "orderNum": 1,
+                "viewPath": "modules/performance/views/dashboard/index.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": [
+                    {
+                        "name": "查询",
+                        "router": null,
+                        "perms": "performance:dashboard:summary",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 1,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    }
+                ]
+            },
+            {
+                "name": "我的考核",
+                "router": "/performance/my-assessment",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-user",
+                "orderNum": 2,
+                "viewPath": "modules/performance/views/my-assessment/index.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": [
+                    {
+                        "name": "查询",
+                        "router": null,
+                        "perms": "performance:assessment:myPage,performance:assessment:info",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 1,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "保存",
+                        "router": null,
+                        "perms": "performance:assessment:update",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 2,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "提交",
+                        "router": null,
+                        "perms": "performance:assessment:submit",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 3,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    }
+                ]
+            },
+            {
+                "name": "已发起考核",
+                "router": "/performance/initiated",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-folder-opened",
+                "orderNum": 3,
+                "viewPath": "modules/performance/views/initiated/index.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": [
+                    {
+                        "name": "查询",
+                        "router": null,
+                        "perms": "performance:assessment:page,performance:assessment:info",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 1,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "新增",
+                        "router": null,
+                        "perms": "performance:assessment:add",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 2,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "编辑",
+                        "router": null,
+                        "perms": "performance:assessment:update",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 3,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "删除",
+                        "router": null,
+                        "perms": "performance:assessment:delete",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 4,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "导出",
+                        "router": null,
+                        "perms": "performance:assessment:export",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 5,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    }
+                ]
+            },
+            {
+                "name": "待我审批",
+                "router": "/performance/pending",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-help",
+                "orderNum": 4,
+                "viewPath": "modules/performance/views/pending/index.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": [
+                    {
+                        "name": "查询",
+                        "router": null,
+                        "perms": "performance:assessment:pendingPage,performance:assessment:info",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 1,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "审批通过",
+                        "router": null,
+                        "perms": "performance:assessment:approve",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 2,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "审批驳回",
+                        "router": null,
+                        "perms": "performance:assessment:reject",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 3,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    }
+                ]
+            },
+            {
+                "name": "指标库",
+                "router": "/performance/indicator-library",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-set",
+                "orderNum": 5,
+                "viewPath": "modules/performance/views/indicator-library/index.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": [
+                    {
+                        "name": "查询",
+                        "router": null,
+                        "perms": "performance:indicator:page,performance:indicator:info",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 1,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "新增",
+                        "router": null,
+                        "perms": "performance:indicator:add",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 2,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "编辑",
+                        "router": null,
+                        "perms": "performance:indicator:update",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 3,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "删除",
+                        "router": null,
+                        "perms": "performance:indicator:delete",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 4,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    }
+                ]
+            },
+            {
+                "name": "360 环评",
+                "router": "/performance/feedback",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-email",
+                "orderNum": 6,
+                "viewPath": "modules/performance/views/feedback/index.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": [
+                    {
+                        "name": "查询",
+                        "router": null,
+                        "perms": "performance:feedback:page,performance:feedback:info",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 1,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "发起",
+                        "router": null,
+                        "perms": "performance:feedback:add",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 2,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "提交反馈",
+                        "router": null,
+                        "perms": "performance:feedback:submit",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 3,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "查看汇总",
+                        "router": null,
+                        "perms": "performance:feedback:summary",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 4,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    }
+                ]
+            },
+            {
+                "name": "目标地图",
+                "router": "/performance/goals",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-list",
+                "orderNum": 7,
+                "viewPath": "modules/performance/views/goals/index.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": [
+                    {
+                        "name": "查询",
+                        "router": null,
+                        "perms": "performance:goal:page,performance:goal:info",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 1,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "新增",
+                        "router": null,
+                        "perms": "performance:goal:add",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 2,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "编辑",
+                        "router": null,
+                        "perms": "performance:goal:update",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 3,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "删除",
+                        "router": null,
+                        "perms": "performance:goal:delete",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 4,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "更新进度",
+                        "router": null,
+                        "perms": "performance:goal:progressUpdate",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 5,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "导出",
+                        "router": null,
+                        "perms": "performance:goal:export",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 6,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    }
+                ]
+            },
+            {
+                "name": "PIP 追踪",
+                "router": "/performance/pip",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-refresh",
+                "orderNum": 8,
+                "viewPath": "modules/performance/views/pip/index.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": [
+                    {
+                        "name": "查询",
+                        "router": null,
+                        "perms": "performance:pip:page,performance:pip:info",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 1,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "新增",
+                        "router": null,
+                        "perms": "performance:pip:add",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 2,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "启动",
+                        "router": null,
+                        "perms": "performance:pip:start",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 3,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "编辑",
+                        "router": null,
+                        "perms": "performance:pip:update",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 4,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "跟进",
+                        "router": null,
+                        "perms": "performance:pip:track",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 5,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "完成",
+                        "router": null,
+                        "perms": "performance:pip:complete",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 6,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "关闭",
+                        "router": null,
+                        "perms": "performance:pip:close",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 7,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    }
+                ]
+            },
+            {
+                "name": "晋升管理",
+                "router": "/performance/promotion",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-dept",
+                "orderNum": 9,
+                "viewPath": "modules/performance/views/promotion/index.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": [
+                    {
+                        "name": "查询",
+                        "router": null,
+                        "perms": "performance:promotion:page,performance:promotion:info",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 1,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "新增",
+                        "router": null,
+                        "perms": "performance:promotion:add",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 2,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "编辑",
+                        "router": null,
+                        "perms": "performance:promotion:update",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 3,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "提交",
+                        "router": null,
+                        "perms": "performance:promotion:submit",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 4,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "评审",
+                        "router": null,
+                        "perms": "performance:promotion:review",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 5,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    }
+                ]
+            },
+            {
+                "name": "薪资管理",
+                "router": "/performance/salary",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-coupon",
+                "orderNum": 10,
+                "viewPath": "modules/performance/views/salary/index.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": [
+                    {
+                        "name": "查询",
+                        "router": null,
+                        "perms": "performance:salary:page,performance:salary:info",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 1,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "新增",
+                        "router": null,
+                        "perms": "performance:salary:add",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 2,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "编辑",
+                        "router": null,
+                        "perms": "performance:salary:update",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 3,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "确认",
+                        "router": null,
+                        "perms": "performance:salary:confirm",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 4,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "归档",
+                        "router": null,
+                        "perms": "performance:salary:archive",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 5,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "调整",
+                        "router": null,
+                        "perms": "performance:salary:changeAdd",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 6,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    }
+                ]
+            }
+        ]
     }
 ]

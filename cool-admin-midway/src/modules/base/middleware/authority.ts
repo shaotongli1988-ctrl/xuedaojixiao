@@ -1,4 +1,4 @@
-import { App, Config, Inject, Middleware } from '@midwayjs/core';
+import { ALL, App, Config, Inject, Middleware } from '@midwayjs/core';
 import * as _ from 'lodash';
 import { CoolCommException, CoolUrlTagData, TagTypes } from '@cool-midway/core';
 import * as jwt from 'jsonwebtoken';
@@ -8,9 +8,17 @@ import {
   IMidwayApplication,
   Init,
   InjectClient,
+  REQUEST_CTX_KEY,
 } from '@midwayjs/core';
 import { CachingFactory, MidwayCache } from '@midwayjs/cache-manager';
 import { Utils } from '../../../comm/utils';
+
+const resolveBaseModuleConfig = (app?: IMidwayApplication) => {
+  return require('../config').default({
+    app,
+    env: app?.getEnv?.(),
+  });
+};
 
 /**
  * 权限校验
@@ -22,8 +30,8 @@ export class BaseAuthorityMiddleware
   @Config('koa.globalPrefix')
   prefix;
 
-  @Config('module.base')
-  jwtConfig;
+  @Config(ALL)
+  allConfig;
 
   @InjectClient(CachingFactory, 'default')
   midwayCache: MidwayCache;
@@ -38,6 +46,15 @@ export class BaseAuthorityMiddleware
   utils: Utils;
 
   ignoreUrls: string[] = [];
+
+  private get jwtConfig() {
+    const moduleConfig =
+      this.allConfig?.module?.base || resolveBaseModuleConfig(this.app);
+    if (!moduleConfig?.jwt) {
+      throw new CoolCommException('系统登录配置缺失', 500);
+    }
+    return moduleConfig.jwt;
+  }
 
   @Init()
   async init() {
@@ -54,7 +71,8 @@ export class BaseAuthorityMiddleware
       // 路由地址为 admin前缀的 需要权限校验
       if (_.startsWith(url, adminUrl)) {
         try {
-          ctx.admin = jwt.verify(token, this.jwtConfig.jwt.secret);
+          ctx.admin = jwt.verify(token, this.jwtConfig.secret);
+          ctx.requestContext.registerObject(REQUEST_CTX_KEY, ctx);
           if (ctx.admin.isRefresh) {
             ctx.status = 401;
             throw new CoolCommException('登录失效~', ctx.status);
@@ -80,8 +98,8 @@ export class BaseAuthorityMiddleware
             throw new CoolCommException('登录失效~', 401);
           }
           // 超管拥有所有权限
-          if (ctx.admin.username == 'admin' && !ctx.admin.isRefresh) {
-            if (rToken !== token && this.jwtConfig.jwt.sso) {
+          if (ctx.admin.isAdmin === true && !ctx.admin.isRefresh) {
+            if (rToken !== token && this.jwtConfig.sso) {
               throw new CoolCommException('登录失效~', 401);
             } else {
               await next();
@@ -104,7 +122,7 @@ export class BaseAuthorityMiddleware
           if (!rToken) {
             throw new CoolCommException('登录失效或无权限访问~', 401);
           }
-          if (rToken !== token && this.jwtConfig.jwt.sso) {
+          if (rToken !== token && this.jwtConfig.sso) {
             statusCode = 401;
           } else {
             let perms: string[] = await this.midwayCache.get(

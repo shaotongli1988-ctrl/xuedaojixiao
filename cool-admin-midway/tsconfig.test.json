@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "types": ["node", "jest"],
+    "typeRoots": [
+      "typings",
+      "./node_modules/@types",
+      "./.shared-deps/js/node_modules/@types"
+    ]
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts"]
+}

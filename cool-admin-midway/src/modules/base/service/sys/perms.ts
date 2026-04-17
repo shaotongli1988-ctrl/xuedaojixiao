@@ -1,17 +1,37 @@
-import { Inject, InjectClient, Provide } from '@midwayjs/core';
+import {
+  App,
+  ASYNC_CONTEXT_KEY,
+  ASYNC_CONTEXT_MANAGER_KEY,
+  AsyncContextManager,
+  IMidwayApplication,
+  Inject,
+  InjectClient,
+  Provide,
+  Scope,
+  ScopeEnum,
+} from '@midwayjs/core';
 import { BaseService } from '@cool-midway/core';
 import { BaseSysMenuService } from './menu';
 import { BaseSysRoleService } from './role';
 import { BaseSysDepartmentService } from './department';
 import { Context } from '@midwayjs/koa';
+import * as jwt from 'jsonwebtoken';
 import { CachingFactory, MidwayCache } from '@midwayjs/cache-manager';
 import { BaseSysRoleEntity } from '../../entity/sys/role';
 import { In, Repository } from 'typeorm';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 
+const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
+  return require('../../config').default({
+    app,
+    env: app?.getEnv?.(),
+  }).jwt;
+};
+
 /**
  * 权限
  */
+@Scope(ScopeEnum.Request, { allowDowngrade: true })
 @Provide()
 export class BaseSysPermsService extends BaseService {
   @InjectClient(CachingFactory, 'default')
@@ -31,6 +51,40 @@ export class BaseSysPermsService extends BaseService {
 
   @Inject()
   ctx: Context;
+
+  @App()
+  app: IMidwayApplication;
+
+  private get currentCtx() {
+    if (this.ctx?.admin) {
+      return this.ctx;
+    }
+    try {
+      const contextManager: AsyncContextManager = this.app
+        .getApplicationContext()
+        .get(ASYNC_CONTEXT_MANAGER_KEY);
+      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as Context;
+    } catch (error) {
+      return this.ctx;
+    }
+  }
+
+  private get currentAdmin() {
+    if (this.currentCtx?.admin) {
+      return this.currentCtx.admin;
+    }
+    const token =
+      this.currentCtx?.get?.('Authorization') ||
+      this.currentCtx?.headers?.authorization;
+    if (!token) {
+      return undefined;
+    }
+    try {
+      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
+    } catch (error) {
+      return undefined;
+    }
+  }
   base: any;
 
   /**
@@ -55,9 +109,19 @@ export class BaseSysPermsService extends BaseService {
    * @param roleIds
    */
   async isAdmin(roleIds: number[]) {
+    if (!roleIds?.length) {
+      return false;
+    }
     const roles = await this.baseSysRoleEntity.findBy({ id: In(roleIds) });
     const roleLabels = roles.map(item => item.label);
     return roleLabels.includes('admin');
+  }
+
+  async currentUserIsAdmin(roleIds: number[] = this.currentAdmin?.roleIds || []) {
+    if (typeof this.currentAdmin?.isAdmin === 'boolean') {
+      return this.currentAdmin.isAdmin;
+    }
+    return this.isAdmin(roleIds);
   }
 
   /**
@@ -68,7 +132,7 @@ export class BaseSysPermsService extends BaseService {
     const perms = await this.baseSysMenuService.getPerms(roleIds);
     const menus = await this.baseSysMenuService.getMenus(
       roleIds,
-      this.ctx.admin.username === 'admin'
+      await this.currentUserIsAdmin(roleIds)
     );
     return { perms, menus };
   }

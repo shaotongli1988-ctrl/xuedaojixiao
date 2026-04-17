@@ -44,8 +44,14 @@ const { user } = useBase();
 
 const list = ref<Item[]>([]);
 
+function isAccountItem(value: unknown): value is Item {
+	const item = value as Partial<Item> | null;
+	return !!item && typeof item.userId === 'number';
+}
+
 function refresh() {
-	list.value = storage.get('devTools.account') || [];
+	const stored = storage.get('devTools.account');
+	list.value = Array.isArray(stored) ? stored.filter(isAccountItem) : [];
 	save();
 }
 
@@ -107,7 +113,7 @@ function clear() {
 
 // 更新
 function update() {
-	storage.set('devTools.account', list.value);
+	storage.set('devTools.account', list.value.filter(isAccountItem));
 }
 
 // 切换

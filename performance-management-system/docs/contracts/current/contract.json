@@ -1,0 +1,204 @@
+{
+  "contractVersion": "v1",
+  "contractId": "dr-2026-04-17-002550",
+  "generatedAt": "2026-04-17T00:25:50+08:00",
+  "generatedBy": "software-development-readiness-governance",
+  "phase": "development-readiness",
+  "mode": "global",
+  "projectProfile": {
+    "name": "performance-management-system",
+    "repoRoot": "/Users/shaotongli/Documents/xuedao/performance-management-system",
+    "backendStack": "unknown",
+    "frontendStack": "unknown",
+    "database": "unknown",
+    "primaryGuard": "fullstack-unified-development-standards",
+    "pythonDependencies": [],
+    "frontendDependencies": []
+  },
+  "scope": {
+    "businessGoal": "绩效管理系统项目流程防漂移治理收口",
+    "inScopeModules": [
+      "user"
+    ],
+    "outOfScopeModules": [],
+    "affectedLayers": [
+      "docs"
+    ],
+    "actors": [],
+    "changedFilesCount": 44
+  },
+  "contracts": {
+    "fieldDictionary": {
+      "questionFields": [],
+      "taskFields": []
+    },
+    "api": {
+      "responseEnvelope": [],
+      "paginationEnvelope": [
+        "items",
+        "page",
+        "size",
+        "total"
+      ]
+    },
+    "permissions": {
+      "roles": [],
+      "permissionKeys": []
+    },
+    "errorSemantics": {
+      "questionErrorCodes": []
+    },
+    "uiStandards": {
+      "feedback": [
+        "Toast",
+        "message-box"
+      ],
+      "containers": [
+        "Drawer",
+        "modal"
+      ],
+      "filterRule": "Advanced Filter after 3 fields",
+      "states": [
+        "loading",
+        "empty",
+        "error",
+        "disabled",
+        "confirm"
+      ]
+    },
+    "questionBankModules": []
+  },
+  "governance": {
+    "readinessStatus": "可进入开发",
+    "action": "READY_TO_START",
+    "reason": "未发现阻断进入开发的高风险问题。",
+    "subguards": [
+      {
+        "name": "requirements-freeze-guard",
+        "level": "P0",
+        "implemented": true,
+        "status": "ran",
+        "returncode": 0,
+        "scriptPath": "/Users/shaotongli/.codex/skills/requirements-freeze-guard/scripts/requirements_freeze_guard.py"
+      },
+      {
+        "name": "acceptance-criteria-builder",
+        "level": "P0",
+        "implemented": true,
+        "status": "ran",
+        "returncode": 0,
+        "scriptPath": "/Users/shaotongli/.codex/skills/acceptance-criteria-builder/scripts/acceptance_criteria_builder_guard.py"
+      },
+      {
+        "name": "prd-ui-traceability-guard",
+        "level": "P0",
+        "implemented": true,
+        "status": "ran",
+        "returncode": 0,
+        "scriptPath": "/Users/shaotongli/.codex/skills/prd-ui-traceability-guard/scripts/prd_ui_traceability_guard.py"
+      },
+      {
+        "name": "api-schema-drift-checker",
+        "level": "P0",
+        "implemented": true,
+        "status": "skipped",
+        "returncode": null,
+        "scriptPath": ""
+      },
+      {
+        "name": "rbac-alignment-guard",
+        "level": "P0",
+        "implemented": true,
+        "status": "skipped",
+        "returncode": null,
+        "scriptPath": ""
+      },
+      {
+        "name": "state-machine-alignment",
+        "level": "P0",
+        "implemented": true,
+        "status": "skipped",
+        "returncode": null,
+        "scriptPath": ""
+      },
+      {
+        "name": "error-code-governor",
+        "level": "P0",
+        "implemented": true,
+        "status": "skipped",
+        "returncode": null,
+        "scriptPath": ""
+      },
+      {
+        "name": "ux-state-completeness-checker",
+        "level": "P1",
+        "implemented": true,
+        "status": "skipped",
+        "returncode": null,
+        "scriptPath": ""
+      },
+      {
+        "name": "architecture-decision-recorder",
+        "level": "P1",
+        "implemented": true,
+        "status": "skipped",
+        "returncode": null,
+        "scriptPath": ""
+      },
+      {
+        "name": "tech-stack-drift-guard",
+        "level": "P1",
+        "implemented": true,
+        "status": "ran",
+        "returncode": 0,
+        "scriptPath": "/Users/shaotongli/.codex/skills/tech-stack-drift-guard/scripts/tech_stack_drift_guard.py"
+      },
+      {
+        "name": "git-flow-enforcer",
+        "level": "P1",
+        "implemented": true,
+        "status": "skipped",
+        "returncode": null,
+        "scriptPath": ""
+      },
+      {
+        "name": "app-security-baseline-guard",
+        "level": "P1",
+        "implemented": true,
+        "status": "skipped",
+        "returncode": null,
+        "scriptPath": ""
+      }
+    ],
+    "references": [
+      "docs/skills/software-development-readiness-governance/references/shared-contract-package.md",
+      "docs/skills/software-development-readiness-governance/references/stage-invocation-templates.md"
+    ]
+  },
+  "testPlan": {
+    "categories": [
+      "normal",
+      "exception",
+      "boundary",
+      "permission",
+      "state",
+      "api",
+      "frontend"
+    ],
+    "automationTargets": [
+      "pytest-unit",
+      "pytest-integration",
+      "pytest-regression",
+      "playwright-e2e"
+    ],
+    "mustCoverModules": [
+      "user"
+    ]
+  },
+  "releaseReadiness": {
+    "rollbackRequired": true,
+    "monitoringRequired": true,
+    "uatRequired": true
+  },
+  "waivers": []
+}

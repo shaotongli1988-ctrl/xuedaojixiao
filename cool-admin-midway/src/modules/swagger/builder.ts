@@ -47,8 +47,17 @@ export class SwaggerBuilder {
    */
   convertToSwagger(dataJson) {
     const swagger = {
+      openapi: '3.1.0',
+      info: {},
+      servers: [],
       ...this.swaggerBase,
       paths: {},
+      components: {
+        ...(this.swaggerBase?.components || {}),
+        schemas: {
+          ...(this.swaggerBase?.components?.schemas || {}),
+        },
+      },
       tags: Object.keys(dataJson.module)
         .filter(item => item != 'swagger')
         .map(moduleKey => {
@@ -68,7 +77,7 @@ export class SwaggerBuilder {
         required: [],
       };
 
-      data.columns.forEach(column => {
+      (data.columns || []).forEach(column => {
         const swaggerType = mapTypeToSwagger(column.type);
         schema.properties[column.propertyName] = {
           type: swaggerType,
