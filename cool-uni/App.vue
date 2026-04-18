@@ -1,28 +1,22 @@
 <script setup lang="ts">
-import { useStore } from "/@/cool";
+import { useStore } from "/@/cool/store";
 import { onLaunch, onShow, onHide } from "@dcloudio/uni-app";
 
 onLaunch(() => {
-	console.log("App Launch");
-
 	const { dict, user } = useStore();
 
 	// 获取字典
 	// dict.refresh();
 
 	if (user.token) {
-		// 获取登录用户信息
-		// user.get();
+		user.hydrate().catch(() => {
+			user.logout({ remote: false, reLaunch: true });
+		});
 	}
 });
 
-onShow(() => {
-	console.log("App Show");
-});
-
-onHide(() => {
-	console.log("App Hide");
-});
+onShow(() => {});
+onHide(() => {});
 </script>
 
 <style lang="scss">

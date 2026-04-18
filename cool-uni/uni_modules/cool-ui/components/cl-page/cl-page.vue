@@ -49,7 +49,9 @@
 
 <script lang="ts">
 import { computed, defineComponent, reactive, getCurrentInstance, onMounted } from "vue";
-import { useApp, useCool } from "/@/cool";
+import { useApp } from "/@/cool/hooks/app";
+import { router } from "/@/cool/router";
+import { useRefs } from "/@/cool/hooks/comm";
 import { parseRpx } from "/@/cool/utils";
 import { isString } from "lodash-es";
 import { useI18n } from "vue-i18n";
@@ -77,7 +79,7 @@ export default defineComponent({
 	},
 
 	setup(props) {
-		const { refs, setRefs, router } = useCool();
+		const { refs, setRefs } = useRefs();
 		const app = useApp();
 		const info = router.info();
 		const { t } = useI18n();

@@ -27,10 +27,20 @@ export default defineConfig(() => {
 			},
 		},
 		resolve: {
-			alias: {
-				"/@": resolve("./"),
-				"/$": resolve("./uni_modules/"),
-			},
+			alias: [
+				{
+					find: /^vue$/,
+					replacement: resolve("./shim/vue.ts"),
+				},
+				{
+					find: "/@",
+					replacement: resolve("./"),
+				},
+				{
+					find: "/$",
+					replacement: resolve("./uni_modules/"),
+				},
+			],
 		},
 	};
 });

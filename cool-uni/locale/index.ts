@@ -5,8 +5,16 @@ import en from "./en.json";
 import es from "./es.json";
 import fr from "./fr.json";
 
+function resolveUniLocale() {
+	if (typeof uni !== "undefined" && typeof uni.getLocale === "function") {
+		return uni.getLocale();
+	}
+
+	return "zh-Hans";
+}
+
 const i18n = createI18n({
-	locale: uni.getLocale(),
+	locale: resolveUniLocale(),
 
 	// 配置后，使用命令 cool-i18n create 翻译，会自动更新 locale 目录
 	messages: {
@@ -34,12 +42,14 @@ function t(name: string, data?: any) {
 }
 
 function setLocale(locale: string) {
-	uni.setLocale(locale);
+	if (typeof uni !== "undefined" && typeof uni.setLocale === "function") {
+		uni.setLocale(locale);
+	}
 	i18n.global.locale = locale;
 }
 
 function getLocale(): string {
-	const locale = uni.getLocale();
+	const locale = resolveUniLocale();
 
 	for (const i in localeMap) {
 		if (i == locale) {

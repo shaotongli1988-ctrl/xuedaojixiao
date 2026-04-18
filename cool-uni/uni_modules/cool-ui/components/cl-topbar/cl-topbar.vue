@@ -45,7 +45,7 @@
 
 <script lang="ts">
 import { computed, defineComponent, onMounted, ref } from "vue";
-import { router } from "/@/cool";
+import { router } from "/@/cool/router";
 import { isIos } from "/@/cool/utils";
 
 const { statusBarHeight } = uni.getSystemInfoSync();

@@ -9,8 +9,8 @@
 		"js-pinyin": "^0.2.5",
 		"lodash-es": "^4.17.21",
 		"md5": "^2.3.0",
-		"pinia": "^2.1.7",
-		"vue": "^3.5.13",
+		"pinia": "^2.3.1",
+		"vue": "3.5.13",
 		"vue-i18n": "9.1.9",
 		"weixin-js-sdk": "^1.6.5"
 	},
@@ -20,11 +20,30 @@
 	"devDependencies": {
 		"@cool-vue/vite-plugin": "^8.0.3",
 		"@dcloudio/types": "^3.4.14",
+		"@dcloudio/uni-components": "3.0.0-3081220230817001",
+		"@dcloudio/vite-plugin-uni": "3.0.0-3081220230817001",
 		"@types/lodash-es": "^4.17.12",
 		"@types/md5": "^2.3.2",
 		"@types/node": "^20.11.26",
+		"@vue/compiler-sfc": "3.5.13",
+		"@vue/reactivity": "3.5.13",
+		"@vue/runtime-core": "3.5.13",
+		"@vue/runtime-dom": "3.5.13",
+		"@vue/shared": "3.5.13",
 		"@vue/tsconfig": "^0.5.1",
+		"sass": "1.99.0",
 		"typescript": "~5.5.4",
 		"vite": "^5.4.14"
+	},
+	"pnpm": {
+		"overrides": {
+			"vue": "3.5.13",
+			"@vue/compiler-sfc": "3.5.13",
+			"@vue/reactivity": "3.5.13",
+			"@vue/runtime-core": "3.5.13",
+			"@vue/runtime-dom": "3.5.13",
+			"@vue/server-renderer": "3.5.13",
+			"@vue/shared": "3.5.13"
+		}
 	}
 }

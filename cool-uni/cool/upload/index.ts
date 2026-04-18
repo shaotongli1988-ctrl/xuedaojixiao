@@ -88,7 +88,7 @@ export async function upload(file: any, cb?: UploadCallback): Promise<string> {
 						  }
 						: {}
 				)
-				.then((res) => {
+				.then((res: any) => {
 					switch (type) {
 						// 腾讯
 						case "cos":

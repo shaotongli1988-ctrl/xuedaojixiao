@@ -13,3 +13,4 @@ declare module "*.vue" {
 declare module "virtual:ctx";
 declare module "virtual:eps";
 declare module "@dcloudio/vite-plugin-uni";
+declare module "vue/dist/vue.runtime.esm-bundler.js";

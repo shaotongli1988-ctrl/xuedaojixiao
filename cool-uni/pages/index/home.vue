@@ -1,261 +1,253 @@
 <template>
-	<cl-page>
-		<view class="page-home">
-			<view class="logo">
-				<view class="icon">
-					<image src="/static/logo.png" mode="aspectFit" />
+	<cl-page background-color="#f4f6fb">
+		<cl-topbar :show-back="false" :border="false" background-color="transparent" />
+
+		<scroll-view class="workbench" scroll-y>
+			<view class="workbench__hero">
+				<view>
+					<text class="workbench__hello">你好，{{ user.info?.name || user.info?.username }}</text>
+					<text class="workbench__meta">
+						{{ user.info?.departmentName || "当前账号" }} ·
+						{{ roleLabel }}
+					</text>
 				</view>
 
-				<text class="name">{{ app.info.name }}</text>
+				<cl-button plain size="mini" @tap="logout">退出</cl-button>
 			</view>
 
-			<view class="desc">{{ t("uniapp快速开发脚手架") }}</view>
-
-			<view class="container">
-				<view class="group" v-for="(item, index) in list" :key="index">
-					<text class="label">{{ item.label }}</text>
-
-					<view class="list">
-						<view
-							class="item"
-							v-for="(item2, index2) in item.children"
-							:key="index2"
-							@tap="toLink(item2.path)"
-						>
-							<text class="name">{{ item2.label }}</text>
-
-							<cl-icon name="arrow-right" color="info"></cl-icon>
-						</view>
-					</view>
-				</view>
+			<view class="workbench__summary">
+				<text class="workbench__summary-title">首批工作台</text>
+				<text class="workbench__summary-text">
+					只展示当前账号在移动端首批冻结范围内且拥有权限的入口，不下沉驾驶舱、薪资、PIP、晋升和导出。
+				</text>
 			</view>
-		</view>
 
-		<tabbar />
+			<page-state
+				v-if="!cards.length"
+				title="当前账号暂无可访问入口"
+				description="请使用员工或部门经理测试账号登录。HR 与其他非首批角色不开放移动端业务入口。"
+				action-text="退出登录"
+				@action="logout"
+			/>
 
-		<cl-popup
-			v-model="i18n.visible"
-			:title="t('选择语言')"
-			direction="bottom"
-			border-radius="32rpx 32rpx 0 0"
-		>
-			<view class="list">
-				<cl-tag
-					v-for="item in i18n.list"
-					:key="item.value"
-					:type="item.value == i18n.active ? 'success' : 'info'"
-					:margin="[0, 20, 20, 0]"
-					@tap="i18n.change(item.value)"
+			<view v-else class="workbench__card-list">
+				<view
+					v-for="card in cards"
+					:key="card.id"
+					class="workbench-card"
+					@tap="openCard(card.path)"
 				>
-					{{ item.label }}
-				</cl-tag>
+					<view class="workbench-card__top">
+						<text class="workbench-card__title">{{ card.title }}</text>
+						<text class="workbench-card__count">
+							{{ countLoading[card.id] ? "..." : summary[card.id] ?? 0 }}
+						</text>
+					</view>
+					<text class="workbench-card__desc">{{ card.description }}</text>
+					<text class="workbench-card__action">进入</text>
+				</view>
 			</view>
-		</cl-popup>
+		</scroll-view>
 	</cl-page>
 </template>
 
 <script lang="ts" setup>
-import { useApp, useCool, module, useStore } from "/@/cool";
-import { useUi } from "/$/cool-ui";
-import { onReady } from "@dcloudio/uni-app";
-import { reactive, ref } from "vue";
-import { isEmpty } from "lodash-es";
-import { setLocale } from "/@/locale";
-import Tabbar from "./components/tabbar.vue";
-import { useI18n } from "vue-i18n";
+import { computed, reactive } from "vue";
+import { onPullDownRefresh, onShow } from "@dcloudio/uni-app";
+import { router } from "/@/cool/router";
+import { useStore } from "/@/cool/store";
+import { performanceAssessmentService } from "/@/service/performance/assessment";
+import { performanceFeedbackService } from "/@/service/performance/feedback";
+import { performanceGoalService } from "/@/service/performance/goal";
+import { workbenchCards } from "/@/types/performance-mobile";
+import PageState from "/@/pages/performance/components/page-state.vue";
 
-const { router, service } = useCool();
-const ui = useUi();
-const app = useApp();
-const { dict } = useStore();
-const { t } = useI18n();
+const { user } = useStore();
 
-const list = ref([
-	{
-		label: "v8.x",
-		value: "v8",
-		children: [
-			{
-				label: "多语言",
-				path: "i18n",
-			},
-		] as any[],
-	},
-	{
-		label: "基础组件",
-		value: "basic",
-		children: [],
-	},
-	{
-		label: "表单组件",
-		value: "form",
-		children: [],
-	},
+const summary = reactive<Record<string, number>>({});
+const countLoading = reactive<Record<string, boolean>>({});
 
-	{
-		label: "视图组件",
-		value: "view",
-		children: [],
-	},
-
-	{
-		label: "高级组件",
-		value: "extend",
-		children: [],
-	},
-]);
-
-const i18n = reactive({
-	active: "zh-Hans",
-	visible: false,
-
-	list: [
-		{
-			label: "简体中文",
-			value: "zh-Hans",
-		},
-		{
-			label: "繁体中文",
-			value: "zh-Hant",
-		},
-		{
-			label: "English",
-			value: "en",
-		},
-		{
-			label: "Spanish",
-			value: "es",
-		},
-	],
-
-	open() {
-		i18n.active = uni.getLocale();
-		this.visible = true;
-	},
-
-	close() {
-		this.visible = false;
-	},
-
-	change(value: string) {
-		setLocale(value);
-		i18n.close();
-	},
+const cards = computed(() => {
+	return user.workbenchPages
+		.map((id) => workbenchCards[id as keyof typeof workbenchCards])
+		.filter(Boolean);
 });
 
-function toLink(path: string) {
-	if (path == "i18n") {
-		i18n.open();
-	} else {
-		router.push({
-			path,
-			isGuard: false,
-		});
+const roleLabel = computed(() => {
+	switch (user.roleKind) {
+		case "manager":
+			return "部门经理";
+		case "employee":
+			return "员工";
+		default:
+			return "非首批角色";
 	}
+});
+
+async function refreshSummary() {
+	await Promise.all(
+		cards.value.map(async (card) => {
+			countLoading[card.id] = true;
+			try {
+				switch (card.id) {
+					case "my-assessment": {
+						const res = await performanceAssessmentService.fetchPage({
+							page: 1,
+							size: 1,
+							mode: "my",
+						});
+						summary[card.id] = res?.pagination?.total || 0;
+						break;
+					}
+					case "pending-approval": {
+						const res = await performanceAssessmentService.fetchPage({
+							page: 1,
+							size: 1,
+							mode: "pending",
+						});
+						summary[card.id] = res?.pagination?.total || 0;
+						break;
+					}
+					case "goal": {
+						const res = await performanceGoalService.fetchPage({
+							page: 1,
+							size: 1,
+						});
+						summary[card.id] = res?.pagination?.total || 0;
+						break;
+					}
+					case "feedback": {
+						const res = await performanceFeedbackService.fetchPage({
+							page: 1,
+							size: 1,
+						});
+						summary[card.id] = res?.pagination?.total || 0;
+						break;
+					}
+				}
+			} catch (error) {
+				summary[card.id] = 0;
+			} finally {
+				countLoading[card.id] = false;
+			}
+		})
+	);
 }
 
-onReady(() => {
-	// cool-ui 示例
-	router.routes.forEach((e) => {
-		if (e.path.includes("pages/demo")) {
-			const [, , key] = e.path.split("/");
+function openCard(path: string) {
+	router.push(path);
+}
 
-			const item = list.value.find((e) => e.value == key);
+async function logout() {
+	await user.logout({ remote: true, reLaunch: true });
+}
 
-			if (item) {
-				item.children.push({
-					label: e.style.navigationBarTitleText,
-					path: "/" + e.path,
-				});
-			}
-		}
-	});
+onShow(() => {
+	refreshSummary();
+});
 
-	// 插件示例
-	const children = module.list.filter((e) => e.demo).map((e) => e.demo!);
-
-	if (!isEmpty(children)) {
-		list.value.unshift({
-			label: t("插件 / 模块"),
-			value: "plugin",
-			children,
-		});
-	}
+onPullDownRefresh(async () => {
+	await refreshSummary();
+	uni.stopPullDownRefresh();
 });
 </script>
 
 <style lang="scss" scoped>
-.page-home {
-	.logo {
-		padding: 80rpx 0 32rpx 0;
+.workbench {
+	min-height: 100vh;
+	padding: 24rpx 24rpx 48rpx;
+	box-sizing: border-box;
+
+	&__hero {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		padding: 24rpx 8rpx 16rpx;
+	}
+
+	&__hello {
+		display: block;
+		font-size: 44rpx;
+		font-weight: 700;
+		line-height: 1.2;
+		color: #182132;
+	}
+
+	&__meta {
+		display: block;
+		margin-top: 12rpx;
+		font-size: 24rpx;
+		color: #657087;
+	}
+
+	&__summary {
+		padding: 28rpx;
+		border-radius: 28rpx;
+		background: linear-gradient(135deg, #173f7a 0%, #2d68c8 100%);
+		box-shadow: 0 16rpx 40rpx rgba(23, 63, 122, 0.18);
+	}
+
+	&__summary-title {
+		display: block;
+		font-size: 34rpx;
+		font-weight: 700;
+		color: #ffffff;
+	}
+
+	&__summary-text {
+		display: block;
+		margin-top: 14rpx;
+		font-size: 24rpx;
+		line-height: 1.7;
+		color: rgba(255, 255, 255, 0.86);
+	}
+
+	&__card-list {
+		display: flex;
+		flex-direction: column;
+		gap: 24rpx;
+		margin-top: 28rpx;
+	}
+}
+
+.workbench-card {
+	padding: 28rpx;
+	border-radius: 28rpx;
+	background: #ffffff;
+	box-shadow: 0 14rpx 34rpx rgba(34, 56, 99, 0.06);
+
+	&__top {
 		display: flex;
 		align-items: center;
-		justify-content: center;
-		user-select: none;
-
-		.icon {
-			border-radius: 16rpx;
-			padding: 10rpx;
-			margin-right: 20rpx;
-			background-color: #2c3142;
-
-			image {
-				display: block;
-				height: 66rpx;
-				width: 66rpx;
-			}
-		}
-
-		text {
-			font-size: 60rpx;
-			font-weight: bold;
-			letter-spacing: 3rpx;
-		}
+		justify-content: space-between;
 	}
 
-	.desc {
-		font-size: 28rpx;
-		text-align: center;
-		margin-bottom: 50rpx;
-		letter-spacing: 2rpx;
-		height: 80rpx;
-		padding: 0 50rpx;
+	&__title {
+		font-size: 32rpx;
+		font-weight: 700;
+		color: #182132;
 	}
 
-	.container {
-		border-radius: 32rpx 32rpx 0 0;
-		background-color: #fff;
+	&__count {
+		font-size: 40rpx;
+		font-weight: 700;
+		color: #2d68c8;
 	}
 
-	.group {
-		padding: 30rpx;
+	&__desc {
+		display: block;
+		margin-top: 18rpx;
+		font-size: 24rpx;
+		line-height: 1.7;
+		color: #657087;
+	}
 
-		.label {
-			display: block;
-			margin-left: 10rpx;
-			font-size: 26rpx;
-			color: #999;
-			height: 50rpx;
-		}
-
-		.list {
-			.item {
-				display: flex;
-				align-items: center;
-				height: 80rpx;
-				padding: 0 30rpx;
-				margin-bottom: 25rpx;
-				background-color: #fff;
-				border-radius: 20rpx;
-				border: 1rpx solid #ddd;
-
-				.name {
-					flex: 1;
-					font-size: 28rpx;
-					font-weight: bold;
-				}
-			}
-		}
+	&__action {
+		display: inline-block;
+		margin-top: 22rpx;
+		font-size: 24rpx;
+		font-weight: 600;
+		color: #295cb3;
 	}
 }
 </style>

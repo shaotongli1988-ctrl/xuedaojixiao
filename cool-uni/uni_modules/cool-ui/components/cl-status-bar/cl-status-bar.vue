@@ -21,7 +21,7 @@
 
 <script lang="ts">
 import { computed, defineComponent } from "vue";
-import { useCool } from "/@/cool";
+import { router } from "/@/cool/router";
 
 export default defineComponent({
 	name: "cl-status-bar",
@@ -38,7 +38,6 @@ export default defineComponent({
 
 	setup(props) {
 		const { statusBarHeight } = uni.getSystemInfoSync();
-		const { router } = useCool();
 
 		// 状态栏高度
 		const height = computed(() => {

@@ -1,4 +1,4 @@
-import { router } from "/@/cool";
+import { router } from "/@/cool/router";
 
 export function useUi(): Ui.Page {
 	const ui: any = {

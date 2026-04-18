@@ -1,4 +1,3 @@
-import { useStore } from "../store";
 import { router } from "../router";
 import { isDev, config } from "../../config";
 import { storage } from "../utils";
@@ -11,23 +10,24 @@ let requests: any[] = [];
 let isRefreshing = false;
 
 export default function request(options: any) {
-	const { user } = useStore();
-
-	// 标识
-	let Authorization = user.token || "";
-
-	// 忽略标识
-	config.ignore.token.forEach((e) => {
-		if (options.url.includes(e)) {
-			Authorization = "";
-		}
-	});
-
-	if (isDev) {
-		console.log(`[${options.method || "GET"}] ${options.url}`);
-	}
-
 	return new Promise(async (resolve, reject) => {
+		const { useStore } = await import("../store");
+		const { user } = useStore();
+
+		// 标识
+		let Authorization = user.token || "";
+
+		// 忽略标识
+		config.ignore.token.forEach((e) => {
+			if (options.url.includes(e)) {
+				Authorization = "";
+			}
+		});
+
+		if (isDev) {
+			console.log(`[${options.method || "GET"}] ${options.url}`);
+		}
+
 		// 继续请求
 		function next() {
 			uni.request({
@@ -66,6 +66,14 @@ export default function request(options: any) {
 					if (res.statusCode === 404) {
 						return reject({
 							message: `[404] ${options.url}`,
+						});
+					}
+
+					// 无权限
+					if (res.statusCode === 403) {
+						return reject({
+							message: message || t("无权限访问"),
+							code: 403,
 						});
 					}
 

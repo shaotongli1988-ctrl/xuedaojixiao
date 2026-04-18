@@ -88,7 +88,7 @@ export function useWx() {
 				.wxMpConfig({
 					url: `${location.origin}${location.pathname}`,
 				})
-				.then((res) => {
+				.then((res: any) => {
 					wx.config({
 						debug: config.app.wx.debug,
 						jsApiList: ["chooseWXPay"],

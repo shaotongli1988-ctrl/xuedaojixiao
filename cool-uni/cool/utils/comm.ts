@@ -1,6 +1,14 @@
 import { orderBy } from "lodash-es";
 
-export const { platform } = uni.getSystemInfoSync();
+function resolvePlatform() {
+	if (typeof uni !== "undefined" && typeof uni.getSystemInfoSync === "function") {
+		return uni.getSystemInfoSync().platform;
+	}
+
+	return "h5";
+}
+
+export const platform = resolvePlatform();
 
 // 是否安卓
 export const isAndroid = platform == "android";
