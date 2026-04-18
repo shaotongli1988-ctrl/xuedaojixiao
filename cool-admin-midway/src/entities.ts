@@ -13,26 +13,34 @@ import * as entity10 from './modules/base/entity/sys/user';
 import * as entity11 from './modules/demo/entity/goods';
 import * as entity12 from './modules/dict/entity/info';
 import * as entity13 from './modules/dict/entity/type';
-import * as entity14 from './modules/performance/entity/assessment-score';
-import * as entity15 from './modules/performance/entity/assessment';
-import * as entity16 from './modules/performance/entity/goal-progress';
-import * as entity17 from './modules/performance/entity/goal';
-import * as entity18 from './modules/performance/entity/indicator';
-import * as entity19 from './modules/performance/entity/pip-record';
-import * as entity20 from './modules/performance/entity/pip';
-import * as entity21 from './modules/performance/entity/promotion-record';
-import * as entity22 from './modules/performance/entity/promotion';
-import * as entity23 from './modules/performance/entity/salary-change';
-import * as entity24 from './modules/performance/entity/salary';
-import * as entity25 from './modules/plugin/entity/info';
-import * as entity26 from './modules/recycle/entity/data';
-import * as entity27 from './modules/space/entity/info';
-import * as entity28 from './modules/space/entity/type';
-import * as entity29 from './modules/task/entity/info';
-import * as entity30 from './modules/task/entity/log';
-import * as entity31 from './modules/user/entity/address';
-import * as entity32 from './modules/user/entity/info';
-import * as entity33 from './modules/user/entity/wx';
+import * as entity14 from './modules/performance/entity/approval-action-log';
+import * as entity15 from './modules/performance/entity/approval-config-node';
+import * as entity16 from './modules/performance/entity/approval-config';
+import * as entity17 from './modules/performance/entity/approval-instance-node';
+import * as entity18 from './modules/performance/entity/approval-instance';
+import * as entity19 from './modules/performance/entity/assessment-score';
+import * as entity20 from './modules/performance/entity/assessment';
+import * as entity21 from './modules/performance/entity/feedback-record';
+import * as entity22 from './modules/performance/entity/feedback-task';
+import * as entity23 from './modules/performance/entity/goal-progress';
+import * as entity24 from './modules/performance/entity/goal';
+import * as entity25 from './modules/performance/entity/indicator';
+import * as entity26 from './modules/performance/entity/pip-record';
+import * as entity27 from './modules/performance/entity/pip';
+import * as entity28 from './modules/performance/entity/promotion-record';
+import * as entity29 from './modules/performance/entity/promotion';
+import * as entity30 from './modules/performance/entity/salary-change';
+import * as entity31 from './modules/performance/entity/salary';
+import * as entity32 from './modules/performance/entity/suggestion';
+import * as entity33 from './modules/plugin/entity/info';
+import * as entity34 from './modules/recycle/entity/data';
+import * as entity35 from './modules/space/entity/info';
+import * as entity36 from './modules/space/entity/type';
+import * as entity37 from './modules/task/entity/info';
+import * as entity38 from './modules/task/entity/log';
+import * as entity39 from './modules/user/entity/address';
+import * as entity40 from './modules/user/entity/info';
+import * as entity41 from './modules/user/entity/wx';
 export const entities = [
   ...Object.values(entity0),
   ...Object.values(entity1),
@@ -68,4 +76,12 @@ export const entities = [
   ...Object.values(entity31),
   ...Object.values(entity32),
   ...Object.values(entity33),
+  ...Object.values(entity34),
+  ...Object.values(entity35),
+  ...Object.values(entity36),
+  ...Object.values(entity37),
+  ...Object.values(entity38),
+  ...Object.values(entity39),
+  ...Object.values(entity40),
+  ...Object.values(entity41),
 ];

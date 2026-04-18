@@ -4,6 +4,9 @@
  * 这里负责验证模块 1 的总分、等级与状态流转规则，不负责数据库或接口联调。
  */
 import * as jwt from 'jsonwebtoken';
+jest.mock('../../src/modules/performance/service/suggestion', () => ({
+  PerformanceSuggestionService: class PerformanceSuggestionService {},
+}));
 import {
   assertAssessmentTransition,
   calculateAssessmentTotalScore,
@@ -82,5 +85,129 @@ describe('performance assessment helper', () => {
     ).rejects.toThrow('无权限查看已发起考核');
 
     expect(service.baseSysMenuService.getPerms).toHaveBeenCalledWith([3]);
+  });
+
+  test('should sync suggestion when assessment is approved', async () => {
+    const service = new PerformanceAssessmentService() as any;
+    const assessment = {
+      id: 41,
+      employeeId: 501,
+      assessorId: 601,
+      departmentId: 18,
+      periodType: 'quarter',
+      periodValue: '2026Q2',
+      status: 'submitted',
+      grade: 'C',
+      totalScore: 68,
+      tenantId: 1,
+    };
+
+    service.ctx = {
+      admin: {
+        userId: 601,
+        username: 'manager_platform',
+        roleIds: [2],
+      },
+    };
+    service.baseSysMenuService = {
+      getPerms: jest
+        .fn()
+        .mockResolvedValue(['performance:assessment:approve']),
+    };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+    service.performanceAssessmentEntity = {
+      findOneBy: jest.fn().mockResolvedValue(assessment),
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    service.performanceSuggestionService = {
+      syncApprovedAssessment: jest.fn().mockResolvedValue({ id: 901 }),
+    };
+    service.performanceApprovalFlowService = {
+      assertManualReviewAllowed: jest.fn().mockResolvedValue(undefined),
+    };
+    service.info = jest.fn().mockResolvedValue({ id: 41, status: 'approved' });
+
+    await expect(service.approve(41, '需要进入改进')).resolves.toEqual({
+      id: 41,
+      status: 'approved',
+    });
+
+    expect(service.performanceAssessmentEntity.update).toHaveBeenCalledWith(
+      { id: 41 },
+      expect.objectContaining({
+        status: 'approved',
+        managerFeedback: '需要进入改进',
+      })
+    );
+    expect(
+      service.performanceSuggestionService.syncApprovedAssessment
+    ).toHaveBeenCalledWith({
+      id: 41,
+      employeeId: 501,
+      departmentId: 18,
+      periodType: 'quarter',
+      periodValue: '2026Q2',
+      status: 'approved',
+      grade: 'C',
+      totalScore: 68,
+      tenantId: 1,
+    });
+    expect(
+      service.performanceApprovalFlowService.assertManualReviewAllowed
+    ).toHaveBeenCalledWith('assessment', 41);
+  });
+
+  test('should launch approval flow after submit when configuration is enabled', async () => {
+    const service = new PerformanceAssessmentService() as any;
+    service.ctx = {
+      admin: {
+        userId: 501,
+        username: 'employee_platform',
+        roleIds: [3],
+      },
+    };
+    service.baseSysMenuService = {
+      getPerms: jest
+        .fn()
+        .mockResolvedValue(['performance:assessment:submit']),
+    };
+    service.performanceAssessmentEntity = {
+      findOneBy: jest.fn().mockResolvedValue({
+        id: 61,
+        employeeId: 501,
+        departmentId: 18,
+        status: 'draft',
+        tenantId: 1,
+      }),
+    };
+    service.performanceAssessmentScoreEntity = {
+      findBy: jest.fn().mockResolvedValue([
+        { indicatorName: '目标达成', score: 90, weight: 50 },
+        { indicatorName: '团队协作', score: 80, weight: 50 },
+      ]),
+    };
+    service.performanceApprovalFlowService = {
+      submitAssessment: jest.fn().mockResolvedValue(undefined),
+    };
+    service.info = jest.fn().mockResolvedValue({ id: 61, status: 'submitted' });
+
+    await expect(service.submit(61)).resolves.toEqual({
+      id: 61,
+      status: 'submitted',
+    });
+
+    expect(service.performanceApprovalFlowService.submitAssessment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 61,
+        employeeId: 501,
+        departmentId: 18,
+      }),
+      expect.objectContaining({
+        totalScore: 85,
+        grade: 'A',
+      })
+    );
   });
 });

@@ -22,6 +22,8 @@ import { BaseSysDepartmentEntity } from '../../base/entity/sys/department';
 import { BaseSysUserEntity } from '../../base/entity/sys/user';
 import { PerformanceAssessmentEntity } from '../entity/assessment';
 import { PerformanceAssessmentScoreEntity } from '../entity/assessment-score';
+import { PerformanceApprovalFlowService } from './approval-flow';
+import { PerformanceSuggestionService } from './suggestion';
 import * as jwt from 'jsonwebtoken';
 import {
   AssessmentScoreInput,
@@ -60,6 +62,12 @@ export class PerformanceAssessmentService extends BaseService {
 
   @Inject()
   baseSysPermsService: BaseSysPermsService;
+
+  @Inject()
+  performanceSuggestionService: PerformanceSuggestionService;
+
+  @Inject()
+  performanceApprovalFlowService: PerformanceApprovalFlowService;
 
   @Inject()
   ctx;
@@ -376,15 +384,7 @@ export class PerformanceAssessmentService extends BaseService {
     });
     const summary = this.buildAssessmentSummary(scoreItems);
 
-    await this.performanceAssessmentEntity.update(
-      { id: assessment.id },
-      {
-        totalScore: summary.totalScore,
-        grade: summary.grade,
-        status: 'submitted',
-        submitTime: this.now(),
-      }
-    );
+    await this.performanceApprovalFlowService.submitAssessment(assessment, summary);
 
     return this.info(assessment.id);
   }
@@ -441,6 +441,10 @@ export class PerformanceAssessmentService extends BaseService {
       throw new CoolCommException('无权限执行审批操作');
     }
 
+    await this.performanceApprovalFlowService.assertManualReviewAllowed(
+      'assessment',
+      assessment.id
+    );
     assertAssessmentTransition(assessment.status as AssessmentStatus, action);
     this.assertCanReviewAssessment(assessment, perms);
 
@@ -452,6 +456,20 @@ export class PerformanceAssessmentService extends BaseService {
         approveTime: this.now(),
       }
     );
+
+    if (action === 'approve') {
+      await this.performanceSuggestionService.syncApprovedAssessment({
+        id: assessment.id,
+        employeeId: Number(assessment.employeeId),
+        departmentId: Number(assessment.departmentId),
+        periodType: assessment.periodType,
+        periodValue: assessment.periodValue,
+        status: 'approved',
+        grade: assessment.grade,
+        totalScore: Number(assessment.totalScore || 0),
+        tenantId: assessment.tenantId ?? null,
+      });
+    }
 
     return this.info(assessment.id);
   }

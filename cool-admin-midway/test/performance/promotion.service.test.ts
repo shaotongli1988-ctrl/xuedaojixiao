@@ -96,4 +96,90 @@ describe('performance promotion service', () => {
     );
     expect(service.info).toHaveBeenCalledWith(99);
   });
+
+  test('should launch approval flow after submit when configuration is enabled', async () => {
+    const service = new PerformancePromotionService() as any;
+    service.ctx = {
+      admin: {
+        userId: 9,
+        username: 'hr_admin',
+        roleIds: [1],
+      },
+    };
+    service.baseSysMenuService = {
+      getPerms: jest
+        .fn()
+        .mockResolvedValue(['performance:promotion:submit']),
+    };
+    service.performancePromotionEntity = {
+      findOneBy: jest.fn().mockResolvedValue({
+        id: 101,
+        employeeId: 2,
+        sponsorId: 9,
+        status: 'draft',
+        tenantId: 1,
+      }),
+    };
+    service.baseSysUserEntity = {
+      findOneBy: jest.fn().mockResolvedValue({
+        id: 2,
+        departmentId: 11,
+      }),
+    };
+    service.performanceApprovalFlowService = {
+      submitPromotion: jest.fn().mockResolvedValue(undefined),
+    };
+    service.info = jest.fn().mockResolvedValue({
+      id: 101,
+      status: 'reviewing',
+    });
+
+    await expect(service.submit(101)).resolves.toEqual({
+      id: 101,
+      status: 'reviewing',
+    });
+
+    expect(service.performanceApprovalFlowService.submitPromotion).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 101,
+        employeeId: 2,
+        sponsorId: 9,
+      })
+    );
+  });
+
+  test('should block legacy manual review when active approval instance exists', async () => {
+    const service = new PerformancePromotionService() as any;
+    service.ctx = {
+      admin: {
+        userId: 9,
+        username: 'manager_rd',
+        roleIds: [2],
+      },
+    };
+    service.baseSysMenuService = {
+      getPerms: jest
+        .fn()
+        .mockResolvedValue(['performance:promotion:review']),
+    };
+    service.performancePromotionEntity = {
+      findOneBy: jest.fn().mockResolvedValue({
+        id: 88,
+        employeeId: 2,
+        sponsorId: 9,
+        status: 'reviewing',
+      }),
+    };
+    service.performanceApprovalFlowService = {
+      assertManualReviewAllowed: jest
+        .fn()
+        .mockRejectedValue(
+          new Error('当前对象已启用自动审批流，请使用审批流接口处理')
+        ),
+    };
+
+    await expect(service.review(88, 'approved', '通过')).rejects.toThrow(
+      '当前对象已启用自动审批流，请使用审批流接口处理'
+    );
+  });
 });

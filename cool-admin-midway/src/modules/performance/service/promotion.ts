@@ -23,6 +23,7 @@ import { BaseSysUserEntity } from '../../base/entity/sys/user';
 import { PerformanceAssessmentEntity } from '../entity/assessment';
 import { PerformancePromotionEntity } from '../entity/promotion';
 import { PerformancePromotionRecordEntity } from '../entity/promotion-record';
+import { PerformanceApprovalFlowService } from './approval-flow';
 import * as jwt from 'jsonwebtoken';
 import {
   assertPromotionTransition,
@@ -63,6 +64,9 @@ export class PerformancePromotionService extends BaseService {
 
   @Inject()
   ctx;
+
+  @Inject()
+  performanceApprovalFlowService: PerformanceApprovalFlowService;
 
   @App()
   app: IMidwayApplication;
@@ -262,12 +266,7 @@ export class PerformancePromotionService extends BaseService {
     this.assertIsSponsor(promotion.sponsorId);
     assertPromotionTransition(promotion.status as PromotionStatus, 'submit');
 
-    await this.performancePromotionEntity.update(
-      { id: promotion.id },
-      {
-        status: 'reviewing',
-      }
-    );
+    await this.performanceApprovalFlowService.submitPromotion(promotion);
 
     return this.info(promotion.id);
   }
@@ -280,6 +279,10 @@ export class PerformancePromotionService extends BaseService {
       throw new CoolCommException('无权限评审晋升单');
     }
 
+    await this.performanceApprovalFlowService.assertManualReviewAllowed(
+      'promotion',
+      promotion.id
+    );
     await this.assertPromotionInScope(promotion.employeeId);
 
     const normalizedDecision = normalizePromotionDecision(decision);
@@ -501,5 +504,17 @@ export class PerformancePromotionService extends BaseService {
     const ss = String(now.getSeconds()).padStart(2, '0');
 
     return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+  }
+
+  private async resolveEmployeeDepartmentId(employeeId: number) {
+    const employee = await this.baseSysUserEntity.findOneBy({
+      id: employeeId,
+    });
+
+    if (!employee?.departmentId) {
+      throw new CoolCommException('员工部门不存在');
+    }
+
+    return Number(employee.departmentId);
   }
 }

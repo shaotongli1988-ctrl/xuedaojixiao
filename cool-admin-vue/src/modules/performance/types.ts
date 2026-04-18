@@ -164,6 +164,21 @@ export interface PipPageResult {
 	};
 }
 
+export interface PipExportRow {
+	id: number;
+	assessmentId?: number | null;
+	employeeId: number;
+	employeeName?: string;
+	ownerId: number;
+	ownerName?: string;
+	title: string;
+	startDate: string;
+	endDate: string;
+	status: string;
+	createTime?: string;
+	updateTime?: string;
+}
+
 export type IndicatorCategory = 'assessment' | 'goal' | 'feedback';
 export type IndicatorApplyScope = 'all' | 'department' | 'employee';
 
@@ -248,6 +263,17 @@ export interface FeedbackPageResult {
 	};
 }
 
+export interface FeedbackExportRow {
+	taskId: number;
+	assessmentId?: number | null;
+	employeeId: number;
+	title: string;
+	deadline?: string;
+	averageScore: number;
+	submittedCount: number;
+	totalCount: number;
+}
+
 export interface SalaryChangeRecord {
 	id?: number;
 	salaryId?: number;
@@ -321,6 +347,60 @@ export interface PromotionPageResult {
 		page: number;
 		size: number;
 		total: number;
+	};
+}
+
+export type SuggestionType = 'pip' | 'promotion';
+export type SuggestionStatus =
+	| 'pending'
+	| 'accepted'
+	| 'ignored'
+	| 'rejected'
+	| 'revoked';
+export type SuggestionRevokeReasonCode =
+	| 'thresholdError'
+	| 'assessmentCorrected'
+	| 'scopeError'
+	| 'duplicateSuggestion';
+
+export interface SuggestionRecord {
+	id?: number;
+	suggestionType: SuggestionType;
+	status?: SuggestionStatus;
+	assessmentId?: number;
+	employeeId?: number;
+	employeeName?: string;
+	departmentId?: number;
+	departmentName?: string;
+	periodType?: string;
+	periodValue?: string;
+	triggerLabel?: string;
+	createTime?: string;
+	handleTime?: string;
+	handlerId?: number | null;
+	handlerName?: string | null;
+	ruleVersion?: string;
+	revokeReason?: string;
+	linkedEntityType?: string | null;
+	linkedEntityId?: number | null;
+}
+
+export interface SuggestionPageResult {
+	list: SuggestionRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface SuggestionAcceptResult {
+	suggestion?: SuggestionRecord;
+	prefill?: {
+		assessmentId?: number;
+		employeeId?: number;
+		suggestionType?: SuggestionType;
+		suggestionId?: number;
 	};
 }
 
@@ -426,29 +506,3 @@ export function createEmptyPromotion(currentUserId?: number): PromotionRecord {
 		reviewRecords: []
 	};
 }
-export interface PipExportRow {
-	id: number;
-	assessmentId?: number | null;
-	employeeId: number;
-	employeeName?: string;
-	ownerId: number;
-	ownerName?: string;
-	title: string;
-	startDate: string;
-	endDate: string;
-	status: string;
-	createTime?: string;
-	updateTime?: string;
-}
-
-export interface FeedbackExportRow {
-	taskId: number;
-	assessmentId?: number | null;
-	employeeId: number;
-	title: string;
-	deadline?: string;
-	averageScore: number;
-	submittedCount: number;
-	totalCount: number;
-}
-

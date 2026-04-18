@@ -58,6 +58,7 @@
 					<el-button v-if="showAddButton" type="primary" @click="openCreate">
 						新建 PIP
 					</el-button>
+					<el-button v-if="showExportButton" @click="handleExport">导出摘要</el-button>
 				</div>
 			</div>
 		</el-card>
@@ -102,9 +103,14 @@
 						<h2>PIP 追踪</h2>
 						<el-tag effect="plain">模块 6</el-tag>
 					</div>
-					<el-tag v-if="presetAssessmentId" type="warning" effect="plain">
-						已带入评估单 #{{ presetAssessmentId }}
-					</el-tag>
+					<div class="pip-page__header-tags">
+						<el-tag v-if="presetAssessmentId" type="warning" effect="plain">
+							已带入评估单 #{{ presetAssessmentId }}
+						</el-tag>
+						<el-tag v-if="presetSuggestionId" type="primary" effect="plain">
+							来自建议 #{{ presetSuggestionId }}
+						</el-tag>
+					</div>
 				</div>
 			</template>
 
@@ -324,12 +330,14 @@ defineOptions({
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus';
 import { useRoute } from 'vue-router';
+import { export_json_to_excel } from '/@/plugins/excel/utils';
 import { service } from '/@/cool';
 import { checkPerm } from '/$/base/utils/permission';
 import PipTrackDrawer from '../../components/pip-track-drawer.vue';
 import { performanceAssessmentService } from '../../service/assessment';
 import { performancePipService } from '../../service/pip';
 import {
+	type PipExportRow,
 	type PipRecord,
 	type UserOption,
 	createEmptyPip
@@ -392,8 +400,13 @@ const statusOptions = [
 
 const canAccess = computed(() => checkPerm(performancePipService.permission.page));
 const showAddButton = computed(() => checkPerm(performancePipService.permission.add));
+const showExportButton = computed(() => checkPerm(performancePipService.permission.export));
 const presetAssessmentId = computed(() => {
 	const value = Number(route.query.assessmentId || 0);
+	return value || undefined;
+});
+const presetSuggestionId = computed(() => {
+	const value = Number(route.query.suggestionId || 0);
 	return value || undefined;
 });
 const dateRange = computed({
@@ -656,6 +669,52 @@ async function handleResultAction(row: PipRecord, action: 'complete' | 'close') 
 	}
 }
 
+async function handleExport() {
+	try {
+		const exportRows = await performancePipService.exportSummary({
+			keyword: filters.keyword || undefined,
+			employeeId: filters.employeeId,
+			ownerId: filters.ownerId,
+			status: filters.status || undefined,
+			assessmentId: presetAssessmentId.value
+		});
+
+		export_json_to_excel({
+			header: [
+				'PIP ID',
+				'来源评估单',
+				'员工ID',
+				'员工',
+				'负责人ID',
+				'负责人',
+				'标题',
+				'开始日期',
+				'结束日期',
+				'状态',
+				'创建时间',
+				'更新时间'
+			],
+			data: (exportRows || []).map((item: PipExportRow) => [
+				item.id,
+				item.assessmentId ?? '',
+				item.employeeId,
+				item.employeeName || '',
+				item.ownerId,
+				item.ownerName || '',
+				item.title,
+				item.startDate,
+				item.endDate,
+				statusLabel(item.status),
+				item.createTime || '',
+				item.updateTime || ''
+			]),
+			filename: `pip-summary-${Date.now()}`
+		});
+	} catch (error: any) {
+		ElMessage.error(error.message || '导出失败');
+	}
+}
+
 function canEdit(row: PipRecord) {
 	return checkPerm(performancePipService.permission.update) && row.status === 'draft';
 }
@@ -733,6 +792,12 @@ function statusTagType(status?: string) {
 		gap: 12px;
 	}
 
+	&__header-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
 	&__header-main {
 		display: flex;
 		align-items: center;
@@ -757,53 +822,3 @@ function statusTagType(status?: string) {
 	}
 }
 </style>
-					<el-button v-if="showExportButton" @click="handleExport">导出摘要</el-button>
-import { export_json_to_excel } from '/@/plugins/excel/utils';
-	type PipExportRow,
-const showExportButton = computed(() => checkPerm(performancePipService.permission.export));
-async function handleExport() {
-	try {
-		const exportRows = await performancePipService.exportSummary({
-			keyword: filters.keyword || undefined,
-			employeeId: filters.employeeId,
-			ownerId: filters.ownerId,
-			status: filters.status || undefined,
-			assessmentId: presetAssessmentId.value
-		});
-
-		export_json_to_excel({
-			header: [
-				'PIP ID',
-				'来源评估单',
-				'员工ID',
-				'员工',
-				'负责人ID',
-				'负责人',
-				'标题',
-				'开始日期',
-				'结束日期',
-				'状态',
-				'创建时间',
-				'更新时间'
-			],
-			data: (exportRows || []).map((item: PipExportRow) => [
-				item.id,
-				item.assessmentId ?? '',
-				item.employeeId,
-				item.employeeName || '',
-				item.ownerId,
-				item.ownerName || '',
-				item.title,
-				item.startDate,
-				item.endDate,
-				statusLabel(item.status),
-				item.createTime || '',
-				item.updateTime || ''
-			]),
-			filename: `pip-summary-${Date.now()}`
-		});
-	} catch (error: any) {
-		ElMessage.error(error.message || '导出失败');
-	}
-}
-

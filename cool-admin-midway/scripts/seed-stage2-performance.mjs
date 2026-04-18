@@ -19,6 +19,7 @@ const stage2MenuRouters = new Set([
   '/performance/goals',
   '/performance/indicator-library',
   '/performance/feedback',
+  '/performance/suggestion',
   '/performance/pip',
   '/performance/promotion',
   '/performance/salary',
@@ -734,12 +735,160 @@ async function ensureFeedbackTables() {
   `);
 }
 
+async function ensureApprovalTables() {
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_approval_config (
+      id int NOT NULL AUTO_INCREMENT,
+      objectType varchar(30) NOT NULL,
+      version varchar(30) NOT NULL,
+      enabled tinyint(1) NOT NULL DEFAULT 0,
+      notifyMode varchar(30) NOT NULL DEFAULT 'interface_only',
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_approval_config_object_type (objectType),
+      KEY idx_performance_approval_config_version (version),
+      KEY idx_performance_approval_config_enabled (enabled),
+      KEY idx_performance_approval_config_create_time (createTime),
+      KEY idx_performance_approval_config_update_time (updateTime),
+      KEY idx_performance_approval_config_tenant (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_approval_config_node (
+      id int NOT NULL AUTO_INCREMENT,
+      configId int NOT NULL,
+      nodeOrder int NOT NULL,
+      nodeCode varchar(50) NOT NULL,
+      nodeName varchar(100) NOT NULL,
+      resolverType varchar(50) NOT NULL,
+      resolverValue varchar(200) DEFAULT NULL,
+      timeoutHours int DEFAULT NULL,
+      allowTransfer tinyint(1) NOT NULL DEFAULT 1,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_approval_config_node_order (configId, nodeOrder),
+      KEY idx_performance_approval_config_node_config_id (configId),
+      KEY idx_performance_approval_config_node_resolver_type (resolverType),
+      KEY idx_performance_approval_config_node_create_time (createTime),
+      KEY idx_performance_approval_config_node_update_time (updateTime),
+      KEY idx_performance_approval_config_node_tenant (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_approval_instance (
+      id int NOT NULL AUTO_INCREMENT,
+      objectType varchar(30) NOT NULL,
+      objectId int NOT NULL,
+      sourceStatus varchar(30) NOT NULL,
+      configId int NOT NULL,
+      configVersion varchar(30) NOT NULL,
+      applicantId int NOT NULL,
+      employeeId int NOT NULL,
+      departmentId int NOT NULL,
+      status varchar(30) NOT NULL DEFAULT 'pending_resolution',
+      currentNodeOrder int DEFAULT NULL,
+      currentApproverId int DEFAULT NULL,
+      launchTime varchar(19) NOT NULL,
+      finishTime varchar(19) DEFAULT NULL,
+      fallbackReason varchar(500) DEFAULT NULL,
+      fallbackOperatorId int DEFAULT NULL,
+      terminateReason varchar(500) DEFAULT NULL,
+      terminateOperatorId int DEFAULT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      KEY idx_approval_instance_object_status (objectType, objectId, status),
+      KEY idx_performance_approval_instance_source_status (sourceStatus),
+      KEY idx_performance_approval_instance_config_id (configId),
+      KEY idx_performance_approval_instance_applicant_id (applicantId),
+      KEY idx_performance_approval_instance_employee_id (employeeId),
+      KEY idx_performance_approval_instance_department_id (departmentId),
+      KEY idx_performance_approval_instance_status (status),
+      KEY idx_performance_approval_instance_current_node_order (currentNodeOrder),
+      KEY idx_approval_instance_current_approver (currentApproverId),
+      KEY idx_performance_approval_instance_launch_time (launchTime),
+      KEY idx_performance_approval_instance_finish_time (finishTime),
+      KEY idx_performance_approval_instance_fallback_operator_id (fallbackOperatorId),
+      KEY idx_performance_approval_instance_terminate_operator_id (terminateOperatorId),
+      KEY idx_performance_approval_instance_create_time (createTime),
+      KEY idx_performance_approval_instance_update_time (updateTime),
+      KEY idx_performance_approval_instance_tenant (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_approval_instance_node (
+      id int NOT NULL AUTO_INCREMENT,
+      instanceId int NOT NULL,
+      nodeOrder int NOT NULL,
+      nodeCode varchar(50) NOT NULL,
+      nodeName varchar(100) NOT NULL,
+      resolverType varchar(50) NOT NULL,
+      resolverValueSnapshot varchar(200) DEFAULT NULL,
+      allowTransfer tinyint(1) NOT NULL DEFAULT 1,
+      approverId int DEFAULT NULL,
+      status varchar(20) NOT NULL DEFAULT 'pending',
+      actionTime varchar(19) DEFAULT NULL,
+      transferFromUserId int DEFAULT NULL,
+      transferReason varchar(500) DEFAULT NULL,
+      comment text DEFAULT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_approval_instance_node_order (instanceId, nodeOrder),
+      KEY idx_performance_approval_instance_node_instance_id (instanceId),
+      KEY idx_performance_approval_instance_node_resolver_type (resolverType),
+      KEY idx_performance_approval_instance_node_approver_id (approverId),
+      KEY idx_performance_approval_instance_node_status (status),
+      KEY idx_performance_approval_instance_node_action_time (actionTime),
+      KEY idx_performance_approval_instance_node_transfer_from_user_id (transferFromUserId),
+      KEY idx_performance_approval_instance_node_create_time (createTime),
+      KEY idx_performance_approval_instance_node_update_time (updateTime),
+      KEY idx_performance_approval_instance_node_tenant (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_approval_action_log (
+      id int NOT NULL AUTO_INCREMENT,
+      instanceId int NOT NULL,
+      instanceNodeId int DEFAULT NULL,
+      action varchar(30) NOT NULL,
+      operatorId int NOT NULL,
+      fromStatus varchar(30) DEFAULT NULL,
+      toStatus varchar(30) DEFAULT NULL,
+      reason varchar(500) DEFAULT NULL,
+      detail varchar(1000) DEFAULT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      KEY idx_approval_action_instance_time (instanceId, createTime),
+      KEY idx_performance_approval_action_log_instance_node_id (instanceNodeId),
+      KEY idx_performance_approval_action_log_action (action),
+      KEY idx_performance_approval_action_log_operator_id (operatorId),
+      KEY idx_performance_approval_action_log_create_time (createTime),
+      KEY idx_performance_approval_action_log_update_time (updateTime),
+      KEY idx_performance_approval_action_log_tenant (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
 async function main() {
   await connection.beginTransaction();
 
   try {
     await syncMenuTree(loadStage2PerformanceMenus());
     await ensureFeedbackTables();
+    await ensureApprovalTables();
 
     const headquartersId = await ensureDepartment({
       name: '总部',
@@ -777,8 +926,8 @@ async function main() {
       name: 'HR管理员',
       nickName: 'HR管理员',
       departmentId: hrDepartmentId,
-      phone: '18000001001',
-      email: 'hr_admin@local.test',
+      phone: 'stage2-hr-0001',
+      email: 'stage2-hr-mailbox',
       remark: '阶段2联调-HR管理员',
     });
     const managerUserId = await ensureUser({
@@ -786,8 +935,8 @@ async function main() {
       name: '研发经理',
       nickName: '研发经理',
       departmentId: rdCenterId,
-      phone: '18000001002',
-      email: 'manager_rd@local.test',
+      phone: 'stage2-manager-0001',
+      email: 'stage2-manager-mailbox',
       remark: '阶段2联调-部门经理',
     });
     const employeeUserId = await ensureUser({
@@ -795,8 +944,8 @@ async function main() {
       name: '平台员工',
       nickName: '平台员工',
       departmentId: platformGroupId,
-      phone: '18000001003',
-      email: 'employee_platform@local.test',
+      phone: 'stage2-employee-0001',
+      email: 'stage2-employee-mailbox',
       remark: '阶段2联调-普通员工',
     });
     const feedbackUserId = await ensureUser({
@@ -804,8 +953,8 @@ async function main() {
       name: '环评价人',
       nickName: '环评价人',
       departmentId: businessGroupId,
-      phone: '18000001004',
-      email: 'feedback_peer@local.test',
+      phone: 'stage2-feedback-0001',
+      email: 'stage2-feedback-mailbox',
       remark: '阶段2联调-环评价人',
     });
     const salesEmployeeUserId = await ensureUser({
@@ -813,8 +962,8 @@ async function main() {
       name: '销售员工',
       nickName: '销售员工',
       departmentId: salesCenterId,
-      phone: '18000001005',
-      email: 'employee_sales@local.test',
+      phone: 'stage2-sales-0001',
+      email: 'stage2-sales-mailbox',
       remark: '阶段2联调-跨部门校验样例',
     });
 
@@ -827,6 +976,7 @@ async function main() {
         '/performance/goals',
         '/performance/indicator-library',
         '/performance/feedback',
+        '/performance/suggestion',
         '/performance/pip',
         '/performance/promotion',
         '/performance/salary',
@@ -841,6 +991,17 @@ async function main() {
         'performance:assessment:delete',
         'performance:assessment:pendingPage',
         'performance:assessment:export',
+        'performance:approvalFlow:configInfo',
+        'performance:approvalFlow:configSave',
+        'performance:approvalFlow:info',
+        'performance:approvalFlow:approve',
+        'performance:approvalFlow:reject',
+        'performance:approvalFlow:transfer',
+        'performance:approvalFlow:withdraw',
+        'performance:approvalFlow:remind',
+        'performance:approvalFlow:resolve',
+        'performance:approvalFlow:fallback',
+        'performance:approvalFlow:terminate',
         'performance:goal:page',
         'performance:goal:info',
         'performance:goal:add',
@@ -853,6 +1014,13 @@ async function main() {
         'performance:feedback:add',
         'performance:feedback:submit',
         'performance:feedback:summary',
+        'performance:feedback:export',
+        'performance:suggestion:page',
+        'performance:suggestion:info',
+        'performance:suggestion:accept',
+        'performance:suggestion:ignore',
+        'performance:suggestion:reject',
+        'performance:suggestion:revoke',
         'performance:indicator:page',
         'performance:indicator:info',
         'performance:indicator:add',
@@ -866,6 +1034,7 @@ async function main() {
         'performance:pip:track',
         'performance:pip:complete',
         'performance:pip:close',
+        'performance:pip:export',
         'performance:promotion:page',
         'performance:promotion:info',
         'performance:promotion:add',
@@ -889,6 +1058,7 @@ async function main() {
         '/performance/pending',
         '/performance/goals',
         '/performance/feedback',
+        '/performance/suggestion',
         '/performance/pip',
         '/performance/promotion',
       ],
@@ -903,6 +1073,12 @@ async function main() {
         'performance:assessment:pendingPage',
         'performance:assessment:approve',
         'performance:assessment:reject',
+        'performance:approvalFlow:info',
+        'performance:approvalFlow:approve',
+        'performance:approvalFlow:reject',
+        'performance:approvalFlow:transfer',
+        'performance:approvalFlow:withdraw',
+        'performance:approvalFlow:remind',
         'performance:goal:page',
         'performance:goal:info',
         'performance:goal:add',
@@ -915,6 +1091,12 @@ async function main() {
         'performance:feedback:add',
         'performance:feedback:submit',
         'performance:feedback:summary',
+        'performance:feedback:export',
+        'performance:suggestion:page',
+        'performance:suggestion:info',
+        'performance:suggestion:accept',
+        'performance:suggestion:ignore',
+        'performance:suggestion:reject',
         'performance:pip:page',
         'performance:pip:info',
         'performance:pip:add',
@@ -923,6 +1105,7 @@ async function main() {
         'performance:pip:track',
         'performance:pip:complete',
         'performance:pip:close',
+        'performance:pip:export',
         'performance:promotion:page',
         'performance:promotion:info',
         'performance:promotion:add',
@@ -938,6 +1121,9 @@ async function main() {
         'performance:assessment:info',
         'performance:assessment:update',
         'performance:assessment:submit',
+        'performance:approvalFlow:info',
+        'performance:approvalFlow:withdraw',
+        'performance:approvalFlow:remind',
         'performance:goal:page',
         'performance:goal:info',
         'performance:goal:update',
@@ -1447,7 +1633,3 @@ async function main() {
 }
 
 await main();
-        'performance:feedback:export',
-        'performance:pip:export',
-        'performance:feedback:export',
-        'performance:pip:export',
