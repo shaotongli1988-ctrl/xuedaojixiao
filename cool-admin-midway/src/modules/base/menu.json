@@ -1266,6 +1266,18 @@
                         "keepAlive": true,
                         "isShow": true,
                         "childMenus": []
+                    },
+                    {
+                        "name": "导出汇总",
+                        "router": null,
+                        "perms": "performance:feedback:export",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 5,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
                     }
                 ]
             },
@@ -1448,6 +1460,18 @@
                         "keepAlive": true,
                         "isShow": true,
                         "childMenus": []
+                    },
+                    {
+                        "name": "导出摘要",
+                        "router": null,
+                        "perms": "performance:pip:export",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 8,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
                     }
                 ]
             },
@@ -1612,27 +1636,3 @@
         ]
     }
 ]
-                    },
-                    {
-                        "name": "导出汇总",
-                        "router": null,
-                        "perms": "performance:feedback:export",
-                        "type": 2,
-                        "icon": null,
-                        "orderNum": 5,
-                        "viewPath": null,
-                        "keepAlive": true,
-                        "isShow": true,
-                        "childMenus": []
-                    },
-                    {
-                        "name": "导出摘要",
-                        "router": null,
-                        "perms": "performance:pip:export",
-                        "type": 2,
-                        "icon": null,
-                        "orderNum": 8,
-                        "viewPath": null,
-                        "keepAlive": true,
-                        "isShow": true,
-                        "childMenus": []

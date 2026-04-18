@@ -90,8 +90,13 @@
 		<el-card shadow="never">
 			<template #header>
 				<div class="promotion-page__header">
-					<h2>晋升管理</h2>
-					<el-tag effect="plain">模块 7</el-tag>
+					<div class="promotion-page__header-main">
+						<h2>晋升管理</h2>
+						<el-tag effect="plain">模块 7</el-tag>
+					</div>
+					<el-tag v-if="presetSuggestionId" type="primary" effect="plain">
+						来自建议 #{{ presetSuggestionId }}
+					</el-tag>
 				</div>
 			</template>
 
@@ -316,6 +321,10 @@ const statusOptions = [
 
 const canAccess = computed(() => checkPerm(performancePromotionService.permission.page));
 const showAddButton = computed(() => checkPerm(performancePromotionService.permission.add));
+const presetSuggestionId = computed(() => {
+	const value = Number(route.query.suggestionId || 0);
+	return value || undefined;
+});
 const detailCanReview = computed(() => {
 	if (!detailPromotion.value) {
 		return false;
@@ -572,6 +581,12 @@ function statusTagType(status?: string) {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+		gap: 12px;
+	}
+
+	&__header-main {
+		display: flex;
+		align-items: center;
 		gap: 12px;
 
 		h2 {
