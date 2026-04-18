@@ -1036,6 +1036,31 @@ declare namespace Eps {
 		list: any[];
 	}
 
+	interface PerformanceCapabilityModelPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceCertificatePageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceContractPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceCoursePracticePageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceCourseRecitePageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
 	interface PerformanceCoursePageResponse {
 		pagination: PagePagination;
 		list: any[];
@@ -1076,12 +1101,27 @@ declare namespace Eps {
 		list: any[];
 	}
 
+	interface PerformancePurchaseOrderPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
 	interface PerformanceSalaryPageResponse {
 		pagination: PagePagination;
 		list: any[];
 	}
 
 	interface PerformanceSuggestionPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceSupplierPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceTalentAssetPageResponse {
 		pagination: PagePagination;
 		list: any[];
 	}
@@ -1217,6 +1257,11 @@ declare namespace Eps {
 		refreshToken(data?: any): Promise<any>;
 
 		/**
+		 * 运行态元信息
+		 */
+		runtimeMeta(data?: any): Promise<any>;
+
+		/**
 		 * 验证码
 		 */
 		captcha(data?: any): Promise<any>;
@@ -1241,6 +1286,7 @@ declare namespace Eps {
 		 */
 		permission: {
 			refreshToken: string;
+			runtimeMeta: string;
 			captcha: string;
 			login: string;
 			html: string;
@@ -1252,6 +1298,7 @@ declare namespace Eps {
 		 */
 		_permission: {
 			refreshToken: boolean;
+			runtimeMeta: boolean;
 			captcha: boolean;
 			login: boolean;
 			html: boolean;
@@ -1994,6 +2041,258 @@ declare namespace Eps {
 		request: Request;
 	}
 
+	interface PerformanceCapabilityItem {
+		/**
+		 * 能力项详情
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { info: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: { info: boolean };
+
+		request: Request;
+	}
+
+	interface PerformanceCapabilityModel {
+		/**
+		 * 修改能力模型
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * 能力模型分页
+		 */
+		page(data?: any): Promise<PerformanceCapabilityModelPageResponse>;
+
+		/**
+		 * 能力模型详情
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 新增能力模型
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { update: string; page: string; info: string; add: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: { update: boolean; page: boolean; info: boolean; add: boolean };
+
+		request: Request;
+	}
+
+	interface PerformanceCapabilityPortrait {
+		/**
+		 * 能力画像摘要
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { info: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: { info: boolean };
+
+		request: Request;
+	}
+
+	interface PerformanceCertificate {
+		/**
+		 * 证书发放记录分页
+		 */
+		recordPage(data?: any): Promise<any>;
+
+		/**
+		 * 修改证书
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * 发放证书
+		 */
+		issue(data?: any): Promise<any>;
+
+		/**
+		 * 证书分页
+		 */
+		page(data?: any): Promise<PerformanceCertificatePageResponse>;
+
+		/**
+		 * 证书详情
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 新增证书
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			recordPage: string;
+			update: string;
+			issue: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			recordPage: boolean;
+			update: boolean;
+			issue: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceContract {
+		/**
+		 * 修改合同
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * 删除合同
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * 合同分页
+		 */
+		page(data?: any): Promise<PerformanceContractPageResponse>;
+
+		/**
+		 * 合同详情
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 新增合同
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { update: string; delete: string; page: string; info: string; add: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			update: boolean;
+			delete: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceCourseExam {
+		/**
+		 * 考试结果摘要
+		 */
+		summary(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { summary: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: { summary: boolean };
+
+		request: Request;
+	}
+
+	interface PerformanceCoursePractice {
+		/**
+		 * 提交练习任务
+		 */
+		submit(data?: any): Promise<any>;
+
+		/**
+		 * 练习任务分页
+		 */
+		page(data?: any): Promise<PerformanceCoursePracticePageResponse>;
+
+		/**
+		 * 练习任务详情
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { submit: string; page: string; info: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: { submit: boolean; page: boolean; info: boolean };
+
+		request: Request;
+	}
+
+	interface PerformanceCourseRecite {
+		/**
+		 * 提交背诵任务
+		 */
+		submit(data?: any): Promise<any>;
+
+		/**
+		 * 背诵任务分页
+		 */
+		page(data?: any): Promise<PerformanceCourseRecitePageResponse>;
+
+		/**
+		 * 背诵任务详情
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { submit: string; page: string; info: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: { submit: boolean; page: boolean; info: boolean };
+
+		request: Request;
+	}
+
 	interface PerformanceCourse {
 		/**
 		 * 课程报名列表
@@ -2484,6 +2783,51 @@ declare namespace Eps {
 		request: Request;
 	}
 
+	interface PerformancePurchaseOrder {
+		/**
+		 * 修改采购订单
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * 删除采购订单
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * 采购订单分页
+		 */
+		page(data?: any): Promise<PerformancePurchaseOrderPageResponse>;
+
+		/**
+		 * 采购订单详情
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 新增采购订单
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { update: string; delete: string; page: string; info: string; add: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			update: boolean;
+			delete: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
 	interface PerformanceSalary {
 		/**
 		 * 新增薪资调整记录
@@ -2602,6 +2946,96 @@ declare namespace Eps {
 			revoke: boolean;
 			page: boolean;
 			info: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceSupplier {
+		/**
+		 * 修改供应商
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * 删除供应商
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * 供应商分页
+		 */
+		page(data?: any): Promise<PerformanceSupplierPageResponse>;
+
+		/**
+		 * 供应商详情
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 新增供应商
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { update: string; delete: string; page: string; info: string; add: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			update: boolean;
+			delete: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceTalentAsset {
+		/**
+		 * 修改人才资产
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * 删除人才资产
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * 人才资产分页
+		 */
+		page(data?: any): Promise<PerformanceTalentAssetPageResponse>;
+
+		/**
+		 * 人才资产详情
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 新增人才资产
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { update: string; delete: string; page: string; info: string; add: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			update: boolean;
+			delete: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
 		};
 
 		request: Request;
@@ -3047,6 +3481,14 @@ declare namespace Eps {
 		performance: {
 			approvalFlow: PerformanceApprovalFlow;
 			assessment: PerformanceAssessment;
+			capabilityItem: PerformanceCapabilityItem;
+			capabilityModel: PerformanceCapabilityModel;
+			capabilityPortrait: PerformanceCapabilityPortrait;
+			certificate: PerformanceCertificate;
+			contract: PerformanceContract;
+			courseExam: PerformanceCourseExam;
+			coursePractice: PerformanceCoursePractice;
+			courseRecite: PerformanceCourseRecite;
 			course: PerformanceCourse;
 			dashboard: PerformanceDashboard;
 			feedback: PerformanceFeedback;
@@ -3056,8 +3498,11 @@ declare namespace Eps {
 			meeting: PerformanceMeeting;
 			pip: PerformancePip;
 			promotion: PerformancePromotion;
+			purchaseOrder: PerformancePurchaseOrder;
 			salary: PerformanceSalary;
 			suggestion: PerformanceSuggestion;
+			supplier: PerformanceSupplier;
+			talentAsset: PerformanceTalentAsset;
 		};
 		plugin: { info: PluginInfo };
 		recycle: { data: RecycleData };

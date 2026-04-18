@@ -1424,3 +1424,589 @@
 2. 会议签到只允许在 `in_progress` 状态执行，且首批为会议级签到动作，不做逐参会人签到明细。
 3. 首批不返回会议纪要、评论、评分和效能分析全文。
 4. 经理创建或编辑会议时，`organizerId / participantIds` 只能落在本人部门树范围内。
+
+## 二期主题 10：合同管理接口冻结基线（2026-04-18）
+
+本节只冻结合同管理进入设计 / 开发前必须遵守的最小接口方向，不代表主题 10 已完成阶段 0 冻结。
+
+### 当前冻结结论
+
+- 当前唯一结论：`合同管理接口方向已冻结`
+
+### 资源边界
+
+1. 主题 10 统一资源名固定为 `contract`
+2. 首批只冻结合同台账主链，不扩到：
+   - 电子签署
+   - PDF 预览
+   - 手写签名板
+   - 自动审批流
+   - 归档下载
+3. 首批不冻结合同附件全文、签署轨迹、审批历史和员工侧签收动作
+
+### 标准接口
+
+| 接口名称 | 请求路径 | 请求方式 | 权限要求 |
+| --- | --- | --- | --- |
+| 合同分页 | `/admin/performance/contract/page` | `POST` | `performance:contract:page` |
+| 合同详情 | `/admin/performance/contract/info` | `GET` | `performance:contract:info` |
+| 新增合同 | `/admin/performance/contract/add` | `POST` | `performance:contract:add` |
+| 修改合同 | `/admin/performance/contract/update` | `POST` | `performance:contract:update` |
+| 删除合同 | `/admin/performance/contract/delete` | `POST` | `performance:contract:delete` |
+
+### 合同分页请求参数
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| page | number | 是 | 页码 |
+| size | number | 是 | 页大小 |
+| employeeId | number | 否 | 员工筛选 |
+| type | string | 否 | 合同类型筛选 |
+| status | string | 否 | `draft / active / expired / terminated` |
+| keyword | string | 否 | 标题 / 合同编号关键字 |
+
+### 合同新增 / 修改请求字段
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| employeeId | number | 是 | 员工 ID |
+| type | string | 是 | `full-time / part-time / internship / other` |
+| title | string | 否 | 合同标题 |
+| contractNumber | string | 否 | 合同编号 |
+| startDate | string | 是 | 开始日期 |
+| endDate | string | 是 | 结束日期，必须晚于开始日期 |
+| probationPeriod | number | 否 | 试用期（月） |
+| salary | number | 否 | 薪资金额，仅 `HR` 可见 |
+| position | string | 否 | 岗位名称 |
+| departmentId | number | 否 | 部门 ID |
+| status | string | 否 | 默认 `draft`，只允许 `draft / active / expired / terminated` |
+
+### 合同详情返回最小字段
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | number | 主键 |
+| employeeId | number | 员工 ID |
+| employeeName | string | 员工姓名 |
+| type | string | 合同类型 |
+| title | string | 合同标题 |
+| contractNumber | string | 合同编号 |
+| startDate | string | 开始日期 |
+| endDate | string | 结束日期 |
+| probationPeriod | number \| null | 试用期（月） |
+| salary | number \| null | 薪资金额，仅 `HR` 可见 |
+| position | string | 岗位名称 |
+| departmentId | number \| null | 部门 ID |
+| departmentName | string | 部门名称 |
+| status | string | 合同状态 |
+| createTime | string | 创建时间 |
+| updateTime | string | 更新时间 |
+
+### 业务规则
+
+1. 首批 API 只允许 `page / info / add / update / delete`，不新增 `sign / preview / archive / approve` 等动作。
+2. 首批合同状态只表示台账状态，不表示电子签署或审批进度。
+3. 删除只允许在 `draft` 状态执行。
+4. 首批不与主题 5 自动审批流耦合，不通过合同资源自动创建审批实例。
+
+## 二期主题 11：采购与供应商管理接口冻结基线（2026-04-18）
+
+本节只冻结采购与供应商管理进入设计 / 开发前必须遵守的最小接口方向，不代表主题 11 已完成阶段 0 冻结。
+
+### 当前冻结结论
+
+- 当前唯一结论：`采购与供应商管理接口方向已冻结`
+
+### 资源边界
+
+1. 主题 11 允许在同一冻结包内同时定义两组最小资源：
+   - `purchaseOrder`
+   - `supplier`
+2. 首批只冻结采购订单与供应商台账主链，不扩到：
+   - 采购计划
+   - 询价管理
+   - 收货管理
+   - 采购报表
+   - 对账 / 付款
+   - 外部 ERP / 财务系统接入
+3. 首批 API 固定只允许 `page / info / add / update / delete`，不提前引入 `submit / approve / receive / pay` 等复杂采购流动作接口。
+
+### 标准接口
+
+| 接口名称 | 请求路径 | 请求方式 | 权限要求 |
+| --- | --- | --- | --- |
+| 采购订单分页 | `/admin/performance/purchaseOrder/page` | `POST` | `performance:purchaseOrder:page` |
+| 采购订单详情 | `/admin/performance/purchaseOrder/info` | `GET` | `performance:purchaseOrder:info` |
+| 新增采购订单 | `/admin/performance/purchaseOrder/add` | `POST` | `performance:purchaseOrder:add` |
+| 修改采购订单 | `/admin/performance/purchaseOrder/update` | `POST` | `performance:purchaseOrder:update` |
+| 删除采购订单 | `/admin/performance/purchaseOrder/delete` | `POST` | `performance:purchaseOrder:delete` |
+| 供应商分页 | `/admin/performance/supplier/page` | `POST` | `performance:supplier:page` |
+| 供应商详情 | `/admin/performance/supplier/info` | `GET` | `performance:supplier:info` |
+| 新增供应商 | `/admin/performance/supplier/add` | `POST` | `performance:supplier:add` |
+| 修改供应商 | `/admin/performance/supplier/update` | `POST` | `performance:supplier:update` |
+| 删除供应商 | `/admin/performance/supplier/delete` | `POST` | `performance:supplier:delete` |
+
+### 采购订单分页请求参数
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| page | number | 是 | 页码 |
+| size | number | 是 | 页大小 |
+| keyword | string | 否 | 订单编号 / 标题关键字 |
+| supplierId | number | 否 | 供应商 ID |
+| departmentId | number | 否 | 申请部门 ID；最终仍由服务端按权限裁剪 |
+| status | string | 否 | `draft / active / cancelled` |
+| startDate | string | 否 | 采购日期开始 |
+| endDate | string | 否 | 采购日期结束 |
+
+### 采购订单新增 / 修改请求字段
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| orderNo | string | 否 | 订单编号；允许为空，如填写需唯一 |
+| title | string | 是 | 采购标题 |
+| supplierId | number | 是 | 供应商 ID |
+| departmentId | number | 是 | 申请部门 ID |
+| requesterId | number | 是 | 申请人 ID |
+| orderDate | string | 是 | 采购日期 |
+| totalAmount | number | 是 | 订单总金额 |
+| currency | string | 否 | 币种，默认 `CNY` |
+| remark | string | 否 | 备注 |
+| status | string | 否 | 默认 `draft`；合法值见状态机 |
+
+### 采购订单详情返回最小字段
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | number | 主键 |
+| orderNo | string \| null | 订单编号 |
+| title | string | 采购标题 |
+| supplierId | number | 供应商 ID |
+| supplierName | string | 供应商名称 |
+| departmentId | number | 申请部门 ID |
+| departmentName | string | 申请部门名称 |
+| requesterId | number | 申请人 ID |
+| requesterName | string | 申请人姓名 |
+| orderDate | string | 采购日期 |
+| totalAmount | number | 订单总金额；字段裁剪见 `12` |
+| currency | string | 币种 |
+| remark | string \| null | 备注 |
+| status | string | 采购订单状态 |
+| createTime | string | 创建时间 |
+| updateTime | string | 更新时间 |
+
+### 供应商分页请求参数
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| page | number | 是 | 页码 |
+| size | number | 是 | 页大小 |
+| keyword | string | 否 | 供应商名称 / 编码关键字 |
+| category | string | 否 | 供应商分类 |
+| status | string | 否 | `active / inactive` |
+
+### 供应商新增 / 修改请求字段
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| name | string | 是 | 供应商名称 |
+| code | string | 否 | 供应商编码；允许为空，如填写需唯一 |
+| category | string | 否 | 分类，自由文本 |
+| contactName | string | 否 | 联系人姓名 |
+| contactPhone | string | 否 | 联系电话 |
+| contactEmail | string | 否 | 联系邮箱 |
+| bankAccount | string | 否 | 银行账户 |
+| taxNo | string | 否 | 税号 |
+| remark | string | 否 | 备注 |
+| status | string | 否 | 默认 `active`；合法值见状态机 |
+
+### 供应商详情返回最小字段
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | number | 主键 |
+| name | string | 供应商名称 |
+| code | string \| null | 供应商编码 |
+| category | string \| null | 供应商分类 |
+| contactName | string \| null | 联系人姓名；字段裁剪见 `12` |
+| contactPhone | string \| null | 联系电话；字段裁剪见 `12` |
+| contactEmail | string \| null | 联系邮箱；字段裁剪见 `12` |
+| bankAccount | string \| null | 银行账户；字段裁剪见 `12` |
+| taxNo | string \| null | 税号；字段裁剪见 `12` |
+| remark | string \| null | 备注 |
+| status | string | 供应商状态 |
+| createTime | string | 创建时间 |
+| updateTime | string | 更新时间 |
+
+### 业务规则
+
+1. 采购与供应商管理允许作为同一主题 11 冻结包中的两组最小 API 共同冻结，但仍不得口头扩展为采购全链。
+2. 采购订单删除只允许在 `draft` 状态执行。
+3. 供应商删除只允许在 `inactive` 状态执行，且首批要求无关联有效采购订单。
+4. 首批不新增订单明细行、收货记录、付款记录、审批轨迹等扩展对象。
+5. 首批不把供应商详情扩展为结算中心；银行账户、税号、联系人等敏感字段的查看口径以 [12-数据权限与脱敏规则.md](/Users/shaotongli/Documents/xuedao/performance-management-system/docs/12-数据权限与脱敏规则.md) 为准。
+
+## 二期主题 12：招聘人才资产增强接口冻结基线（2026-04-18）
+
+本节只冻结招聘人才资产增强进入开发前评审前必须遵守的最小接口方向，不代表主题 12 已进入实现开发。
+
+### 当前冻结结论
+
+- 当前唯一结论：`招聘人才资产增强接口方向已冻结，且主题12已完成阶段0冻结`
+
+### 资源边界
+
+1. 主题 12 统一资源名固定为 `talentAsset`
+2. “人才库”并入 `talentAsset` 同一资源，当前等价于未入职优秀人才池摘要视图
+3. 首批只冻结人才资产摘要主链，不扩到：
+   - 主题8面试管理主链
+   - 招聘计划
+   - 简历池全文管理
+   - 录用管理
+   - 内部员工人才画像 / 能力画像
+4. 首批不冻结联系方式下载、简历附件下载和人才档案导出
+
+### 标准接口
+
+| 接口名称 | 请求路径 | 请求方式 | 权限要求 |
+| --- | --- | --- | --- |
+| 人才资产分页 | `/admin/performance/talentAsset/page` | `POST` | `performance:talentAsset:page` |
+| 人才资产详情 | `/admin/performance/talentAsset/info` | `GET` | `performance:talentAsset:info` |
+| 新增人才资产 | `/admin/performance/talentAsset/add` | `POST` | `performance:talentAsset:add` |
+| 修改人才资产 | `/admin/performance/talentAsset/update` | `POST` | `performance:talentAsset:update` |
+| 删除人才资产 | `/admin/performance/talentAsset/delete` | `POST` | `performance:talentAsset:delete` |
+
+### 人才资产分页请求参数
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| page | number | 是 | 页码 |
+| size | number | 是 | 页大小 |
+| keyword | string | 否 | 候选人才姓名 / 目标岗位关键词 |
+| targetDepartmentId | number | 否 | 目标部门 ID |
+| source | string | 否 | 来源摘要 |
+| tag | string | 否 | 标签关键字 |
+| status | string | 否 | `new / tracking / archived` |
+
+### 人才资产新增 / 修改请求字段
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| candidateName | string | 是 | 候选人才姓名 |
+| targetDepartmentId | number | 是 | 目标部门 ID，经理范围按此字段判定 |
+| targetPosition | string | 否 | 目标岗位摘要 |
+| source | string | 是 | 来源摘要，首批固定为自由文本 |
+| tagList | string[] | 否 | 标签列表，首批固定为自由标签 |
+| followUpSummary | string | 否 | 跟进摘要 |
+| nextFollowUpDate | string | 否 | 下次跟进日期 |
+| status | string | 否 | 默认 `new` |
+
+### 人才资产详情返回最小字段
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | number | 主键 |
+| candidateName | string | 候选人才姓名 |
+| targetDepartmentId | number | 目标部门 ID |
+| targetDepartmentName | string | 目标部门名称 |
+| targetPosition | string \| null | 目标岗位摘要 |
+| source | string | 来源摘要 |
+| tagList | string[] | 标签列表 |
+| followUpSummary | string \| null | 跟进摘要 |
+| nextFollowUpDate | string \| null | 下次跟进日期 |
+| status | string | 当前状态 |
+| createTime | string | 创建时间 |
+| updateTime | string | 更新时间 |
+
+### 业务规则
+
+1. “人才库”不再单独定义为第二套资源模型，统一视为 `talentAsset` 的列表 / 详情视图。
+2. 首批不新增 `convertToInterview` 接口。
+3. 允许从人才资产详情跳转到主题8面试新增页并预填 `candidateName / targetDepartmentId / targetPosition`，但不自动创建面试单。
+4. 首批不返回候选人联系方式、简历全文、附件全文和外部简历链接。
+5. 删除只允许在 `new` 状态执行。
+
+## 二期主题 13：人才发展与认证增强接口冻结基线（2026-04-18）
+
+本节只冻结人才发展与认证增强进入开发前评审前必须遵守的最小接口方向，不代表主题 13 已进入实现开发。
+
+### 当前冻结结论
+
+- 当前唯一结论：`人才发展与认证增强接口方向已冻结，且主题13已完成阶段0冻结`
+
+### 资源边界
+
+1. 主题 13 固定为一个合并主题：`能力地图 + 证书管理`
+2. 首批只冻结以下资源：
+   - `capabilityModel`
+   - `capabilityItem`
+   - `capabilityPortrait`
+   - `certificate`
+3. 首批不扩到：
+   - `合作伙伴`
+   - 课程学习过程
+   - `AI 背诵`
+   - `AI 练习`
+   - 面试流程
+   - 员工端移动化
+4. 主题 13 只承载能力模型、能力画像摘要与证书台账，不承载人才主数据、简历池、面试流程和课程主链。
+
+### 标准接口
+
+| 接口名称 | 请求路径 | 请求方式 | 权限要求 |
+| --- | --- | --- | --- |
+| 能力模型分页 | `/admin/performance/capabilityModel/page` | `POST` | `performance:capabilityModel:page` |
+| 能力模型详情 | `/admin/performance/capabilityModel/info` | `GET` | `performance:capabilityModel:info` |
+| 新增能力模型 | `/admin/performance/capabilityModel/add` | `POST` | `performance:capabilityModel:add` |
+| 修改能力模型 | `/admin/performance/capabilityModel/update` | `POST` | `performance:capabilityModel:update` |
+| 能力项详情 | `/admin/performance/capabilityItem/info` | `GET` | `performance:capabilityItem:info` |
+| 能力画像摘要 | `/admin/performance/capabilityPortrait/info` | `GET` | `performance:capabilityPortrait:info` |
+| 证书分页 | `/admin/performance/certificate/page` | `POST` | `performance:certificate:page` |
+| 证书详情 | `/admin/performance/certificate/info` | `GET` | `performance:certificate:info` |
+| 新增证书 | `/admin/performance/certificate/add` | `POST` | `performance:certificate:add` |
+| 修改证书 | `/admin/performance/certificate/update` | `POST` | `performance:certificate:update` |
+| 发放证书 | `/admin/performance/certificate/issue` | `POST` | `performance:certificate:issue` |
+| 证书记录分页 | `/admin/performance/certificate/recordPage` | `POST` | `performance:certificate:recordPage` |
+
+### 能力模型分页请求参数
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| page | number | 是 | 页码 |
+| size | number | 是 | 页大小 |
+| keyword | string | 否 | 模型名称 / 编码关键字 |
+| category | string | 否 | 模型分类 |
+| status | string | 否 | `draft / active / archived` |
+
+### 能力模型新增 / 修改请求字段
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| name | string | 是 | 模型名称 |
+| code | string | 否 | 模型编码；允许为空，如填写需唯一 |
+| category | string | 否 | 分类，自由文本 |
+| description | string | 否 | 模型说明 |
+| status | string | 否 | 默认 `draft`；合法值见状态机 |
+
+### 能力模型详情返回最小字段
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | number | 主键 |
+| name | string | 模型名称 |
+| code | string \| null | 模型编码 |
+| category | string \| null | 分类 |
+| description | string \| null | 模型说明 |
+| status | string | 模型状态 |
+| itemCount | number | 能力项数量摘要 |
+| createTime | string | 创建时间 |
+| updateTime | string | 更新时间 |
+
+### 能力项详情返回最小字段
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | number | 主键 |
+| modelId | number | 所属模型 ID |
+| name | string | 能力项名称 |
+| level | string \| null | 能力等级摘要 |
+| description | string \| null | 能力项说明 |
+| evidenceHint | string \| null | 推荐佐证摘要 |
+| updateTime | string | 更新时间 |
+
+### 能力画像摘要请求参数与返回最小字段
+
+请求参数：
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| employeeId | number | 是 | 员工 ID；首批固定以员工为锚点 |
+
+返回最小字段：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| employeeId | number | 员工 ID |
+| employeeName | string | 员工姓名 |
+| departmentId | number \| null | 部门 ID |
+| departmentName | string \| null | 部门名称 |
+| capabilityTags | string[] | 能力标签摘要 |
+| levelSummary | string[] | 等级摘要 |
+| certificateCount | number | 已获得证书数量摘要 |
+| lastCertifiedAt | string \| null | 最近获得证书时间 |
+| updatedAt | string | 摘要更新时间 |
+
+### 证书分页请求参数
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| page | number | 是 | 页码 |
+| size | number | 是 | 页大小 |
+| keyword | string | 否 | 证书名称 / 编码关键字 |
+| category | string | 否 | 证书分类 |
+| status | string | 否 | `draft / active / retired` |
+
+### 证书新增 / 修改请求字段
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| name | string | 是 | 证书名称 |
+| code | string | 否 | 证书编码；允许为空，如填写需唯一 |
+| category | string | 否 | 证书分类，自由文本 |
+| issuer | string | 否 | 发证机构摘要 |
+| description | string | 否 | 证书说明 |
+| validityMonths | number | 否 | 有效月数，可为空 |
+| sourceCourseId | number | 否 | 关联课程 ID，可为空；首批只做引用，不强制校验课程结业 |
+| status | string | 否 | 默认 `draft`；合法值见状态机 |
+
+### 发放证书请求字段
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| certificateId | number | 是 | 证书 ID |
+| employeeId | number | 是 | 获得人员工 ID |
+| issuedAt | string | 是 | 发放时间 |
+| remark | string | 否 | 发放备注摘要 |
+| sourceCourseId | number | 否 | 来源课程 ID，可为空 |
+
+### 证书详情返回最小字段
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | number | 主键 |
+| name | string | 证书名称 |
+| code | string \| null | 证书编码 |
+| category | string \| null | 证书分类 |
+| issuer | string \| null | 发证机构摘要 |
+| description | string \| null | 证书说明 |
+| validityMonths | number \| null | 有效月数 |
+| sourceCourseId | number \| null | 关联课程 ID，可为空 |
+| status | string | 证书状态 |
+| issuedCount | number | 发放数量摘要 |
+| createTime | string | 创建时间 |
+| updateTime | string | 更新时间 |
+
+### 证书记录分页请求参数与返回最小字段
+
+请求参数：
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| page | number | 是 | 页码 |
+| size | number | 是 | 页大小 |
+| certificateId | number | 否 | 证书 ID |
+| employeeId | number | 否 | 员工 ID |
+| status | string | 否 | `issued / revoked` |
+| departmentId | number | 否 | 部门筛选；经理只能查本人部门树范围 |
+
+返回最小字段：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | number | 记录 ID |
+| certificateId | number | 证书 ID |
+| certificateName | string | 证书名称 |
+| employeeId | number | 员工 ID |
+| employeeName | string | 员工姓名 |
+| departmentId | number \| null | 部门 ID |
+| departmentName | string \| null | 部门名称 |
+| issuedAt | string | 发放时间 |
+| issuedBy | string | 发放人姓名摘要 |
+| sourceCourseId | number \| null | 来源课程 ID，可为空 |
+| status | string | 记录状态 |
+
+### 业务规则
+
+1. 主题 13 作为合并主题成立，但首批只做“模型 / 台账 / 摘要”，不升级为培训全域或人才全域平台。
+2. 能力画像首批只返回摘要，不返回人才档案全文、简历全文、面试评语全文或课程学习过程。
+3. 证书首批只做台账和发放记录，不强制绑定课程结业，也不自动根据课程完成状态生成证书。
+4. `sourceCourseId` 仅作为可选引用字段，不改变主题 7 课程主链的 owner 和状态规则。
+5. 未来若开启主题 12“招聘人才资产增强”，其只负责人才主数据与人才资产主链；主题 13 继续只负责能力模型、证书台账和能力画像摘要。
+
+## 二期主题 14：培训学习与考试增强接口冻结基线（2026-04-18）
+
+本节只冻结主题 14 进入开发前评审必须遵守的最小接口方向，不代表已确定真实 `AI` 供应商、外部题库协议或独立考试平台。
+
+### 当前冻结结论
+
+- 当前唯一结论：`培训学习与考试增强已完成阶段0冻结，可进入开发前评审`
+
+### 资源边界
+
+1. 主题14 固定为课程增强子主题，只允许冻结：
+   - `courseRecite`
+   - `coursePractice`
+   - `courseExam`
+2. 主题7“培训课程管理”继续负责课程主链；主题14 只能消费课程关联上下文，不得反向扩写 `course` CRUD 契约。
+3. 主题14 不是独立 `AI` 平台；首批不冻结模型、厂商、Prompt 平台、流式通道和音频识别协议。
+4. 首批只允许文本型任务提交，不冻结音频、图片、文件上传或多轮对话接口。
+
+### 标准接口
+
+| 接口名称 | 请求路径 | 请求方式 | 权限要求 |
+| --- | --- | --- | --- |
+| 背诵任务分页 | `/admin/performance/courseRecite/page` | `POST` | `performance:courseRecite:page` |
+| 背诵任务详情 | `/admin/performance/courseRecite/info` | `GET` | `performance:courseRecite:info` |
+| 提交背诵任务 | `/admin/performance/courseRecite/submit` | `POST` | `performance:courseRecite:submit` |
+| 练习任务分页 | `/admin/performance/coursePractice/page` | `POST` | `performance:coursePractice:page` |
+| 练习任务详情 | `/admin/performance/coursePractice/info` | `GET` | `performance:coursePractice:info` |
+| 提交练习任务 | `/admin/performance/coursePractice/submit` | `POST` | `performance:coursePractice:submit` |
+| 考试 / 结果摘要 | `/admin/performance/courseExam/summary` | `GET` | `performance:courseExam:summary` |
+
+### 背诵 / 练习分页请求参数
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| page | number | 是 | 页码 |
+| size | number | 是 | 页大小 |
+| courseId | number | 是 | 课程 ID；用于固定课程关联入口 |
+| status | string | 否 | `pending / submitted / evaluated` |
+
+### 背诵 / 练习详情返回最小字段
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | number | 主键 |
+| courseId | number | 课程 ID |
+| courseTitle | string | 课程标题快照 |
+| title | string | 任务标题 |
+| taskType | string | `recite` / `practice` |
+| promptText | string | 当前任务内容摘要 |
+| status | string | 任务状态 |
+| latestScore | number \| null | 最近一次结果分数摘要 |
+| feedbackSummary | string \| null | 结果摘要 |
+| submittedAt | string \| null | 最近一次提交时间 |
+| evaluatedAt | string \| null | 最近一次评估时间 |
+
+### 背诵 / 练习提交请求字段
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| id | number | 是 | 任务 ID |
+| submissionText | string | 是 | 文本提交内容 |
+
+### 考试 / 结果摘要请求参数
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| courseId | number | 是 | 课程 ID |
+
+### 考试 / 结果摘要返回最小字段
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| courseId | number | 课程 ID |
+| courseTitle | string | 课程标题快照 |
+| resultStatus | string | `locked / pending / passed / failed` |
+| latestScore | number \| null | 最近一次结果分数摘要 |
+| passThreshold | number \| null | 通过阈值摘要 |
+| summaryText | string \| null | 结果摘要文案 |
+| updatedAt | string \| null | 最近更新时间 |
+
+### 业务规则
+
+1. `courseId` 必须落在当前登录员工本人可访问的课程学习上下文内；不允许借任务接口查看主题7课程后台管理数据。
+2. 背诵 / 练习分页与详情只返回当前登录员工本人任务；不开放按员工筛选的管理视图。
+3. `submit` 只接收文本型 `submissionText`，首批不开放音频、图片、附件、多轮对话与流式返回。
+4. `courseExam/summary` 只返回结果摘要，不返回试卷、题目列表、标准答案或外部 `AI` 推理痕迹。
+5. 真实 `AI` 能力调用若后续需要接入，只允许作为服务端内部实现细节；前端和公开接口不暴露厂商、模型、Prompt 模板或调用链字段。

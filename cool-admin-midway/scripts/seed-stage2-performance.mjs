@@ -1,13 +1,17 @@
 /**
- * Seeds local integration data for performance modules and theme-7/8/9 management.
+ * Seeds local integration data for performance modules and theme-7/8/9/12/13/14 management.
  * This file only prepares local menu, role, user, and sample business data for联调.
  * It does not replace the project's general initialization flow or production release scripts.
- * Maintenance pitfall: dashboard权限、课程/面试/会议样例和 menu.json 必须一起维护，否则真实联调会和 seed 脱节。
+ * Maintenance pitfall: dashboard权限、课程/学习任务/人才资产/能力地图/证书/面试/会议/合同样例和 menu.json 必须一起维护，否则真实联调会和 seed 脱节。
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import mysql from 'mysql2/promise';
+import {
+  STAGE2_RUNTIME_META_PARAM_KEY,
+  buildStage2SeedMeta,
+} from './stage2-runtime-meta.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const menuJsonPath = path.resolve(__dirname, '../src/modules/base/menu.json');
@@ -24,8 +28,15 @@ const stage2MenuRouters = new Set([
   '/performance/promotion',
   '/performance/salary',
   '/performance/course',
+  '/performance/capability',
+  '/performance/certificate',
+  '/performance/course-learning',
   '/performance/interview',
   '/performance/meeting',
+  '/performance/contract',
+  '/performance/talentAsset',
+  '/performance/purchase-order',
+  '/performance/supplier',
 ]);
 
 const connection = await mysql.createConnection({
@@ -240,6 +251,44 @@ async function replaceUserRoles(userId, roleIds) {
       [userId, roleId, now(), now()]
     );
   }
+}
+
+async function upsertParam({ keyName, name, data, dataType = 0, remark = null }) {
+  const existing = await queryOne(
+    'SELECT id FROM base_sys_param WHERE keyName = ? LIMIT 1',
+    [keyName]
+  );
+
+  if (existing) {
+    await connection.query(
+      `UPDATE base_sys_param
+          SET name = ?, data = ?, dataType = ?, remark = ?, updateTime = ?
+        WHERE id = ?`,
+      [name, data, dataType, remark, now(), existing.id]
+    );
+    return existing.id;
+  }
+
+  const [result] = await connection.query(
+    `INSERT INTO base_sys_param
+      (name, keyName, data, dataType, remark, createTime, updateTime, tenantId)
+     VALUES (?, ?, ?, ?, ?, ?, ?, NULL)`,
+    [name, keyName, data, dataType, remark, now(), now()]
+  );
+
+  return result.insertId;
+}
+
+async function syncStage2RuntimeMeta() {
+  const seedMeta = buildStage2SeedMeta(new Date().toISOString());
+  await upsertParam({
+    keyName: STAGE2_RUNTIME_META_PARAM_KEY,
+    name: '阶段2运行态种子版本',
+    data: JSON.stringify(seedMeta),
+    dataType: 0,
+    remark: '由 seed-stage2-performance.mjs 自动回写，用于 smoke 前置门禁校验',
+  });
+  return seedMeta;
 }
 
 async function collectMenuIds({ routers = [], perms = [] }) {
@@ -687,6 +736,58 @@ async function replaceFeedbackTasks(seedRows) {
   }
 }
 
+async function replaceTalentAssets(seedRows) {
+  const candidateNames = [...new Set(seedRows.map(item => item.candidateName).filter(Boolean))];
+  const codes = [...new Set(seedRows.map(item => item.code).filter(Boolean))];
+
+  const staleIds = new Set();
+
+  if (candidateNames.length) {
+    const [existingByName] = await connection.query(
+      'SELECT id FROM performance_talent_asset WHERE candidateName IN (?)',
+      [candidateNames]
+    );
+    existingByName.forEach(item => staleIds.add(item.id));
+  }
+
+  if (codes.length) {
+    const [existingByCode] = await connection.query(
+      'SELECT id FROM performance_talent_asset WHERE code IN (?)',
+      [codes]
+    );
+    existingByCode.forEach(item => staleIds.add(item.id));
+  }
+
+  const ids = [...staleIds];
+  if (ids.length) {
+    await connection.query(
+      'DELETE FROM performance_talent_asset WHERE id IN (?)',
+      [ids]
+    );
+  }
+
+  for (const row of seedRows) {
+    await connection.query(
+      `INSERT INTO performance_talent_asset
+        (candidateName, code, targetDepartmentId, targetPosition, source, tagList, followUpSummary, nextFollowUpDate, status, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.candidateName,
+        row.code ?? null,
+        row.targetDepartmentId,
+        row.targetPosition ?? null,
+        row.source,
+        JSON.stringify(row.tagList || []),
+        row.followUpSummary ?? null,
+        row.nextFollowUpDate ?? null,
+        row.status,
+        now(),
+        now(),
+      ]
+    );
+  }
+}
+
 async function ensureCourseTables() {
   await connection.query(`
     CREATE TABLE IF NOT EXISTS performance_course (
@@ -738,6 +839,7 @@ async function ensureCourseTables() {
 
 async function replaceCourses(seedRows) {
   const titles = seedRows.map(item => item.title);
+  const inserted = [];
 
   if (titles.length) {
     const [existing] = await connection.query(
@@ -791,6 +893,158 @@ async function replaceCourses(seedRows) {
         ]
       );
     }
+
+    inserted.push({
+      id: result.insertId,
+      ...row,
+    });
+  }
+
+  return inserted;
+}
+
+async function ensureCourseLearningTables() {
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_course_recite (
+      id int NOT NULL AUTO_INCREMENT,
+      courseId int NOT NULL,
+      employeeId int NOT NULL,
+      courseTitle varchar(200) NOT NULL,
+      title varchar(200) NOT NULL,
+      taskType varchar(20) NOT NULL DEFAULT 'recite',
+      promptText text DEFAULT NULL,
+      submissionText text DEFAULT NULL,
+      status varchar(20) NOT NULL DEFAULT 'pending',
+      latestScore decimal(8,2) DEFAULT NULL,
+      feedbackSummary varchar(500) DEFAULT NULL,
+      submittedAt varchar(19) DEFAULT NULL,
+      evaluatedAt varchar(19) DEFAULT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_performance_course_recite_scope (courseId, employeeId, title),
+      KEY idx_performance_course_recite_course_id (courseId),
+      KEY idx_performance_course_recite_employee_id (employeeId),
+      KEY idx_performance_course_recite_status (status),
+      KEY idx_performance_course_recite_update_time (updateTime),
+      KEY idx_performance_course_recite_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_course_practice (
+      id int NOT NULL AUTO_INCREMENT,
+      courseId int NOT NULL,
+      employeeId int NOT NULL,
+      courseTitle varchar(200) NOT NULL,
+      title varchar(200) NOT NULL,
+      taskType varchar(20) NOT NULL DEFAULT 'practice',
+      promptText text DEFAULT NULL,
+      submissionText text DEFAULT NULL,
+      status varchar(20) NOT NULL DEFAULT 'pending',
+      latestScore decimal(8,2) DEFAULT NULL,
+      feedbackSummary varchar(500) DEFAULT NULL,
+      submittedAt varchar(19) DEFAULT NULL,
+      evaluatedAt varchar(19) DEFAULT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_performance_course_practice_scope (courseId, employeeId, title),
+      KEY idx_performance_course_practice_course_id (courseId),
+      KEY idx_performance_course_practice_employee_id (employeeId),
+      KEY idx_performance_course_practice_status (status),
+      KEY idx_performance_course_practice_update_time (updateTime),
+      KEY idx_performance_course_practice_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_course_exam (
+      id int NOT NULL AUTO_INCREMENT,
+      courseId int NOT NULL,
+      employeeId int NOT NULL,
+      courseTitle varchar(200) NOT NULL,
+      resultStatus varchar(20) NOT NULL DEFAULT 'locked',
+      latestScore decimal(8,2) DEFAULT NULL,
+      passThreshold decimal(8,2) DEFAULT NULL,
+      summaryText varchar(500) DEFAULT NULL,
+      updatedAt varchar(19) DEFAULT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_performance_course_exam_scope (courseId, employeeId),
+      KEY idx_performance_course_exam_course_id (courseId),
+      KEY idx_performance_course_exam_employee_id (employeeId),
+      KEY idx_performance_course_exam_status (resultStatus),
+      KEY idx_performance_course_exam_update_time (updateTime),
+      KEY idx_performance_course_exam_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function replaceCourseTaskRows(tableName, seedRows) {
+  for (const row of seedRows) {
+    await connection.query(
+      `DELETE FROM ${tableName}
+        WHERE courseId = ?
+          AND employeeId = ?
+          AND title = ?`,
+      [row.courseId, row.employeeId, row.title]
+    );
+
+    await connection.query(
+      `INSERT INTO ${tableName}
+        (courseId, employeeId, courseTitle, title, taskType, promptText, submissionText, status, latestScore, feedbackSummary, submittedAt, evaluatedAt, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.courseId,
+        row.employeeId,
+        row.courseTitle,
+        row.title,
+        row.taskType,
+        row.promptText ?? null,
+        row.submissionText ?? null,
+        row.status,
+        row.latestScore ?? null,
+        row.feedbackSummary ?? null,
+        row.submittedAt ?? null,
+        row.evaluatedAt ?? null,
+        now(),
+        now(),
+      ]
+    );
+  }
+}
+
+async function replaceCourseExamRows(seedRows) {
+  for (const row of seedRows) {
+    await connection.query(
+      `DELETE FROM performance_course_exam
+        WHERE courseId = ?
+          AND employeeId = ?`,
+      [row.courseId, row.employeeId]
+    );
+
+    await connection.query(
+      `INSERT INTO performance_course_exam
+        (courseId, employeeId, courseTitle, resultStatus, latestScore, passThreshold, summaryText, updatedAt, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.courseId,
+        row.employeeId,
+        row.courseTitle,
+        row.resultStatus,
+        row.latestScore ?? null,
+        row.passThreshold ?? null,
+        row.summaryText ?? null,
+        row.updatedAt ?? null,
+        now(),
+        now(),
+      ]
+    );
   }
 }
 
@@ -826,6 +1080,451 @@ async function replaceMeetings(seedRows) {
       ]
     );
   }
+}
+
+async function replaceContracts(seedRows) {
+  const contractNumbers = seedRows
+    .map(item => item.contractNumber)
+    .filter(Boolean);
+
+  if (contractNumbers.length) {
+    await connection.query(
+      'DELETE FROM performance_contract WHERE contractNumber IN (?)',
+      [contractNumbers]
+    );
+  }
+
+  for (const row of seedRows) {
+    await connection.query(
+      `INSERT INTO performance_contract
+        (employeeId, type, title, contractNumber, startDate, endDate, probationPeriod, salary, position, departmentId, status, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.employeeId,
+        row.type,
+        row.title,
+        row.contractNumber,
+        row.startDate,
+        row.endDate,
+        row.probationPeriod ?? null,
+        row.salary ?? null,
+        row.position ?? null,
+        row.departmentId ?? null,
+        row.status,
+        now(),
+        now(),
+      ]
+    );
+  }
+}
+
+async function replaceSuppliers(seedRows) {
+  const names = seedRows.map(item => item.name);
+  const codes = seedRows.map(item => item.code).filter(Boolean);
+
+  if (names.length) {
+    await connection.query('DELETE FROM performance_supplier WHERE name IN (?)', [names]);
+  }
+
+  if (codes.length) {
+    await connection.query('DELETE FROM performance_supplier WHERE code IN (?)', [codes]);
+  }
+
+  const inserted = [];
+
+  for (const row of seedRows) {
+    const [result] = await connection.query(
+      `INSERT INTO performance_supplier
+        (name, code, category, contactName, contactPhone, contactEmail, bankAccount, taxNo, remark, status, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.name,
+        row.code ?? null,
+        row.category ?? null,
+        row.contactName ?? null,
+        row.contactPhone ?? null,
+        row.contactEmail ?? null,
+        row.bankAccount ?? null,
+        row.taxNo ?? null,
+        row.remark ?? null,
+        row.status,
+        now(),
+        now(),
+      ]
+    );
+
+    inserted.push({
+      id: result.insertId,
+      ...row,
+    });
+  }
+
+  return inserted;
+}
+
+async function replacePurchaseOrders(seedRows) {
+  const titles = seedRows.map(item => item.title);
+  const orderNos = seedRows.map(item => item.orderNo).filter(Boolean);
+
+  if (titles.length) {
+    await connection.query('DELETE FROM performance_purchase_order WHERE title IN (?)', [titles]);
+  }
+
+  if (orderNos.length) {
+    await connection.query('DELETE FROM performance_purchase_order WHERE orderNo IN (?)', [orderNos]);
+  }
+
+  const inserted = [];
+
+  for (const row of seedRows) {
+    const [result] = await connection.query(
+      `INSERT INTO performance_purchase_order
+        (orderNo, title, supplierId, departmentId, requesterId, orderDate, totalAmount, currency, remark, status, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.orderNo ?? null,
+        row.title,
+        row.supplierId,
+        row.departmentId,
+        row.requesterId,
+        row.orderDate,
+        row.totalAmount,
+        row.currency ?? 'CNY',
+        row.remark ?? null,
+        row.status,
+        now(),
+        now(),
+      ]
+    );
+
+    inserted.push({
+      id: result.insertId,
+      ...row,
+    });
+  }
+
+  return inserted;
+}
+
+async function ensureCapabilityTables() {
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_capability_model (
+      id int NOT NULL AUTO_INCREMENT,
+      name varchar(200) NOT NULL,
+      code varchar(100) DEFAULT NULL,
+      category varchar(100) DEFAULT NULL,
+      description text DEFAULT NULL,
+      status varchar(20) NOT NULL DEFAULT 'draft',
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_performance_capability_model_code (code),
+      KEY idx_performance_capability_model_name (name),
+      KEY idx_performance_capability_model_category (category),
+      KEY idx_performance_capability_model_status (status),
+      KEY idx_performance_capability_model_create_time (createTime),
+      KEY idx_performance_capability_model_update_time (updateTime),
+      KEY idx_performance_capability_model_tenant (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_capability_item (
+      id int NOT NULL AUTO_INCREMENT,
+      modelId int NOT NULL,
+      name varchar(200) NOT NULL,
+      level varchar(50) DEFAULT NULL,
+      description text DEFAULT NULL,
+      evidenceHint text DEFAULT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_performance_capability_item_model_name (modelId, name),
+      KEY idx_performance_capability_item_model_id (modelId),
+      KEY idx_performance_capability_item_level (level),
+      KEY idx_performance_capability_item_update_time (updateTime),
+      KEY idx_performance_capability_item_tenant (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_capability_portrait (
+      id int NOT NULL AUTO_INCREMENT,
+      employeeId int NOT NULL,
+      departmentId int DEFAULT NULL,
+      capabilityTags json DEFAULT NULL,
+      levelSummary json DEFAULT NULL,
+      updatedAt varchar(19) NOT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_performance_capability_portrait_employee (employeeId),
+      KEY idx_performance_capability_portrait_department_id (departmentId),
+      KEY idx_performance_capability_portrait_updated_at (updatedAt),
+      KEY idx_performance_capability_portrait_tenant (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_certificate (
+      id int NOT NULL AUTO_INCREMENT,
+      name varchar(200) NOT NULL,
+      code varchar(100) DEFAULT NULL,
+      category varchar(100) DEFAULT NULL,
+      issuer varchar(200) DEFAULT NULL,
+      description text DEFAULT NULL,
+      validityMonths int DEFAULT NULL,
+      sourceCourseId int DEFAULT NULL,
+      status varchar(20) NOT NULL DEFAULT 'draft',
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_performance_certificate_code (code),
+      KEY idx_performance_certificate_name (name),
+      KEY idx_performance_certificate_category (category),
+      KEY idx_performance_certificate_status (status),
+      KEY idx_performance_certificate_source_course_id (sourceCourseId),
+      KEY idx_performance_certificate_update_time (updateTime),
+      KEY idx_performance_certificate_tenant (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_certificate_record (
+      id int NOT NULL AUTO_INCREMENT,
+      certificateId int NOT NULL,
+      employeeId int NOT NULL,
+      departmentId int DEFAULT NULL,
+      sourceCourseId int DEFAULT NULL,
+      issuedAt varchar(19) NOT NULL,
+      issuedById int NOT NULL,
+      issuedBy varchar(100) NOT NULL,
+      remark text DEFAULT NULL,
+      status varchar(20) NOT NULL DEFAULT 'issued',
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      KEY idx_performance_certificate_record_certificate_id (certificateId),
+      KEY idx_performance_certificate_record_employee_id (employeeId),
+      KEY idx_performance_certificate_record_department_id (departmentId),
+      KEY idx_performance_certificate_record_source_course_id (sourceCourseId),
+      KEY idx_performance_certificate_record_issued_at (issuedAt),
+      KEY idx_performance_certificate_record_status (status),
+      KEY idx_performance_certificate_record_update_time (updateTime),
+      KEY idx_performance_certificate_record_tenant (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function replaceCapabilitySeedData({
+  employeeUserId,
+  salesEmployeeUserId,
+  platformGroupId,
+  salesCenterId,
+  hrUserId,
+  sourceCourseId,
+}) {
+  const capabilityModels = [
+    {
+      name: '联调-平台岗位通用能力模型',
+      code: 'PMS-CAPABILITY-PLATFORM-001',
+      category: '岗位能力',
+      description: '主题13联调用平台岗位能力模型',
+      status: 'active',
+      items: [
+        {
+          name: '沟通协作',
+          level: 'L2',
+          description: '跨团队同步与反馈摘要',
+          evidenceHint: '季度复盘、跨团队协作记录',
+        },
+        {
+          name: '执行推进',
+          level: 'L2',
+          description: '目标推进与闭环摘要',
+          evidenceHint: '目标完成率、项目里程碑',
+        },
+      ],
+    },
+    {
+      name: '联调-销售岗位能力模型',
+      code: 'PMS-CAPABILITY-SALES-001',
+      category: '岗位能力',
+      description: '主题13联调用销售岗位能力模型',
+      status: 'archived',
+      items: [
+        {
+          name: '客户洞察',
+          level: 'L3',
+          description: '客户需求识别摘要',
+          evidenceHint: '客户拜访纪要、线索转化摘要',
+        },
+      ],
+    },
+  ];
+
+  const [existingModels] = await connection.query(
+    'SELECT id FROM performance_capability_model WHERE code IN (?)',
+    [capabilityModels.map(item => item.code)]
+  );
+  const modelIds = existingModels.map(item => item.id);
+
+  if (modelIds.length) {
+    await connection.query('DELETE FROM performance_capability_item WHERE modelId IN (?)', [
+      modelIds,
+    ]);
+    await connection.query('DELETE FROM performance_capability_model WHERE id IN (?)', [
+      modelIds,
+    ]);
+  }
+
+  for (const row of capabilityModels) {
+    const [result] = await connection.query(
+      `INSERT INTO performance_capability_model
+        (name, code, category, description, status, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [row.name, row.code, row.category, row.description, row.status, now(), now()]
+    );
+
+    for (const item of row.items) {
+      await connection.query(
+        `INSERT INTO performance_capability_item
+          (modelId, name, level, description, evidenceHint, createTime, updateTime, tenantId)
+         VALUES (?, ?, ?, ?, ?, ?, ?, NULL)`,
+        [
+          result.insertId,
+          item.name,
+          item.level,
+          item.description,
+          item.evidenceHint,
+          now(),
+          now(),
+        ]
+      );
+    }
+  }
+
+  await connection.query(
+    'DELETE FROM performance_capability_portrait WHERE employeeId IN (?, ?)',
+    [employeeUserId, salesEmployeeUserId]
+  );
+  await connection.query(
+    `INSERT INTO performance_capability_portrait
+      (employeeId, departmentId, capabilityTags, levelSummary, updatedAt, createTime, updateTime, tenantId)
+     VALUES (?, ?, ?, ?, ?, ?, ?, NULL), (?, ?, ?, ?, ?, ?, ?, NULL)`,
+    [
+      employeeUserId,
+      platformGroupId,
+      JSON.stringify(['沟通协作', '执行推进']),
+      JSON.stringify(['L2', 'L2']),
+      '2026-05-11 10:00:00',
+      now(),
+      now(),
+      salesEmployeeUserId,
+      salesCenterId,
+      JSON.stringify(['客户洞察']),
+      JSON.stringify(['L3']),
+      '2026-05-11 10:05:00',
+      now(),
+      now(),
+    ]
+  );
+
+  const certificateRows = [
+    {
+      name: '联调-PMP认证',
+      code: 'PMS-CERT-PMP-001',
+      category: '管理认证',
+      issuer: 'PMI',
+      description: '主题13联调用平台员工证书',
+      validityMonths: 36,
+      sourceCourseId: sourceCourseId ?? null,
+      status: 'active',
+    },
+    {
+      name: '联调-销售能力认证',
+      code: 'PMS-CERT-SALES-001',
+      category: '销售认证',
+      issuer: '内部认证中心',
+      description: '主题13联调用销售员工证书',
+      validityMonths: 12,
+      sourceCourseId: null,
+      status: 'retired',
+    },
+  ];
+  const [existingCertificates] = await connection.query(
+    'SELECT id FROM performance_certificate WHERE code IN (?)',
+    [certificateRows.map(item => item.code)]
+  );
+  const certificateIds = existingCertificates.map(item => item.id);
+
+  if (certificateIds.length) {
+    await connection.query(
+      'DELETE FROM performance_certificate_record WHERE certificateId IN (?)',
+      [certificateIds]
+    );
+    await connection.query('DELETE FROM performance_certificate WHERE id IN (?)', [
+      certificateIds,
+    ]);
+  }
+
+  const certificateIdMap = new Map();
+
+  for (const row of certificateRows) {
+    const [result] = await connection.query(
+      `INSERT INTO performance_certificate
+        (name, code, category, issuer, description, validityMonths, sourceCourseId, status, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.name,
+        row.code,
+        row.category,
+        row.issuer,
+        row.description,
+        row.validityMonths,
+        row.sourceCourseId,
+        row.status,
+        now(),
+        now(),
+      ]
+    );
+    certificateIdMap.set(row.code, result.insertId);
+  }
+
+  await connection.query(
+    `INSERT INTO performance_certificate_record
+      (certificateId, employeeId, departmentId, sourceCourseId, issuedAt, issuedById, issuedBy, remark, status, createTime, updateTime, tenantId)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL), (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+    [
+      certificateIdMap.get('PMS-CERT-PMP-001'),
+      employeeUserId,
+      platformGroupId,
+      sourceCourseId ?? null,
+      '2026-05-12 10:00:00',
+      hrUserId,
+      'HR管理员',
+      '主题13联调-平台员工获证',
+      'issued',
+      now(),
+      now(),
+      certificateIdMap.get('PMS-CERT-SALES-001'),
+      salesEmployeeUserId,
+      salesCenterId,
+      null,
+      '2026-05-13 15:30:00',
+      hrUserId,
+      'HR管理员',
+      '主题13联调-销售员工获证',
+      'issued',
+      now(),
+      now(),
+    ]
+  );
 }
 
 async function ensureInterviewTable() {
@@ -886,6 +1585,126 @@ async function ensureMeetingTable() {
       KEY idx_performance_meeting_create_time (createTime),
       KEY idx_performance_meeting_update_time (updateTime),
       KEY idx_performance_meeting_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function ensureTalentAssetTable() {
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_talent_asset (
+      id int NOT NULL AUTO_INCREMENT,
+      candidateName varchar(100) NOT NULL,
+      code varchar(100) DEFAULT NULL,
+      targetDepartmentId int NOT NULL,
+      targetPosition varchar(100) DEFAULT NULL,
+      source varchar(100) NOT NULL,
+      tagList json DEFAULT NULL,
+      followUpSummary text DEFAULT NULL,
+      nextFollowUpDate varchar(19) DEFAULT NULL,
+      status varchar(20) NOT NULL DEFAULT 'new',
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_performance_talent_asset_code (code),
+      KEY idx_performance_talent_asset_candidate_name (candidateName),
+      KEY idx_performance_talent_asset_target_department_id (targetDepartmentId),
+      KEY idx_performance_talent_asset_status (status),
+      KEY idx_performance_talent_asset_create_time (createTime),
+      KEY idx_performance_talent_asset_update_time (updateTime),
+      KEY idx_performance_talent_asset_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function ensureContractTable() {
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_contract (
+      id int NOT NULL AUTO_INCREMENT,
+      employeeId int NOT NULL,
+      type varchar(20) NOT NULL,
+      title varchar(200) DEFAULT NULL,
+      contractNumber varchar(50) DEFAULT NULL,
+      startDate varchar(10) NOT NULL,
+      endDate varchar(10) NOT NULL,
+      probationPeriod int DEFAULT NULL,
+      salary decimal(10,2) DEFAULT NULL,
+      position varchar(100) DEFAULT NULL,
+      departmentId int DEFAULT NULL,
+      status varchar(20) NOT NULL DEFAULT 'draft',
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      KEY idx_performance_contract_employee_id (employeeId),
+      KEY idx_performance_contract_type (type),
+      KEY idx_performance_contract_contract_number (contractNumber),
+      KEY idx_performance_contract_start_date (startDate),
+      KEY idx_performance_contract_end_date (endDate),
+      KEY idx_performance_contract_department_id (departmentId),
+      KEY idx_performance_contract_status (status),
+      KEY idx_performance_contract_create_time (createTime),
+      KEY idx_performance_contract_update_time (updateTime),
+      KEY idx_performance_contract_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function ensureProcurementTables() {
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_supplier (
+      id int NOT NULL AUTO_INCREMENT,
+      name varchar(200) NOT NULL,
+      code varchar(100) DEFAULT NULL,
+      category varchar(100) DEFAULT NULL,
+      contactName varchar(100) DEFAULT NULL,
+      contactPhone varchar(50) DEFAULT NULL,
+      contactEmail varchar(100) DEFAULT NULL,
+      bankAccount varchar(100) DEFAULT NULL,
+      taxNo varchar(100) DEFAULT NULL,
+      remark text DEFAULT NULL,
+      status varchar(20) NOT NULL DEFAULT 'active',
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_performance_supplier_code (code),
+      KEY idx_performance_supplier_name (name),
+      KEY idx_performance_supplier_category (category),
+      KEY idx_performance_supplier_status (status),
+      KEY idx_performance_supplier_create_time (createTime),
+      KEY idx_performance_supplier_update_time (updateTime),
+      KEY idx_performance_supplier_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_purchase_order (
+      id int NOT NULL AUTO_INCREMENT,
+      orderNo varchar(100) DEFAULT NULL,
+      title varchar(200) NOT NULL,
+      supplierId int NOT NULL,
+      departmentId int NOT NULL,
+      requesterId int NOT NULL,
+      orderDate varchar(10) NOT NULL,
+      totalAmount decimal(12,2) NOT NULL,
+      currency varchar(20) NOT NULL DEFAULT 'CNY',
+      remark text DEFAULT NULL,
+      status varchar(20) NOT NULL DEFAULT 'draft',
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_performance_purchase_order_order_no (orderNo),
+      KEY idx_performance_purchase_order_title (title),
+      KEY idx_performance_purchase_order_supplier_id (supplierId),
+      KEY idx_performance_purchase_order_department_id (departmentId),
+      KEY idx_performance_purchase_order_requester_id (requesterId),
+      KEY idx_performance_purchase_order_order_date (orderDate),
+      KEY idx_performance_purchase_order_status (status),
+      KEY idx_performance_purchase_order_create_time (createTime),
+      KEY idx_performance_purchase_order_update_time (updateTime),
+      KEY idx_performance_purchase_order_tenant_id (tenantId)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 }
@@ -1089,13 +1908,19 @@ async function ensureApprovalTables() {
 }
 
 async function main() {
+  let seedMeta;
   await connection.beginTransaction();
 
   try {
     await syncMenuTree(loadStage2PerformanceMenus());
     await ensureCourseTables();
+    await ensureCourseLearningTables();
+    await ensureCapabilityTables();
     await ensureInterviewTable();
     await ensureMeetingTable();
+    await ensureTalentAssetTable();
+    await ensureContractTable();
+    await ensureProcurementTables();
     await ensureFeedbackTables();
     await ensureApprovalTables();
 
@@ -1190,8 +2015,14 @@ async function main() {
         '/performance/promotion',
         '/performance/salary',
         '/performance/course',
+        '/performance/capability',
+        '/performance/certificate',
         '/performance/interview',
         '/performance/meeting',
+        '/performance/contract',
+        '/performance/talentAsset',
+        '/performance/purchase-order',
+        '/performance/supplier',
       ],
       perms: [
         'performance:dashboard:summary',
@@ -1267,6 +2098,18 @@ async function main() {
         'performance:course:update',
         'performance:course:delete',
         'performance:course:enrollmentPage',
+        'performance:capabilityModel:page',
+        'performance:capabilityModel:info',
+        'performance:capabilityModel:add',
+        'performance:capabilityModel:update',
+        'performance:capabilityItem:info',
+        'performance:capabilityPortrait:info',
+        'performance:certificate:page',
+        'performance:certificate:info',
+        'performance:certificate:add',
+        'performance:certificate:update',
+        'performance:certificate:issue',
+        'performance:certificate:recordPage',
         'performance:interview:page',
         'performance:interview:info',
         'performance:interview:add',
@@ -1278,6 +2121,26 @@ async function main() {
         'performance:meeting:update',
         'performance:meeting:delete',
         'performance:meeting:checkIn',
+        'performance:contract:page',
+        'performance:contract:info',
+        'performance:contract:add',
+        'performance:contract:update',
+        'performance:contract:delete',
+        'performance:purchaseOrder:page',
+        'performance:purchaseOrder:info',
+        'performance:purchaseOrder:add',
+        'performance:purchaseOrder:update',
+        'performance:purchaseOrder:delete',
+        'performance:supplier:page',
+        'performance:supplier:info',
+        'performance:supplier:add',
+        'performance:supplier:update',
+        'performance:supplier:delete',
+        'performance:talentAsset:page',
+        'performance:talentAsset:info',
+        'performance:talentAsset:add',
+        'performance:talentAsset:update',
+        'performance:talentAsset:delete',
       ],
     });
     const managerMenuIds = await collectMenuIds({
@@ -1292,8 +2155,13 @@ async function main() {
         '/performance/pip',
         '/performance/promotion',
         '/performance/course',
+        '/performance/capability',
+        '/performance/certificate',
         '/performance/interview',
         '/performance/meeting',
+        '/performance/purchase-order',
+        '/performance/supplier',
+        '/performance/talentAsset',
       ],
       perms: [
         'performance:dashboard:summary',
@@ -1348,20 +2216,42 @@ async function main() {
         'performance:promotion:review',
         'performance:course:page',
         'performance:course:info',
+        'performance:capabilityModel:page',
+        'performance:capabilityModel:info',
+        'performance:capabilityItem:info',
+        'performance:capabilityPortrait:info',
+        'performance:certificate:page',
+        'performance:certificate:info',
+        'performance:certificate:recordPage',
         'performance:interview:page',
         'performance:interview:info',
         'performance:interview:add',
         'performance:interview:update',
+        'performance:purchaseOrder:page',
+        'performance:purchaseOrder:info',
+        'performance:purchaseOrder:add',
+        'performance:purchaseOrder:update',
+        'performance:supplier:page',
+        'performance:supplier:info',
         'performance:meeting:page',
         'performance:meeting:info',
         'performance:meeting:add',
         'performance:meeting:update',
         'performance:meeting:delete',
         'performance:meeting:checkIn',
+        'performance:talentAsset:page',
+        'performance:talentAsset:info',
+        'performance:talentAsset:add',
+        'performance:talentAsset:update',
       ],
     });
     const employeeMenuIds = await collectMenuIds({
-      routers: ['/performance/my-assessment', '/performance/goals', '/performance/feedback'],
+      routers: [
+        '/performance/my-assessment',
+        '/performance/goals',
+        '/performance/feedback',
+        '/performance/course-learning',
+      ],
       perms: [
         'performance:assessment:myPage',
         'performance:assessment:info',
@@ -1378,6 +2268,13 @@ async function main() {
         'performance:feedback:info',
         'performance:feedback:submit',
         'performance:feedback:summary',
+        'performance:courseRecite:page',
+        'performance:courseRecite:info',
+        'performance:courseRecite:submit',
+        'performance:coursePractice:page',
+        'performance:coursePractice:info',
+        'performance:coursePractice:submit',
+        'performance:courseExam:summary',
       ],
     });
     const feedbackMenuIds = await collectMenuIds({
@@ -1432,7 +2329,7 @@ async function main() {
     await replaceUserRoles(feedbackUserId, [feedbackRoleId]);
     await replaceUserRoles(salesEmployeeUserId, [employeeRoleId]);
 
-    await replaceCourses([
+    const seededCourses = await replaceCourses([
       {
         title: '联调-新员工训练营',
         code: 'PMS-COURSE-DRAFT-001',
@@ -1484,6 +2381,242 @@ async function main() {
         ],
       },
     ]);
+    const learningCourse = seededCourses.find(
+      item => item.code === 'PMS-COURSE-PUBLISHED-001'
+    );
+
+    if (!learningCourse?.id) {
+      throw new Error('Stage-2 learning course seed missing PMS-COURSE-PUBLISHED-001');
+    }
+
+    await replaceCourseTaskRows('performance_course_recite', [
+      {
+        courseId: learningCourse.id,
+        employeeId: employeeUserId,
+        courseTitle: learningCourse.title,
+        title: '联调-主题14背诵任务-待提交',
+        taskType: 'recite',
+        promptText: '请复述课程中的三条管理者沟通原则。',
+        submissionText: null,
+        status: 'pending',
+      },
+      {
+        courseId: learningCourse.id,
+        employeeId: employeeUserId,
+        courseTitle: learningCourse.title,
+        title: '联调-主题14背诵任务-已评估',
+        taskType: 'recite',
+        promptText: '请复述晋升沟通闭环的关键步骤。',
+        submissionText: '先明确目标，再对齐预期，然后回收反馈并确认行动。',
+        status: 'evaluated',
+        latestScore: 93.5,
+        feedbackSummary: '关键步骤齐全，表达较完整。',
+        submittedAt: '2026-05-10 20:00:00',
+        evaluatedAt: '2026-05-10 20:05:00',
+      },
+      {
+        courseId: learningCourse.id,
+        employeeId: salesEmployeeUserId,
+        courseTitle: learningCourse.title,
+        title: '联调-主题14背诵任务-销售员工',
+        taskType: 'recite',
+        promptText: '请复述销售场景下的课程要点。',
+        submissionText: null,
+        status: 'pending',
+      },
+    ]);
+
+    await replaceCourseTaskRows('performance_course_practice', [
+      {
+        courseId: learningCourse.id,
+        employeeId: employeeUserId,
+        courseTitle: learningCourse.title,
+        title: '联调-主题14练习任务-待提交',
+        taskType: 'practice',
+        promptText: '请编写一段课程结业后的主管沟通练习回复。',
+        submissionText: null,
+        status: 'pending',
+      },
+      {
+        courseId: learningCourse.id,
+        employeeId: employeeUserId,
+        courseTitle: learningCourse.title,
+        title: '联调-主题14练习任务-已评估',
+        taskType: 'practice',
+        promptText: '请输出一次课程回顾会议的开场白。',
+        submissionText: '本次回顾聚焦三个方面：目标达成、协作改进和后续行动。',
+        status: 'evaluated',
+        latestScore: 91,
+        feedbackSummary: '结构清晰，行动导向明确。',
+        submittedAt: '2026-05-10 20:10:00',
+        evaluatedAt: '2026-05-10 20:15:00',
+      },
+      {
+        courseId: learningCourse.id,
+        employeeId: salesEmployeeUserId,
+        courseTitle: learningCourse.title,
+        title: '联调-主题14练习任务-销售员工',
+        taskType: 'practice',
+        promptText: '请输出销售复盘练习内容。',
+        submissionText: null,
+        status: 'pending',
+      },
+    ]);
+
+    await replaceCourseExamRows([
+      {
+        courseId: learningCourse.id,
+        employeeId: employeeUserId,
+        courseTitle: learningCourse.title,
+        resultStatus: 'passed',
+        latestScore: 95.5,
+        passThreshold: 60,
+        summaryText: '课程学习闭环已完成，可进入后续应用。',
+        updatedAt: '2026-05-10 20:20:00',
+      },
+      {
+        courseId: learningCourse.id,
+        employeeId: salesEmployeeUserId,
+        courseTitle: learningCourse.title,
+        resultStatus: 'locked',
+        latestScore: null,
+        passThreshold: 60,
+        summaryText: '当前前置任务未完成，考试结果摘要仍锁定。',
+        updatedAt: '2026-05-10 20:20:00',
+      },
+    ]);
+    await replaceCapabilitySeedData({
+      employeeUserId,
+      salesEmployeeUserId,
+      platformGroupId,
+      salesCenterId,
+      hrUserId,
+      sourceCourseId: learningCourse.id,
+    });
+
+    await replaceContracts([
+      {
+        employeeId: employeeUserId,
+        type: 'full-time',
+        title: '联调-主题10草稿合同',
+        contractNumber: 'PMS-CONTRACT-DRAFT-001',
+        startDate: '2026-05-01',
+        endDate: '2027-04-30',
+        probationPeriod: 3,
+        salary: 18000,
+        position: '平台工程师',
+        departmentId: platformGroupId,
+        status: 'draft',
+      },
+      {
+        employeeId: employeeUserId,
+        type: 'full-time',
+        title: '联调-主题10生效合同',
+        contractNumber: 'PMS-CONTRACT-ACTIVE-001',
+        startDate: '2026-01-01',
+        endDate: '2026-12-31',
+        probationPeriod: 3,
+        salary: 22000,
+        position: '平台高级工程师',
+        departmentId: platformGroupId,
+        status: 'active',
+      },
+      {
+        employeeId: salesEmployeeUserId,
+        type: 'part-time',
+        title: '联调-主题10终止合同',
+        contractNumber: 'PMS-CONTRACT-TERMINATED-001',
+        startDate: '2025-01-01',
+        endDate: '2025-12-31',
+        probationPeriod: 1,
+        salary: 12500,
+        position: '销售顾问',
+        departmentId: salesCenterId,
+        status: 'terminated',
+      },
+    ]);
+
+    const seededSuppliers = await replaceSuppliers([
+      {
+        name: '联调-主题11平台云服务商',
+        code: 'PMS-SUPPLIER-ACTIVE-001',
+        category: '云服务',
+        contactName: '王采购',
+        contactPhone: '13812345678',
+        contactEmail: 'buyer.active@example.com',
+        bankAccount: '6222020202021234',
+        taxNo: '913100001234567890',
+        remark: '主题11联调-启用供应商',
+        status: 'active',
+      },
+      {
+        name: '联调-主题11硬件停用供应商',
+        code: 'PMS-SUPPLIER-INACTIVE-001',
+        category: '硬件设备',
+        contactName: '李供应',
+        contactPhone: '13987654321',
+        contactEmail: 'supplier.inactive@example.com',
+        bankAccount: '6217000000005678',
+        taxNo: '913100009876543210',
+        remark: '主题11联调-停用且存在有效订单',
+        status: 'inactive',
+      },
+      {
+        name: '联调-主题11咨询供应商',
+        code: null,
+        category: '咨询服务',
+        contactName: '周合作',
+        contactPhone: '13700001111',
+        contactEmail: 'consulting@example.com',
+        bankAccount: '6225888800009999',
+        taxNo: '913100001111222233',
+        remark: '主题11联调-空编码供应商',
+        status: 'active',
+      },
+    ]);
+
+    const supplierByCode = new Map(
+      seededSuppliers.map(item => [item.code || item.name, item])
+    );
+
+    await replacePurchaseOrders([
+      {
+        orderNo: 'PMS-PO-DRAFT-001',
+        title: '联调-主题11平台草稿采购单',
+        supplierId: supplierByCode.get('PMS-SUPPLIER-ACTIVE-001').id,
+        departmentId: platformGroupId,
+        requesterId: managerUserId,
+        orderDate: '2026-05-20',
+        totalAmount: 12888.5,
+        currency: 'CNY',
+        remark: '主题11联调-草稿采购单，可删除',
+        status: 'draft',
+      },
+      {
+        orderNo: 'PMS-PO-ACTIVE-001',
+        title: '联调-主题11平台生效采购单',
+        supplierId: supplierByCode.get('PMS-SUPPLIER-INACTIVE-001').id,
+        departmentId: platformGroupId,
+        requesterId: managerUserId,
+        orderDate: '2026-05-18',
+        totalAmount: 35600,
+        currency: 'CNY',
+        remark: '主题11联调-生效采购单，验证删除限制',
+        status: 'active',
+      },
+      {
+        orderNo: 'PMS-PO-CANCELLED-001',
+        title: '联调-主题11销售取消采购单',
+        supplierId: supplierByCode.get('联调-主题11咨询供应商').id,
+        departmentId: salesCenterId,
+        requesterId: salesEmployeeUserId,
+        orderDate: '2026-05-10',
+        totalAmount: 8888,
+        currency: 'CNY',
+        remark: '主题11联调-跨部门取消采购单',
+        status: 'cancelled',
+      },
+    ]);
 
     await replaceMeetings([
       {
@@ -1527,6 +2660,31 @@ async function main() {
         participantCount: 1,
         status: 'scheduled',
         lastCheckInTime: null,
+      },
+    ]);
+
+    await replaceTalentAssets([
+      {
+        candidateName: '联调-主题12平台人才',
+        code: 'PMS-TALENT-RD-001',
+        targetDepartmentId: platformGroupId,
+        targetPosition: '平台高级工程师',
+        source: '内推',
+        tagList: ['高潜', '可尽快到岗'],
+        followUpSummary: '已完成首轮沟通，等待技术复盘。',
+        nextFollowUpDate: '2026-05-06',
+        status: 'new',
+      },
+      {
+        candidateName: '联调-主题12销售人才',
+        code: 'PMS-TALENT-SALES-001',
+        targetDepartmentId: salesCenterId,
+        targetPosition: '销售顾问',
+        source: '招聘会',
+        tagList: ['跨部门隐藏样例'],
+        followUpSummary: '仅用于经理范围外不可见校验。',
+        nextFollowUpDate: '2026-05-08',
+        status: 'tracking',
       },
     ]);
 
@@ -1963,11 +3121,15 @@ async function main() {
       },
     ]);
 
+    seedMeta = await syncStage2RuntimeMeta();
+
     await connection.commit();
 
     console.log('Stage-2 performance seed completed for modules 1/2/4/5/6/7/8/9 baseline.');
     console.log('Accounts: admin, hr_admin, manager_rd, employee_platform, feedback_peer, employee_sales');
     console.log('Password: 123456');
+    console.log(`Runtime seed version: ${seedMeta.version}`);
+    console.log(`Runtime seed scopes: ${seedMeta.scopes.join(', ')}`);
   } catch (error) {
     await connection.rollback();
     throw error;

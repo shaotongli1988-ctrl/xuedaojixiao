@@ -1,9 +1,9 @@
 # Development Readiness Contract
 
-- Contract ID: `dr-2026-04-18-092259`
-- Generated At: `2026-04-18T09:22:59+08:00`
+- Contract ID: `dr-2026-04-18-141653`
+- Generated At: `2026-04-18T14:16:53+08:00`
 - Mode: `global`
-- Business Goal: 二期主题6 跨模块驾驶舱指标 阶段0冻结
+- Business Goal: 二期主题11 采购与供应商管理 进入实际开发前收口
 - In Scope Modules: `user`
 - Out Of Scope Modules: `none`
 - Affected Layers: `docs`

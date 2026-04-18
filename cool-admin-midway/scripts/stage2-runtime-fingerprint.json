@@ -1,0 +1,11 @@
+{
+  "paths": [
+    "src/config/config.default.ts",
+    "src/entities.ts",
+    "src/modules/base/controller/admin/open.ts",
+    "src/modules/base/service/sys/param.ts",
+    "src/modules/base/menu.json",
+    "src/modules/performance",
+    "scripts/seed-stage2-performance.mjs"
+  ]
+}

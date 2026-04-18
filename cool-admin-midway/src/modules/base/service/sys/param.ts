@@ -16,6 +16,30 @@ export class BaseSysParamService extends BaseService {
   @InjectClient(CachingFactory, 'default')
   midwayCache: MidwayCache;
 
+  private parseParamData(result: any) {
+    if (!result) {
+      return;
+    }
+
+    if (result.dataType == 0) {
+      try {
+        return JSON.parse(result.data);
+      } catch (error) {
+        return result.data;
+      }
+    }
+
+    if (result.dataType == 1) {
+      return result.data;
+    }
+
+    if (result.dataType == 2) {
+      return result.data.split(',');
+    }
+
+    return;
+  }
+
   /**
    * 根据key获得对应的参数
    * @param key
@@ -24,24 +48,23 @@ export class BaseSysParamService extends BaseService {
     let result: any = await this.midwayCache.get(`param:${key}`);
     if (!result) {
       result = await this.baseSysParamEntity.findOneBy({ keyName: key });
-      this.midwayCache.set(`param:${key}`, result);
+      if (result) {
+        await this.midwayCache.set(`param:${key}`, result);
+      }
     }
+    return this.parseParamData(result);
+  }
+
+  /**
+   * 强制从数据库刷新指定 key，避免 seed 回写后继续命中旧缓存。
+   * @param key
+   */
+  async dataByKeyFresh(key) {
+    const result = await this.baseSysParamEntity.findOneBy({ keyName: key });
     if (result) {
-      if (result.dataType == 0) {
-        try {
-          return JSON.parse(result.data);
-        } catch (error) {
-          return result.data;
-        }
-      }
-      if (result.dataType == 1) {
-        return result.data;
-      }
-      if (result.dataType == 2) {
-        return result.data.split(',');
-      }
+      await this.midwayCache.set(`param:${key}`, result);
     }
-    return;
+    return this.parseParamData(result);
   }
 
   /**

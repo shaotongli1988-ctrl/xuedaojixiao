@@ -1900,6 +1900,165 @@
                 ]
             },
             {
+                "name": "能力地图",
+                "router": "/performance/capability",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-tree",
+                "orderNum": 16,
+                "viewPath": "modules/performance/views/capability/index.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": [
+                    {
+                        "name": "查询",
+                        "router": null,
+                        "perms": "performance:capabilityModel:page,performance:capabilityModel:info,performance:capabilityItem:info,performance:capabilityPortrait:info",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 1,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "新增",
+                        "router": null,
+                        "perms": "performance:capabilityModel:add",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 2,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "编辑",
+                        "router": null,
+                        "perms": "performance:capabilityModel:update",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 3,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    }
+                ]
+            },
+            {
+                "name": "证书管理",
+                "router": "/performance/certificate",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-safe",
+                "orderNum": 17,
+                "viewPath": "modules/performance/views/certificate/index.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": [
+                    {
+                        "name": "查询",
+                        "router": null,
+                        "perms": "performance:certificate:page,performance:certificate:info,performance:certificate:recordPage",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 1,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "新增",
+                        "router": null,
+                        "perms": "performance:certificate:add",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 2,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "编辑",
+                        "router": null,
+                        "perms": "performance:certificate:update",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 3,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "发放",
+                        "router": null,
+                        "perms": "performance:certificate:issue",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 4,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    }
+                ]
+            },
+            {
+                "name": "课程学习与考试",
+                "router": "/performance/course-learning",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-task",
+                "orderNum": 18,
+                "viewPath": "modules/performance/views/course-learning/index.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": [
+                    {
+                        "name": "背诵任务",
+                        "router": null,
+                        "perms": "performance:courseRecite:page,performance:courseRecite:info,performance:courseRecite:submit",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 1,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "练习任务",
+                        "router": null,
+                        "perms": "performance:coursePractice:page,performance:coursePractice:info,performance:coursePractice:submit",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 2,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "考试摘要",
+                        "router": null,
+                        "perms": "performance:courseExam:summary",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 3,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    }
+                ]
+            },
+            {
                 "name": "招聘面试",
                 "router": "/performance/interview",
                 "perms": null,
@@ -2034,6 +2193,67 @@
                 ]
             },
             {
+                "name": "合同管理",
+                "router": "/performance/contract",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-safe",
+                "orderNum": 15,
+                "viewPath": "modules/performance/views/contract/index.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": [
+                    {
+                        "name": "查询",
+                        "router": null,
+                        "perms": "performance:contract:page,performance:contract:info",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 1,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "新增",
+                        "router": null,
+                        "perms": "performance:contract:add",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 2,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "编辑",
+                        "router": null,
+                        "perms": "performance:contract:update",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 3,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "删除",
+                        "router": null,
+                        "perms": "performance:contract:delete",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 4,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    }
+                ]
+            },
+            {
                 "name": "人才资产",
                 "router": "/performance/talentAsset",
                 "perms": null,
@@ -2084,6 +2304,128 @@
                         "name": "删除",
                         "router": null,
                         "perms": "performance:talentAsset:delete",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 4,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    }
+                ]
+            },
+            {
+                "name": "采购订单",
+                "router": "/performance/purchase-order",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-order",
+                "orderNum": 21,
+                "viewPath": "modules/performance/views/purchase-order/index.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": [
+                    {
+                        "name": "查询",
+                        "router": null,
+                        "perms": "performance:purchaseOrder:page,performance:purchaseOrder:info",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 1,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "新增",
+                        "router": null,
+                        "perms": "performance:purchaseOrder:add",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 2,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "编辑",
+                        "router": null,
+                        "perms": "performance:purchaseOrder:update",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 3,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "删除",
+                        "router": null,
+                        "perms": "performance:purchaseOrder:delete",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 4,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    }
+                ]
+            },
+            {
+                "name": "供应商管理",
+                "router": "/performance/supplier",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-cooperation",
+                "orderNum": 22,
+                "viewPath": "modules/performance/views/supplier/index.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": [
+                    {
+                        "name": "查询",
+                        "router": null,
+                        "perms": "performance:supplier:page,performance:supplier:info",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 1,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "新增",
+                        "router": null,
+                        "perms": "performance:supplier:add",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 2,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "编辑",
+                        "router": null,
+                        "perms": "performance:supplier:update",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 3,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "删除",
+                        "router": null,
+                        "perms": "performance:supplier:delete",
                         "type": 2,
                         "icon": null,
                         "orderNum": 4,

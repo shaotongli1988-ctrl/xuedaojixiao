@@ -12,7 +12,14 @@ export type DashboardCrossMetricCode =
 export type DashboardCrossSourceDomain = 'recruitment' | 'training' | 'meeting';
 export type DashboardCrossScopeType = 'global' | 'department_tree';
 export type DashboardCrossDataStatus = 'ready' | 'delayed' | 'unavailable';
+export type ContractStatus = 'draft' | 'active' | 'expired' | 'terminated';
+export type ContractType = 'full-time' | 'part-time' | 'internship' | 'other';
+export type PurchaseOrderStatus = 'draft' | 'active' | 'cancelled';
+export type SupplierStatus = 'active' | 'inactive';
+export type CapabilityModelStatus = 'draft' | 'active' | 'archived';
 export type CourseStatus = 'draft' | 'published' | 'closed';
+export type CertificateRecordStatus = 'issued' | 'revoked';
+export type CertificateStatus = 'draft' | 'active' | 'retired';
 export type InterviewStatus = 'scheduled' | 'completed' | 'cancelled';
 export type InterviewType = 'technical' | 'behavioral' | 'manager' | 'hr';
 export type MeetingStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
@@ -163,6 +170,177 @@ export interface GoalExportRow {
 	startDate: string;
 	endDate: string;
 	updateTime?: string;
+}
+
+export interface ContractRecord {
+	id?: number;
+	employeeId: number | undefined;
+	employeeName?: string;
+	type: ContractType;
+	title?: string;
+	contractNumber?: string;
+	startDate: string;
+	endDate: string;
+	probationPeriod?: number | null;
+	salary?: number | null;
+	position?: string;
+	departmentId?: number | null;
+	departmentName?: string;
+	status?: ContractStatus;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface ContractPageResult {
+	list: ContractRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface PurchaseOrderRecord {
+	id?: number;
+	orderNo?: string | null;
+	title: string;
+	supplierId: number | undefined;
+	supplierName?: string;
+	departmentId: number | undefined;
+	departmentName?: string;
+	requesterId: number | undefined;
+	requesterName?: string;
+	orderDate: string;
+	totalAmount: number;
+	currency?: string;
+	remark?: string | null;
+	status?: PurchaseOrderStatus;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface PurchaseOrderPageResult {
+	list: PurchaseOrderRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface SupplierRecord {
+	id?: number;
+	name: string;
+	code?: string | null;
+	category?: string | null;
+	contactName?: string | null;
+	contactPhone?: string | null;
+	contactEmail?: string | null;
+	bankAccount?: string | null;
+	taxNo?: string | null;
+	remark?: string | null;
+	status?: SupplierStatus;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface SupplierPageResult {
+	list: SupplierRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface CapabilityModelRecord {
+	id?: number;
+	name: string;
+	code?: string | null;
+	category?: string | null;
+	description?: string | null;
+	status?: CapabilityModelStatus;
+	itemCount?: number;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface CapabilityModelPageResult {
+	list: CapabilityModelRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface CapabilityItemRecord {
+	id?: number;
+	modelId?: number;
+	name: string;
+	level?: string | null;
+	description?: string | null;
+	evidenceHint?: string | null;
+	updateTime?: string;
+}
+
+export interface CapabilityPortraitRecord {
+	employeeId: number;
+	employeeName?: string;
+	departmentId?: number | null;
+	departmentName?: string | null;
+	capabilityTags?: string[];
+	levelSummary?: string[];
+	certificateCount?: number;
+	lastCertifiedAt?: string | null;
+	updatedAt?: string;
+}
+
+export interface CertificateRecord {
+	id?: number;
+	name: string;
+	code?: string | null;
+	category?: string | null;
+	issuer?: string | null;
+	description?: string | null;
+	validityMonths?: number | null;
+	sourceCourseId?: number | null;
+	status?: CertificateStatus;
+	issuedCount?: number;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface CertificatePageResult {
+	list: CertificateRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface CertificateLedgerRecord {
+	id?: number;
+	certificateId?: number;
+	certificateName?: string;
+	employeeId?: number;
+	employeeName?: string;
+	departmentId?: number | null;
+	departmentName?: string | null;
+	issuedAt: string;
+	issuedBy?: string;
+	sourceCourseId?: number | null;
+	status?: CertificateRecordStatus;
+}
+
+export interface CertificateLedgerPageResult {
+	list: CertificateLedgerRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
 }
 
 export interface CourseRecord {
@@ -593,6 +771,77 @@ export function createEmptyGoal(): GoalRecord {
 		startDate: '',
 		endDate: '',
 		progressRecords: []
+	};
+}
+
+export function createEmptyContract(): ContractRecord {
+	return {
+		employeeId: undefined,
+		type: 'full-time',
+		title: '',
+		contractNumber: '',
+		startDate: '',
+		endDate: '',
+		probationPeriod: null,
+		salary: null,
+		position: '',
+		departmentId: undefined,
+		status: 'draft'
+	};
+}
+
+export function createEmptyPurchaseOrder(): PurchaseOrderRecord {
+	return {
+		orderNo: '',
+		title: '',
+		supplierId: undefined,
+		departmentId: undefined,
+		requesterId: undefined,
+		orderDate: '',
+		totalAmount: 0,
+		currency: 'CNY',
+		remark: '',
+		status: 'draft'
+	};
+}
+
+export function createEmptySupplier(): SupplierRecord {
+	return {
+		name: '',
+		code: '',
+		category: '',
+		contactName: '',
+		contactPhone: '',
+		contactEmail: '',
+		bankAccount: '',
+		taxNo: '',
+		remark: '',
+		status: 'active'
+	};
+}
+
+export function createEmptyCapabilityModel(): CapabilityModelRecord {
+	return {
+		name: '',
+		code: '',
+		category: '',
+		description: '',
+		status: 'draft',
+		itemCount: 0
+	};
+}
+
+export function createEmptyCertificate(): CertificateRecord {
+	return {
+		name: '',
+		code: '',
+		category: '',
+		issuer: '',
+		description: '',
+		validityMonths: null,
+		sourceCourseId: null,
+		status: 'draft',
+		issuedCount: 0
 	};
 }
 
