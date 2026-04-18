@@ -60,6 +60,8 @@
     "db:local:stop": "node ./scripts/local-db.mjs stop",
     "db:local:status": "node ./scripts/local-db.mjs status",
     "smoke:stage2:performance": "node ./scripts/local-db.mjs start && node ./scripts/smoke-stage2-performance.mjs",
+    "smoke:stage2:performance:8001": "cross-env STAGE2_SMOKE_BASE_URL=http://127.0.0.1:8001 npm run smoke:stage2:performance",
+    "smoke:stage2:performance:8006": "cross-env STAGE2_SMOKE_BASE_URL=http://127.0.0.1:8006 npm run smoke:stage2:performance",
     "test": "cross-env NODE_ENV=unittest jest",
     "cov": "jest --coverage",
     "lint": "mwts check",
