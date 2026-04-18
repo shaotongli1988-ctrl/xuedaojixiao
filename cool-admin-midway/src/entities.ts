@@ -36,15 +36,16 @@ import * as entity33 from './modules/performance/entity/promotion';
 import * as entity34 from './modules/performance/entity/salary-change';
 import * as entity35 from './modules/performance/entity/salary';
 import * as entity36 from './modules/performance/entity/suggestion';
-import * as entity37 from './modules/plugin/entity/info';
-import * as entity38 from './modules/recycle/entity/data';
-import * as entity39 from './modules/space/entity/info';
-import * as entity40 from './modules/space/entity/type';
-import * as entity41 from './modules/task/entity/info';
-import * as entity42 from './modules/task/entity/log';
-import * as entity43 from './modules/user/entity/address';
-import * as entity44 from './modules/user/entity/info';
-import * as entity45 from './modules/user/entity/wx';
+import * as entity37 from './modules/performance/entity/talent-asset';
+import * as entity38 from './modules/plugin/entity/info';
+import * as entity39 from './modules/recycle/entity/data';
+import * as entity40 from './modules/space/entity/info';
+import * as entity41 from './modules/space/entity/type';
+import * as entity42 from './modules/task/entity/info';
+import * as entity43 from './modules/task/entity/log';
+import * as entity44 from './modules/user/entity/address';
+import * as entity45 from './modules/user/entity/info';
+import * as entity46 from './modules/user/entity/wx';
 export const entities = [
   ...Object.values(entity0),
   ...Object.values(entity1),
@@ -92,4 +93,5 @@ export const entities = [
   ...Object.values(entity43),
   ...Object.values(entity44),
   ...Object.values(entity45),
+  ...Object.values(entity46),
 ];

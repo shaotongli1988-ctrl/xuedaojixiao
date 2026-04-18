@@ -16,6 +16,7 @@ export type CourseStatus = 'draft' | 'published' | 'closed';
 export type InterviewStatus = 'scheduled' | 'completed' | 'cancelled';
 export type InterviewType = 'technical' | 'behavioral' | 'manager' | 'hr';
 export type MeetingStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+export type TalentAssetStatus = 'new' | 'tracking' | 'archived';
 
 export interface DashboardCrossSummaryQuery {
 	periodType?: string;
@@ -248,6 +249,31 @@ export interface MeetingRecord {
 
 export interface MeetingPageResult {
 	list: MeetingRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface TalentAssetRecord {
+	id?: number;
+	candidateName: string;
+	code?: string | null;
+	targetDepartmentId: number | undefined;
+	targetDepartmentName?: string;
+	targetPosition?: string | null;
+	source: string;
+	tagList?: string[];
+	followUpSummary?: string | null;
+	nextFollowUpDate?: string | null;
+	status?: TalentAssetStatus;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface TalentAssetPageResult {
+	list: TalentAssetRecord[];
 	pagination: {
 		page: number;
 		size: number;
@@ -609,6 +635,20 @@ export function createEmptyMeeting(currentUserId?: number): MeetingRecord {
 		participantIds: [],
 		participantCount: 0,
 		status: 'scheduled'
+	};
+}
+
+export function createEmptyTalentAsset(): TalentAssetRecord {
+	return {
+		candidateName: '',
+		code: '',
+		targetDepartmentId: undefined,
+		targetPosition: '',
+		source: '',
+		tagList: [],
+		followUpSummary: '',
+		nextFollowUpDate: '',
+		status: 'new'
 	};
 }
 
