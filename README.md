@@ -36,3 +36,30 @@
 1. 先看项目入口
 2. 再看 [17-项目执行流程（精简版）](/Users/shaotongli/Documents/xuedao/performance-management-system/docs/17-项目执行流程（精简版）.md)
 3. 再按现有基座把代码落到 `cool-admin-midway` 和 `cool-admin-vue`
+
+## Git Push 门禁
+
+仓库内已提供版本化 `pre-push` 门禁：
+
+- hook 入口：`.githooks/pre-push`
+- 实际规则：`scripts/git-pre-push-gate.mjs`
+
+启用方式：
+
+```bash
+git config core.hooksPath .githooks
+```
+
+当前门禁策略：
+
+1. 同时检查 `HEAD` 相对上游分支的待推送变更，以及当前工作区未提交/未跟踪变更。
+2. 命中临时产物或测试运行产物时，直接阻断 push。
+3. 按变更路径触发最小验证：
+   - `cool-admin-midway` 命中主题 1-9 / 跨模块驾驶舱后端实现时，跑定向回归测试和阶段 2 smoke。
+   - `cool-admin-vue` 命中后台前端实现时，跑 `corepack pnpm run type-check` 和 `corepack pnpm run build`。
+   - `cool-uni` 命中移动端实现时，跑 `corepack pnpm exec tsc --noEmit -p tsconfig.json`。
+
+维护要求：
+
+- 主题冻结范围或验证矩阵变化后，必须同步更新 `scripts/git-pre-push-gate.mjs` 中的阻断路径和命令映射。
+- 这套门禁只负责本地 push 前阻断，不替代远端分支保护或代码评审。

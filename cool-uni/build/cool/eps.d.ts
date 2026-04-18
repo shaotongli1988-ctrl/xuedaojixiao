@@ -859,5 +859,5 @@ declare namespace Eps {
 		user: { address: UserAddress; comm: UserComm; info: UserInfo; login: UserLogin };
 	};
 
-	type DictKey = "brand" | "occupation";
+	type DictKey = string;
 }

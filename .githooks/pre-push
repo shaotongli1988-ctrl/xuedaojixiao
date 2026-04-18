@@ -1,0 +1,6 @@
+#!/bin/sh
+# 负责把 git push 前门禁委托给仓库内脚本；不负责承载具体验证规则。
+set -eu
+
+repo_root="$(git rev-parse --show-toplevel)"
+exec node "$repo_root/scripts/git-pre-push-gate.mjs"

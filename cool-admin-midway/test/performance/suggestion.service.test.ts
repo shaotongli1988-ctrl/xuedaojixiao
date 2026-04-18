@@ -123,29 +123,53 @@ describe('performance suggestion service', () => {
       ]),
     };
 
-    const findOneBy = jest
-      .fn()
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({
-        id: 900,
-        assessmentId: 101,
-        suggestionType: 'pip',
-      });
-    service.performanceSuggestionEntity = {
-      findOneBy,
+    const suggestionRepo = {
+      findOne: jest
+        .fn()
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({
+          id: 900,
+          assessmentId: 101,
+          suggestionType: 'pip',
+        }),
       create: jest.fn().mockImplementation(payload => payload),
       save: jest.fn().mockResolvedValue({ id: 900 }),
     };
-
+    const assessmentRepo = {
+      findOne: jest.fn().mockResolvedValue({
+        id: 101,
+      }),
+    };
+    const manager = {
+      getRepository: jest.fn().mockImplementation((entity: any) => {
+        if (entity?.name === 'PerformanceSuggestionEntity') {
+          return suggestionRepo;
+        }
+        return assessmentRepo;
+      }),
+    };
+    service.performanceSuggestionEntity = {
+      manager: {
+        transaction: jest.fn().mockImplementation(async (handler: any) => {
+          return handler(manager);
+        }),
+      },
+    };
     await service.ensureSuggestions({}, ['performance:suggestion:page']);
     await service.ensureSuggestions({}, ['performance:suggestion:page']);
 
-    expect(service.performanceSuggestionEntity.create).toHaveBeenCalledTimes(1);
-    expect(service.performanceSuggestionEntity.create).toHaveBeenCalledWith(
+    expect(suggestionRepo.create).toHaveBeenCalledTimes(1);
+    expect(suggestionRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({
         assessmentId: 101,
         suggestionType: 'pip',
         status: 'pending',
+      })
+    );
+    expect(assessmentRepo.findOne).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 101 },
+        lock: { mode: 'pessimistic_write' },
       })
     );
   });

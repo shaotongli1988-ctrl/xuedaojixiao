@@ -86,11 +86,7 @@
 
 ## 当前残余风险
 
-当前仅保留 `P2` 治理项，详细见 [2026-04-17-问题台账与最终回归收口.md](/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/2026-04-17-问题台账与最终回归收口.md)：
-
-1. 默认 `8001` 旧实例口径仍需统一治理
-2. 个别事实源路由说明仍需持续复核
-3. 守卫脚本与仓库现状仍需单独治理
+当前未见未关闭 `P2`。历史项目级治理收口见 [2026-04-18-项目级P2治理收口.md](/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/2026-04-18-项目级P2治理收口.md)。
 
 ## 外部阅读顺序
 

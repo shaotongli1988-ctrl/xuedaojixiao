@@ -875,6 +875,7 @@ export class PerformanceApprovalFlowService extends BaseService {
     summary: { totalScore: number; grade: string }
   ) {
     await this.performanceAssessmentEntity.manager.transaction(async manager => {
+      await this.lockSourceObject(manager, 'assessment', assessment.id);
       const config = await this.findEnabledConfig(manager, 'assessment');
       const now = this.now();
 
@@ -908,6 +909,7 @@ export class PerformanceApprovalFlowService extends BaseService {
 
   async submitPromotion(promotion: PerformancePromotionEntity) {
     await this.performancePromotionEntity.manager.transaction(async manager => {
+      await this.lockSourceObject(manager, 'promotion', promotion.id);
       const config = await this.findEnabledConfig(manager, 'promotion');
 
       if (config) {
@@ -1172,17 +1174,20 @@ export class PerformanceApprovalFlowService extends BaseService {
               .getRepository(PerformanceAssessmentEntity)
               .findOneBy({ id: objectId });
             if (assessment) {
-              await this.performanceSuggestionService.syncApprovedAssessment({
-                id: assessment.id,
-                employeeId: Number(assessment.employeeId),
-                departmentId: Number(assessment.departmentId),
-                periodType: assessment.periodType,
-                periodValue: assessment.periodValue,
-                status: 'approved',
-                grade: assessment.grade,
-                totalScore: Number(assessment.totalScore || 0),
-                tenantId: assessment.tenantId ?? null,
-              });
+              await this.performanceSuggestionService.syncApprovedAssessmentInTransaction(
+                manager,
+                {
+                  id: assessment.id,
+                  employeeId: Number(assessment.employeeId),
+                  departmentId: Number(assessment.departmentId),
+                  periodType: assessment.periodType,
+                  periodValue: assessment.periodValue,
+                  status: 'approved',
+                  grade: assessment.grade,
+                  totalScore: Number(assessment.totalScore || 0),
+                  tenantId: assessment.tenantId ?? null,
+                }
+              );
             }
           }
           return;
@@ -1463,6 +1468,22 @@ export class PerformanceApprovalFlowService extends BaseService {
     if (existing) {
       throw new CoolCommException('当前对象已存在进行中的自动审批实例');
     }
+  }
+
+  private async lockSourceObject(
+    manager: EntityManager,
+    objectType: ApprovalObjectType,
+    objectId: number
+  ) {
+    const entity =
+      objectType === 'assessment'
+        ? PerformanceAssessmentEntity
+        : PerformancePromotionEntity;
+
+    await manager.getRepository(entity).findOne({
+      where: { id: objectId },
+      lock: { mode: 'pessimistic_write' },
+    } as any);
   }
 
   private async requireInstance(id: number) {

@@ -1,7 +1,7 @@
 {
   "contractVersion": "v1",
-  "contractId": "dr-2026-04-17-002550",
-  "generatedAt": "2026-04-17T00:25:50+08:00",
+  "contractId": "dr-2026-04-18-092259",
+  "generatedAt": "2026-04-18T09:22:59+08:00",
   "generatedBy": "software-development-readiness-governance",
   "phase": "development-readiness",
   "mode": "global",
@@ -16,7 +16,7 @@
     "frontendDependencies": []
   },
   "scope": {
-    "businessGoal": "绩效管理系统项目流程防漂移治理收口",
+    "businessGoal": "二期主题6 跨模块驾驶舱指标 阶段0冻结",
     "inScopeModules": [
       "user"
     ],
@@ -25,7 +25,7 @@
       "docs"
     ],
     "actors": [],
-    "changedFilesCount": 44
+    "changedFilesCount": 4
   },
   "contracts": {
     "fieldDictionary": {
@@ -69,9 +69,9 @@
     "questionBankModules": []
   },
   "governance": {
-    "readinessStatus": "可进入开发",
-    "action": "READY_TO_START",
-    "reason": "未发现阻断进入开发的高风险问题。",
+    "readinessStatus": "不建议进入开发",
+    "action": "BLOCK_BEFORE_CODING",
+    "reason": "存在 P0 高风险缺口，当前不满足安全开工条件。",
     "subguards": [
       {
         "name": "requirements-freeze-guard",
@@ -101,49 +101,49 @@
         "name": "api-schema-drift-checker",
         "level": "P0",
         "implemented": true,
-        "status": "skipped",
-        "returncode": null,
-        "scriptPath": ""
+        "status": "ran",
+        "returncode": 1,
+        "scriptPath": "/Users/shaotongli/.codex/skills/api-schema-drift-checker/scripts/schema_drift_guard.py"
       },
       {
         "name": "rbac-alignment-guard",
         "level": "P0",
         "implemented": true,
-        "status": "skipped",
-        "returncode": null,
-        "scriptPath": ""
+        "status": "ran",
+        "returncode": 0,
+        "scriptPath": "/Users/shaotongli/.codex/skills/rbac-alignment-guard/scripts/rbac_alignment_guard.py"
       },
       {
         "name": "state-machine-alignment",
         "level": "P0",
         "implemented": true,
-        "status": "skipped",
-        "returncode": null,
-        "scriptPath": ""
+        "status": "ran",
+        "returncode": 0,
+        "scriptPath": "/Users/shaotongli/.codex/skills/state-machine-alignment/scripts/state_machine_guard.py"
       },
       {
         "name": "error-code-governor",
         "level": "P0",
         "implemented": true,
-        "status": "skipped",
-        "returncode": null,
-        "scriptPath": ""
+        "status": "ran",
+        "returncode": 0,
+        "scriptPath": "/Users/shaotongli/.codex/skills/error-code-governor/scripts/error_code_guard.py"
       },
       {
         "name": "ux-state-completeness-checker",
         "level": "P1",
         "implemented": true,
-        "status": "skipped",
-        "returncode": null,
-        "scriptPath": ""
+        "status": "ran",
+        "returncode": 0,
+        "scriptPath": "/Users/shaotongli/.codex/skills/ux-state-completeness-checker/scripts/ux_state_completeness_guard.py"
       },
       {
         "name": "architecture-decision-recorder",
         "level": "P1",
         "implemented": true,
-        "status": "skipped",
-        "returncode": null,
-        "scriptPath": ""
+        "status": "ran",
+        "returncode": 0,
+        "scriptPath": "/Users/shaotongli/.codex/skills/architecture-decision-recorder/scripts/architecture_decision_recorder_guard.py"
       },
       {
         "name": "tech-stack-drift-guard",
@@ -157,17 +157,17 @@
         "name": "git-flow-enforcer",
         "level": "P1",
         "implemented": true,
-        "status": "skipped",
-        "returncode": null,
-        "scriptPath": ""
+        "status": "ran",
+        "returncode": 1,
+        "scriptPath": "/Users/shaotongli/.codex/skills/git-flow-enforcer/scripts/git_flow_enforcer.py"
       },
       {
         "name": "app-security-baseline-guard",
         "level": "P1",
         "implemented": true,
-        "status": "skipped",
-        "returncode": null,
-        "scriptPath": ""
+        "status": "ran",
+        "returncode": 0,
+        "scriptPath": "/Users/shaotongli/.codex/skills/app-security-baseline-guard/scripts/app_security_baseline_guard.py"
       }
     ],
     "references": [

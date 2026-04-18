@@ -1,8 +1,8 @@
 /**
- * Seeds stage-2 integration data for performance modules 1, 2, 4, 5, 6, 7, 8, and dashboard aggregation.
+ * Seeds local integration data for performance modules and theme-7/8/9 management.
  * This file only prepares local menu, role, user, and sample business data for联调.
  * It does not replace the project's general initialization flow or production release scripts.
- * Maintenance pitfall: dashboard权限、模块 4/5/6/7/8 样例和 menu.json 必须一起维护，否则 smoke 断言会和 seed 脱节。
+ * Maintenance pitfall: dashboard权限、课程/面试/会议样例和 menu.json 必须一起维护，否则真实联调会和 seed 脱节。
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -23,6 +23,9 @@ const stage2MenuRouters = new Set([
   '/performance/pip',
   '/performance/promotion',
   '/performance/salary',
+  '/performance/course',
+  '/performance/interview',
+  '/performance/meeting',
 ]);
 
 const connection = await mysql.createConnection({
@@ -684,6 +687,209 @@ async function replaceFeedbackTasks(seedRows) {
   }
 }
 
+async function ensureCourseTables() {
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_course (
+      id int NOT NULL AUTO_INCREMENT,
+      title varchar(200) NOT NULL,
+      code varchar(100) DEFAULT NULL,
+      category varchar(100) DEFAULT NULL,
+      description text DEFAULT NULL,
+      startDate varchar(10) DEFAULT NULL,
+      endDate varchar(10) DEFAULT NULL,
+      status varchar(20) NOT NULL DEFAULT 'draft',
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_performance_course_code (code),
+      KEY idx_performance_course_title (title),
+      KEY idx_performance_course_category (category),
+      KEY idx_performance_course_status (status),
+      KEY idx_performance_course_create_time (createTime),
+      KEY idx_performance_course_update_time (updateTime),
+      KEY idx_performance_course_tenant (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_course_enrollment (
+      id int NOT NULL AUTO_INCREMENT,
+      courseId int NOT NULL,
+      userId int NOT NULL,
+      enrollTime varchar(19) DEFAULT NULL,
+      status varchar(50) DEFAULT NULL,
+      score decimal(8,2) DEFAULT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_performance_course_enrollment_course_user (courseId, userId),
+      KEY idx_performance_course_enrollment_course (courseId),
+      KEY idx_performance_course_enrollment_user (userId),
+      KEY idx_performance_course_enrollment_status (status),
+      KEY idx_performance_course_enrollment_enroll_time (enrollTime),
+      KEY idx_performance_course_enrollment_create_time (createTime),
+      KEY idx_performance_course_enrollment_update_time (updateTime),
+      KEY idx_performance_course_enrollment_tenant (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function replaceCourses(seedRows) {
+  const titles = seedRows.map(item => item.title);
+
+  if (titles.length) {
+    const [existing] = await connection.query(
+      'SELECT id FROM performance_course WHERE title IN (?)',
+      [titles]
+    );
+    const courseIds = existing.map(item => item.id);
+
+    if (courseIds.length) {
+      await connection.query(
+        'DELETE FROM performance_course_enrollment WHERE courseId IN (?)',
+        [courseIds]
+      );
+      await connection.query('DELETE FROM performance_course WHERE id IN (?)', [
+        courseIds,
+      ]);
+    }
+  }
+
+  for (const row of seedRows) {
+    const [result] = await connection.query(
+      `INSERT INTO performance_course
+        (title, code, category, description, startDate, endDate, status, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.title,
+        row.code,
+        row.category,
+        row.description,
+        row.startDate,
+        row.endDate,
+        row.status,
+        now(),
+        now(),
+      ]
+    );
+
+    for (const enrollment of row.enrollments || []) {
+      await connection.query(
+        `INSERT INTO performance_course_enrollment
+          (courseId, userId, enrollTime, status, score, createTime, updateTime, tenantId)
+         VALUES (?, ?, ?, ?, ?, ?, ?, NULL)`,
+        [
+          result.insertId,
+          enrollment.userId,
+          enrollment.enrollTime,
+          enrollment.status,
+          enrollment.score,
+          now(),
+          now(),
+        ]
+      );
+    }
+  }
+}
+
+async function replaceMeetings(seedRows) {
+  const titles = seedRows.map(item => item.title);
+
+  if (titles.length) {
+    await connection.query('DELETE FROM performance_meeting WHERE title IN (?)', [
+      titles,
+    ]);
+  }
+
+  for (const row of seedRows) {
+    await connection.query(
+      `INSERT INTO performance_meeting
+        (title, code, type, description, startDate, endDate, location, organizerId, participantIds, participantCount, status, lastCheckInTime, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.title,
+        row.code,
+        row.type,
+        row.description,
+        row.startDate,
+        row.endDate,
+        row.location,
+        row.organizerId,
+        JSON.stringify(row.participantIds || []),
+        row.participantCount,
+        row.status,
+        row.lastCheckInTime ?? null,
+        now(),
+        now(),
+      ]
+    );
+  }
+}
+
+async function ensureInterviewTable() {
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_interview (
+      id int NOT NULL AUTO_INCREMENT,
+      candidateName varchar(100) NOT NULL,
+      position varchar(100) NOT NULL,
+      departmentId int DEFAULT NULL,
+      interviewerId int NOT NULL,
+      interviewDate varchar(19) NOT NULL,
+      interviewType varchar(20) DEFAULT NULL,
+      score decimal(5,2) DEFAULT NULL,
+      status varchar(20) NOT NULL DEFAULT 'scheduled',
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      KEY idx_performance_interview_candidate_name (candidateName),
+      KEY idx_performance_interview_department_id (departmentId),
+      KEY idx_performance_interview_interviewer_id (interviewerId),
+      KEY idx_performance_interview_interview_date (interviewDate),
+      KEY idx_performance_interview_status (status),
+      KEY idx_performance_interview_create_time (createTime),
+      KEY idx_performance_interview_update_time (updateTime),
+      KEY idx_performance_interview_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function ensureMeetingTable() {
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_meeting (
+      id int NOT NULL AUTO_INCREMENT,
+      title varchar(200) NOT NULL,
+      code varchar(100) DEFAULT NULL,
+      type varchar(100) DEFAULT NULL,
+      description text DEFAULT NULL,
+      startDate varchar(19) NOT NULL,
+      endDate varchar(19) NOT NULL,
+      location varchar(200) DEFAULT NULL,
+      organizerId int NOT NULL,
+      participantIds json DEFAULT NULL,
+      participantCount int NOT NULL DEFAULT 0,
+      status varchar(20) NOT NULL DEFAULT 'scheduled',
+      lastCheckInTime varchar(19) DEFAULT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      KEY idx_performance_meeting_title (title),
+      KEY idx_performance_meeting_code (code),
+      KEY idx_performance_meeting_start_date (startDate),
+      KEY idx_performance_meeting_end_date (endDate),
+      KEY idx_performance_meeting_organizer_id (organizerId),
+      KEY idx_performance_meeting_status (status),
+      KEY idx_performance_meeting_last_check_in_time (lastCheckInTime),
+      KEY idx_performance_meeting_create_time (createTime),
+      KEY idx_performance_meeting_update_time (updateTime),
+      KEY idx_performance_meeting_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
 async function ensureFeedbackTables() {
   await connection.query(`
     CREATE TABLE IF NOT EXISTS performance_feedback_task (
@@ -887,6 +1093,9 @@ async function main() {
 
   try {
     await syncMenuTree(loadStage2PerformanceMenus());
+    await ensureCourseTables();
+    await ensureInterviewTable();
+    await ensureMeetingTable();
     await ensureFeedbackTables();
     await ensureApprovalTables();
 
@@ -980,9 +1189,13 @@ async function main() {
         '/performance/pip',
         '/performance/promotion',
         '/performance/salary',
+        '/performance/course',
+        '/performance/interview',
+        '/performance/meeting',
       ],
       perms: [
         'performance:dashboard:summary',
+        'performance:dashboard:crossSummary',
         'performance:assessment:myPage',
         'performance:assessment:info',
         'performance:assessment:page',
@@ -1048,6 +1261,23 @@ async function main() {
         'performance:salary:confirm',
         'performance:salary:archive',
         'performance:salary:changeAdd',
+        'performance:course:page',
+        'performance:course:info',
+        'performance:course:add',
+        'performance:course:update',
+        'performance:course:delete',
+        'performance:course:enrollmentPage',
+        'performance:interview:page',
+        'performance:interview:info',
+        'performance:interview:add',
+        'performance:interview:update',
+        'performance:interview:delete',
+        'performance:meeting:page',
+        'performance:meeting:info',
+        'performance:meeting:add',
+        'performance:meeting:update',
+        'performance:meeting:delete',
+        'performance:meeting:checkIn',
       ],
     });
     const managerMenuIds = await collectMenuIds({
@@ -1061,9 +1291,13 @@ async function main() {
         '/performance/suggestion',
         '/performance/pip',
         '/performance/promotion',
+        '/performance/course',
+        '/performance/interview',
+        '/performance/meeting',
       ],
       perms: [
         'performance:dashboard:summary',
+        'performance:dashboard:crossSummary',
         'performance:assessment:myPage',
         'performance:assessment:info',
         'performance:assessment:page',
@@ -1112,6 +1346,18 @@ async function main() {
         'performance:promotion:update',
         'performance:promotion:submit',
         'performance:promotion:review',
+        'performance:course:page',
+        'performance:course:info',
+        'performance:interview:page',
+        'performance:interview:info',
+        'performance:interview:add',
+        'performance:interview:update',
+        'performance:meeting:page',
+        'performance:meeting:info',
+        'performance:meeting:add',
+        'performance:meeting:update',
+        'performance:meeting:delete',
+        'performance:meeting:checkIn',
       ],
     });
     const employeeMenuIds = await collectMenuIds({
@@ -1185,6 +1431,104 @@ async function main() {
     await replaceUserRoles(employeeUserId, [employeeRoleId]);
     await replaceUserRoles(feedbackUserId, [feedbackRoleId]);
     await replaceUserRoles(salesEmployeeUserId, [employeeRoleId]);
+
+    await replaceCourses([
+      {
+        title: '联调-新员工训练营',
+        code: 'PMS-COURSE-DRAFT-001',
+        category: '通用培训',
+        description: '主题7联调用草稿课程',
+        startDate: '2026-05-01',
+        endDate: '2026-05-08',
+        status: 'draft',
+        enrollments: [],
+      },
+      {
+        title: '联调-晋升领导力训练营',
+        code: 'PMS-COURSE-PUBLISHED-001',
+        category: '管理培训',
+        description: '主题7联调用已发布课程',
+        startDate: '2026-05-10',
+        endDate: '2026-05-18',
+        status: 'published',
+        enrollments: [
+          {
+            userId: employeeUserId,
+            enrollTime: '2026-05-09 09:30:00',
+            status: 'passed',
+            score: 95.5,
+          },
+          {
+            userId: salesEmployeeUserId,
+            enrollTime: '2026-05-09 10:15:00',
+            status: 'registered',
+            score: null,
+          },
+        ],
+      },
+      {
+        title: '联调-平台架构复盘课',
+        code: null,
+        category: '专业培训',
+        description: '主题7联调用已关闭课程',
+        startDate: '2026-04-20',
+        endDate: '2026-04-28',
+        status: 'closed',
+        enrollments: [
+          {
+            userId: employeeUserId,
+            enrollTime: '2026-04-19 14:00:00',
+            status: 'completed',
+            score: 88,
+          },
+        ],
+      },
+    ]);
+
+    await replaceMeetings([
+      {
+        title: '联调-主题9排期会',
+        code: 'PMS-MEETING-SCHEDULED-001',
+        type: 'sync',
+        description: '主题9联调-已安排会议样例',
+        startDate: '2026-05-01 10:00:00',
+        endDate: '2026-05-01 11:00:00',
+        location: '研发中心-A1',
+        organizerId: managerUserId,
+        participantIds: [employeeUserId, feedbackUserId],
+        participantCount: 2,
+        status: 'scheduled',
+        lastCheckInTime: null,
+      },
+      {
+        title: '联调-主题9进行中晨会',
+        code: 'PMS-MEETING-INPROGRESS-001',
+        type: 'standup',
+        description: '主题9联调-进行中会议样例',
+        startDate: '2026-05-02 09:30:00',
+        endDate: '2026-05-02 10:00:00',
+        location: '研发中心-B2',
+        organizerId: managerUserId,
+        participantIds: [employeeUserId],
+        participantCount: 1,
+        status: 'in_progress',
+        lastCheckInTime: '2026-05-02 09:35:00',
+      },
+      {
+        title: '联调-主题9销售复盘会',
+        code: 'PMS-MEETING-HIDDEN-001',
+        type: 'review',
+        description: '主题9联调-跨部门隐藏会议样例',
+        startDate: '2026-05-03 14:00:00',
+        endDate: '2026-05-03 15:00:00',
+        location: '销售中心-C1',
+        organizerId: hrUserId,
+        participantIds: [salesEmployeeUserId],
+        participantCount: 1,
+        status: 'scheduled',
+        lastCheckInTime: null,
+      },
+    ]);
 
     const assessmentIdMap = await replaceAssessments([
       {
@@ -1621,7 +1965,7 @@ async function main() {
 
     await connection.commit();
 
-    console.log('Stage-2 performance seed completed for modules 1/2/4/5/6/7/8 baseline.');
+    console.log('Stage-2 performance seed completed for modules 1/2/4/5/6/7/8/9 baseline.');
     console.log('Accounts: admin, hr_admin, manager_rd, employee_platform, feedback_peer, employee_sales');
     console.log('Password: 123456');
   } catch (error) {

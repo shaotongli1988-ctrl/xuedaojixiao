@@ -117,12 +117,22 @@ describe('performance assessment helper', () => {
     service.baseSysPermsService = {
       departmentIds: jest.fn().mockResolvedValue([]),
     };
-    service.performanceAssessmentEntity = {
-      findOneBy: jest.fn().mockResolvedValue(assessment),
+    const assessmentRepo = {
       update: jest.fn().mockResolvedValue(undefined),
     };
+    const manager = {
+      getRepository: jest.fn().mockReturnValue(assessmentRepo),
+    };
+    service.performanceAssessmentEntity = {
+      findOneBy: jest.fn().mockResolvedValue(assessment),
+      manager: {
+        transaction: jest.fn().mockImplementation(async (handler: any) => {
+          return handler(manager);
+        }),
+      },
+    };
     service.performanceSuggestionService = {
-      syncApprovedAssessment: jest.fn().mockResolvedValue({ id: 901 }),
+      syncApprovedAssessmentInTransaction: jest.fn().mockResolvedValue({ id: 901 }),
     };
     service.performanceApprovalFlowService = {
       assertManualReviewAllowed: jest.fn().mockResolvedValue(undefined),
@@ -134,7 +144,8 @@ describe('performance assessment helper', () => {
       status: 'approved',
     });
 
-    expect(service.performanceAssessmentEntity.update).toHaveBeenCalledWith(
+    expect(manager.getRepository).toHaveBeenCalled();
+    expect(assessmentRepo.update).toHaveBeenCalledWith(
       { id: 41 },
       expect.objectContaining({
         status: 'approved',
@@ -142,18 +153,21 @@ describe('performance assessment helper', () => {
       })
     );
     expect(
-      service.performanceSuggestionService.syncApprovedAssessment
-    ).toHaveBeenCalledWith({
-      id: 41,
-      employeeId: 501,
-      departmentId: 18,
-      periodType: 'quarter',
-      periodValue: '2026Q2',
-      status: 'approved',
-      grade: 'C',
-      totalScore: 68,
-      tenantId: 1,
-    });
+      service.performanceSuggestionService.syncApprovedAssessmentInTransaction
+    ).toHaveBeenCalledWith(
+      manager,
+      {
+        id: 41,
+        employeeId: 501,
+        departmentId: 18,
+        periodType: 'quarter',
+        periodValue: '2026Q2',
+        status: 'approved',
+        grade: 'C',
+        totalScore: 68,
+        tenantId: 1,
+      }
+    );
     expect(
       service.performanceApprovalFlowService.assertManualReviewAllowed
     ).toHaveBeenCalledWith('assessment', 41);

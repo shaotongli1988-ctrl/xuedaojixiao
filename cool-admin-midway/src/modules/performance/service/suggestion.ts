@@ -16,7 +16,7 @@ import {
 } from '@midwayjs/core';
 import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 import { BaseSysDepartmentEntity } from '../../base/entity/sys/department';
 import { BaseSysUserEntity } from '../../base/entity/sys/user';
 import { BaseSysMenuService } from '../../base/service/sys/menu';
@@ -178,13 +178,32 @@ export class PerformanceSuggestionService extends BaseService {
   }
 
   async syncApprovedAssessment(assessment: SuggestionAssessmentSnapshot) {
+    return this.performanceSuggestionEntity.manager.transaction(async manager => {
+      await this.lockAssessmentRow(manager, Number(assessment.id));
+      return this.syncApprovedAssessmentWithManager(manager, assessment);
+    });
+  }
+
+  async syncApprovedAssessmentInTransaction(
+    manager: EntityManager,
+    assessment: SuggestionAssessmentSnapshot
+  ) {
+    await this.lockAssessmentRow(manager, Number(assessment.id));
+    return this.syncApprovedAssessmentWithManager(manager, assessment);
+  }
+
+  private async syncApprovedAssessmentWithManager(
+    manager: EntityManager,
+    assessment: SuggestionAssessmentSnapshot
+  ) {
     const candidate = deriveSuggestionCandidate(assessment);
 
     if (!candidate) {
       return null;
     }
 
-    const existing = await this.performanceSuggestionEntity.findOne({
+    const suggestionRepo = manager.getRepository(PerformanceSuggestionEntity);
+    const existing = await suggestionRepo.findOne({
       where: {
         assessmentId: Number(assessment.id),
         suggestionType: candidate.suggestionType,
@@ -199,7 +218,7 @@ export class PerformanceSuggestionService extends BaseService {
       return existing;
     }
 
-    const entity = this.performanceSuggestionEntity.create({
+    const entity = suggestionRepo.create({
       suggestionType: candidate.suggestionType,
       status: 'pending',
       assessmentId: Number(assessment.id),
@@ -221,7 +240,7 @@ export class PerformanceSuggestionService extends BaseService {
       tenantId: (assessment as any).tenantId ?? null,
     });
 
-    return this.performanceSuggestionEntity.save(entity);
+    return suggestionRepo.save(entity);
   }
 
   async ensureSuggestions(query: any = {}, perms?: string[]) {
@@ -240,53 +259,17 @@ export class PerformanceSuggestionService extends BaseService {
     });
 
     for (const assessment of assessments) {
-      const candidate = deriveSuggestionCandidate({
-        id: assessment.id,
+      await this.syncApprovedAssessment({
+        id: Number(assessment.id),
         status: assessment.status,
         grade: assessment.grade,
-        totalScore: assessment.totalScore,
-        employeeId: assessment.employeeId,
-        departmentId: assessment.departmentId,
+        totalScore: Number(assessment.totalScore || 0),
+        employeeId: Number(assessment.employeeId),
+        departmentId: Number(assessment.departmentId),
         periodType: assessment.periodType,
         periodValue: assessment.periodValue,
+        tenantId: assessment.tenantId ?? null,
       });
-
-      if (!candidate) {
-        continue;
-      }
-
-      const exists = await this.performanceSuggestionEntity.findOneBy({
-        assessmentId: assessment.id,
-        suggestionType: candidate.suggestionType,
-        status: In(SUGGESTION_ACTIVE_STATUSES),
-      } as any);
-
-      if (exists) {
-        continue;
-      }
-
-      const entity = this.performanceSuggestionEntity.create({
-        suggestionType: candidate.suggestionType,
-        status: 'pending',
-        assessmentId: assessment.id,
-        employeeId: assessment.employeeId,
-        departmentId: assessment.departmentId,
-        periodType: assessment.periodType,
-        periodValue: assessment.periodValue,
-        triggerLabel: candidate.triggerLabel,
-        triggerGrade: candidate.triggerGrade,
-        triggerScore: candidate.triggerScore,
-        ruleVersion: SUGGESTION_RULE_VERSION,
-        handleTime: null,
-        handlerId: null,
-        handlerName: null,
-        revokeReasonCode: null,
-        revokeReason: null,
-        linkedEntityType: null,
-        linkedEntityId: null,
-      });
-
-      await this.performanceSuggestionEntity.save(entity);
     }
   }
 
@@ -627,6 +610,13 @@ export class PerformanceSuggestionService extends BaseService {
       id: operatorId || null,
       name: operator?.name || this.currentAdmin?.username || '',
     };
+  }
+
+  private async lockAssessmentRow(manager: EntityManager, assessmentId: number) {
+    await manager.getRepository(PerformanceAssessmentEntity).findOne({
+      where: { id: assessmentId },
+      lock: { mode: 'pessimistic_write' },
+    } as any);
   }
 }
 

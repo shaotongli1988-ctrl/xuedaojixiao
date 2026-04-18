@@ -1,6 +1,7 @@
 /**
  * 驾驶舱聚合服务。
- * 这里负责首期驾驶舱汇总指标聚合和权限范围裁剪，不负责评估单、目标、指标库或薪资模块的业务规则维护。
+ * 这里负责首期 summary 和主题 6 crossSummary 两条只读聚合接口、权限范围裁剪与有界缓存；
+ * 不负责评估单、目标、指标库或薪资模块的业务规则维护，也不负责跨域来源快照生产。
  */
 import {
   App,
@@ -9,14 +10,17 @@ import {
   AsyncContextManager,
   IMidwayApplication,
   Inject,
+  InjectClient,
   Provide,
   Scope,
   ScopeEnum,
 } from '@midwayjs/core';
 import { BaseService, CoolCommException } from '@cool-midway/core';
+import { CachingFactory, MidwayCache } from '@midwayjs/cache-manager';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Repository } from 'typeorm';
 import * as jwt from 'jsonwebtoken';
+import * as md5 from 'md5';
 import { BaseSysDepartmentEntity } from '../../base/entity/sys/department';
 import { BaseSysMenuService } from '../../base/service/sys/menu';
 import { BaseSysPermsService } from '../../base/service/sys/perms';
@@ -38,11 +42,20 @@ interface DashboardQuery {
   departmentId?: number;
 }
 
+interface DashboardCrossSummaryQuery extends DashboardQuery {
+  metricCodes?: string[];
+}
+
 interface DashboardScope {
   isHr: boolean;
   departmentIds: number[];
   requestedDepartmentId?: number;
   emptyScope: boolean;
+}
+
+interface DashboardCrossSummaryScope extends DashboardScope {
+  scopeType: 'global' | 'department_tree';
+  effectiveDepartmentId: number | null;
 }
 
 interface PeriodRange {
@@ -58,6 +71,48 @@ interface DashboardStageProgressItem {
   completionRate: number;
   sort: number;
 }
+
+interface CrossMetricDefinition {
+  metricCode: string;
+  metricLabel: string;
+  sourceDomain: 'recruitment' | 'training' | 'meeting';
+}
+
+interface CrossMetricSnapshot {
+  metricCode: string;
+  metricLabel: string;
+  sourceDomain: 'recruitment' | 'training' | 'meeting';
+  metricValue: number | null;
+  unit: string;
+  periodType: string;
+  periodValue: string;
+  scopeType: 'global' | 'department_tree';
+  departmentId: number | null;
+  updatedAt: string | null;
+  sourceStatus: 'ready' | 'delayed' | 'unavailable';
+  statusText: string;
+}
+
+const CROSS_SUMMARY_METRICS: CrossMetricDefinition[] = [
+  {
+    metricCode: 'recruitment_completion_rate',
+    metricLabel: '招聘达成率',
+    sourceDomain: 'recruitment',
+  },
+  {
+    metricCode: 'training_pass_rate',
+    metricLabel: '内训通关率',
+    sourceDomain: 'training',
+  },
+  {
+    metricCode: 'meeting_effectiveness_index',
+    metricLabel: '会议效能看板',
+    sourceDomain: 'meeting',
+  },
+];
+
+const CROSS_SUMMARY_PERIOD_TYPES = ['month', 'quarter', 'year'];
+const CROSS_SUMMARY_CACHE_TTL_MS = 60 * 1000;
 
 @Provide()
 @Scope(ScopeEnum.Request, { allowDowngrade: true })
@@ -77,6 +132,9 @@ export class PerformanceDashboardService extends BaseService {
   @InjectEntityModel(BaseSysDepartmentEntity)
   baseSysDepartmentEntity: Repository<BaseSysDepartmentEntity>;
 
+  @InjectClient(CachingFactory, 'default')
+  midwayCache: MidwayCache;
+
   @Inject()
   baseSysMenuService: BaseSysMenuService;
 
@@ -91,6 +149,7 @@ export class PerformanceDashboardService extends BaseService {
 
   private readonly perms = {
     summary: 'performance:dashboard:summary',
+    crossSummary: 'performance:dashboard:crossSummary',
     approve: 'performance:assessment:approve',
     export: 'performance:assessment:export',
   };
@@ -163,6 +222,49 @@ export class PerformanceDashboardService extends BaseService {
       gradeDistribution,
       stageProgress,
     };
+  }
+
+  async crossSummary(query: DashboardCrossSummaryQuery) {
+    const perms = await this.currentPerms();
+
+    if (!this.hasPerm(perms, this.perms.crossSummary)) {
+      throw new CoolCommException('无权限查看跨模块驾驶舱');
+    }
+
+    const normalizedQuery = this.normalizeCrossSummaryQuery(query);
+    const scope = await this.resolveCrossSummaryScope(normalizedQuery, perms);
+    const snapshots = this.buildCrossMetricSnapshots(normalizedQuery, scope);
+    const cacheKey = this.buildCrossSummaryCacheKey(
+      normalizedQuery,
+      scope,
+      snapshots
+    );
+    const cached = await this.readCrossSummaryCache(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
+    const response = {
+      metricCards: snapshots.map(item => ({
+        metricCode: item.metricCode,
+        metricLabel: item.metricLabel,
+        sourceDomain: item.sourceDomain,
+        metricValue: item.metricValue,
+        unit: item.unit,
+        periodType: item.periodType,
+        periodValue: item.periodValue,
+        scopeType: item.scopeType,
+        departmentId: item.departmentId,
+        updatedAt: item.updatedAt,
+        dataStatus: item.sourceStatus,
+        statusText: item.statusText,
+      })),
+    };
+
+    await this.writeCrossSummaryCache(cacheKey, response);
+
+    return response;
   }
 
   private async fetchAverageScore(query: DashboardQuery, scope: DashboardScope) {
@@ -660,6 +762,167 @@ export class PerformanceDashboardService extends BaseService {
     }
 
     return '';
+  }
+
+  private normalizeCrossSummaryQuery(query: DashboardCrossSummaryQuery) {
+    const periodValue = String(query.periodValue || '').trim();
+    const requestedPeriodType = String(query.periodType || '').trim();
+    const periodType =
+      requestedPeriodType || this.inferPeriodType(periodValue) || '';
+
+    if (
+      requestedPeriodType &&
+      !CROSS_SUMMARY_PERIOD_TYPES.includes(requestedPeriodType)
+    ) {
+      throw new CoolCommException('periodType 仅支持 month / quarter / year');
+    }
+
+    const metricCodes = Array.from(
+      new Set(
+        (query.metricCodes || [])
+          .map(item => String(item || '').trim())
+          .filter(Boolean)
+      )
+    );
+
+    const invalidMetricCode = metricCodes.find(code => {
+      return !CROSS_SUMMARY_METRICS.some(item => item.metricCode === code);
+    });
+
+    if (invalidMetricCode) {
+      throw new CoolCommException('metricCodes 包含未冻结指标族');
+    }
+
+    const departmentId =
+      query.departmentId === undefined || query.departmentId === null
+        ? undefined
+        : Number(query.departmentId);
+
+    if (
+      departmentId !== undefined &&
+      (!Number.isFinite(departmentId) || departmentId <= 0)
+    ) {
+      throw new CoolCommException('departmentId 参数错误');
+    }
+
+    return {
+      periodType,
+      periodValue,
+      departmentId,
+      metricCodes,
+    };
+  }
+
+  private async resolveCrossSummaryScope(
+    query: DashboardCrossSummaryQuery,
+    perms: string[]
+  ): Promise<DashboardCrossSummaryScope> {
+    const isHr = this.isHr(perms);
+    const requestedDepartmentId = query.departmentId
+      ? Number(query.departmentId)
+      : undefined;
+
+    if (isHr) {
+      return {
+        isHr: true,
+        departmentIds: [],
+        requestedDepartmentId,
+        effectiveDepartmentId: requestedDepartmentId ?? null,
+        scopeType: requestedDepartmentId ? 'department_tree' : 'global',
+        emptyScope: false,
+      };
+    }
+
+    const departmentIds = await this.departmentScopeIds();
+
+    if (requestedDepartmentId && !departmentIds.includes(requestedDepartmentId)) {
+      throw new CoolCommException('无权查看该部门范围跨模块驾驶舱');
+    }
+
+    return {
+      isHr: false,
+      departmentIds,
+      requestedDepartmentId,
+      effectiveDepartmentId: requestedDepartmentId ?? null,
+      scopeType: 'department_tree',
+      emptyScope: !departmentIds.length,
+    };
+  }
+
+  private buildCrossMetricSnapshots(
+    query: DashboardCrossSummaryQuery,
+    scope: DashboardCrossSummaryScope
+  ) {
+    const selectedCodes = new Set(query.metricCodes || []);
+    const definitions = CROSS_SUMMARY_METRICS.filter(item => {
+      return !selectedCodes.size || selectedCodes.has(item.metricCode);
+    });
+
+    return definitions.map(item => ({
+      metricCode: item.metricCode,
+      metricLabel: item.metricLabel,
+      sourceDomain: item.sourceDomain,
+      metricValue: null,
+      unit: '',
+      periodType: query.periodType || '',
+      periodValue: query.periodValue || '',
+      scopeType: scope.scopeType,
+      departmentId: scope.effectiveDepartmentId,
+      updatedAt: null,
+      sourceStatus: 'unavailable',
+      statusText: '暂不可用',
+    })) as CrossMetricSnapshot[];
+  }
+
+  private buildCrossSummaryCacheKey(
+    query: DashboardCrossSummaryQuery,
+    scope: DashboardCrossSummaryScope,
+    snapshots: CrossMetricSnapshot[]
+  ) {
+    const payload = {
+      metricCodes: snapshots.map(item => item.metricCode),
+      roleScope: scope.isHr ? 'hr' : 'manager',
+      scopeType: scope.scopeType,
+      requestedDepartmentId: scope.requestedDepartmentId ?? null,
+      effectiveDepartmentId: scope.effectiveDepartmentId,
+      departmentIds: scope.departmentIds.slice().sort((a, b) => a - b),
+      periodType: query.periodType || '',
+      periodValue: query.periodValue || '',
+      snapshotVersion: snapshots.map(item => ({
+        metricCode: item.metricCode,
+        updatedAt: item.updatedAt || '',
+        sourceStatus: item.sourceStatus,
+      })),
+    };
+
+    return `performance:dashboard:crossSummary:${md5(
+      JSON.stringify(payload)
+    )}`;
+  }
+
+  private async readCrossSummaryCache(cacheKey: string) {
+    if (!this.midwayCache) {
+      return null;
+    }
+
+    try {
+      const cached = await this.midwayCache.get(cacheKey);
+      return cached && typeof cached === 'object' ? cached : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  private async writeCrossSummaryCache(cacheKey: string, value: any) {
+    if (!this.midwayCache) {
+      return;
+    }
+
+    try {
+      await this.midwayCache.set(cacheKey, value, CROSS_SUMMARY_CACHE_TTL_MS);
+    } catch (error) {
+      return;
+    }
   }
 
   private createEmptySummary() {

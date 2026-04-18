@@ -13,7 +13,7 @@
 				</div>
 
 				<el-tag effect="plain" type="success">
-					{{ loading ? '数据刷新中' : `最近刷新 ${lastUpdatedLabel}` }}
+					{{ refreshing ? '数据刷新中' : `最近刷新 ${lastUpdatedLabel}` }}
 				</el-tag>
 			</div>
 
@@ -78,7 +78,7 @@
 				/>
 
 				<el-button @click="resetFilters">重置</el-button>
-				<el-button type="primary" :loading="loading" @click="refresh">查询汇总</el-button>
+				<el-button type="primary" :loading="refreshing" @click="refresh">查询汇总</el-button>
 			</div>
 		</el-card>
 
@@ -91,6 +91,78 @@
 				</el-card>
 			</el-col>
 		</el-row>
+
+		<el-card shadow="never" class="dashboard-page__cross-card" v-loading="crossLoading">
+			<template #header>
+				<div class="dashboard-page__section-header">
+					<div class="dashboard-page__section-title">
+						<span>跨模块指标汇总</span>
+						<span class="dashboard-page__section-subtitle">
+							只读展示招聘 / 培训 / 会议聚合快照
+						</span>
+					</div>
+					<el-tag effect="plain" type="info">无明细下钻</el-tag>
+				</div>
+			</template>
+
+			<div class="dashboard-page__cross-summary">
+				<div class="dashboard-page__cross-intro">
+					当前区域只消费 `/admin/performance/dashboard/crossSummary` 聚合快照，状态与更新时间以来源域返回为准。
+				</div>
+
+				<el-alert
+					v-if="crossErrorMessage"
+					type="warning"
+					:closable="false"
+					show-icon
+					:title="crossErrorMessage"
+				/>
+
+				<el-empty
+					v-else-if="crossSummary.metricCards.length === 0"
+					description="当前筛选条件下暂无跨模块聚合数据"
+				/>
+
+				<div v-else class="dashboard-page__cross-grid">
+					<article
+						v-for="item in crossSummary.metricCards"
+						:key="item.metricCode"
+						class="dashboard-page__cross-metric"
+						:class="`dashboard-page__cross-metric--${item.dataStatus}`"
+					>
+						<div class="dashboard-page__cross-head">
+							<div>
+								<div class="dashboard-page__cross-label">{{ item.metricLabel }}</div>
+								<div class="dashboard-page__cross-meta">
+									<span>{{ resolveCrossDomainLabel(item.sourceDomain) }}</span>
+									<span>{{ resolveCrossPeriodLabel(item.periodType, item.periodValue) }}</span>
+								</div>
+							</div>
+
+							<el-tag effect="plain" :type="resolveCrossStatusTagType(item.dataStatus)">
+								{{ resolveCrossStatusLabel(item) }}
+							</el-tag>
+						</div>
+
+						<div class="dashboard-page__cross-value">
+							<span>{{ resolveCrossMetricValue(item.metricValue) }}</span>
+							<small>{{ item.unit || '--' }}</small>
+						</div>
+
+						<div class="dashboard-page__cross-foot">
+							<div>
+								<span class="dashboard-page__cross-foot-label">范围</span>
+								<span>{{ resolveCrossScopeLabel(item.scopeType, item.departmentId) }}</span>
+							</div>
+							<div>
+								<span class="dashboard-page__cross-foot-label">更新时间</span>
+								<span>{{ resolveCrossUpdatedAt(item.updatedAt) }}</span>
+							</div>
+						</div>
+					</article>
+				</div>
+			</div>
+		</el-card>
 
 		<el-row :gutter="16">
 			<el-col :xs="24" :lg="10">
@@ -194,6 +266,12 @@ import {
 	performanceDashboardService,
 	type DashboardSummary
 } from '../../service/dashboard';
+import type {
+	DashboardCrossDataStatus,
+	DashboardCrossMetricCard,
+	DashboardCrossSourceDomain,
+	DashboardCrossSummary
+} from '../../types';
 
 const isDark = useDark();
 
@@ -258,10 +336,19 @@ const emptySummary = (): DashboardSummary => ({
 	]
 });
 
+function emptyCrossSummary(): DashboardCrossSummary {
+	return {
+		metricCards: []
+	};
+}
+
 const canAccess = computed(() => checkPerm(performanceDashboardService.permission.summary));
 const loading = ref(false);
+const crossLoading = ref(false);
 const lastUpdatedAt = ref('');
 const summary = ref<DashboardSummary>(emptySummary());
+const crossSummary = ref<DashboardCrossSummary>(emptyCrossSummary());
+const crossErrorMessage = ref('');
 const departmentOptions = ref<any[]>([]);
 
 const departmentTreeProps = {
@@ -275,6 +362,7 @@ const filters = reactive({
 	periodValue: resolveCurrentQuarter(),
 	departmentId: undefined as number | undefined
 });
+const refreshing = computed(() => loading.value || crossLoading.value);
 
 const quarterOptions = computed(() => {
 	const currentYear = dayjs().year();
@@ -454,20 +542,138 @@ async function refresh() {
 	}
 
 	loading.value = true;
+	crossLoading.value = true;
+	crossErrorMessage.value = '';
 
-	try {
-		summary.value = await performanceDashboardService.fetchSummary({
-			periodType: filters.periodType || undefined,
-			periodValue: filters.periodValue || undefined,
-			departmentId: filters.departmentId ? Number(filters.departmentId) : undefined
-		});
+	const query = buildDashboardQuery();
+
+	const [summaryResult, crossResult] = await Promise.allSettled([
+		performanceDashboardService.fetchSummary(query),
+		performanceDashboardService.fetchCrossSummary(query)
+	]);
+
+	loading.value = false;
+	crossLoading.value = false;
+
+	if (summaryResult.status === 'fulfilled') {
+		summary.value = summaryResult.value;
 		lastUpdatedAt.value = dayjs().toISOString();
-	} catch (error: any) {
+	} else {
 		summary.value = emptySummary();
-		ElMessage.error(error.message || '驾驶舱汇总加载失败');
-	} finally {
-		loading.value = false;
+		ElMessage.error(resolveSummaryErrorMessage(summaryResult.reason));
 	}
+
+	if (crossResult.status === 'fulfilled') {
+		crossSummary.value = normalizeCrossSummary(crossResult.value);
+	} else {
+		crossSummary.value = emptyCrossSummary();
+		crossErrorMessage.value = resolveCrossSummaryErrorMessage(crossResult.reason);
+	}
+}
+
+function buildDashboardQuery() {
+	return {
+		periodType: filters.periodType || undefined,
+		periodValue: filters.periodValue || undefined,
+		departmentId: filters.departmentId ? Number(filters.departmentId) : undefined
+	};
+}
+
+function normalizeCrossSummary(payload?: DashboardCrossSummary | null): DashboardCrossSummary {
+	if (!payload || !Array.isArray(payload.metricCards)) {
+		return emptyCrossSummary();
+	}
+
+	return {
+		metricCards: payload.metricCards.map(item => ({
+			...item,
+			metricValue: typeof item.metricValue === 'number' ? item.metricValue : null,
+			unit: item.unit || '',
+			statusText: item.statusText || ''
+		}))
+	};
+}
+
+function resolveSummaryErrorMessage(error: any) {
+	return error?.message || '驾驶舱汇总加载失败';
+}
+
+function resolveCrossSummaryErrorMessage(error: any) {
+	const message = error?.message || '';
+	if (message.includes('403')) {
+		return '跨模块汇总当前账号无权限访问，请先确认权限同步结果。';
+	}
+	if (message.includes('404')) {
+		return '跨模块汇总接口尚未就绪，当前只保留首期绩效域指标展示。';
+	}
+	return message || '跨模块汇总加载失败，当前不影响首期绩效域指标展示。';
+}
+
+function resolveCrossDomainLabel(domain: DashboardCrossSourceDomain) {
+	const labelMap: Record<DashboardCrossSourceDomain, string> = {
+		recruitment: '招聘域',
+		training: '培训域',
+		meeting: '会议域'
+	};
+	return labelMap[domain] || domain;
+}
+
+function resolveCrossStatusTagType(status: DashboardCrossDataStatus) {
+	const tagMap: Record<DashboardCrossDataStatus, 'success' | 'warning' | 'info'> = {
+		ready: 'success',
+		delayed: 'warning',
+		unavailable: 'info'
+	};
+	return tagMap[status] || 'info';
+}
+
+function resolveCrossStatusLabel(item: DashboardCrossMetricCard) {
+	if (item.statusText) {
+		return item.statusText;
+	}
+
+	const labelMap: Record<DashboardCrossDataStatus, string> = {
+		ready: '已就绪',
+		delayed: '数据延迟',
+		unavailable: '暂不可用'
+	};
+	return labelMap[item.dataStatus] || '状态未知';
+}
+
+function resolveCrossMetricValue(value: number | null) {
+	if (value === null || value === undefined) {
+		return '--';
+	}
+	return Number(value).toFixed(2);
+}
+
+function resolveCrossScopeLabel(scopeType: string, departmentId: number | null) {
+	if (scopeType === 'global') {
+		return '全局口径';
+	}
+
+	if (scopeType === 'department_tree') {
+		return departmentId ? `部门树范围 #${departmentId}` : '部门树范围';
+	}
+
+	return '--';
+}
+
+function resolveCrossPeriodLabel(periodType: string, periodValue: string) {
+	const prefixMap: Record<string, string> = {
+		month: '月度',
+		quarter: '季度',
+		year: '年度'
+	};
+	return `${prefixMap[periodType] || '周期'} ${periodValue || '--'}`;
+}
+
+function resolveCrossUpdatedAt(updatedAt: string | null) {
+	if (!updatedAt) {
+		return '--';
+	}
+
+	return dayjs(updatedAt).format('YYYY-MM-DD HH:mm:ss');
 }
 
 function resolveCurrentQuarter() {
@@ -571,6 +777,113 @@ function formatPercent(value: number) {
 		font-weight: 600;
 	}
 
+	&__section-title {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	&__section-subtitle {
+		font-size: 12px;
+		font-weight: 400;
+		color: var(--el-text-color-secondary);
+	}
+
+	&__cross-card {
+		border: 1px solid var(--el-border-color-light);
+	}
+
+	&__cross-summary {
+		display: grid;
+		gap: 16px;
+	}
+
+	&__cross-intro {
+		font-size: 13px;
+		line-height: 1.7;
+		color: var(--el-text-color-secondary);
+	}
+
+	&__cross-grid {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 16px;
+	}
+
+	&__cross-metric {
+		display: grid;
+		gap: 18px;
+		padding: 18px;
+		border: 1px solid var(--el-border-color-light);
+		border-radius: 16px;
+		background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+	}
+
+	&__cross-metric--delayed {
+		border-color: rgba(230, 162, 60, 0.38);
+		background: linear-gradient(180deg, #fffaf1 0%, #ffffff 100%);
+	}
+
+	&__cross-metric--unavailable {
+		border-color: rgba(144, 147, 153, 0.32);
+		background: linear-gradient(180deg, #fbfbfc 0%, #ffffff 100%);
+	}
+
+	&__cross-head {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 12px;
+	}
+
+	&__cross-label {
+		font-size: 16px;
+		font-weight: 600;
+		line-height: 1.4;
+		color: var(--el-text-color-primary);
+	}
+
+	&__cross-meta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		margin-top: 8px;
+		font-size: 12px;
+		color: var(--el-text-color-secondary);
+	}
+
+	&__cross-value {
+		display: flex;
+		align-items: flex-end;
+		gap: 8px;
+		font-size: 32px;
+		font-weight: 700;
+		line-height: 1;
+		color: #183153;
+	}
+
+	&__cross-value small {
+		font-size: 13px;
+		font-weight: 500;
+		line-height: 1.4;
+		color: var(--el-text-color-secondary);
+	}
+
+	&__cross-foot {
+		display: grid;
+		gap: 8px;
+		padding-top: 14px;
+		border-top: 1px dashed var(--el-border-color);
+		font-size: 12px;
+		line-height: 1.6;
+		color: var(--el-text-color-regular);
+	}
+
+	&__cross-foot-label {
+		margin-right: 6px;
+		color: var(--el-text-color-secondary);
+	}
+
 	&__stage-item + &__stage-item {
 		margin-top: 18px;
 		padding-top: 18px;
@@ -609,6 +922,10 @@ function formatPercent(value: number) {
 		&__filters {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
+
+		&__cross-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
 	}
 }
 
@@ -620,6 +937,14 @@ function formatPercent(value: number) {
 
 		&__filters {
 			grid-template-columns: 1fr;
+		}
+
+		&__cross-grid {
+			grid-template-columns: 1fr;
+		}
+
+		&__cross-head {
+			flex-direction: column;
 		}
 
 		&__metric-value {

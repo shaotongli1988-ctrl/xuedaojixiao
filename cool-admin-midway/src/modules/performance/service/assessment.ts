@@ -15,7 +15,7 @@ import {
 } from '@midwayjs/core';
 import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 import { BaseSysMenuService } from '../../base/service/sys/menu';
 import { BaseSysPermsService } from '../../base/service/sys/perms';
 import { BaseSysDepartmentEntity } from '../../base/entity/sys/department';
@@ -448,28 +448,35 @@ export class PerformanceAssessmentService extends BaseService {
     assertAssessmentTransition(assessment.status as AssessmentStatus, action);
     this.assertCanReviewAssessment(assessment, perms);
 
-    await this.performanceAssessmentEntity.update(
-      { id: assessment.id },
-      {
-        status: action === 'approve' ? 'approved' : 'rejected',
-        managerFeedback: comment || '',
-        approveTime: this.now(),
+    await this.performanceAssessmentEntity.manager.transaction(
+      async (manager: EntityManager) => {
+        await manager.getRepository(PerformanceAssessmentEntity).update(
+          { id: assessment.id },
+          {
+            status: action === 'approve' ? 'approved' : 'rejected',
+            managerFeedback: comment || '',
+            approveTime: this.now(),
+          }
+        );
+
+        if (action === 'approve') {
+          await this.performanceSuggestionService.syncApprovedAssessmentInTransaction(
+            manager,
+            {
+              id: assessment.id,
+              employeeId: Number(assessment.employeeId),
+              departmentId: Number(assessment.departmentId),
+              periodType: assessment.periodType,
+              periodValue: assessment.periodValue,
+              status: 'approved',
+              grade: assessment.grade,
+              totalScore: Number(assessment.totalScore || 0),
+              tenantId: assessment.tenantId ?? null,
+            }
+          );
+        }
       }
     );
-
-    if (action === 'approve') {
-      await this.performanceSuggestionService.syncApprovedAssessment({
-        id: assessment.id,
-        employeeId: Number(assessment.employeeId),
-        departmentId: Number(assessment.departmentId),
-        periodType: assessment.periodType,
-        periodValue: assessment.periodValue,
-        status: 'approved',
-        grade: assessment.grade,
-        totalScore: Number(assessment.totalScore || 0),
-        tenantId: assessment.tenantId ?? null,
-      });
-    }
 
     return this.info(assessment.id);
   }

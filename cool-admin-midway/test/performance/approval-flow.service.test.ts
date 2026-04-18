@@ -238,7 +238,7 @@ function createService(seed?: Partial<Record<string, any[]>>) {
     departmentIds: jest.fn().mockResolvedValue([]),
   };
   service.performanceSuggestionService = {
-    syncApprovedAssessment: jest.fn().mockResolvedValue({ id: 901 }),
+    syncApprovedAssessmentInTransaction: jest.fn().mockResolvedValue({ id: 901 }),
   };
   service.ctx = {
     admin: {
@@ -252,6 +252,7 @@ function createService(seed?: Partial<Record<string, any[]>>) {
     service,
     stores: harness.stores,
     repos: harness.repos,
+    manager: harness.manager,
   };
 }
 
@@ -413,7 +414,7 @@ describe('performance approval flow service', () => {
   });
 
   test('should approve final node and sync assessment source status', async () => {
-    const { service, stores } = createService({
+    const { service, stores, manager } = createService({
       PerformanceApprovalInstanceEntity: [
         {
           id: 501,
@@ -491,7 +492,17 @@ describe('performance approval flow service', () => {
         managerFeedback: '通过',
       })
     );
-    expect(service.performanceSuggestionService.syncApprovedAssessment).toHaveBeenCalled();
+    expect(
+      service.performanceSuggestionService.syncApprovedAssessmentInTransaction
+    ).toHaveBeenCalledWith(
+      manager,
+      expect.objectContaining({
+        id: 101,
+        employeeId: 2,
+        departmentId: 11,
+        status: 'approved',
+      })
+    );
   });
 
   test('should reject final node and mark source object rejected', async () => {
@@ -1127,6 +1138,66 @@ describe('performance approval flow service', () => {
       service.assertManualReviewAllowed('assessment', 801)
     ).rejects.toThrow(
       '当前对象存在进行中的自动审批实例，请改用 approval-flow 接口'
+    );
+  });
+
+  test('should lock source assessment row before checking active approval instance', async () => {
+    const { service, repos } = createService({
+      PerformanceApprovalConfigEntity: [
+        {
+          id: 41,
+          objectType: 'assessment',
+          version: 'v1',
+          enabled: true,
+          notifyMode: 'interface_only',
+        },
+      ],
+      PerformanceApprovalConfigNodeEntity: [
+        {
+          id: 51,
+          configId: 41,
+          nodeOrder: 1,
+          nodeCode: 'leader-review',
+          nodeName: '直属经理审批',
+          resolverType: 'specified_user',
+          resolverValue: '9',
+          timeoutHours: null,
+          allowTransfer: true,
+        },
+      ],
+      PerformanceAssessmentEntity: [
+        {
+          id: 901,
+          employeeId: 2,
+          departmentId: 11,
+          tenantId: 1,
+          status: 'draft',
+        },
+      ],
+      BaseSysUserEntity: [
+        { id: 2, name: '员工 A', departmentId: 11, status: 1 },
+        { id: 9, name: '经理 A', departmentId: 11, status: 1 },
+      ],
+    });
+
+    await service.submitAssessment(
+      {
+        id: 901,
+        employeeId: 2,
+        departmentId: 11,
+        tenantId: 1,
+      },
+      {
+        totalScore: 88,
+        grade: 'A',
+      }
+    );
+
+    expect(repos.assessment.findOne).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 901 },
+        lock: { mode: 'pessimistic_write' },
+      })
     );
   });
 });

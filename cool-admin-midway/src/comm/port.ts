@@ -69,5 +69,5 @@ export function availablePort(startPort: number): number {
     }
     port++;
   }
-  return 8001;
+  return 8006;
 }

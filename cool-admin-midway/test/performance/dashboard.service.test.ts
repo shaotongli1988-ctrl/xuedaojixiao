@@ -30,6 +30,215 @@ const createQueryBuilder = (result: {
 };
 
 describe('performance dashboard service', () => {
+  test('should reject crossSummary when current role has no cross dashboard permission', async () => {
+    const token = jwt.sign(
+      {
+        userId: 3001,
+        username: 'employee_platform',
+        roleIds: [3],
+        passwordVersion: 1,
+        isRefresh: false,
+      },
+      '694f6e56-579e-413e-8da0-63379cb5cd31'
+    );
+
+    const service = new PerformanceDashboardService() as any;
+    service.ctx = {
+      headers: {
+        authorization: token,
+      },
+      get: jest.fn().mockReturnValue(token),
+    };
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue(['performance:dashboard:summary']),
+    };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn(),
+    };
+    service.midwayCache = {
+      get: jest.fn(),
+      set: jest.fn(),
+    };
+
+    await expect(service.crossSummary({})).rejects.toMatchObject({
+      message: '无权限查看跨模块驾驶舱',
+    });
+    expect(service.midwayCache.get).not.toHaveBeenCalled();
+    expect(service.midwayCache.set).not.toHaveBeenCalled();
+  });
+
+  test('should return crossSummary metric cards with unavailable status and isolated cache keys', async () => {
+    const hrToken = jwt.sign(
+      {
+        userId: 1001,
+        username: 'hr_admin',
+        roleIds: [1],
+        passwordVersion: 1,
+        isRefresh: false,
+      },
+      '694f6e56-579e-413e-8da0-63379cb5cd31'
+    );
+    const managerToken = jwt.sign(
+      {
+        userId: 2001,
+        username: 'manager_rd',
+        roleIds: [2],
+        passwordVersion: 1,
+        isRefresh: false,
+      },
+      '694f6e56-579e-413e-8da0-63379cb5cd31'
+    );
+
+    const createService = (token: string, perms: string[], departmentIds: number[]) => {
+      const service = new PerformanceDashboardService() as any;
+      const midwayCache = {
+        get: jest.fn().mockResolvedValue(undefined),
+        set: jest.fn().mockResolvedValue(undefined),
+      };
+      service.ctx = {
+        headers: {
+          authorization: token,
+        },
+        get: jest.fn().mockReturnValue(token),
+      };
+      service.baseSysMenuService = {
+        getPerms: jest.fn().mockResolvedValue(perms),
+      };
+      service.baseSysPermsService = {
+        departmentIds: jest.fn().mockResolvedValue(departmentIds),
+      };
+      service.midwayCache = midwayCache;
+      return { service, midwayCache };
+    };
+
+    const hr = createService(
+      hrToken,
+      [
+        'performance:dashboard:crossSummary',
+        'performance:assessment:export',
+      ],
+      []
+    );
+    const manager = createService(
+      managerToken,
+      ['performance:dashboard:crossSummary'],
+      [11, 12]
+    );
+
+    const hrResult = await hr.service.crossSummary({
+      periodType: 'quarter',
+      periodValue: '2026-Q2',
+      metricCodes: ['training_pass_rate'],
+    });
+    const managerResult = await manager.service.crossSummary({
+      periodType: 'quarter',
+      periodValue: '2026-Q2',
+      departmentId: 11,
+      metricCodes: ['training_pass_rate'],
+    });
+
+    expect(hrResult).toEqual({
+      metricCards: [
+        {
+          metricCode: 'training_pass_rate',
+          metricLabel: '内训通关率',
+          sourceDomain: 'training',
+          metricValue: null,
+          unit: '',
+          periodType: 'quarter',
+          periodValue: '2026-Q2',
+          scopeType: 'global',
+          departmentId: null,
+          updatedAt: null,
+          dataStatus: 'unavailable',
+          statusText: '暂不可用',
+        },
+      ],
+    });
+    expect(managerResult).toEqual({
+      metricCards: [
+        {
+          metricCode: 'training_pass_rate',
+          metricLabel: '内训通关率',
+          sourceDomain: 'training',
+          metricValue: null,
+          unit: '',
+          periodType: 'quarter',
+          periodValue: '2026-Q2',
+          scopeType: 'department_tree',
+          departmentId: 11,
+          updatedAt: null,
+          dataStatus: 'unavailable',
+          statusText: '暂不可用',
+        },
+      ],
+    });
+    expect(hr.midwayCache.get).toHaveBeenCalledTimes(1);
+    expect(hr.midwayCache.set).toHaveBeenCalledTimes(1);
+    expect(manager.midwayCache.get).toHaveBeenCalledTimes(1);
+    expect(manager.midwayCache.set).toHaveBeenCalledTimes(1);
+    expect(hr.midwayCache.get.mock.calls[0][0]).toContain(
+      'performance:dashboard:crossSummary:'
+    );
+    expect(manager.midwayCache.get.mock.calls[0][0]).toContain(
+      'performance:dashboard:crossSummary:'
+    );
+    expect(hr.midwayCache.get.mock.calls[0][0]).not.toBe(
+      manager.midwayCache.get.mock.calls[0][0]
+    );
+  });
+
+  test('should reject crossSummary when manager requests out-of-scope department or unknown metric code', async () => {
+    const token = jwt.sign(
+      {
+        userId: 2001,
+        username: 'manager_rd',
+        roleIds: [2],
+        passwordVersion: 1,
+        isRefresh: false,
+      },
+      '694f6e56-579e-413e-8da0-63379cb5cd31'
+    );
+
+    const service = new PerformanceDashboardService() as any;
+    service.ctx = {
+      headers: {
+        authorization: token,
+      },
+      get: jest.fn().mockReturnValue(token),
+    };
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue(['performance:dashboard:crossSummary']),
+    };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([11, 12]),
+    };
+    service.midwayCache = {
+      get: jest.fn(),
+      set: jest.fn(),
+    };
+
+    await expect(
+      service.crossSummary({
+        periodType: 'quarter',
+        periodValue: '2026-Q2',
+        departmentId: 999,
+      })
+    ).rejects.toMatchObject({
+      message: '无权查看该部门范围跨模块驾驶舱',
+    });
+
+    await expect(
+      service.crossSummary({
+        periodType: 'quarter',
+        periodValue: '2026-Q2',
+        metricCodes: ['unknown_metric'],
+      })
+    ).rejects.toMatchObject({
+      message: 'metricCodes 包含未冻结指标族',
+    });
+  });
+
   test('should reject summary when current role has no dashboard permission', async () => {
     const token = jwt.sign(
       {

@@ -4,6 +4,45 @@
  */
 export type AssessmentMode = 'my' | 'initiated' | 'pending';
 
+export type DashboardCrossMetricCode =
+	| 'recruitment_completion_rate'
+	| 'training_pass_rate'
+	| 'meeting_effectiveness_index';
+
+export type DashboardCrossSourceDomain = 'recruitment' | 'training' | 'meeting';
+export type DashboardCrossScopeType = 'global' | 'department_tree';
+export type DashboardCrossDataStatus = 'ready' | 'delayed' | 'unavailable';
+export type CourseStatus = 'draft' | 'published' | 'closed';
+export type InterviewStatus = 'scheduled' | 'completed' | 'cancelled';
+export type InterviewType = 'technical' | 'behavioral' | 'manager' | 'hr';
+export type MeetingStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+
+export interface DashboardCrossSummaryQuery {
+	periodType?: string;
+	periodValue?: string;
+	departmentId?: number;
+	metricCodes?: DashboardCrossMetricCode[];
+}
+
+export interface DashboardCrossMetricCard {
+	metricCode: DashboardCrossMetricCode;
+	metricLabel: string;
+	sourceDomain: DashboardCrossSourceDomain;
+	metricValue: number | null;
+	unit: string;
+	periodType: string;
+	periodValue: string;
+	scopeType: DashboardCrossScopeType;
+	departmentId: number | null;
+	updatedAt: string | null;
+	dataStatus: DashboardCrossDataStatus;
+	statusText: string;
+}
+
+export interface DashboardCrossSummary {
+	metricCards: DashboardCrossMetricCard[];
+}
+
 export interface AssessmentScoreItem {
 	id?: number;
 	indicatorId?: number | null;
@@ -123,6 +162,97 @@ export interface GoalExportRow {
 	startDate: string;
 	endDate: string;
 	updateTime?: string;
+}
+
+export interface CourseRecord {
+	id?: number;
+	title: string;
+	code?: string;
+	category?: string;
+	description?: string;
+	startDate?: string | null;
+	endDate?: string | null;
+	status?: CourseStatus;
+	enrollmentCount?: number;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface CoursePageResult {
+	list: CourseRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface CourseEnrollmentRecord {
+	userId: number;
+	userName: string;
+	enrollTime?: string;
+	status?: string;
+	score?: number | null;
+}
+
+export interface CourseEnrollmentPageResult {
+	list: CourseEnrollmentRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface InterviewRecord {
+	id?: number;
+	candidateName: string;
+	position: string;
+	departmentId?: number | null;
+	interviewerId: number | undefined;
+	interviewerName?: string;
+	interviewDate: string;
+	interviewType?: InterviewType | null;
+	score?: number | null;
+	status?: InterviewStatus;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface InterviewPageResult {
+	list: InterviewRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface MeetingRecord {
+	id?: number;
+	title: string;
+	code?: string | null;
+	type?: string | null;
+	description?: string | null;
+	startDate: string;
+	endDate: string;
+	location?: string | null;
+	organizerId: number | undefined;
+	organizerName?: string;
+	participantIds?: number[];
+	participantCount?: number;
+	status?: MeetingStatus;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface MeetingPageResult {
+	list: MeetingRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
 }
 
 export interface PipTrackRecord {
@@ -437,6 +567,48 @@ export function createEmptyGoal(): GoalRecord {
 		startDate: '',
 		endDate: '',
 		progressRecords: []
+	};
+}
+
+export function createEmptyCourse(): CourseRecord {
+	return {
+		title: '',
+		code: '',
+		category: '',
+		description: '',
+		startDate: '',
+		endDate: '',
+		status: 'draft',
+		enrollmentCount: 0
+	};
+}
+
+export function createEmptyInterview(): InterviewRecord {
+	return {
+		candidateName: '',
+		position: '',
+		departmentId: undefined,
+		interviewerId: undefined,
+		interviewDate: '',
+		interviewType: 'technical',
+		score: null,
+		status: 'scheduled'
+	};
+}
+
+export function createEmptyMeeting(currentUserId?: number): MeetingRecord {
+	return {
+		title: '',
+		code: '',
+		type: '',
+		description: '',
+		startDate: '',
+		endDate: '',
+		location: '',
+		organizerId: currentUserId || undefined,
+		participantIds: [],
+		participantCount: 0,
+		status: 'scheduled'
 	};
 }
 

@@ -1,6 +1,6 @@
 /**
- * Stage-2 smoke verification for performance modules 1, 2, 3, 4, 6, 7, and 8.
- * This file checks captcha, login, menu scope, dashboard/assessment/goal APIs, and the minimum real API path for indicator/PIP/promotion/salary.
+ * Stage-2 smoke verification for performance modules 1, 2, 3, 4, 6, 7, 8, and 9.
+ * This file checks captcha, login, menu scope, dashboard/assessment/goal APIs, crossSummary, and the minimum real API path for indicator/PIP/promotion/salary/meeting.
  * It does not change business data, patch runtime config, or replace seed/bootstrap scripts.
  * Maintenance pitfall: assertions are coupled to seed-stage2-performance.mjs and the current stage-2 scope; update both sides together.
  */
@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
-const defaultBaseUrl = 'http://127.0.0.1:8001';
+const defaultBaseUrl = 'http://127.0.0.1:8006';
 const defaultPassword = '123456';
 const successCode = 1000;
 
@@ -32,10 +32,12 @@ const expectedUsers = [
         '/performance/pip',
         '/performance/promotion',
         '/performance/salary',
+        '/performance/meeting',
       ],
       routesAbsent: [],
       permsPresent: [
         'performance:dashboard:summary',
+        'performance:dashboard:crossSummary',
         'performance:assessment:myPage',
         'performance:assessment:page',
         'performance:assessment:pendingPage',
@@ -53,6 +55,10 @@ const expectedUsers = [
         'performance:promotion:review',
         'performance:salary:page',
         'performance:salary:changeAdd',
+        'performance:meeting:page',
+        'performance:meeting:add',
+        'performance:meeting:update',
+        'performance:meeting:checkIn',
       ],
       permsAbsent: [
         'performance:assessment:approve',
@@ -92,6 +98,11 @@ const expectedUsers = [
     dashboardSummary: {
       expectSuccess: true,
       expectEmptyScope: false,
+    },
+    crossSummary: {
+      expectSuccess: true,
+      expectedScopeType: 'global',
+      expectDeniedDepartment: false,
     },
     goalPage: {
       expectedTotal: 4,
@@ -175,6 +186,17 @@ const expectedUsers = [
       excludeKeys: [],
       expectSensitiveFields: true,
     },
+    meetingPage: {
+      expectSuccess: true,
+      expectedTotal: 3,
+      includeTitles: [
+        '联调-主题9排期会',
+        '联调-主题9进行中晨会',
+        '联调-主题9销售复盘会',
+      ],
+      excludeTitles: [],
+      checkInTitle: '联调-主题9进行中晨会',
+    },
   },
   {
     username: 'manager_rd',
@@ -188,10 +210,12 @@ const expectedUsers = [
         '/performance/goals',
         '/performance/pip',
         '/performance/promotion',
+        '/performance/meeting',
       ],
       routesAbsent: ['/performance/indicator-library', '/performance/salary'],
       permsPresent: [
         'performance:dashboard:summary',
+        'performance:dashboard:crossSummary',
         'performance:assessment:myPage',
         'performance:assessment:page',
         'performance:assessment:pendingPage',
@@ -206,6 +230,10 @@ const expectedUsers = [
         'performance:pip:export',
         'performance:promotion:page',
         'performance:promotion:review',
+        'performance:meeting:page',
+        'performance:meeting:add',
+        'performance:meeting:update',
+        'performance:meeting:checkIn',
       ],
       permsAbsent: [
         'performance:assessment:export',
@@ -245,6 +273,11 @@ const expectedUsers = [
     dashboardSummary: {
       expectSuccess: true,
       expectEmptyScope: true,
+    },
+    crossSummary: {
+      expectSuccess: true,
+      expectedScopeType: 'department_tree',
+      expectDeniedDepartment: true,
     },
     goalPage: {
       expectedTotal: 3,
@@ -301,6 +334,13 @@ const expectedUsers = [
       expectSuccess: false,
       expectedMessage: '无权限查看薪资管理',
     },
+    meetingPage: {
+      expectSuccess: true,
+      expectedTotal: 2,
+      includeTitles: ['联调-主题9排期会', '联调-主题9进行中晨会'],
+      excludeTitles: ['联调-主题9销售复盘会'],
+      checkInTitle: '联调-主题9进行中晨会',
+    },
   },
   {
     username: 'employee_platform',
@@ -315,6 +355,7 @@ const expectedUsers = [
         '/performance/pip',
         '/performance/promotion',
         '/performance/salary',
+        '/performance/meeting',
       ],
       permsPresent: [
         'performance:assessment:myPage',
@@ -328,6 +369,7 @@ const expectedUsers = [
       ],
       permsAbsent: [
         'performance:dashboard:summary',
+        'performance:dashboard:crossSummary',
         'performance:assessment:page',
         'performance:assessment:pendingPage',
         'performance:assessment:add',
@@ -344,6 +386,8 @@ const expectedUsers = [
         'performance:pip:export',
         'performance:promotion:page',
         'performance:salary:page',
+        'performance:meeting:page',
+        'performance:meeting:checkIn',
       ],
     },
     assessmentModes: [
@@ -373,6 +417,10 @@ const expectedUsers = [
     dashboardSummary: {
       expectSuccess: false,
       expectedMessage: '无权限查看绩效驾驶舱',
+    },
+    crossSummary: {
+      expectSuccess: false,
+      expectedMessage: '无权限查看跨模块驾驶舱',
     },
     goalPage: {
       expectedTotal: 3,
@@ -406,6 +454,10 @@ const expectedUsers = [
     salaryPage: {
       expectSuccess: false,
       expectedMessage: '无权限查看薪资管理',
+    },
+    meetingPage: {
+      expectSuccess: false,
+      expectedMessage: '无权限查看会议列表',
     },
   },
 ];
@@ -1000,6 +1052,135 @@ async function verifyDashboardSummary(reporter, options, user, token) {
   reporter.pass(emptyScope, 'empty scope summary returned as expected');
 }
 
+async function verifyCrossSummary(reporter, options, user, token) {
+  const config = user.crossSummary;
+  const scope = `${user.username} dashboard:crossSummary`;
+  const response = await requestJson(
+    `${options.baseUrl}/admin/performance/dashboard/crossSummary`
+      + '?periodType=quarter&periodValue=2026-Q2'
+      + (config.expectedDepartmentId ? `&departmentId=${config.expectedDepartmentId}` : ''),
+    {
+      headers: {
+        Authorization: token,
+      },
+    }
+  );
+
+  if (!config.expectSuccess) {
+    if (response.body?.code === successCode) {
+      reporter.fail(scope, 'expected denial but request succeeded');
+      return;
+    }
+    const message = String(response.body?.message || '');
+    if (!message.includes(config.expectedMessage)) {
+      reporter.fail(scope, `expected message "${config.expectedMessage}", got "${message}"`);
+      return;
+    }
+    reporter.pass(scope, `denied as expected: ${message}`);
+    return;
+  }
+
+  if (response.body?.code !== successCode) {
+    reporter.fail(scope, formatResponse(response.body));
+    return;
+  }
+
+  const cards = response.body?.data?.metricCards || [];
+  const problems = [];
+  const requiredCodes = [
+    'recruitment_completion_rate',
+    'training_pass_rate',
+    'meeting_effectiveness_index',
+  ];
+
+  if (!Array.isArray(cards) || cards.length !== 3) {
+    problems.push(`expected 3 metricCards, got ${cards?.length ?? 'invalid'}`);
+  }
+
+  const codes = cards.map(item => item.metricCode);
+
+  for (const code of requiredCodes) {
+    if (!codes.includes(code)) {
+      problems.push(`missing metricCode ${code}`);
+    }
+  }
+
+  for (const item of cards) {
+    if (item.metricValue !== null && typeof item.metricValue !== 'number') {
+      problems.push(`metricValue type invalid for ${item.metricCode}`);
+    }
+    if (item.scopeType !== config.expectedScopeType) {
+      problems.push(
+        `expected scopeType ${config.expectedScopeType} for ${item.metricCode}, got ${item.scopeType}`
+      );
+    }
+    if (item.updatedAt !== null && typeof item.updatedAt !== 'string') {
+      problems.push(`updatedAt type invalid for ${item.metricCode}`);
+    }
+    if (!['ready', 'delayed', 'unavailable'].includes(item.dataStatus)) {
+      problems.push(`dataStatus invalid for ${item.metricCode}: ${item.dataStatus}`);
+    }
+    if (typeof item.statusText !== 'string' || !item.statusText) {
+      problems.push(`statusText invalid for ${item.metricCode}`);
+    }
+    if (typeof item.unit !== 'string') {
+      problems.push(`unit type invalid for ${item.metricCode}`);
+    }
+    if (item.periodType !== 'quarter' || item.periodValue !== '2026-Q2') {
+      problems.push(`period echo invalid for ${item.metricCode}`);
+    }
+  }
+
+  if (config.expectedDepartmentId) {
+    for (const item of cards) {
+      if (item.departmentId !== config.expectedDepartmentId) {
+        problems.push(
+          `expected departmentId ${config.expectedDepartmentId} for ${item.metricCode}, got ${item.departmentId}`
+        );
+      }
+    }
+  }
+
+  if (problems.length) {
+    reporter.fail(scope, problems.join('; '));
+    return;
+  }
+
+  reporter.pass(scope, `codes=${codes.join(', ')} scopeType=${config.expectedScopeType}`);
+
+  if (!config.expectDeniedDepartment) {
+    return;
+  }
+
+  const deniedScope = `${user.username} dashboard:crossSummary:out-of-scope`;
+  const deniedResponse = await requestJson(
+    `${options.baseUrl}/admin/performance/dashboard/crossSummary`
+      + '?periodType=quarter&periodValue=2026-Q2&departmentId=999999',
+    {
+      headers: {
+        Authorization: token,
+      },
+    }
+  );
+
+  if (deniedResponse.body?.code === successCode) {
+    reporter.fail(deniedScope, 'expected denial for out-of-scope department but request succeeded');
+    return;
+  }
+
+  const message = String(deniedResponse.body?.message || '');
+
+  if (!message.includes('无权查看该部门范围跨模块驾驶舱')) {
+    reporter.fail(
+      deniedScope,
+      `expected out-of-scope denial message, got "${message}"`
+    );
+    return;
+  }
+
+  reporter.pass(deniedScope, `denied as expected: ${message}`);
+}
+
 async function verifyIndicatorPage(reporter, options, user, token) {
   const config = user.indicatorPage;
   const scope = `${user.username} indicator:page`;
@@ -1484,6 +1665,145 @@ async function verifySalaryPage(reporter, options, user, token) {
   reporter.pass(scope, `total=${total} rows=${keys.join(', ')}`);
 }
 
+async function verifyMeetingPage(reporter, options, user, token) {
+  const config = user.meetingPage;
+  const scope = `${user.username} meeting:page`;
+  const response = await requestJson(`${options.baseUrl}/admin/performance/meeting/page`, {
+    method: 'POST',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      page: 1,
+      size: 20,
+    }),
+  });
+
+  if (!config.expectSuccess) {
+    if (response.body?.code === successCode) {
+      reporter.fail(scope, 'expected denial but request succeeded');
+      return;
+    }
+    const message = String(response.body?.message || '');
+    if (!message.includes(config.expectedMessage)) {
+      reporter.fail(scope, `expected message "${config.expectedMessage}", got "${message}"`);
+      return;
+    }
+    reporter.pass(scope, `denied as expected: ${message}`);
+    return;
+  }
+
+  if (response.body?.code !== successCode) {
+    reporter.fail(scope, formatResponse(response.body));
+    return;
+  }
+
+  const total = totalFromPage(response.body);
+  const list = response.body?.data?.list || [];
+  const titles = listTitles(response.body);
+  const problems = [];
+
+  if (total !== config.expectedTotal) {
+    problems.push(`expected total ${config.expectedTotal}, got ${total}`);
+  }
+
+  for (const title of config.includeTitles) {
+    if (!titles.includes(title)) {
+      problems.push(`missing meeting ${title}`);
+    }
+  }
+
+  for (const title of config.excludeTitles) {
+    if (titles.includes(title)) {
+      problems.push(`unexpected meeting ${title}`);
+    }
+  }
+
+  if (
+    list.some(
+      item =>
+        Object.prototype.hasOwnProperty.call(item, 'participantIds') ||
+        typeof item.participantCount !== 'number'
+    )
+  ) {
+    problems.push('page response leaked participantIds or participantCount is missing');
+  }
+
+  const detailTarget =
+    list.find(item => item.title === config.checkInTitle) || list[0] || null;
+
+  if (!detailTarget?.id) {
+    problems.push('missing detail target meeting');
+  }
+
+  if (problems.length) {
+    reporter.fail(scope, problems.join('; '));
+    return;
+  }
+
+  reporter.pass(scope, `total=${total} titles=${titles.join(', ')}`);
+
+  const infoScope = `${user.username} meeting:info`;
+  const infoResponse = await requestJson(
+    `${options.baseUrl}/admin/performance/meeting/info?id=${detailTarget.id}`,
+    {
+      headers: { Authorization: token },
+    }
+  );
+
+  if (infoResponse.body?.code !== successCode) {
+    reporter.fail(infoScope, formatResponse(infoResponse.body));
+    return;
+  }
+
+  const infoData = infoResponse.body?.data || {};
+  if (
+    Object.prototype.hasOwnProperty.call(infoData, 'participantIds') ||
+    typeof infoData.participantCount !== 'number'
+  ) {
+    reporter.fail(infoScope, 'info response leaked participantIds or participantCount is missing');
+    return;
+  }
+
+  reporter.pass(infoScope, `participantCount=${infoData.participantCount}`);
+
+  if (!config.checkInTitle) {
+    return;
+  }
+
+  const checkInScope = `${user.username} meeting:checkIn`;
+  const checkInResponse = await requestJson(
+    `${options.baseUrl}/admin/performance/meeting/checkIn`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: token,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        id: detailTarget.id,
+      }),
+    }
+  );
+
+  if (checkInResponse.body?.code !== successCode) {
+    reporter.fail(checkInScope, formatResponse(checkInResponse.body));
+    return;
+  }
+
+  const checkInData = checkInResponse.body?.data || {};
+  if (
+    Object.prototype.hasOwnProperty.call(checkInData, 'participantIds') ||
+    typeof checkInData.participantCount !== 'number'
+  ) {
+    reporter.fail(checkInScope, 'checkIn response leaked participantIds or participantCount is missing');
+    return;
+  }
+
+  reporter.pass(checkInScope, `participantCount=${checkInData.participantCount}`);
+}
+
 function formatResponse(body) {
   if (!body) {
     return 'empty response';
@@ -1513,6 +1833,7 @@ async function run() {
     if (!session?.token) {
       reporter.skip(`${user.username} permmenu`, 'skipped because login failed');
       reporter.skip(`${user.username} dashboard:summary`, 'skipped because login failed');
+      reporter.skip(`${user.username} dashboard:crossSummary`, 'skipped because login failed');
       reporter.skip(`${user.username} assessment`, 'skipped because login failed');
       reporter.skip(`${user.username} goal:page`, 'skipped because login failed');
       reporter.skip(`${user.username} indicator:page`, 'skipped because login failed');
@@ -1521,11 +1842,15 @@ async function run() {
       reporter.skip(`${user.username} pip:export`, 'skipped because login failed');
       reporter.skip(`${user.username} promotion:page`, 'skipped because login failed');
       reporter.skip(`${user.username} salary:page`, 'skipped because login failed');
+      reporter.skip(`${user.username} meeting:page`, 'skipped because login failed');
+      reporter.skip(`${user.username} meeting:info`, 'skipped because login failed');
+      reporter.skip(`${user.username} meeting:checkIn`, 'skipped because login failed');
       continue;
     }
 
     await verifyPermMenu(reporter, options, user, session.token);
     await verifyDashboardSummary(reporter, options, user, session.token);
+    await verifyCrossSummary(reporter, options, user, session.token);
     await verifyAssessmentPages(reporter, options, user, session.token);
     await verifyGoalPage(reporter, options, user, session.token);
     await verifyIndicatorPage(reporter, options, user, session.token);
@@ -1534,6 +1859,7 @@ async function run() {
     await verifyPipExport(reporter, options, user, session.token);
     await verifyPromotionPage(reporter, options, user, session.token);
     await verifySalaryPage(reporter, options, user, session.token);
+    await verifyMeetingPage(reporter, options, user, session.token);
   }
 
   const stats = reporter.summary();

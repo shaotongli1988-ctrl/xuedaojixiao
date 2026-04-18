@@ -1,8 +1,10 @@
 /**
  * 驾驶舱前端请求服务类型与接口封装。
- * 这里只维护模块 3 汇总接口契约，不负责页面展示逻辑或其他绩效子模块请求。
+ * 这里只维护绩效域 summary 与主题 6 crossSummary 的只读契约，
+ * 不负责页面展示逻辑或其他绩效子模块请求。
  */
 import { BaseService } from '/@/cool';
+import type { DashboardCrossSummary, DashboardCrossSummaryQuery } from '../types';
 
 export interface DashboardSummaryQuery {
 	periodType?: string;
@@ -47,7 +49,8 @@ export interface DashboardSummary {
  */
 export default class PerformanceDashboardService extends BaseService {
 	permission = {
-		summary: 'performance:dashboard:summary'
+		summary: 'performance:dashboard:summary',
+		crossSummary: 'performance:dashboard:crossSummary'
 	};
 
 	constructor() {
@@ -60,6 +63,14 @@ export default class PerformanceDashboardService extends BaseService {
 			method: 'GET',
 			params
 		}) as unknown as Promise<DashboardSummary>;
+	}
+
+	fetchCrossSummary(params: DashboardCrossSummaryQuery) {
+		return this.request({
+			url: '/crossSummary',
+			method: 'GET',
+			params
+		}) as unknown as Promise<DashboardCrossSummary>;
 	}
 }
 

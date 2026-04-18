@@ -1036,6 +1036,11 @@ declare namespace Eps {
 		list: any[];
 	}
 
+	interface PerformanceCoursePageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
 	interface PerformanceFeedbackPageResponse {
 		pagination: PagePagination;
 		list: any[];
@@ -1051,6 +1056,16 @@ declare namespace Eps {
 		list: any[];
 	}
 
+	interface PerformanceInterviewPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceMeetingPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
 	interface PerformancePipPageResponse {
 		pagination: PagePagination;
 		list: any[];
@@ -1062,6 +1077,11 @@ declare namespace Eps {
 	}
 
 	interface PerformanceSalaryPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceSuggestionPageResponse {
 		pagination: PagePagination;
 		list: any[];
 	}
@@ -1804,6 +1824,97 @@ declare namespace Eps {
 		request: Request;
 	}
 
+	interface PerformanceApprovalFlow {
+		/**
+		 * 审批流配置详情
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 审批流配置保存
+		 */
+		save(data?: any): Promise<any>;
+
+		/**
+		 * HR 强制终止
+		 */
+		terminate(data?: any): Promise<any>;
+
+		/**
+		 * 当前节点转办
+		 */
+		transfer(data?: any): Promise<any>;
+
+		/**
+		 * 发起人撤回
+		 */
+		withdraw(data?: any): Promise<any>;
+
+		/**
+		 * 回退到手工审批主链
+		 */
+		fallback(data?: any): Promise<any>;
+
+		/**
+		 * 审批通过
+		 */
+		approve(data?: any): Promise<any>;
+
+		/**
+		 * HR 人工指定或恢复
+		 */
+		resolve(data?: any): Promise<any>;
+
+		/**
+		 * 审批驳回
+		 */
+		reject(data?: any): Promise<any>;
+
+		/**
+		 * 催办当前节点
+		 */
+		remind(data?: any): Promise<any>;
+
+		/**
+		 * 审批实例详情
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			info: string;
+			save: string;
+			terminate: string;
+			transfer: string;
+			withdraw: string;
+			fallback: string;
+			approve: string;
+			resolve: string;
+			reject: string;
+			remind: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			info: boolean;
+			save: boolean;
+			terminate: boolean;
+			transfer: boolean;
+			withdraw: boolean;
+			fallback: boolean;
+			approve: boolean;
+			resolve: boolean;
+			reject: boolean;
+			remind: boolean;
+		};
+
+		request: Request;
+	}
+
 	interface PerformanceAssessment {
 		/**
 		 * 审批通过
@@ -1883,7 +1994,70 @@ declare namespace Eps {
 		request: Request;
 	}
 
+	interface PerformanceCourse {
+		/**
+		 * 课程报名列表
+		 */
+		enrollmentPage(data?: any): Promise<any>;
+
+		/**
+		 * 修改课程
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * 删除课程
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * 课程分页
+		 */
+		page(data?: any): Promise<PerformanceCoursePageResponse>;
+
+		/**
+		 * 课程详情
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 新增课程
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			enrollmentPage: string;
+			update: string;
+			delete: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			enrollmentPage: boolean;
+			update: boolean;
+			delete: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
 	interface PerformanceDashboard {
+		/**
+		 * 跨模块驾驶舱汇总
+		 */
+		crossSummary(data?: any): Promise<any>;
+
 		/**
 		 * 绩效驾驶舱汇总
 		 */
@@ -1892,12 +2066,12 @@ declare namespace Eps {
 		/**
 		 * 权限标识
 		 */
-		permission: { summary: string };
+		permission: { crossSummary: string; summary: string };
 
 		/**
 		 * 权限状态
 		 */
-		_permission: { summary: boolean };
+		_permission: { crossSummary: boolean; summary: boolean };
 
 		request: Request;
 	}
@@ -1912,6 +2086,11 @@ declare namespace Eps {
 		 * 提交环评反馈
 		 */
 		submit(data?: any): Promise<any>;
+
+		/**
+		 * 导出环评汇总摘要
+		 */
+		export(data?: any): Promise<any>;
 
 		/**
 		 * 环评任务分页
@@ -1931,7 +2110,14 @@ declare namespace Eps {
 		/**
 		 * 权限标识
 		 */
-		permission: { summary: string; submit: string; page: string; info: string; add: string };
+		permission: {
+			summary: string;
+			submit: string;
+			export: string;
+			page: string;
+			info: string;
+			add: string;
+		};
 
 		/**
 		 * 权限状态
@@ -1939,6 +2125,7 @@ declare namespace Eps {
 		_permission: {
 			summary: boolean;
 			submit: boolean;
+			export: boolean;
 			page: boolean;
 			info: boolean;
 			add: boolean;
@@ -2057,6 +2244,109 @@ declare namespace Eps {
 		request: Request;
 	}
 
+	interface PerformanceInterview {
+		/**
+		 * 修改面试
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * 删除面试
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * 面试分页
+		 */
+		page(data?: any): Promise<PerformanceInterviewPageResponse>;
+
+		/**
+		 * 面试详情
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 新增面试
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { update: string; delete: string; page: string; info: string; add: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			update: boolean;
+			delete: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceMeeting {
+		/**
+		 * 会议签到
+		 */
+		checkIn(data?: any): Promise<any>;
+
+		/**
+		 * 修改会议
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * 删除会议
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * 会议分页
+		 */
+		page(data?: any): Promise<PerformanceMeetingPageResponse>;
+
+		/**
+		 * 会议详情
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 新增会议
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			checkIn: string;
+			update: string;
+			delete: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			checkIn: boolean;
+			update: boolean;
+			delete: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
 	interface PerformancePip {
 		/**
 		 * 完成 PIP
@@ -2067,6 +2357,11 @@ declare namespace Eps {
 		 * 修改 PIP
 		 */
 		update(data?: any): Promise<any>;
+
+		/**
+		 * 导出 PIP 摘要
+		 */
+		export(data?: any): Promise<any>;
 
 		/**
 		 * 启动 PIP
@@ -2104,6 +2399,7 @@ declare namespace Eps {
 		permission: {
 			complete: string;
 			update: string;
+			export: string;
 			start: string;
 			track: string;
 			close: string;
@@ -2118,6 +2414,7 @@ declare namespace Eps {
 		_permission: {
 			complete: boolean;
 			update: boolean;
+			export: boolean;
 			start: boolean;
 			track: boolean;
 			close: boolean;
@@ -2247,6 +2544,64 @@ declare namespace Eps {
 			page: boolean;
 			info: boolean;
 			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceSuggestion {
+		/**
+		 * 采用建议
+		 */
+		accept(data?: any): Promise<any>;
+
+		/**
+		 * 忽略建议
+		 */
+		ignore(data?: any): Promise<any>;
+
+		/**
+		 * 驳回建议
+		 */
+		reject(data?: any): Promise<any>;
+
+		/**
+		 * 撤销建议
+		 */
+		revoke(data?: any): Promise<any>;
+
+		/**
+		 * 建议分页
+		 */
+		page(data?: any): Promise<PerformanceSuggestionPageResponse>;
+
+		/**
+		 * 建议详情
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			accept: string;
+			ignore: string;
+			reject: string;
+			revoke: string;
+			page: string;
+			info: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			accept: boolean;
+			ignore: boolean;
+			reject: boolean;
+			revoke: boolean;
+			page: boolean;
+			info: boolean;
 		};
 
 		request: Request;
@@ -2690,14 +3045,19 @@ declare namespace Eps {
 		demo: { goods: DemoGoods; tenant: DemoTenant };
 		dict: { info: DictInfo; type: DictType };
 		performance: {
+			approvalFlow: PerformanceApprovalFlow;
 			assessment: PerformanceAssessment;
+			course: PerformanceCourse;
 			dashboard: PerformanceDashboard;
 			feedback: PerformanceFeedback;
 			goal: PerformanceGoal;
 			indicator: PerformanceIndicator;
+			interview: PerformanceInterview;
+			meeting: PerformanceMeeting;
 			pip: PerformancePip;
 			promotion: PerformancePromotion;
 			salary: PerformanceSalary;
+			suggestion: PerformanceSuggestion;
 		};
 		plugin: { info: PluginInfo };
 		recycle: { data: RecycleData };

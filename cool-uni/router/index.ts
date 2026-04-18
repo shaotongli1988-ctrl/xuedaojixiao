@@ -1,6 +1,5 @@
 import { router } from "/@/cool/router";
 import { useStore } from "/@/cool/store";
-import { isFirstBatchRoute } from "/@/types/performance-mobile";
 
 const ignoreToken = ["/pages/user/login"];
 
@@ -18,8 +17,13 @@ router.beforeEach((to: { path: string }, next: () => void) => {
 	}
 
 	Promise.resolve(user.hydrate())
-		.then(() => {
-			if (!isFirstBatchRoute(to.path)) {
+		.then((ready) => {
+			if (!ready) {
+				user.logout({ remote: false, reLaunch: true });
+				return;
+			}
+
+			if (!user.canAccessRoute(to.path)) {
 				router.push({
 					path: "/pages/index/home",
 					mode: "reLaunch",

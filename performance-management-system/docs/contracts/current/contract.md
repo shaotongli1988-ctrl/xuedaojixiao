@@ -1,15 +1,15 @@
 # Development Readiness Contract
 
-- Contract ID: `dr-2026-04-17-002550`
-- Generated At: `2026-04-17T00:25:50+08:00`
+- Contract ID: `dr-2026-04-18-092259`
+- Generated At: `2026-04-18T09:22:59+08:00`
 - Mode: `global`
-- Business Goal: 绩效管理系统项目流程防漂移治理收口
+- Business Goal: 二期主题6 跨模块驾驶舱指标 阶段0冻结
 - In Scope Modules: `user`
 - Out Of Scope Modules: `none`
 - Affected Layers: `docs`
-- Readiness Status: `可进入开发`
-- Action: `READY_TO_START`
-- Reason: 未发现阻断进入开发的高风险问题。
+- Readiness Status: `不建议进入开发`
+- Action: `BLOCK_BEFORE_CODING`
+- Reason: 存在 P0 高风险缺口，当前不满足安全开工条件。
 
 ## Implementation Baselines
 - Roles: `none`

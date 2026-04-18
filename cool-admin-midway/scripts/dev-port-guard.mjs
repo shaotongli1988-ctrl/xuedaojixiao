@@ -1,6 +1,6 @@
 /**
  * Dev port guard for cool-admin-midway.
- * This file blocks ambiguous local startup when the same repo already has a backend listener on 8001/other ports.
+ * This file blocks ambiguous local startup when the same repo already has a backend listener on 8006/other ports.
  * It is not responsible for launching Midway itself or managing production processes.
  * Maintenance pitfall: keep the default port and env names aligned with src/config/config.default.ts.
  */
@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
-const defaultPort = 8001;
+const defaultPort = 8006;
 
 const args = new Set(process.argv.slice(2));
 const shouldKill = args.has('--kill');
@@ -65,7 +65,7 @@ if (repoListeners.length && !allowMultiInstance) {
 		[
 			`another backend instance from the same repo is already listening on a different port while you are trying to start ${portConfig.port}`,
 			details,
-			`This is how stale 8001 / new 8006 drift happens.`,
+			'This is how shared latest port drift happens.',
 			`Stop the existing instance, or explicitly reuse it with PORT=${repoListeners[0].port}, or bypass with COOL_ADMIN_ALLOW_MULTI_INSTANCE=1 if you really need multiple instances.`,
 		].join('\n')
 	);

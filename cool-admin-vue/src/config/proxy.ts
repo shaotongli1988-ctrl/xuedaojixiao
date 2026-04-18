@@ -5,7 +5,7 @@ const proxyTarget =
 	runtimeEnv?.COOL_ADMIN_PROXY_TARGET ||
 	(import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env
 		?.VITE_DEV_PROXY_TARGET ||
-	'http://127.0.0.1:8001';
+	'http://127.0.0.1:8006';
 
 const proxy = {
 	'/dev/': {
