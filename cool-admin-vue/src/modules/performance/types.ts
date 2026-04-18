@@ -426,3 +426,29 @@ export function createEmptyPromotion(currentUserId?: number): PromotionRecord {
 		reviewRecords: []
 	};
 }
+export interface PipExportRow {
+	id: number;
+	assessmentId?: number | null;
+	employeeId: number;
+	employeeName?: string;
+	ownerId: number;
+	ownerName?: string;
+	title: string;
+	startDate: string;
+	endDate: string;
+	status: string;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface FeedbackExportRow {
+	taskId: number;
+	assessmentId?: number | null;
+	employeeId: number;
+	title: string;
+	deadline?: string;
+	averageScore: number;
+	submittedCount: number;
+	totalCount: number;
+}
+

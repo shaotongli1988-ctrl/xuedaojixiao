@@ -757,3 +757,53 @@ function statusTagType(status?: string) {
 	}
 }
 </style>
+					<el-button v-if="showExportButton" @click="handleExport">导出摘要</el-button>
+import { export_json_to_excel } from '/@/plugins/excel/utils';
+	type PipExportRow,
+const showExportButton = computed(() => checkPerm(performancePipService.permission.export));
+async function handleExport() {
+	try {
+		const exportRows = await performancePipService.exportSummary({
+			keyword: filters.keyword || undefined,
+			employeeId: filters.employeeId,
+			ownerId: filters.ownerId,
+			status: filters.status || undefined,
+			assessmentId: presetAssessmentId.value
+		});
+
+		export_json_to_excel({
+			header: [
+				'PIP ID',
+				'来源评估单',
+				'员工ID',
+				'员工',
+				'负责人ID',
+				'负责人',
+				'标题',
+				'开始日期',
+				'结束日期',
+				'状态',
+				'创建时间',
+				'更新时间'
+			],
+			data: (exportRows || []).map((item: PipExportRow) => [
+				item.id,
+				item.assessmentId ?? '',
+				item.employeeId,
+				item.employeeName || '',
+				item.ownerId,
+				item.ownerName || '',
+				item.title,
+				item.startDate,
+				item.endDate,
+				statusLabel(item.status),
+				item.createTime || '',
+				item.updateTime || ''
+			]),
+			filename: `pip-summary-${Date.now()}`
+		});
+	} catch (error: any) {
+		ElMessage.error(error.message || '导出失败');
+	}
+}
+

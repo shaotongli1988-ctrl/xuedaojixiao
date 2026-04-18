@@ -44,6 +44,7 @@
 					<el-button v-if="canCreateTask" type="primary" @click="openCreate">
 						发起环评任务
 					</el-button>
+					<el-button v-if="showExportButton" @click="handleExport">导出汇总</el-button>
 				</div>
 			</div>
 		</el-card>
@@ -269,11 +270,13 @@ defineOptions({
 import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
+import { export_json_to_excel } from '/@/plugins/excel/utils';
 import { service } from '/@/cool';
 import FeedbackSubmitDrawer from '../../components/feedback-submit-drawer.vue';
 import FeedbackSummaryDrawer from '../../components/feedback-summary-drawer.vue';
 import FeedbackTaskForm from '../../components/feedback-task-form.vue';
 import {
+	type FeedbackExportRow,
 	type FeedbackSummary,
 	type FeedbackTaskRecord,
 	type UserOption,
@@ -317,6 +320,7 @@ const statusOptions = [
 const canAccess = computed(() => checkPerm(performanceFeedbackService.permission.page));
 const canCreateTask = computed(() => checkPerm(performanceFeedbackService.permission.add));
 const canViewSummary = computed(() => checkPerm(performanceFeedbackService.permission.summary));
+const showExportButton = computed(() => checkPerm(performanceFeedbackService.permission.export));
 const canViewRecordDetails = computed(() => canCreateTask.value);
 
 onMounted(async () => {
@@ -505,6 +509,42 @@ async function openSummary(row: FeedbackTaskRecord) {
 		ElMessage.error(error.message || '环评汇总加载失败');
 	} finally {
 		summaryLoading.value = false;
+	}
+}
+
+async function handleExport() {
+	try {
+		const exportRows = await performanceFeedbackService.exportSummary({
+			keyword: filters.title || undefined,
+			employeeId: filters.employeeId || undefined,
+			status: filters.status || undefined
+		});
+
+		export_json_to_excel({
+			header: [
+				'任务ID',
+				'来源评估单',
+				'被评价人ID',
+				'任务标题',
+				'截止时间',
+				'平均分',
+				'已提交',
+				'应提交'
+			],
+			data: (exportRows || []).map((item: FeedbackExportRow) => [
+				item.taskId,
+				item.assessmentId ?? '',
+				item.employeeId,
+				item.title,
+				item.deadline || '',
+				Number(item.averageScore ?? 0).toFixed(2),
+				item.submittedCount ?? 0,
+				item.totalCount ?? 0
+			]),
+			filename: `feedback-summary-${Date.now()}`
+		});
+	} catch (error: any) {
+		ElMessage.error(error.message || '导出失败');
 	}
 }
 

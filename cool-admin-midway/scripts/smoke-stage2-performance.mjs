@@ -40,6 +40,7 @@ const expectedUsers = [
         'performance:assessment:page',
         'performance:assessment:pendingPage',
         'performance:assessment:export',
+        'performance:feedback:export',
         'performance:goal:page',
         'performance:goal:add',
         'performance:goal:export',
@@ -47,6 +48,7 @@ const expectedUsers = [
         'performance:indicator:add',
         'performance:pip:page',
         'performance:pip:start',
+        'performance:pip:export',
         'performance:promotion:page',
         'performance:promotion:review',
         'performance:salary:page',
@@ -132,6 +134,25 @@ const expectedUsers = [
       ],
       excludeTitles: [],
     },
+    feedbackExport: {
+      expectSuccess: true,
+      expectedTotal: 1,
+      includeTitles: ['联调-平台组360反馈任务'],
+      excludeTitles: [],
+      forbiddenKeys: ['records'],
+    },
+    pipExport: {
+      expectSuccess: true,
+      expectedTotal: 4,
+      includeTitles: [
+        '联调-PIP-草稿-平台员工',
+        '联调-PIP-进行中-平台员工',
+        '联调-PIP-已完成-平台员工',
+        '联调-PIP-隐藏-销售员工',
+      ],
+      excludeTitles: [],
+      forbiddenKeys: ['improvementGoal', 'sourceReason', 'resultSummary', 'trackRecords'],
+    },
     promotionPage: {
       expectSuccess: true,
       expectedTotal: 4,
@@ -179,8 +200,10 @@ const expectedUsers = [
         'performance:goal:page',
         'performance:goal:add',
         'performance:goal:export',
+        'performance:feedback:export',
         'performance:pip:page',
         'performance:pip:track',
+        'performance:pip:export',
         'performance:promotion:page',
         'performance:promotion:review',
       ],
@@ -246,6 +269,24 @@ const expectedUsers = [
       ],
       excludeTitles: ['联调-PIP-隐藏-销售员工'],
     },
+    feedbackExport: {
+      expectSuccess: true,
+      expectedTotal: 1,
+      includeTitles: ['联调-平台组360反馈任务'],
+      excludeTitles: [],
+      forbiddenKeys: ['records'],
+    },
+    pipExport: {
+      expectSuccess: true,
+      expectedTotal: 3,
+      includeTitles: [
+        '联调-PIP-草稿-平台员工',
+        '联调-PIP-进行中-平台员工',
+        '联调-PIP-已完成-平台员工',
+      ],
+      excludeTitles: ['联调-PIP-隐藏-销售员工'],
+      forbiddenKeys: ['improvementGoal', 'sourceReason', 'resultSummary', 'trackRecords'],
+    },
     promotionPage: {
       expectSuccess: true,
       expectedTotal: 3,
@@ -297,8 +338,10 @@ const expectedUsers = [
         'performance:goal:add',
         'performance:goal:delete',
         'performance:goal:export',
+        'performance:feedback:export',
         'performance:indicator:page',
         'performance:pip:page',
+        'performance:pip:export',
         'performance:promotion:page',
         'performance:salary:page',
       ],
@@ -347,6 +390,14 @@ const expectedUsers = [
     pipPage: {
       expectSuccess: false,
       expectedMessage: '无权限查看 PIP',
+    },
+    feedbackExport: {
+      expectSuccess: false,
+      expectedMessage: '无权限导出该数据',
+    },
+    pipExport: {
+      expectSuccess: false,
+      expectedMessage: '无权限导出该数据',
     },
     promotionPage: {
       expectSuccess: false,
@@ -567,6 +618,12 @@ function listSalaryKeys(responseBody) {
 function listStageKeys(responseBody) {
   return (responseBody?.data?.stageProgress || [])
     .map(item => item.stageKey)
+    .filter(Boolean);
+}
+
+function listExportTitles(responseBody) {
+  return (Array.isArray(responseBody?.data) ? responseBody.data : [])
+    .map(item => item.title)
     .filter(Boolean);
 }
 
@@ -1126,6 +1183,165 @@ async function verifyPipPage(reporter, options, user, token) {
   reporter.pass(scope, `total=${total} titles=${titles.join(', ')}`);
 }
 
+async function verifyFeedbackExport(reporter, options, user, token) {
+  const config = user.feedbackExport;
+  const scope = `${user.username} feedback:export`;
+  const response = await requestJson(
+    `${options.baseUrl}/admin/performance/feedback/export`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: token,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        keyword: '联调-平台组360反馈任务',
+      }),
+    }
+  );
+
+  if (!config.expectSuccess) {
+    if (response.body?.code === successCode) {
+      reporter.fail(scope, 'expected denial but request succeeded');
+      return;
+    }
+    const message = String(response.body?.message || '');
+    if (!message.includes(config.expectedMessage)) {
+      reporter.fail(scope, `expected message "${config.expectedMessage}", got "${message}"`);
+      return;
+    }
+    reporter.pass(scope, `denied as expected: ${message}`);
+    return;
+  }
+
+  if (response.body?.code !== successCode) {
+    reporter.fail(scope, formatResponse(response.body));
+    return;
+  }
+
+  const list = Array.isArray(response.body?.data) ? response.body.data : [];
+  const titles = listExportTitles(response.body);
+  const problems = [];
+
+  if (list.length !== config.expectedTotal) {
+    problems.push(`expected total ${config.expectedTotal}, got ${list.length}`);
+  }
+
+  for (const title of config.includeTitles) {
+    if (!titles.includes(title)) {
+      problems.push(`missing title ${title}`);
+    }
+  }
+
+  for (const title of config.excludeTitles) {
+    if (titles.includes(title)) {
+      problems.push(`unexpected title ${title}`);
+    }
+  }
+
+  const sample = list[0] || {};
+  for (const key of config.forbiddenKeys) {
+    if (key in sample) {
+      problems.push(`unexpected field ${key}`);
+    }
+  }
+
+  if (typeof sample.averageScore !== 'number') {
+    problems.push('averageScore is not a number');
+  }
+  if (typeof sample.submittedCount !== 'number') {
+    problems.push('submittedCount is not a number');
+  }
+  if (typeof sample.totalCount !== 'number') {
+    problems.push('totalCount is not a number');
+  }
+
+  if (problems.length) {
+    reporter.fail(scope, problems.join('; '));
+    return;
+  }
+
+  reporter.pass(scope, `total=${list.length} titles=${titles.join(', ')}`);
+}
+
+async function verifyPipExport(reporter, options, user, token) {
+  const config = user.pipExport;
+  const scope = `${user.username} pip:export`;
+  const response = await requestJson(
+    `${options.baseUrl}/admin/performance/pip/export`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: token,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        keyword: '联调-PIP-',
+      }),
+    }
+  );
+
+  if (!config.expectSuccess) {
+    if (response.body?.code === successCode) {
+      reporter.fail(scope, 'expected denial but request succeeded');
+      return;
+    }
+    const message = String(response.body?.message || '');
+    if (!message.includes(config.expectedMessage)) {
+      reporter.fail(scope, `expected message "${config.expectedMessage}", got "${message}"`);
+      return;
+    }
+    reporter.pass(scope, `denied as expected: ${message}`);
+    return;
+  }
+
+  if (response.body?.code !== successCode) {
+    reporter.fail(scope, formatResponse(response.body));
+    return;
+  }
+
+  const list = Array.isArray(response.body?.data) ? response.body.data : [];
+  const titles = listExportTitles(response.body);
+  const problems = [];
+
+  if (list.length !== config.expectedTotal) {
+    problems.push(`expected total ${config.expectedTotal}, got ${list.length}`);
+  }
+
+  for (const title of config.includeTitles) {
+    if (!titles.includes(title)) {
+      problems.push(`missing title ${title}`);
+    }
+  }
+
+  for (const title of config.excludeTitles) {
+    if (titles.includes(title)) {
+      problems.push(`unexpected title ${title}`);
+    }
+  }
+
+  const sample = list[0] || {};
+  for (const key of config.forbiddenKeys) {
+    if (key in sample) {
+      problems.push(`unexpected field ${key}`);
+    }
+  }
+
+  if (typeof sample.employeeName !== 'string' || !sample.employeeName) {
+    problems.push('employeeName is missing');
+  }
+  if (typeof sample.ownerName !== 'string' || !sample.ownerName) {
+    problems.push('ownerName is missing');
+  }
+
+  if (problems.length) {
+    reporter.fail(scope, problems.join('; '));
+    return;
+  }
+
+  reporter.pass(scope, `total=${list.length} titles=${titles.join(', ')}`);
+}
+
 async function verifyPromotionPage(reporter, options, user, token) {
   const config = user.promotionPage;
   const scope = `${user.username} promotion:page`;
@@ -1301,6 +1517,8 @@ async function run() {
       reporter.skip(`${user.username} goal:page`, 'skipped because login failed');
       reporter.skip(`${user.username} indicator:page`, 'skipped because login failed');
       reporter.skip(`${user.username} pip:page`, 'skipped because login failed');
+      reporter.skip(`${user.username} feedback:export`, 'skipped because login failed');
+      reporter.skip(`${user.username} pip:export`, 'skipped because login failed');
       reporter.skip(`${user.username} promotion:page`, 'skipped because login failed');
       reporter.skip(`${user.username} salary:page`, 'skipped because login failed');
       continue;
@@ -1312,6 +1530,8 @@ async function run() {
     await verifyGoalPage(reporter, options, user, session.token);
     await verifyIndicatorPage(reporter, options, user, session.token);
     await verifyPipPage(reporter, options, user, session.token);
+    await verifyFeedbackExport(reporter, options, user, session.token);
+    await verifyPipExport(reporter, options, user, session.token);
     await verifyPromotionPage(reporter, options, user, session.token);
     await verifySalaryPage(reporter, options, user, session.token);
   }

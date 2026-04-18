@@ -21,6 +21,10 @@ jest.mock('../../src/modules/base/entity/sys/department', () => ({
   BaseSysDepartmentEntity: class BaseSysDepartmentEntity {},
 }));
 
+jest.mock('../../src/modules/base/entity/sys/log', () => ({
+  BaseSysLogEntity: class BaseSysLogEntity {},
+}));
+
 jest.mock('../../src/modules/performance/entity/assessment', () => ({
   PerformanceAssessmentEntity: class PerformanceAssessmentEntity {},
 }));
@@ -44,6 +48,17 @@ const createRecordsQueryBuilder = (rows: any[]) => {
     select: jest.fn().mockReturnThis(),
     where: jest.fn().mockReturnThis(),
     orderBy: jest.fn().mockReturnThis(),
+    getRawMany: jest.fn().mockResolvedValue(rows),
+  };
+};
+
+const createExportQueryBuilder = (rows: any[], total = rows.length) => {
+  return {
+    leftJoin: jest.fn().mockReturnThis(),
+    select: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    getCount: jest.fn().mockResolvedValue(total),
     getRawMany: jest.fn().mockResolvedValue(rows),
   };
 };
@@ -244,5 +259,139 @@ describe('performance feedback service', () => {
       totalCount: 3,
       records: [],
     });
+  });
+
+  test('should reject feedback export without independent export permission and record failed audit', async () => {
+    const admin = {
+      userId: 2001,
+      username: 'manager_platform',
+      roleIds: [2],
+      passwordVersion: 1,
+      isRefresh: false,
+    };
+    const insert = jest.fn().mockResolvedValue(undefined);
+
+    const service = new PerformanceFeedbackService() as any;
+    service.ctx = {
+      admin,
+      get: jest.fn(),
+    };
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue(['performance:feedback:summary']),
+    };
+    service.baseSysLogEntity = {
+      insert,
+      create: jest.fn().mockImplementation(input => input),
+    };
+
+    await expect(service.export({ employeeId: 3001 })).rejects.toThrow(
+      '无权限导出该数据'
+    );
+
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 2001,
+        action: '/admin/performance/feedback/export',
+        params: expect.objectContaining({
+          operatorId: 2001,
+          moduleKey: 'feedback',
+          filterSummary: {
+            employeeId: 3001,
+          },
+          exportFieldVersion: 'feedback-summary-v1',
+          rowCount: 0,
+          resultStatus: 'failed',
+          failureReason: 'permission_denied',
+        }),
+      })
+    );
+  });
+
+  test('should export feedback summary only and record success audit', async () => {
+    const admin = {
+      userId: 2001,
+      username: 'manager_platform',
+      roleIds: [2],
+      passwordVersion: 1,
+      isRefresh: false,
+    };
+    const qb = createExportQueryBuilder([
+      {
+        id: 31,
+        assessmentId: 41,
+        employeeId: 3001,
+        title: 'Q2 360 环评',
+        deadline: '2026-04-30 23:59:59',
+      },
+    ]);
+    const insert = jest.fn().mockResolvedValue(undefined);
+
+    const service = new PerformanceFeedbackService() as any;
+    service.ctx = {
+      admin,
+      get: jest.fn(),
+    };
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue(['performance:feedback:export']),
+    };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([10]),
+    };
+    service.baseSysLogEntity = {
+      insert,
+      create: jest.fn().mockImplementation(input => input),
+    };
+    service.performanceFeedbackTaskEntity = {
+      createQueryBuilder: jest.fn().mockReturnValue(qb),
+    };
+    service.fetchTaskStatsMap = jest.fn().mockResolvedValue(
+      new Map([
+        [
+          31,
+          {
+            submittedCount: 2,
+            totalCount: 3,
+            averageScore: 87,
+          },
+        ],
+      ])
+    );
+
+    const result = await service.export({
+      employeeId: 3001,
+      status: 'running',
+      keyword: 'Q2',
+    });
+
+    expect(qb.andWhere).toHaveBeenCalledWith(
+      'employee.departmentId in (:...departmentIds)',
+      {
+        departmentIds: [10],
+      }
+    );
+    expect(result).toEqual([
+      {
+        taskId: 31,
+        assessmentId: 41,
+        employeeId: 3001,
+        title: 'Q2 360 环评',
+        deadline: '2026-04-30 23:59:59',
+        averageScore: 87,
+        submittedCount: 2,
+        totalCount: 3,
+      },
+    ]);
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: '/admin/performance/feedback/export',
+        params: expect.objectContaining({
+          operatorRole: 'manager',
+          moduleKey: 'feedback',
+          exportFieldVersion: 'feedback-summary-v1',
+          rowCount: 1,
+          resultStatus: 'success',
+        }),
+      })
+    );
   });
 });

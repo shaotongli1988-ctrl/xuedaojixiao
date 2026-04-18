@@ -5,6 +5,7 @@
  */
 import { BaseService } from '/@/cool';
 import type {
+	FeedbackExportRow,
 	FeedbackPageResult,
 	FeedbackSummary,
 	FeedbackTaskRecord
@@ -21,7 +22,8 @@ export default class PerformanceFeedbackService extends BaseService {
 		info: 'performance:feedback:info',
 		add: 'performance:feedback:add',
 		submit: 'performance:feedback:submit',
-		summary: 'performance:feedback:summary'
+		summary: 'performance:feedback:summary',
+		export: 'performance:feedback:export'
 	};
 
 	constructor() {
@@ -61,6 +63,14 @@ export default class PerformanceFeedbackService extends BaseService {
 				id: params.taskId
 			}
 		}) as unknown as Promise<FeedbackSummary>;
+	}
+
+	exportSummary(data: any) {
+		return this.request({
+			url: '/export',
+			method: 'POST',
+			data
+		}) as unknown as Promise<FeedbackExportRow[]>;
 	}
 }
 

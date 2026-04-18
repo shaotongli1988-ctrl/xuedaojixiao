@@ -1447,3 +1447,7 @@ async function main() {
 }
 
 await main();
+        'performance:feedback:export',
+        'performance:pip:export',
+        'performance:feedback:export',
+        'performance:pip:export',

@@ -59,4 +59,10 @@ export class AdminPerformancePipController extends BaseController {
     await this.performancePipService.initPipScope();
     return this.ok(await this.performancePipService.close(payload));
   }
+
+  @Post('/export', { summary: '导出 PIP 摘要' })
+  async export(@Body(ALL) query: any) {
+    await this.performancePipService.initPipScope();
+    return this.ok(await this.performancePipService.export(query));
+  }
 }

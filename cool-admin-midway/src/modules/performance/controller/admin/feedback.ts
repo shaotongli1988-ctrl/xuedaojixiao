@@ -41,4 +41,10 @@ export class AdminPerformanceFeedbackController extends BaseController {
     await this.performanceFeedbackService.initFeedbackScope();
     return this.ok(await this.performanceFeedbackService.summary(Number(id)));
   }
+
+  @Post('/export', { summary: '导出环评汇总摘要' })
+  async export(@Body(ALL) query: any) {
+    await this.performanceFeedbackService.initFeedbackScope();
+    return this.ok(await this.performanceFeedbackService.export(query));
+  }
 }

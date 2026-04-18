@@ -19,6 +19,7 @@ import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Brackets, In, Repository } from 'typeorm';
 import * as jwt from 'jsonwebtoken';
 import { BaseSysDepartmentEntity } from '../../base/entity/sys/department';
+import { BaseSysLogEntity } from '../../base/entity/sys/log';
 import { BaseSysUserEntity } from '../../base/entity/sys/user';
 import { BaseSysMenuService } from '../../base/service/sys/menu';
 import { BaseSysPermsService } from '../../base/service/sys/perms';
@@ -42,6 +43,15 @@ const FEEDBACK_RELATION_TYPES: FeedbackRelationType[] = [
   '下级',
   '协作人',
 ];
+
+const FEEDBACK_EXPORT_LIMIT = 5000;
+const FEEDBACK_EXPORT_ACTION = '/admin/performance/feedback/export';
+const FEEDBACK_EXPORT_FIELD_VERSION = 'feedback-summary-v1';
+const FEEDBACK_EXPORT_ERRORS = {
+  denied: '无权限导出该数据',
+  noData: '当前筛选条件下无可导出数据',
+  overLimit: '导出结果超过上限，请缩小筛选范围后重试',
+} as const;
 
 const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
   return require('../../base/config').default({
@@ -158,6 +168,12 @@ function normalizePagination(value: any, fallback: number) {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+function compactObject<T extends Record<string, any>>(input: T) {
+  return Object.fromEntries(
+    Object.entries(input).filter(([, value]) => value !== undefined && value !== '')
+  ) as Partial<T>;
+}
+
 @Provide()
 @Scope(ScopeEnum.Request, { allowDowngrade: true })
 export class PerformanceFeedbackService extends BaseService {
@@ -175,6 +191,9 @@ export class PerformanceFeedbackService extends BaseService {
 
   @InjectEntityModel(BaseSysDepartmentEntity)
   baseSysDepartmentEntity: Repository<BaseSysDepartmentEntity>;
+
+  @InjectEntityModel(BaseSysLogEntity)
+  baseSysLogEntity: Repository<BaseSysLogEntity>;
 
   @Inject()
   baseSysMenuService: BaseSysMenuService;
@@ -194,6 +213,7 @@ export class PerformanceFeedbackService extends BaseService {
     add: 'performance:feedback:add',
     submit: 'performance:feedback:submit',
     summary: 'performance:feedback:summary',
+    export: 'performance:feedback:export',
     hrPage: 'performance:salary:page',
   };
 
@@ -561,6 +581,108 @@ export class PerformanceFeedbackService extends BaseService {
     };
   }
 
+  async export(query: any) {
+    let perms: string[] = [];
+
+    try {
+      perms = await this.currentPerms();
+
+      if (!this.hasPerm(perms, this.perms.export)) {
+        throw new CoolCommException(FEEDBACK_EXPORT_ERRORS.denied);
+      }
+
+      const qb = this.performanceFeedbackTaskEntity
+        .createQueryBuilder('task')
+        .leftJoin(BaseSysUserEntity, 'employee', 'employee.id = task.employeeId')
+        .leftJoin(
+          BaseSysDepartmentEntity,
+          'department',
+          'department.id = employee.departmentId'
+        )
+        .select([
+          'task.id as id',
+          'task.assessmentId as assessmentId',
+          'task.employeeId as employeeId',
+          'task.title as title',
+          'task.deadline as deadline',
+        ]);
+
+      await this.applyTaskExportScope(qb, perms);
+
+      if (query.assessmentId) {
+        qb.andWhere('task.assessmentId = :assessmentId', {
+          assessmentId: Number(query.assessmentId),
+        });
+      }
+
+      if (query.employeeId) {
+        qb.andWhere('task.employeeId = :employeeId', {
+          employeeId: Number(query.employeeId),
+        });
+      }
+
+      if (query.status) {
+        qb.andWhere('task.status = :status', {
+          status: String(query.status).trim(),
+        });
+      }
+
+      if (query.keyword) {
+        qb.andWhere('task.title like :keyword', {
+          keyword: `%${String(query.keyword).trim()}%`,
+        });
+      }
+
+      qb.orderBy('task.updateTime', 'DESC');
+
+      const total = await qb.getCount();
+
+      if (!total) {
+        throw new CoolCommException(FEEDBACK_EXPORT_ERRORS.noData);
+      }
+
+      if (total > FEEDBACK_EXPORT_LIMIT) {
+        throw new CoolCommException(FEEDBACK_EXPORT_ERRORS.overLimit);
+      }
+
+      const list = await qb.getRawMany();
+      const statsMap = await this.fetchTaskStatsMap(list.map(item => Number(item.id)));
+      const result = list.map(item => {
+        const stats = statsMap.get(Number(item.id));
+
+        return {
+          taskId: Number(item.id),
+          assessmentId: Number(item.assessmentId),
+          employeeId: Number(item.employeeId),
+          title: item.title || '',
+          deadline: item.deadline || '',
+          averageScore: stats?.averageScore || 0,
+          submittedCount: stats?.submittedCount || 0,
+          totalCount: stats?.totalCount || 0,
+        };
+      });
+
+      await this.recordExportAudit({
+        perms,
+        query,
+        rowCount: result.length,
+        resultStatus: 'success',
+      });
+
+      return result;
+    } catch (error) {
+      await this.recordExportAudit({
+        perms,
+        query,
+        rowCount: 0,
+        resultStatus: 'failed',
+        failureReason: this.resolveExportFailureReason(error),
+      });
+
+      throw error;
+    }
+  }
+
   private async fetchTaskDetailRow(taskId: number) {
     const userId = Number(this.currentAdmin.userId);
 
@@ -757,6 +879,21 @@ export class PerformanceFeedbackService extends BaseService {
     );
   }
 
+  private async applyTaskExportScope(qb: any, perms: string[]) {
+    if (this.isHr(perms)) {
+      return;
+    }
+
+    const departmentIds = await this.resolveScopeDepartmentIds();
+
+    if (!departmentIds.length) {
+      qb.andWhere('1 = 0');
+      return;
+    }
+
+    qb.andWhere('employee.departmentId in (:...departmentIds)', { departmentIds });
+  }
+
   private async assertCanViewTask(
     task: PerformanceFeedbackTaskEntity,
     perms: string[]
@@ -862,6 +999,88 @@ export class PerformanceFeedbackService extends BaseService {
     }
 
     return user;
+  }
+
+  private resolveExportFailureReason(error: any) {
+    const message = String(error?.message || '');
+
+    switch (message) {
+      case FEEDBACK_EXPORT_ERRORS.denied:
+        return 'permission_denied';
+      case FEEDBACK_EXPORT_ERRORS.noData:
+        return 'no_data';
+      case FEEDBACK_EXPORT_ERRORS.overLimit:
+        return 'over_limit';
+      default:
+        return 'unknown';
+    }
+  }
+
+  private resolveExportOperatorRole(perms: string[]) {
+    if (this.currentAdmin?.isAdmin === true) {
+      return 'admin';
+    }
+
+    if (this.isHr(perms)) {
+      return 'hr';
+    }
+
+    if (
+      this.hasPerm(perms, this.perms.export) ||
+      this.hasPerm(perms, this.perms.add)
+    ) {
+      return 'manager';
+    }
+
+    return 'employee';
+  }
+
+  private buildExportFilterSummary(query: any) {
+    return compactObject({
+      assessmentId: query?.assessmentId ? Number(query.assessmentId) : undefined,
+      employeeId: query?.employeeId ? Number(query.employeeId) : undefined,
+      status: query?.status ? String(query.status).trim() : undefined,
+      keyword: query?.keyword ? String(query.keyword).trim() : undefined,
+    });
+  }
+
+  private async recordExportAudit(input: {
+    perms: string[];
+    query: any;
+    rowCount: number;
+    resultStatus: 'success' | 'failed';
+    failureReason?: string;
+  }) {
+    if (!this.baseSysLogEntity?.insert) {
+      return;
+    }
+
+    const operatorId = Number(this.currentAdmin?.userId || 0) || null;
+    const params = {
+      operatorId,
+      operatorRole: this.resolveExportOperatorRole(input.perms || []),
+      moduleKey: 'feedback',
+      filterSummary: this.buildExportFilterSummary(input.query),
+      exportFieldVersion: FEEDBACK_EXPORT_FIELD_VERSION,
+      rowCount: input.rowCount,
+      triggerTime: nowString(),
+      resultStatus: input.resultStatus,
+      failureReason: input.failureReason || '',
+    };
+
+    await this.baseSysLogEntity.insert(
+      this.baseSysLogEntity.create
+        ? this.baseSysLogEntity.create({
+            userId: operatorId || undefined,
+            action: FEEDBACK_EXPORT_ACTION,
+            params,
+          } as any)
+        : ({
+            userId: operatorId || undefined,
+            action: FEEDBACK_EXPORT_ACTION,
+            params,
+          } as any)
+    );
   }
 
   async initFeedbackScope() {

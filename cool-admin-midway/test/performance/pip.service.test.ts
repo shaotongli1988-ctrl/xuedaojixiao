@@ -17,6 +17,10 @@ jest.mock('../../src/modules/base/entity/sys/user', () => ({
   BaseSysUserEntity: class BaseSysUserEntity {},
 }));
 
+jest.mock('../../src/modules/base/entity/sys/log', () => ({
+  BaseSysLogEntity: class BaseSysLogEntity {},
+}));
+
 jest.mock('../../src/modules/performance/entity/assessment', () => ({
   PerformanceAssessmentEntity: class PerformanceAssessmentEntity {},
 }));
@@ -35,6 +39,17 @@ import {
   validatePipPayload,
   PerformancePipService,
 } from '../../src/modules/performance/service/pip';
+
+const createExportQueryBuilder = (rows: any[], total = rows.length) => {
+  return {
+    leftJoin: jest.fn().mockReturnThis(),
+    select: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    getCount: jest.fn().mockResolvedValue(total),
+    getRawMany: jest.fn().mockResolvedValue(rows),
+  };
+};
 
 describe('performance pip helper', () => {
   test('should require source reason for independent creation', () => {
@@ -163,5 +178,137 @@ describe('performance pip helper', () => {
         total: 0,
       },
     });
+  });
+
+  test('should reject pip export when row count exceeds frozen limit and record failed audit', async () => {
+    const admin = {
+      userId: 2001,
+      username: 'manager_platform',
+      roleIds: [2],
+      passwordVersion: 1,
+      isRefresh: false,
+    };
+    const qb = createExportQueryBuilder([], 5001);
+    const insert = jest.fn().mockResolvedValue(undefined);
+
+    const service = new PerformancePipService() as any;
+    service.ctx = {
+      admin,
+      get: jest.fn(),
+    };
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue(['performance:pip:export']),
+    };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([10]),
+    };
+    service.baseSysLogEntity = {
+      insert,
+      create: jest.fn().mockImplementation(input => input),
+    };
+    service.performancePipEntity = {
+      createQueryBuilder: jest.fn().mockReturnValue(qb),
+    };
+
+    await expect(service.export({ status: 'active' })).rejects.toThrow(
+      '导出结果超过上限，请缩小筛选范围后重试'
+    );
+
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: '/admin/performance/pip/export',
+        params: expect.objectContaining({
+          moduleKey: 'pip',
+          exportFieldVersion: 'pip-summary-v1',
+          rowCount: 0,
+          resultStatus: 'failed',
+          failureReason: 'over_limit',
+        }),
+      })
+    );
+  });
+
+  test('should export pip summary only and record success audit', async () => {
+    const admin = {
+      userId: 1,
+      username: 'hr_admin',
+      roleIds: [1],
+      passwordVersion: 1,
+      isRefresh: false,
+      isAdmin: true,
+    };
+    const qb = createExportQueryBuilder([
+      {
+        id: 51,
+        assessmentId: 71,
+        employeeId: 3001,
+        employeeName: '张三',
+        ownerId: 2001,
+        ownerName: '李经理',
+        title: 'Q2 PIP',
+        startDate: '2026-04-01',
+        endDate: '2026-04-30',
+        status: 'active',
+        createTime: '2026-04-01 09:00:00',
+        updateTime: '2026-04-02 10:00:00',
+        improvementGoal: '不应导出',
+        sourceReason: '不应导出',
+        resultSummary: '不应导出',
+      },
+    ]);
+    const insert = jest.fn().mockResolvedValue(undefined);
+
+    const service = new PerformancePipService() as any;
+    service.ctx = {
+      admin,
+      get: jest.fn(),
+    };
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue([
+        'performance:pip:export',
+        'performance:salary:page',
+      ]),
+    };
+    service.baseSysLogEntity = {
+      insert,
+      create: jest.fn().mockImplementation(input => input),
+    };
+    service.performancePipEntity = {
+      createQueryBuilder: jest.fn().mockReturnValue(qb),
+    };
+
+    const result = await service.export({
+      assessmentId: 71,
+      keyword: 'Q2',
+    });
+
+    expect(result).toEqual([
+      {
+        id: 51,
+        assessmentId: 71,
+        employeeId: 3001,
+        employeeName: '张三',
+        ownerId: 2001,
+        ownerName: '李经理',
+        title: 'Q2 PIP',
+        startDate: '2026-04-01',
+        endDate: '2026-04-30',
+        status: 'active',
+        createTime: '2026-04-01 09:00:00',
+        updateTime: '2026-04-02 10:00:00',
+      },
+    ]);
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: '/admin/performance/pip/export',
+        params: expect.objectContaining({
+          operatorRole: 'admin',
+          moduleKey: 'pip',
+          exportFieldVersion: 'pip-summary-v1',
+          rowCount: 1,
+          resultStatus: 'success',
+        }),
+      })
+    );
   });
 });

@@ -1,5 +1,5 @@
 import { BaseService } from '/@/cool';
-import type { PipPageResult, PipRecord } from '../types';
+import type { PipExportRow, PipPageResult, PipRecord } from '../types';
 
 /**
  * PIP 前端请求服务。
@@ -14,7 +14,8 @@ export default class PerformancePipService extends BaseService {
 		start: 'performance:pip:start',
 		track: 'performance:pip:track',
 		complete: 'performance:pip:complete',
-		close: 'performance:pip:close'
+		close: 'performance:pip:close',
+		export: 'performance:pip:export'
 	};
 
 	constructor() {
@@ -67,6 +68,14 @@ export default class PerformancePipService extends BaseService {
 			method: 'POST',
 			data
 		}) as unknown as Promise<PipRecord>;
+	}
+
+	exportSummary(data: any) {
+		return this.request({
+			url: '/export',
+			method: 'POST',
+			data
+		}) as unknown as Promise<PipExportRow[]>;
 	}
 }
 

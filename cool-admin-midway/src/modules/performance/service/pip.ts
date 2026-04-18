@@ -16,6 +16,7 @@ import {
 import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { In, Repository } from 'typeorm';
+import { BaseSysLogEntity } from '../../base/entity/sys/log';
 import { BaseSysMenuService } from '../../base/service/sys/menu';
 import { BaseSysPermsService } from '../../base/service/sys/perms';
 import { BaseSysUserEntity } from '../../base/entity/sys/user';
@@ -26,6 +27,15 @@ import * as jwt from 'jsonwebtoken';
 
 export type PipStatus = 'draft' | 'active' | 'completed' | 'closed';
 export type PipAction = 'start' | 'track' | 'complete' | 'close';
+
+const PIP_EXPORT_LIMIT = 5000;
+const PIP_EXPORT_ACTION = '/admin/performance/pip/export';
+const PIP_EXPORT_FIELD_VERSION = 'pip-summary-v1';
+const PIP_EXPORT_ERRORS = {
+  denied: '无权限导出该数据',
+  noData: '当前筛选条件下无可导出数据',
+  overLimit: '导出结果超过上限，请缩小筛选范围后重试',
+} as const;
 
 const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
   return require('../../base/config').default({
@@ -99,6 +109,12 @@ export function resolvePipStatusTransition(
   }
 }
 
+function compactObject<T extends Record<string, any>>(input: T) {
+  return Object.fromEntries(
+    Object.entries(input).filter(([, value]) => value !== undefined && value !== '')
+  ) as Partial<T>;
+}
+
 @Provide()
 @Scope(ScopeEnum.Request, { allowDowngrade: true })
 export class PerformancePipService extends BaseService {
@@ -113,6 +129,9 @@ export class PerformancePipService extends BaseService {
 
   @InjectEntityModel(BaseSysUserEntity)
   baseSysUserEntity: Repository<BaseSysUserEntity>;
+
+  @InjectEntityModel(BaseSysLogEntity)
+  baseSysLogEntity: Repository<BaseSysLogEntity>;
 
   @Inject()
   baseSysMenuService: BaseSysMenuService;
@@ -135,6 +154,7 @@ export class PerformancePipService extends BaseService {
     track: 'performance:pip:track',
     complete: 'performance:pip:complete',
     close: 'performance:pip:close',
+    export: 'performance:pip:export',
     hrPage: 'performance:salary:page',
   };
 
@@ -364,6 +384,117 @@ export class PerformancePipService extends BaseService {
     return this.updateStatus(Number(payload.id), 'close', payload.resultSummary);
   }
 
+  async export(query: any) {
+    let perms: string[] = [];
+
+    try {
+      perms = await this.currentPerms();
+
+      if (!this.hasPerm(perms, this.perms.export)) {
+        throw new CoolCommException(PIP_EXPORT_ERRORS.denied);
+      }
+
+      const qb = this.performancePipEntity
+        .createQueryBuilder('pip')
+        .leftJoin(BaseSysUserEntity, 'employee', 'employee.id = pip.employeeId')
+        .leftJoin(BaseSysUserEntity, 'owner', 'owner.id = pip.ownerId')
+        .select([
+          'pip.id as id',
+          'pip.assessmentId as assessmentId',
+          'pip.employeeId as employeeId',
+          'pip.ownerId as ownerId',
+          'pip.title as title',
+          'pip.startDate as startDate',
+          'pip.endDate as endDate',
+          'pip.status as status',
+          'pip.createTime as createTime',
+          'pip.updateTime as updateTime',
+          'employee.name as employeeName',
+          'employee.departmentId as departmentId',
+          'owner.name as ownerName',
+        ]);
+
+      await this.applyPipExportScope(qb, perms);
+
+      if (query.employeeId) {
+        qb.andWhere('pip.employeeId = :employeeId', {
+          employeeId: Number(query.employeeId),
+        });
+      }
+
+      if (query.ownerId) {
+        qb.andWhere('pip.ownerId = :ownerId', {
+          ownerId: Number(query.ownerId),
+        });
+      }
+
+      if (query.assessmentId) {
+        qb.andWhere('pip.assessmentId = :assessmentId', {
+          assessmentId: Number(query.assessmentId),
+        });
+      }
+
+      if (query.status) {
+        qb.andWhere('pip.status = :status', { status: String(query.status).trim() });
+      }
+
+      if (query.keyword) {
+        qb.andWhere('pip.title like :keyword', {
+          keyword: `%${String(query.keyword).trim()}%`,
+        });
+      }
+
+      qb.orderBy('pip.updateTime', 'DESC');
+
+      const total = await qb.getCount();
+
+      if (!total) {
+        throw new CoolCommException(PIP_EXPORT_ERRORS.noData);
+      }
+
+      if (total > PIP_EXPORT_LIMIT) {
+        throw new CoolCommException(PIP_EXPORT_ERRORS.overLimit);
+      }
+
+      const list = await qb.getRawMany();
+      const result = list.map(item => {
+        return {
+          id: Number(item.id),
+          assessmentId: item.assessmentId ? Number(item.assessmentId) : null,
+          employeeId: Number(item.employeeId),
+          employeeName: item.employeeName || '',
+          ownerId: Number(item.ownerId),
+          ownerName: item.ownerName || '',
+          title: item.title || '',
+          startDate: item.startDate || '',
+          endDate: item.endDate || '',
+          status: item.status || 'draft',
+          createTime: item.createTime || '',
+          updateTime: item.updateTime || '',
+        };
+      });
+
+      await this.recordExportAudit({
+        perms,
+        query,
+        rowCount: result.length,
+        resultStatus: 'success',
+      });
+
+      return result;
+    } catch (error) {
+      await this.recordExportAudit({
+        perms,
+        query,
+        rowCount: 0,
+        resultStatus: 'failed',
+        failureReason: this.resolveExportFailureReason(error),
+      });
+
+      throw error;
+    }
+  }
+
   private async updateStatus(
     id: number,
     action: Exclude<PipAction, 'track'>,
@@ -574,6 +705,21 @@ export class PerformancePipService extends BaseService {
     qb.andWhere('employee.departmentId in (:...departmentIds)', { departmentIds });
   }
 
+  private async applyPipExportScope(qb: any, perms: string[]) {
+    if (this.isHr(perms)) {
+      return;
+    }
+
+    const departmentIds = await this.resolveScopeDepartmentIds();
+
+    if (!departmentIds.length) {
+      qb.andWhere('1 = 0');
+      return;
+    }
+
+    qb.andWhere('employee.departmentId in (:...departmentIds)', { departmentIds });
+  }
+
   private async assertCanViewPip(pip: PerformancePipEntity, perms: string[]) {
     if (!this.hasPerm(perms, this.perms.info)) {
       throw new CoolCommException('无权限查看 PIP 详情');
@@ -638,6 +784,94 @@ export class PerformancePipService extends BaseService {
     const departmentIds = await this.departmentScopeIds();
     this.currentCtx.pipDepartmentIds = departmentIds;
     return departmentIds;
+  }
+
+  private resolveExportFailureReason(error: any) {
+    const message = String(error?.message || '');
+
+    switch (message) {
+      case PIP_EXPORT_ERRORS.denied:
+        return 'permission_denied';
+      case PIP_EXPORT_ERRORS.noData:
+        return 'no_data';
+      case PIP_EXPORT_ERRORS.overLimit:
+        return 'over_limit';
+      default:
+        return 'unknown';
+    }
+  }
+
+  private resolveExportOperatorRole(perms: string[]) {
+    if (this.currentAdmin?.isAdmin === true) {
+      return 'admin';
+    }
+
+    if (this.isHr(perms)) {
+      return 'hr';
+    }
+
+    if (
+      this.hasPerm(perms, this.perms.export) ||
+      this.hasPerm(perms, this.perms.add) ||
+      this.hasPerm(perms, this.perms.update) ||
+      this.hasPerm(perms, this.perms.start) ||
+      this.hasPerm(perms, this.perms.track) ||
+      this.hasPerm(perms, this.perms.complete) ||
+      this.hasPerm(perms, this.perms.close)
+    ) {
+      return 'manager';
+    }
+
+    return 'employee';
+  }
+
+  private buildExportFilterSummary(query: any) {
+    return compactObject({
+      assessmentId: query?.assessmentId ? Number(query.assessmentId) : undefined,
+      employeeId: query?.employeeId ? Number(query.employeeId) : undefined,
+      ownerId: query?.ownerId ? Number(query.ownerId) : undefined,
+      status: query?.status ? String(query.status).trim() : undefined,
+      keyword: query?.keyword ? String(query.keyword).trim() : undefined,
+    });
+  }
+
+  private async recordExportAudit(input: {
+    perms: string[];
+    query: any;
+    rowCount: number;
+    resultStatus: 'success' | 'failed';
+    failureReason?: string;
+  }) {
+    if (!this.baseSysLogEntity?.insert) {
+      return;
+    }
+
+    const operatorId = Number(this.currentAdmin?.userId || 0) || null;
+    const params = {
+      operatorId,
+      operatorRole: this.resolveExportOperatorRole(input.perms || []),
+      moduleKey: 'pip',
+      filterSummary: this.buildExportFilterSummary(input.query),
+      exportFieldVersion: PIP_EXPORT_FIELD_VERSION,
+      rowCount: input.rowCount,
+      triggerTime: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      resultStatus: input.resultStatus,
+      failureReason: input.failureReason || '',
+    };
+
+    await this.baseSysLogEntity.insert(
+      this.baseSysLogEntity.create
+        ? this.baseSysLogEntity.create({
+            userId: operatorId || undefined,
+            action: PIP_EXPORT_ACTION,
+            params,
+          } as any)
+        : ({
+            userId: operatorId || undefined,
+            action: PIP_EXPORT_ACTION,
+            params,
+          } as any)
+    );
   }
 
   async initPipScope() {
