@@ -6,12 +6,17 @@
 - Topic: Theme10 Contract Management
 - Current implementation conclusion: `合同管理已完成阶段1收口，可进入下一主题`
 - Current submit/push conclusion:
-  - Theme10 evidence is closed.
-  - A pure theme10 commit is still blocked by shared files that also contain theme11/12/13/14 changes.
-  - Shared files must be split into theme10-only hunks before commit or push.
+  - Theme10 runtime code and shared wiring are already present in `HEAD`.
+  - The only remaining theme10 delta is task cards and closure docs under `performance-management-system/tasks`.
+  - A pure theme10 commit can now be created directly without shared-file hunk splitting.
 
 ## Delivery Docs
 
+- [主题10范围与非目标冻结](/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/2026-04-18-二期主题10-合同管理-范围与非目标冻结.md)
+- [主题10接口权限状态冻结](/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/2026-04-18-二期主题10-合同管理-接口权限状态冻结.md)
+- [主题10阶段0冻结](/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/2026-04-18-二期主题10-合同管理-阶段0冻结.md)
+- [主题10阶段0最终验收](/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/2026-04-18-二期主题10-合同管理-阶段0最终验收.md)
+- [主题10测试矩阵与任务拆分冻结](/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/2026-04-18-二期主题10-合同管理-测试矩阵与任务拆分冻结.md)
 - [主题10实现A后端](/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/2026-04-18-二期主题10-合同管理-实现-A-后端.md)
 - [主题10实现B前端](/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/2026-04-18-二期主题10-合同管理-实现-B-前端.md)
 - [主题10实现C联调](/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/2026-04-18-二期主题10-合同管理-实现-C-联调.md)
@@ -25,18 +30,16 @@
 - Frontend type-check and build: passed
 - Real API smoke for theme10: passed
 - Browser GUI click-through for HR success path and manager/employee denial path: passed
+- Git boundary re-check against `HEAD`: passed
 
 ## Commit Boundary
 
-- Directly committable files:
-  - theme10 contract entity/service/controller/test/smoke files
-  - theme10 frontend service/view files
-  - theme10 task cards and acceptance records
-- Shared files that still need theme10-only hunk split:
-  - `cool-admin-midway/src/entities.ts`
-  - `cool-admin-midway/src/modules/base/menu.json`
-  - `cool-admin-midway/scripts/seed-stage2-performance.mjs`
-  - `cool-admin-vue/src/modules/performance/types.ts`
+- Theme10 code already in `HEAD`:
+  - `cool-admin-midway` contract entity/service/controller/test/smoke
+  - `cool-admin-midway` shared wiring in `entities.ts`, `menu.json`, `seed-stage2-performance.mjs`
+  - `cool-admin-vue` contract service/view/types
+- Theme10 files still pending commit:
+  - theme10 task cards and closure docs under `performance-management-system/tasks`
 - Files that must not be included in a theme10-only push:
   - `cool-admin-vue/build/cool/eps.d.ts`
   - `cool-admin-vue/build/cool/eps.json`
