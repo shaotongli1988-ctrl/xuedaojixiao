@@ -1,10 +1,14 @@
 /**
  * 采购订单前端请求服务。
- * 这里只封装主题11冻结的 purchaseOrder page/info/add/update/delete 五个接口，
- * 不负责采购计划、审批、收货、付款或其他扩展采购流。
+ * 这里只封装主题11扩容冻结后的 purchaseOrder 列表、详情、CRUD 与流程动作接口，
+ * 不负责付款、对账、库存总账或其他采购域扩张。
  */
 import { BaseService } from '/@/cool';
-import type { PurchaseOrderPageResult, PurchaseOrderRecord } from '../types';
+import type {
+	PurchaseOrderPageResult,
+	PurchaseOrderRecord,
+	PurchaseOrderStatus
+} from '../types';
 
 export default class PerformancePurchaseOrderService extends BaseService {
 	permission = {
@@ -12,7 +16,13 @@ export default class PerformancePurchaseOrderService extends BaseService {
 		info: 'performance:purchaseOrder:info',
 		add: 'performance:purchaseOrder:add',
 		update: 'performance:purchaseOrder:update',
-		delete: 'performance:purchaseOrder:delete'
+		delete: 'performance:purchaseOrder:delete',
+		submitInquiry: 'performance:purchaseOrder:submitInquiry',
+		submitApproval: 'performance:purchaseOrder:submitApproval',
+		approve: 'performance:purchaseOrder:approve',
+		reject: 'performance:purchaseOrder:reject',
+		receive: 'performance:purchaseOrder:receive',
+		close: 'performance:purchaseOrder:close'
 	};
 
 	constructor() {
@@ -25,7 +35,8 @@ export default class PerformancePurchaseOrderService extends BaseService {
 		keyword?: string;
 		supplierId?: number;
 		departmentId?: number;
-		status?: string;
+		status?: PurchaseOrderStatus;
+		statusList?: PurchaseOrderStatus[];
 		startDate?: string;
 		endDate?: string;
 	}) {
@@ -46,6 +57,54 @@ export default class PerformancePurchaseOrderService extends BaseService {
 
 	removePurchaseOrder(data: { ids: number[] }) {
 		return super.delete(data) as unknown as Promise<void>;
+	}
+
+	submitInquiry(data: { id: number; remark?: string }) {
+		return this.request({
+			url: '/submitInquiry',
+			method: 'POST',
+			data
+		}) as unknown as Promise<PurchaseOrderRecord>;
+	}
+
+	submitApproval(data: { id: number; remark?: string }) {
+		return this.request({
+			url: '/submitApproval',
+			method: 'POST',
+			data
+		}) as unknown as Promise<PurchaseOrderRecord>;
+	}
+
+	approve(data: { id: number; approvalRemark?: string }) {
+		return this.request({
+			url: '/approve',
+			method: 'POST',
+			data
+		}) as unknown as Promise<PurchaseOrderRecord>;
+	}
+
+	reject(data: { id: number; approvalRemark?: string }) {
+		return this.request({
+			url: '/reject',
+			method: 'POST',
+			data
+		}) as unknown as Promise<PurchaseOrderRecord>;
+	}
+
+	receive(data: { id: number; receivedQuantity?: number; receivedAt?: string; remark?: string }) {
+		return this.request({
+			url: '/receive',
+			method: 'POST',
+			data
+		}) as unknown as Promise<PurchaseOrderRecord>;
+	}
+
+	close(data: { id: number; closedReason: string }) {
+		return this.request({
+			url: '/close',
+			method: 'POST',
+			data
+		}) as unknown as Promise<PurchaseOrderRecord>;
 	}
 }
 

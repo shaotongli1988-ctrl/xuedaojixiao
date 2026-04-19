@@ -1,7 +1,7 @@
 /**
  * 供应商领域服务。
  * 这里只负责主题11冻结的 `supplier page/info/add/update/delete` 最小主链，不负责评级、资质、合同管理、结算中心或外部系统集成。
- * 维护重点是经理只读、敏感字段脱敏和“inactive 且无关联有效采购订单”删除约束必须由服务端兜底。
+ * 维护重点是经理只读、敏感字段脱敏和“inactive 且无关联未结束采购订单”删除约束必须由服务端兜底。
  */
 import {
   App,
@@ -16,7 +16,7 @@ import {
 } from '@midwayjs/core';
 import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
-import { Brackets, In, Repository } from 'typeorm';
+import { Brackets, In, Not, Repository } from 'typeorm';
 import * as jwt from 'jsonwebtoken';
 import { BaseSysMenuService } from '../../base/service/sys/menu';
 import { PerformancePurchaseOrderEntity } from '../entity/purchase-order';
@@ -251,9 +251,10 @@ export class PerformanceSupplierService extends BaseService {
       }
     });
 
+    // 删除保护按终态排除，兼容历史联调样例中的 legacy active 状态。
     const activeOrders = await this.performancePurchaseOrderEntity.findBy({
       supplierId: In(validIds as number[]),
-      status: 'active' as any,
+      status: Not(In(['closed', 'cancelled'])) as any,
     });
 
     if (activeOrders.length) {
