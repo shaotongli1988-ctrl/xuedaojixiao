@@ -1,9 +1,9 @@
 /**
  * 采购订单主表实体。
- * 这里只承载主题11冻结的采购订单摘要字段，不负责采购明细、审批流、收货/入库、对账或付款数据。
- * 维护重点是 `orderNo` 可空唯一、状态默认值和部门/申请人/供应商关联字段必须与冻结事实源一致。
+ * 这里只承载主题11扩容后冻结的采购订单主单、轻量流程记录和收货摘要，不负责付款、对账、库存总账或外部 ERP。
+ * 维护重点是单主资源状态机、关闭原因、累计收货和轻量 JSON 快照字段必须与冻结事实源一致。
  */
-import { BaseEntity } from '../../base/entity/base';
+import { BaseEntity, transformerJson } from '../../base/entity/base';
 import { Column, Entity, Index } from 'typeorm';
 
 @Entity('performance_purchase_order')
@@ -31,6 +31,9 @@ export class PerformancePurchaseOrderEntity extends BaseEntity {
   @Column({ comment: '采购日期', type: 'varchar', length: 10 })
   orderDate: string;
 
+  @Column({ comment: '期望交付日期', type: 'varchar', length: 10, nullable: true })
+  expectedDeliveryDate: string | null;
+
   @Column({
     comment: '订单总金额',
     type: 'decimal',
@@ -48,4 +51,55 @@ export class PerformancePurchaseOrderEntity extends BaseEntity {
   @Index()
   @Column({ comment: '采购订单状态', length: 20, default: 'draft' })
   status: string;
+
+  @Index()
+  @Column({ comment: '审批人 ID', nullable: true })
+  approvedBy: number | null;
+
+  @Column({ comment: '审批时间', type: 'varchar', length: 19, nullable: true })
+  approvedAt: string | null;
+
+  @Column({ comment: '审批备注', type: 'text', nullable: true })
+  approvalRemark: string | null;
+
+  @Column({ comment: '关闭原因', type: 'text', nullable: true })
+  closedReason: string | null;
+
+  @Column({ comment: '累计收货数量', default: 0 })
+  receivedQuantity: number;
+
+  @Column({ comment: '最近收货时间', type: 'varchar', length: 19, nullable: true })
+  receivedAt: string | null;
+
+  @Column({
+    comment: '采购明细快照',
+    type: 'json',
+    transformer: transformerJson,
+    nullable: true,
+  })
+  items: Array<Record<string, any>> | null;
+
+  @Column({
+    comment: '询价记录',
+    type: 'json',
+    transformer: transformerJson,
+    nullable: true,
+  })
+  inquiryRecords: Array<Record<string, any>> | null;
+
+  @Column({
+    comment: '审批日志',
+    type: 'json',
+    transformer: transformerJson,
+    nullable: true,
+  })
+  approvalLogs: Array<Record<string, any>> | null;
+
+  @Column({
+    comment: '收货记录',
+    type: 'json',
+    transformer: transformerJson,
+    nullable: true,
+  })
+  receiptRecords: Array<Record<string, any>> | null;
 }

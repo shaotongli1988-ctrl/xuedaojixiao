@@ -3,7 +3,7 @@
  * 这里只承载主题8首批冻结的面试摘要字段，不负责简历池、面试评语全文或录用决策数据。
  * 维护重点是字段边界、状态默认值和单面试官模型必须与唯一事实源一致。
  */
-import { BaseEntity } from '../../base/entity/base';
+import { BaseEntity, transformerJson } from '../../base/entity/base';
 import { Column, Entity, Index } from 'typeorm';
 
 @Entity('performance_interview')
@@ -38,6 +38,30 @@ export class PerformanceInterviewEntity extends BaseEntity {
     nullable: true,
   })
   score: number | null;
+
+  @Index()
+  @Column({ comment: '简历池 ID', nullable: true })
+  resumePoolId: number | null;
+
+  @Index()
+  @Column({ comment: '招聘计划 ID', nullable: true })
+  recruitPlanId: number | null;
+
+  @Column({
+    comment: '简历池轻量快照',
+    type: 'json',
+    transformer: transformerJson,
+    nullable: true,
+  })
+  resumePoolSnapshot: Record<string, any> | null;
+
+  @Column({
+    comment: '招聘计划轻量快照',
+    type: 'json',
+    transformer: transformerJson,
+    nullable: true,
+  })
+  recruitPlanSnapshot: Record<string, any> | null;
 
   @Index()
   @Column({ comment: '面试状态', length: 20, default: 'scheduled' })

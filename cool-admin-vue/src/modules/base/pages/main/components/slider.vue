@@ -10,6 +10,11 @@
 			<span v-if="!app.isFold || browser.isMini">{{ app.info.name }}</span>
 		</div>
 
+		<div class="app-slider__section" v-if="app.info.menu.isGroup && currentGroupName">
+			<div class="app-slider__section-label">{{ currentGroupName }}</div>
+			<div class="app-slider__section-tip">当前业务域菜单</div>
+		</div>
+
 		<div class="app-slider__search">
 			<el-input
 				v-model="keyWord"
@@ -39,12 +44,13 @@ defineOptions({
 import { useBase } from '/$/base';
 import { useBrowser } from '/@/cool';
 import BMenu from './bmenu';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
 const { browser } = useBrowser();
-const { app } = useBase();
+const { app, menu } = useBase();
 
 const keyWord = ref('');
+const currentGroupName = computed(() => menu.currentGroup?.meta?.label || '');
 </script>
 
 <style lang="scss">
@@ -54,6 +60,8 @@ const keyWord = ref('');
 	--slider-text-color: #e5eaf3;
 
 	height: 100%;
+	display: flex;
+	flex-direction: column;
 	background-color: var(--slider-bg-color);
 	border-right: 1px solid var(--el-border-color-extra-light);
 
@@ -79,6 +87,31 @@ const keyWord = ref('');
 		}
 	}
 
+	&__section {
+		margin: 0 12px 10px;
+		padding: 10px 12px;
+		border-radius: 10px;
+		background: rgba(255, 255, 255, 0.06);
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		overflow: hidden;
+	}
+
+	&__section-label {
+		color: #fff;
+		font-size: 13px;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-overflow: ellipsis;
+		overflow: hidden;
+		white-space: nowrap;
+	}
+
+	&__section-tip {
+		margin-top: 4px;
+		color: rgba(229, 234, 243, 0.68);
+		font-size: 11px;
+	}
+
 	&__search {
 		margin: 0 10px 10px 10px;
 		overflow: hidden;
@@ -97,7 +130,8 @@ const keyWord = ref('');
 	}
 
 	&__container {
-		height: calc(100% - 112px);
+		flex: 1;
+		min-height: 0;
 	}
 
 	&__menu {
@@ -170,6 +204,16 @@ const keyWord = ref('');
 	}
 
 	&.is-collapse {
+		.app-slider__section {
+			padding-left: 10px;
+			padding-right: 10px;
+		}
+
+		.app-slider__section-label,
+		.app-slider__section-tip {
+			opacity: 0;
+		}
+
 		.app-slider__search {
 			.el-input__inner {
 				opacity: 0;

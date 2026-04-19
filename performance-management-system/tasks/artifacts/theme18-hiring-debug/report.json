@@ -1,0 +1,36 @@
+{
+  "name": "theme18-debug-gui",
+  "description": "debug hiring route content",
+  "configPath": "/tmp/theme18-debug.json",
+  "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/theme18-hiring-debug",
+  "uiBaseUrl": "http://127.0.0.1:9010",
+  "apiBaseUrl": "http://127.0.0.1:8007",
+  "chromeDebugUrl": "http://127.0.0.1:9222",
+  "generatedAt": "2026-04-19T02:37:55.162Z",
+  "scenarios": [
+    {
+      "name": "hr-debug-hiring",
+      "username": "hr_admin",
+      "route": "/performance/hiring",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitSelector",
+          "status": "passed",
+          "selector": "body"
+        },
+        {
+          "index": 2,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme18-hiring-debug/hr-debug-hiring.png"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "pass": 1,
+    "fail": 0
+  }
+}

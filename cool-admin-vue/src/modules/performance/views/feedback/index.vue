@@ -91,12 +91,20 @@
 						</template>
 					</el-table-column>
 					<el-table-column prop="updateTime" label="更新时间" min-width="170" />
-					<el-table-column label="操作" fixed="right" min-width="260">
-						<template #default="{ row }">
-							<el-button text @click="inspectTask(row)">查看任务</el-button>
-							<el-button
-								v-if="canSubmitFeedback(row)"
-								text
+					<el-table-column label="操作" fixed="right" min-width="340">
+					<template #default="{ row }">
+						<el-button text @click="inspectTask(row)">查看任务</el-button>
+						<el-button
+							v-if="canViewSourceAssessment(row)"
+							text
+							type="primary"
+							@click="goSourceAssessment(row.assessmentId!)"
+						>
+							来源评估单
+						</el-button>
+						<el-button
+							v-if="canSubmitFeedback(row)"
+							text
 								type="primary"
 								@click="openSubmit(row)"
 							>
@@ -270,11 +278,13 @@ defineOptions({
 import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
-import { export_json_to_excel } from '/@/plugins/excel/utils';
+import { exportJsonToExcel } from '/@/plugins/excel/utils';
 import { service } from '/@/cool';
+import { useRoute, useRouter } from 'vue-router';
 import FeedbackSubmitDrawer from '../../components/feedback-submit-drawer.vue';
 import FeedbackSummaryDrawer from '../../components/feedback-summary-drawer.vue';
 import FeedbackTaskForm from '../../components/feedback-task-form.vue';
+import { performanceAssessmentService } from '../../service/assessment';
 import {
 	type FeedbackExportRow,
 	type FeedbackSummary,
@@ -283,7 +293,15 @@ import {
 	createEmptyFeedbackTask
 } from '../../types';
 import { performanceFeedbackService } from '../../service/feedback';
+import { loadUserOptions } from '../../utils/lookup-options.js';
+import {
+	consumeRoutePreset,
+	firstQueryValue,
+	normalizeQueryNumber
+} from '../../utils/route-preset.js';
 
+const route = useRoute();
+const router = useRouter();
 const rows = ref<FeedbackTaskRecord[]>([]);
 const userOptions = ref<UserOption[]>([]);
 const tableLoading = ref(false);
@@ -326,24 +344,20 @@ const canViewRecordDetails = computed(() => canCreateTask.value);
 onMounted(async () => {
 	await loadUsers();
 	await refresh();
+	await consumeCreatePresetQuery();
 });
 
 async function loadUsers() {
-	try {
-		const result = await service.base.sys.user.page({
+	userOptions.value = await loadUserOptions(
+		() =>
+			service.base.sys.user.page({
 			page: 1,
 			size: 200
-		});
-
-		userOptions.value = (result.list || []).map((item: any) => ({
-			id: Number(item.id),
-			name: item.name,
-			departmentId: item.departmentId,
-			departmentName: item.departmentName
-		}));
-	} catch (error: any) {
-		ElMessage.warning(error.message || '用户选项加载失败');
-	}
+			}),
+		(error: any) => {
+			ElMessage.warning(error.message || '用户选项加载失败');
+		}
+	);
 }
 
 async function refresh() {
@@ -392,6 +406,25 @@ function changePage(page: number) {
 function openCreate() {
 	Object.assign(form, createEmptyFeedbackTask());
 	formVisible.value = true;
+}
+
+async function consumeCreatePresetQuery() {
+	await consumeRoutePreset({
+		route,
+		router,
+		keys: ['openCreate', 'assessmentId', 'employeeId'],
+		parse: query => ({
+			shouldOpenCreate: firstQueryValue(query.openCreate) === '1',
+			assessmentId: normalizeQueryNumber(query.assessmentId),
+			employeeId: normalizeQueryNumber(query.employeeId)
+		}),
+		shouldConsume: payload => Boolean(payload.shouldOpenCreate && canCreateTask.value),
+		consume: payload => {
+			openCreate();
+			form.assessmentId = payload.assessmentId ?? null;
+			form.employeeId = payload.employeeId;
+		}
+	});
 }
 
 function updateForm(value: FeedbackTaskRecord) {
@@ -520,7 +553,7 @@ async function handleExport() {
 			status: filters.status || undefined
 		});
 
-		export_json_to_excel({
+		exportJsonToExcel({
 			header: [
 				'任务ID',
 				'来源评估单',
@@ -550,6 +583,42 @@ async function handleExport() {
 
 function canSubmitFeedback(row: FeedbackTaskRecord) {
 	return checkPerm(performanceFeedbackService.permission.submit) && row.status !== 'closed';
+}
+
+function canViewSourceAssessment(row: FeedbackTaskRecord) {
+	return Boolean(row.assessmentId) && resolveAssessmentPagePath() !== '';
+}
+
+async function goSourceAssessment(assessmentId: number) {
+	const path = resolveAssessmentPagePath();
+
+	if (!path) {
+		return;
+	}
+
+	await router.push({
+		path,
+		query: {
+			openDetail: '1',
+			assessmentId: String(assessmentId)
+		}
+	});
+}
+
+function resolveAssessmentPagePath() {
+	if (checkPerm(performanceAssessmentService.permission.page)) {
+		return '/performance/initiated';
+	}
+
+	if (checkPerm(performanceAssessmentService.permission.myPage)) {
+		return '/performance/my-assessment';
+	}
+
+	if (checkPerm(performanceAssessmentService.permission.pendingPage)) {
+		return '/performance/pending';
+	}
+
+	return '';
 }
 
 function statusLabel(status?: string) {

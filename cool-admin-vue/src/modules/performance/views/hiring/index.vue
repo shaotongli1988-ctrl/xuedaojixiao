@@ -91,9 +91,14 @@
 						{{ row.targetPosition || '-' }}
 					</template>
 				</el-table-column>
-				<el-table-column label="来源类型" min-width="120">
+				<el-table-column label="来源类型" min-width="220">
 					<template #default="{ row }">
-						{{ sourceTypeLabel(row.sourceType) }}
+						<div class="hiring-page__source-cell">
+							<span>{{ sourceTypeLabel(row.sourceType) }}</span>
+							<span v-if="hiringSourceSummary(row) !== '-'" class="hiring-page__source-meta">
+								{{ hiringSourceSummary(row) }}
+							</span>
+						</div>
 					</template>
 				</el-table-column>
 				<el-table-column prop="sourceId" label="来源 ID" width="110">
@@ -198,6 +203,19 @@
 							{{ detailRecord.sourceStatusSnapshot || '-' }}
 						</div>
 					</el-descriptions-item>
+					<el-descriptions-item label="来源摘要" :span="2">
+						<div class="hiring-page__source-summary">
+							<span>{{ hiringSourceSummary(detailRecord) }}</span>
+							<el-button
+								v-if="detailRecord.sourceSnapshot?.interviewId"
+								text
+								type="primary"
+								@click="goToInterview(detailRecord)"
+							>
+								查看面试
+							</el-button>
+						</div>
+					</el-descriptions-item>
 					<el-descriptions-item label="录用决策" :span="2">
 						<div class="hiring-page__long-text">
 							{{ detailRecord.hiringDecision || '-' }}
@@ -243,6 +261,13 @@
 			<el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
 				<el-alert
 					title="新建保存后默认进入 offered；首批不开放正文编辑页面，后续请通过接受/拒绝/关闭推进状态。"
+					type="info"
+					:closable="false"
+					show-icon
+				/>
+				<el-alert
+					v-if="hiringSourceSummary(form) !== '-'"
+					:title="`来源摘要：${hiringSourceSummary(form)}`"
 					type="info"
 					:closable="false"
 					show-icon
@@ -354,11 +379,17 @@ defineOptions({
 	name: 'performance-hiring'
 });
 
-import { computed, nextTick, onMounted, reactive, ref } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
 import { service } from '/@/cool';
+import { useRoute, useRouter } from 'vue-router';
 import { loadDepartmentOptions } from '../../utils/lookup-options.js';
+import {
+	consumeRoutePreset,
+	firstQueryValue,
+	normalizeQueryNumber
+} from '../../utils/route-preset.js';
 import {
 	type HiringRecord,
 	type HiringSourceType,
@@ -382,6 +413,8 @@ const detailRecord = ref<HiringRecord | null>(null);
 const formRef = ref<FormInstance>();
 const actionLoadingId = ref<number | null>(null);
 const actionLoadingType = ref<'accept' | 'reject' | 'close' | null>(null);
+const route = useRoute();
+const router = useRouter();
 
 const filters = reactive({
 	keyword: '',
@@ -460,7 +493,15 @@ const formSourceIdModel = computed<number | undefined>({
 onMounted(async () => {
 	await loadDepartments();
 	await refresh();
+	await consumeRoutePrefill();
 });
+
+watch(
+	() => route.fullPath,
+	() => {
+		void consumeRoutePrefill();
+	}
+);
 
 async function loadDepartments() {
 	departmentOptions.value = await loadDepartmentOptions(
@@ -488,7 +529,7 @@ async function refresh() {
 			sourceType: filters.sourceType || undefined
 		});
 
-		rows.value = result.list || [];
+		rows.value = (result.list || []).map(item => normalizeHiringRecord(item));
 		pagination.total = result.pagination?.total || 0;
 	} catch (error: any) {
 		ElMessage.error(error.message || '录用列表加载失败');
@@ -517,11 +558,7 @@ function changePage(page: number) {
 }
 
 function openCreate() {
-	Object.assign(form, createEmptyHiring());
-	formVisible.value = true;
-	nextTick(() => {
-		formRef.value?.clearValidate();
-	});
+	openCreateWithPrefill();
 }
 
 async function openDetail(row: HiringRecord) {
@@ -537,7 +574,7 @@ async function openDetail(row: HiringRecord) {
 
 async function loadDetail(id: number, next: (record: HiringRecord) => void) {
 	try {
-		const record = await performanceHiringService.fetchInfo({ id });
+		const record = normalizeHiringRecord(await performanceHiringService.fetchInfo({ id }));
 		next(record);
 	} catch (error: any) {
 		ElMessage.error(error.message || '录用详情加载失败');
@@ -557,6 +594,10 @@ async function submitForm() {
 			sourceType: normalizeSourceType(form.sourceType),
 			sourceId: form.sourceId ? Number(form.sourceId) : undefined,
 			sourceStatusSnapshot: normalizeOptionalText(form.sourceStatusSnapshot),
+			sourceSnapshot: form.sourceSnapshot || undefined,
+			interviewId: form.interviewId || undefined,
+			resumePoolId: form.resumePoolId || undefined,
+			recruitPlanId: form.recruitPlanId || undefined,
 			hiringDecision: normalizeOptionalText(form.hiringDecision)
 		};
 
@@ -722,6 +763,155 @@ function normalizeSourceType(value: HiringSourceType | string | null | undefined
 	}
 	return 'manual';
 }
+
+async function consumeRoutePrefill() {
+	await consumeRoutePreset({
+		route,
+		router,
+		keys: [
+			'openCreate',
+			'candidate',
+			'candidateName',
+			'departmentId',
+			'targetDepartmentId',
+			'position',
+			'targetPosition',
+			'sourceType',
+			'sourceId',
+			'interviewId',
+			'resumePoolId',
+			'recruitPlanId',
+			'recruitPlanTitle',
+			'interviewStatus'
+		],
+		parse: query => ({
+			shouldOpenCreate: firstQueryValue(query.openCreate) === '1',
+			candidateName:
+				normalizeQueryText(query.candidate) || normalizeQueryText(query.candidateName),
+			targetDepartmentId:
+				normalizeQueryNumber(query.departmentId) ||
+				normalizeQueryNumber(query.targetDepartmentId),
+			targetPosition:
+				normalizeQueryText(query.position) || normalizeQueryText(query.targetPosition),
+			sourceType: normalizeQueryText(query.sourceType),
+			sourceId: normalizeQueryNumber(query.sourceId),
+			interviewId:
+				normalizeQueryNumber(query.interviewId) || normalizeQueryNumber(query.sourceId),
+			resumePoolId: normalizeQueryNumber(query.resumePoolId),
+			recruitPlanId: normalizeQueryNumber(query.recruitPlanId),
+			recruitPlanTitle: normalizeQueryText(query.recruitPlanTitle),
+			interviewStatus: normalizeQueryText(query.interviewStatus)
+		}),
+		shouldConsume: payload => Boolean(payload.shouldOpenCreate),
+		consume: payload => {
+			if (!showAddButton.value) {
+				return;
+			}
+
+			openCreateWithPrefill(payload);
+		}
+	});
+}
+
+function openCreateWithPrefill(prefill?: {
+	candidateName?: string;
+	targetDepartmentId?: number;
+	targetPosition?: string;
+	sourceType?: string;
+	sourceId?: number;
+	interviewId?: number;
+	resumePoolId?: number;
+	recruitPlanId?: number;
+	recruitPlanTitle?: string;
+	interviewStatus?: string;
+}) {
+	Object.assign(form, createEmptyHiring(), {
+		candidateName: prefill?.candidateName || '',
+		targetDepartmentId: prefill?.targetDepartmentId,
+		targetPosition: prefill?.targetPosition || '',
+		sourceType: prefill?.interviewId ? 'interview' : normalizeSourceType(prefill?.sourceType),
+		sourceId: prefill?.interviewId || prefill?.sourceId,
+		interviewId: prefill?.interviewId,
+		resumePoolId: prefill?.resumePoolId,
+		recruitPlanId: prefill?.recruitPlanId,
+		sourceStatusSnapshot: prefill?.interviewStatus || '',
+		sourceSnapshot:
+			prefill?.interviewId || prefill?.resumePoolId || prefill?.recruitPlanId
+				? {
+						sourceResource: 'interview',
+						interviewId: prefill?.interviewId || null,
+						resumePoolId: prefill?.resumePoolId || null,
+						recruitPlanId: prefill?.recruitPlanId || null,
+						recruitPlanTitle: prefill?.recruitPlanTitle || null,
+						candidateName: prefill?.candidateName || null,
+						targetDepartmentId: prefill?.targetDepartmentId || null,
+						targetPosition: prefill?.targetPosition || null,
+						interviewStatus: prefill?.interviewStatus || null,
+						sourceStatusSnapshot: prefill?.interviewStatus || null
+				  }
+				: null
+	});
+	formVisible.value = true;
+	nextTick(() => {
+		formRef.value?.clearValidate();
+	});
+}
+
+function normalizeHiringRecord(record: any): HiringRecord {
+	const sourceSnapshot =
+		record?.sourceSnapshot && typeof record.sourceSnapshot === 'object'
+			? record.sourceSnapshot
+			: null;
+
+	return {
+		...record,
+		interviewId: normalizeNumberOrUndefined(
+			record?.interviewId || sourceSnapshot?.interviewId
+		),
+		resumePoolId: normalizeNumberOrUndefined(
+			record?.resumePoolId || sourceSnapshot?.resumePoolId
+		),
+		recruitPlanId: normalizeNumberOrUndefined(
+			record?.recruitPlanId || sourceSnapshot?.recruitPlanId
+		),
+		sourceSnapshot
+	};
+}
+
+function hiringSourceSummary(record?: HiringRecord | null) {
+	const snapshot = record?.sourceSnapshot;
+	if (!snapshot) {
+		return '-';
+	}
+
+	const summaryParts = [
+		snapshot.interviewId ? `面试 #${snapshot.interviewId}` : null,
+		snapshot.resumePoolId ? `简历 #${snapshot.resumePoolId}` : null,
+		snapshot.recruitPlanId ? `${snapshot.recruitPlanTitle || '招聘计划'} #${snapshot.recruitPlanId}` : null
+	].filter(Boolean);
+
+	return summaryParts.length ? summaryParts.join(' / ') : '-';
+}
+
+async function goToInterview(record?: HiringRecord | null) {
+	if (!record?.sourceSnapshot?.interviewId) {
+		return;
+	}
+
+	await router.push({
+		path: '/performance/interview'
+	});
+}
+
+function normalizeQueryText(value: unknown) {
+	const text = String(firstQueryValue(value) || '').trim();
+	return text || undefined;
+}
+
+function normalizeNumberOrUndefined(value: unknown) {
+	const parsed = Number(value);
+	return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
 </script>
 
 <style lang="scss" scoped>
@@ -770,9 +960,27 @@ function normalizeSourceType(value: HiringSourceType | string | null | undefined
 		gap: 16px;
 	}
 
+	&__source-cell {
+		display: grid;
+		gap: 4px;
+	}
+
+	&__source-meta {
+		font-size: 12px;
+		line-height: 1.5;
+		color: var(--el-text-color-secondary);
+	}
+
 	&__long-text {
 		white-space: pre-wrap;
 		line-height: 1.6;
+	}
+
+	&__source-summary {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-wrap: wrap;
 	}
 }
 </style>

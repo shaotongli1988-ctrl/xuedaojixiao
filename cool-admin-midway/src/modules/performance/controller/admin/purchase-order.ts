@@ -4,7 +4,7 @@ import { PerformancePurchaseOrderService } from '../../service/purchase-order';
 
 /**
  * 采购订单控制器。
- * 这里只暴露主题11冻结的采购订单标准 CRUD，不处理采购审批、收货/入库、对账或付款动作。
+ * 这里只暴露主题11扩容后冻结的采购订单主链与流程动作，不处理付款、对账、库存总账或外部 ERP。
  */
 @Provide()
 @CoolController('/admin/performance/purchaseOrder')
@@ -34,6 +34,36 @@ export class AdminPerformancePurchaseOrderController extends BaseController {
     return this.ok(
       await this.performancePurchaseOrderService.updatePurchaseOrder(payload)
     );
+  }
+
+  @Post('/submitInquiry', { summary: '提交询价' })
+  async submitInquiry(@Body(ALL) payload: any) {
+    return this.ok(await this.performancePurchaseOrderService.submitInquiry(payload));
+  }
+
+  @Post('/submitApproval', { summary: '提交审批' })
+  async submitApproval(@Body(ALL) payload: any) {
+    return this.ok(await this.performancePurchaseOrderService.submitApproval(payload));
+  }
+
+  @Post('/approve', { summary: '审批通过' })
+  async approve(@Body(ALL) payload: any) {
+    return this.ok(await this.performancePurchaseOrderService.approve(payload));
+  }
+
+  @Post('/reject', { summary: '审批驳回' })
+  async reject(@Body(ALL) payload: any) {
+    return this.ok(await this.performancePurchaseOrderService.reject(payload));
+  }
+
+  @Post('/receive', { summary: '采购收货' })
+  async receive(@Body(ALL) payload: any) {
+    return this.ok(await this.performancePurchaseOrderService.receive(payload));
+  }
+
+  @Post('/close', { summary: '关闭采购单' })
+  async close(@Body(ALL) payload: any) {
+    return this.ok(await this.performancePurchaseOrderService.close(payload));
   }
 
   @Post('/delete', { summary: '删除采购订单' })

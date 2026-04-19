@@ -29,7 +29,7 @@
 <script lang="ts" setup>
 import { reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
-import { export_json_to_excel } from '/@/plugins/excel/utils';
+import { exportJsonToExcel } from '/@/plugins/excel/utils';
 import AssetCrudPage from './asset-crud-page.vue';
 import { performanceAssetReportService } from '../../service/asset-report';
 import {
@@ -143,7 +143,7 @@ function extractList(response: any) {
 }
 
 function downloadExportAsExcel(list: any[], reportDate?: string) {
-		export_json_to_excel({
+	exportJsonToExcel({
 		header: [
 			'报表月份',
 			'资产编号',

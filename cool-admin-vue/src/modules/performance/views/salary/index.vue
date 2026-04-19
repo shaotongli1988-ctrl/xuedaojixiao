@@ -134,9 +134,17 @@
 					</template>
 				</el-table-column>
 				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
-				<el-table-column label="操作" fixed="right" min-width="280">
+				<el-table-column label="操作" fixed="right" min-width="360">
 					<template #default="{ row }">
 						<el-button text @click="openDetail(row)">详情</el-button>
+						<el-button
+							v-if="canViewSourceAssessment(row)"
+							text
+							type="primary"
+							@click="goSourceAssessment(row.assessmentId!)"
+						>
+							来源评估单
+						</el-button>
 						<el-button v-if="canEdit(row)" text type="primary" @click="openEdit(row)">
 							编辑
 						</el-button>
@@ -344,6 +352,14 @@
 
 				<div class="salary-page__detail-toolbar">
 					<el-button
+						v-if="showSourceAssessmentButton && detailSalary?.assessmentId"
+						type="primary"
+						plain
+						@click="goSourceAssessment(detailSalary.assessmentId)"
+					>
+						查看来源评估单
+					</el-button>
+					<el-button
 						v-if="canChange(detailSalary)"
 						type="danger"
 						plain
@@ -405,18 +421,22 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import type { FormInstance, FormRules } from 'element-plus';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { service } from '/@/cool';
 import { checkPerm } from '/$/base/utils/permission';
 import SalaryChangeDrawer from '../../components/salary-change-drawer.vue';
+import { performanceAssessmentService } from '../../service/assessment';
 import { performanceSalaryService } from '../../service/salary';
+import { loadUserOptions } from '../../utils/lookup-options.js';
 import {
 	type SalaryRecord,
 	type UserOption,
 	createEmptySalary
 } from '../../types';
 
+const router = useRouter();
 const rows = ref<SalaryRecord[]>([]);
 const userOptions = ref<UserOption[]>([]);
 const tableLoading = ref(false);
@@ -463,6 +483,12 @@ const statusOptions = [
 
 const canAccess = computed(() => checkPerm(performanceSalaryService.permission.page));
 const showAddButton = computed(() => checkPerm(performanceSalaryService.permission.add));
+const showSourceAssessmentButton = computed(() => {
+	return (
+		checkPerm(performanceAssessmentService.permission.info) &&
+		resolveAssessmentPagePath() !== ''
+	);
+});
 
 onMounted(async () => {
 	await loadUsers();
@@ -470,21 +496,16 @@ onMounted(async () => {
 });
 
 async function loadUsers() {
-	try {
-		const result = await service.base.sys.user.page({
+	userOptions.value = await loadUserOptions(
+		() =>
+			service.base.sys.user.page({
 			page: 1,
 			size: 200
-		});
-
-		userOptions.value = (result.list || []).map((item: any) => ({
-			id: Number(item.id),
-			name: item.name,
-			departmentId: item.departmentId,
-			departmentName: item.departmentName
-		}));
-	} catch (error: any) {
-		ElMessage.warning(error.message || '用户选项加载失败');
-	}
+			}),
+		(error: any) => {
+			ElMessage.warning(error.message || '用户选项加载失败');
+		}
+	);
 }
 
 async function refresh() {
@@ -517,6 +538,24 @@ async function refresh() {
 function changePage(page: number) {
 	pagination.page = page;
 	refresh();
+}
+
+async function goSourceAssessment(assessmentId: number) {
+	const path = resolveAssessmentPagePath();
+
+	if (!path) {
+		return;
+	}
+
+	detailVisible.value = false;
+
+	await router.push({
+		path,
+		query: {
+			openDetail: '1',
+			assessmentId: String(assessmentId)
+		}
+	});
 }
 
 function formatAmount(value?: number) {
@@ -681,6 +720,26 @@ function canChange(row: SalaryRecord) {
 		row.status === 'confirmed'
 	);
 }
+
+function canViewSourceAssessment(row: SalaryRecord) {
+	return Boolean(row.assessmentId) && resolveAssessmentPagePath() !== '';
+}
+
+function resolveAssessmentPagePath() {
+	if (checkPerm(performanceAssessmentService.permission.page)) {
+		return '/performance/initiated';
+	}
+
+	if (checkPerm(performanceAssessmentService.permission.myPage)) {
+		return '/performance/my-assessment';
+	}
+
+	if (checkPerm(performanceAssessmentService.permission.pendingPage)) {
+		return '/performance/pending';
+	}
+
+	return '';
+}
 </script>
 
 <style lang="scss" scoped>
@@ -743,6 +802,7 @@ function canChange(row: SalaryRecord) {
 	&__detail-toolbar {
 		display: flex;
 		justify-content: flex-end;
+		gap: 12px;
 		padding: 16px 0;
 	}
 }

@@ -19,9 +19,13 @@ import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Brackets, In, Repository } from 'typeorm';
 import { BaseSysDepartmentEntity } from '../../base/entity/sys/department';
 import { BaseSysRoleEntity } from '../../base/entity/sys/role';
+import { BaseSysUserEntity } from '../../base/entity/sys/user';
 import { BaseSysMenuService } from '../../base/service/sys/menu';
 import { BaseSysPermsService } from '../../base/service/sys/perms';
 import { PerformanceHiringEntity } from '../entity/hiring';
+import { PerformanceInterviewEntity } from '../entity/interview';
+import { PerformanceResumePoolEntity } from '../entity/resumePool';
+import { PerformanceRecruitPlanEntity } from '../entity/recruit-plan';
 import * as jwt from 'jsonwebtoken';
 
 type HiringStatus = 'offered' | 'accepted' | 'rejected' | 'closed';
@@ -84,6 +88,23 @@ function normalizeOptionalPositiveInt(value: any, message: string) {
   return parsed;
 }
 
+function normalizeJsonObject(value: any) {
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  return typeof value === 'object' ? value : null;
+}
+
 function formatDateTime(input: Date) {
   const pad = (value: number) => String(value).padStart(2, '0');
   return [
@@ -107,11 +128,23 @@ export class PerformanceHiringService extends BaseService {
   @InjectEntityModel(PerformanceHiringEntity)
   performanceHiringEntity: Repository<PerformanceHiringEntity>;
 
+  @InjectEntityModel(PerformanceInterviewEntity)
+  performanceInterviewEntity: Repository<PerformanceInterviewEntity>;
+
+  @InjectEntityModel(PerformanceResumePoolEntity)
+  performanceResumePoolEntity: Repository<PerformanceResumePoolEntity>;
+
+  @InjectEntityModel(PerformanceRecruitPlanEntity)
+  performanceRecruitPlanEntity: Repository<PerformanceRecruitPlanEntity>;
+
   @InjectEntityModel(BaseSysDepartmentEntity)
   baseSysDepartmentEntity: Repository<BaseSysDepartmentEntity>;
 
   @InjectEntityModel(BaseSysRoleEntity)
   baseSysRoleEntity: Repository<BaseSysRoleEntity>;
+
+  @InjectEntityModel(BaseSysUserEntity)
+  baseSysUserEntity: Repository<BaseSysUserEntity>;
 
   @Inject()
   baseSysMenuService: BaseSysMenuService;
@@ -193,6 +226,12 @@ export class PerformanceHiringService extends BaseService {
         'hiring.sourceType as sourceType',
         'hiring.sourceId as sourceId',
         'hiring.sourceSnapshot as sourceSnapshot',
+        'hiring.interviewId as interviewId',
+        'hiring.resumePoolId as resumePoolId',
+        'hiring.recruitPlanId as recruitPlanId',
+        'hiring.interviewSnapshot as interviewSnapshot',
+        'hiring.resumePoolSnapshot as resumePoolSnapshot',
+        'hiring.recruitPlanSnapshot as recruitPlanSnapshot',
         'hiring.status as status',
         'hiring.offeredAt as offeredAt',
         'hiring.acceptedAt as acceptedAt',
@@ -319,12 +358,36 @@ export class PerformanceHiringService extends BaseService {
       payload.hiringDecision ?? payload.decisionContent,
       10000
     );
-    const sourceType = this.normalizeOptionalSourceType(payload.sourceType);
-    const sourceId = normalizeOptionalPositiveInt(payload.sourceId, 'sourceId 不合法');
-    const sourceSnapshot = this.normalizeSourceSnapshotInput(
-      payload.sourceStatusSnapshot,
-      payload.sourceSnapshot
+    const interviewId = normalizeOptionalPositiveInt(
+      payload.interviewId,
+      'interviewId 不合法'
     );
+    const interviewRecord = interviewId
+      ? await this.performanceInterviewEntity.findOneBy({ id: interviewId })
+      : null;
+    const resumePoolIdInput = normalizeOptionalPositiveInt(
+      payload.resumePoolId,
+      'resumePoolId 不合法'
+    );
+    const resumePoolId =
+      resumePoolIdInput ?? this.normalizeNullableNumber(interviewRecord?.resumePoolId);
+    const resumeRecord = resumePoolId
+      ? await this.performanceResumePoolEntity.findOneBy({ id: resumePoolId })
+      : null;
+    const recruitPlanIdInput = normalizeOptionalPositiveInt(
+      payload.recruitPlanId,
+      'recruitPlanId 不合法'
+    );
+    const recruitPlanId =
+      recruitPlanIdInput ??
+      this.normalizeNullableNumber(interviewRecord?.recruitPlanId) ??
+      this.normalizeNullableNumber(resumeRecord?.recruitPlanId);
+    const recruitPlanRecord = recruitPlanId
+      ? await this.performanceRecruitPlanEntity.findOneBy({ id: recruitPlanId })
+      : null;
+    const sourceTypeInput = this.normalizeOptionalSourceType(payload.sourceType);
+    const sourceType =
+      sourceTypeInput || this.resolveDerivedSourceType(interviewId, resumePoolId);
 
     await this.assertCanManageDepartment(targetDepartmentId, perms);
 
@@ -335,9 +398,83 @@ export class PerformanceHiringService extends BaseService {
       }
     }
 
+    if (interviewId && !interviewRecord) {
+      throw new CoolCommException('面试不存在');
+    }
+
+    if (resumePoolId && !resumeRecord) {
+      throw new CoolCommException('简历不存在');
+    }
+
+    if (recruitPlanId && !recruitPlanRecord) {
+      throw new CoolCommException('招聘计划不存在');
+    }
+
+    if (
+      interviewRecord?.resumePoolId &&
+      resumePoolId &&
+      Number(interviewRecord.resumePoolId) !== Number(resumePoolId)
+    ) {
+      throw new CoolCommException('录用单引用的面试与简历不一致');
+    }
+
+    if (
+      interviewRecord?.recruitPlanId &&
+      recruitPlanId &&
+      Number(interviewRecord.recruitPlanId) !== Number(recruitPlanId)
+    ) {
+      throw new CoolCommException('录用单引用的面试与招聘计划不一致');
+    }
+
+    if (
+      resumeRecord?.recruitPlanId &&
+      recruitPlanId &&
+      Number(resumeRecord.recruitPlanId) !== Number(recruitPlanId)
+    ) {
+      throw new CoolCommException('录用单引用的简历与招聘计划不一致');
+    }
+
+    if (
+      interviewRecord?.departmentId &&
+      Number(interviewRecord.departmentId || 0) !== Number(targetDepartmentId)
+    ) {
+      throw new CoolCommException('录用单目标部门与面试归属部门不一致');
+    }
+
+    if (
+      resumeRecord?.targetDepartmentId &&
+      Number(resumeRecord.targetDepartmentId || 0) !== Number(targetDepartmentId)
+    ) {
+      throw new CoolCommException('录用单目标部门与简历目标部门不一致');
+    }
+
+    if (
+      recruitPlanRecord?.targetDepartmentId &&
+      Number(recruitPlanRecord.targetDepartmentId || 0) !== Number(targetDepartmentId)
+    ) {
+      throw new CoolCommException('录用单目标部门与招聘计划目标部门不一致');
+    }
+
+    const sourceId = normalizeOptionalPositiveInt(
+      payload.sourceId ??
+        (sourceType === 'interview'
+          ? interviewId
+          : sourceType === 'resumePool'
+            ? resumePoolId
+            : null),
+      'sourceId 不合法'
+    );
     if (!sourceType && sourceId) {
       throw new CoolCommException('存在 sourceId 时必须提供 sourceType');
     }
+    const interviewSnapshot = await this.buildInterviewSnapshot(interviewRecord);
+    const resumePoolSnapshot = await this.buildResumePoolSnapshot(resumeRecord);
+    const recruitPlanSnapshot = await this.buildRecruitPlanSnapshot(recruitPlanRecord);
+    const sourceSnapshot =
+      this.normalizeSourceSnapshotInput(
+        payload.sourceStatusSnapshot,
+        payload.sourceSnapshot
+      ) || interviewSnapshot || resumePoolSnapshot || null;
 
     return {
       candidateName,
@@ -347,6 +484,12 @@ export class PerformanceHiringService extends BaseService {
       sourceType: sourceType || 'manual',
       sourceId,
       sourceSnapshot,
+      interviewId,
+      resumePoolId,
+      recruitPlanId,
+      interviewSnapshot,
+      resumePoolSnapshot,
+      recruitPlanSnapshot,
     };
   }
 
@@ -512,6 +655,11 @@ export class PerformanceHiringService extends BaseService {
   private normalizeHiringRow(item: any) {
     const hiringDecision = normalizeOptionalText(item.decisionContent, 10000);
     const sourceSnapshot = this.normalizeSourceSnapshotResponse(item.sourceSnapshot);
+    const interviewSnapshot = this.normalizeInterviewSnapshot(item.interviewSnapshot);
+    const resumePoolSnapshot = this.normalizeResumePoolSnapshot(item.resumePoolSnapshot);
+    const recruitPlanSnapshot = this.normalizeRecruitPlanSnapshot(
+      item.recruitPlanSnapshot
+    );
 
     return {
       id: Number(item.id),
@@ -525,6 +673,18 @@ export class PerformanceHiringService extends BaseService {
       sourceId: normalizeOptionalPositiveInt(item.sourceId, 'sourceId 不合法'),
       sourceStatusSnapshot: this.extractSourceStatusSnapshot(sourceSnapshot),
       sourceSnapshot,
+      interviewId: normalizeOptionalPositiveInt(item.interviewId, 'interviewId 不合法'),
+      resumePoolId: normalizeOptionalPositiveInt(item.resumePoolId, 'resumePoolId 不合法'),
+      recruitPlanId: normalizeOptionalPositiveInt(
+        item.recruitPlanId,
+        'recruitPlanId 不合法'
+      ),
+      interviewSummary: interviewSnapshot,
+      interviewSnapshot,
+      resumePoolSummary: resumePoolSnapshot,
+      resumePoolSnapshot,
+      recruitPlanSummary: recruitPlanSnapshot,
+      recruitPlanSnapshot,
       status: item.status || 'offered',
       offeredAt: item.offeredAt || null,
       acceptedAt: item.acceptedAt || null,
@@ -687,5 +847,164 @@ export class PerformanceHiringService extends BaseService {
     if (!departmentIds?.includes(targetDepartmentId)) {
       throw new CoolCommException('无权操作该录用单');
     }
+  }
+
+  private normalizeNullableNumber(value: any) {
+    if (value === undefined || value === null || value === '') {
+      return null;
+    }
+
+    const parsed = Number(value);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+  }
+
+  private resolveDerivedSourceType(
+    interviewId: number | null,
+    resumePoolId: number | null
+  ): HiringSourceType | null {
+    if (interviewId) {
+      return 'interview';
+    }
+
+    if (resumePoolId) {
+      return 'resumePool';
+    }
+
+    return null;
+  }
+
+  private normalizeInterviewSnapshot(value: any) {
+    const snapshot = normalizeJsonObject(value);
+    if (!snapshot) {
+      return null;
+    }
+
+    return {
+      id: this.normalizeNullableNumber(snapshot.id),
+      candidateName: snapshot.candidateName || '',
+      position: snapshot.position || '',
+      departmentId: this.normalizeNullableNumber(snapshot.departmentId),
+      interviewDate: snapshot.interviewDate || null,
+      interviewType: snapshot.interviewType || null,
+      interviewerId: this.normalizeNullableNumber(snapshot.interviewerId),
+      interviewerName: snapshot.interviewerName || null,
+      score: snapshot.score == null ? null : Number(snapshot.score),
+      status: snapshot.status || null,
+      resumePoolId: this.normalizeNullableNumber(snapshot.resumePoolId),
+      recruitPlanId: this.normalizeNullableNumber(snapshot.recruitPlanId),
+    };
+  }
+
+  private normalizeResumePoolSnapshot(value: any) {
+    const snapshot = normalizeJsonObject(value);
+    if (!snapshot) {
+      return null;
+    }
+
+    return {
+      id: this.normalizeNullableNumber(snapshot.id),
+      candidateName: snapshot.candidateName || '',
+      targetDepartmentId: this.normalizeNullableNumber(snapshot.targetDepartmentId),
+      targetDepartmentName: snapshot.targetDepartmentName || null,
+      targetPosition: snapshot.targetPosition || null,
+      phone: snapshot.phone || '',
+      email: snapshot.email || null,
+      status: snapshot.status || null,
+      recruitPlanId: this.normalizeNullableNumber(snapshot.recruitPlanId),
+      jobStandardId: this.normalizeNullableNumber(snapshot.jobStandardId),
+    };
+  }
+
+  private normalizeRecruitPlanSnapshot(value: any) {
+    const snapshot = normalizeJsonObject(value);
+    if (!snapshot) {
+      return null;
+    }
+
+    return {
+      id: this.normalizeNullableNumber(snapshot.id),
+      title: snapshot.title || '',
+      positionName: snapshot.positionName || null,
+      targetDepartmentId: this.normalizeNullableNumber(snapshot.targetDepartmentId),
+      targetDepartmentName: snapshot.targetDepartmentName || null,
+      headcount: this.normalizeNullableNumber(snapshot.headcount),
+      startDate: snapshot.startDate || null,
+      endDate: snapshot.endDate || null,
+      status: snapshot.status || null,
+      jobStandardId: this.normalizeNullableNumber(snapshot.jobStandardId),
+    };
+  }
+
+  private async buildInterviewSnapshot(interview: PerformanceInterviewEntity | null) {
+    if (!interview) {
+      return null;
+    }
+
+    const interviewer = interview.interviewerId
+      ? await this.baseSysUserEntity.findOneBy({
+          id: Number(interview.interviewerId),
+        })
+      : null;
+
+    return {
+      id: Number(interview.id),
+      candidateName: interview.candidateName || '',
+      position: interview.position || '',
+      departmentId: this.normalizeNullableNumber(interview.departmentId),
+      interviewDate: interview.interviewDate || null,
+      interviewType: interview.interviewType || null,
+      interviewerId: this.normalizeNullableNumber(interview.interviewerId),
+      interviewerName: interviewer?.name || null,
+      score: interview.score == null ? null : Number(interview.score),
+      status: interview.status || null,
+      resumePoolId: this.normalizeNullableNumber(interview.resumePoolId),
+      recruitPlanId: this.normalizeNullableNumber(interview.recruitPlanId),
+    };
+  }
+
+  private async buildResumePoolSnapshot(resume: PerformanceResumePoolEntity | null) {
+    if (!resume) {
+      return null;
+    }
+
+    const department = await this.baseSysDepartmentEntity.findOneBy({
+      id: Number(resume.targetDepartmentId),
+    });
+
+    return {
+      id: Number(resume.id),
+      candidateName: resume.candidateName || '',
+      targetDepartmentId: Number(resume.targetDepartmentId || 0),
+      targetDepartmentName: department?.name || null,
+      targetPosition: resume.targetPosition || null,
+      phone: resume.phone || '',
+      email: resume.email || null,
+      status: resume.status || 'new',
+      recruitPlanId: this.normalizeNullableNumber(resume.recruitPlanId),
+      jobStandardId: this.normalizeNullableNumber(resume.jobStandardId),
+    };
+  }
+
+  private async buildRecruitPlanSnapshot(recruitPlan: PerformanceRecruitPlanEntity | null) {
+    if (!recruitPlan) {
+      return null;
+    }
+
+    const department = await this.baseSysDepartmentEntity.findOneBy({
+      id: Number(recruitPlan.targetDepartmentId),
+    });
+
+    return {
+      id: Number(recruitPlan.id),
+      title: recruitPlan.title || '',
+      positionName: recruitPlan.positionName || null,
+      targetDepartmentId: Number(recruitPlan.targetDepartmentId || 0),
+      targetDepartmentName: department?.name || null,
+      headcount: this.normalizeNullableNumber(recruitPlan.headcount),
+      startDate: recruitPlan.startDate || null,
+      endDate: recruitPlan.endDate || null,
+      status: recruitPlan.status || null,
+      jobStandardId: this.normalizeNullableNumber(recruitPlan.jobStandardId),
+    };
   }
 }

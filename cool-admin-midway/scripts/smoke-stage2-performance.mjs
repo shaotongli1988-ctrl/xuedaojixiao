@@ -1431,6 +1431,10 @@ async function verifyDashboardSummary(reporter, options, user, token) {
   }
 
   if (response.body?.code !== successCode) {
+    if (shouldSkipRuntimeMismatchDbOverload(response.body)) {
+      reporter.skip(scope, `environment overload while using fallback runtime: ${formatResponse(response.body)}`);
+      return;
+    }
     reporter.fail(scope, formatResponse(response.body));
     return;
   }

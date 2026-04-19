@@ -9,14 +9,14 @@
 						placeholder="按模型名称或编码筛选"
 						clearable
 						style="width: 240px"
-						@keyup.enter="handleSearch"
+						@keyup.enter="applyListFilters"
 					/>
 					<el-input
 						v-model="filters.category"
 						placeholder="模型分类"
 						clearable
 						style="width: 180px"
-						@keyup.enter="handleSearch"
+						@keyup.enter="applyListFilters"
 					/>
 					<el-select
 						v-model="filters.status"
@@ -34,8 +34,8 @@
 				</div>
 
 				<div class="capability-page__toolbar-right">
-					<el-button @click="handleSearch">查询</el-button>
-					<el-button @click="handleReset">重置</el-button>
+					<el-button @click="applyListFilters">查询</el-button>
+					<el-button @click="resetListFilters">重置</el-button>
 					<el-button v-if="showAddButton" type="primary" @click="openCreate">
 						新增能力模型
 					</el-button>
@@ -144,10 +144,10 @@
 				<el-pagination
 					background
 					layout="total, prev, pager, next"
-					:current-page="pagination.page"
-					:page-size="pagination.size"
-					:total="pagination.total"
-					@current-change="changePage"
+					:current-page="pager.page"
+					:page-size="pager.size"
+					:total="pager.total"
+					@current-change="changeListPage"
 				/>
 			</div>
 		</el-card>
@@ -344,10 +344,21 @@
 						</div>
 					</el-descriptions-item>
 					<el-descriptions-item label="摘要更新时间" :span="2">
-						{{ portraitDetail.updatedAt || '-' }}
+						{{ resolvePortraitUpdateTime(portraitDetail) }}
 					</el-descriptions-item>
 				</el-descriptions>
 			</div>
+
+			<template #footer>
+				<el-button @click="portraitVisible = false">关闭</el-button>
+				<el-button
+					v-if="canViewCertificateRecords(portraitDetail)"
+					type="primary"
+					@click="goPortraitCertificateRecords"
+				>
+					查看证书记录
+				</el-button>
+			</template>
 		</el-dialog>
 	</div>
 
@@ -361,11 +372,20 @@ defineOptions({
 	name: 'performance-capability'
 });
 
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
 import { service } from '/@/cool';
+import { useRoute, useRouter } from 'vue-router';
+import { useListPage } from '../../composables/use-list-page.js';
 import { performanceCapabilityService } from '../../service/capability';
+import { performanceCertificateService } from '../../service/certificate';
+import { loadUserOptions } from '../../utils/lookup-options.js';
+import {
+	consumeRoutePreset,
+	firstQueryValue,
+	normalizeQueryNumber
+} from '../../utils/route-preset.js';
 import type {
 	CapabilityItemRecord,
 	CapabilityModelRecord,
@@ -375,9 +395,7 @@ import type {
 } from '../../types';
 import { createEmptyCapabilityModel } from '../../types';
 
-const rows = ref<CapabilityModelRecord[]>([]);
 const userOptions = ref<UserOption[]>([]);
-const tableLoading = ref(false);
 const submitLoading = ref(false);
 const formVisible = ref(false);
 const detailVisible = ref(false);
@@ -390,18 +408,8 @@ const portraitDetail = ref<CapabilityPortraitRecord | null>(null);
 const portraitEmployeeId = ref<number | undefined>();
 const itemLookupId = ref('');
 const formRef = ref<FormInstance>();
-
-const filters = reactive({
-	keyword: '',
-	category: '',
-	status: '' as CapabilityModelStatus | ''
-});
-
-const pagination = reactive({
-	page: 1,
-	size: 10,
-	total: 0
-});
+const route = useRoute();
+const router = useRouter();
 
 const form = reactive<CapabilityModelRecord>(createEmptyCapabilityModel());
 
@@ -424,6 +432,11 @@ const showInfoButton = computed(() => checkPerm(performanceCapabilityService.per
 const showAddButton = computed(() => checkPerm(performanceCapabilityService.permission.add));
 const showItemInfoButton = computed(() => checkPerm(performanceCapabilityService.permission.itemInfo));
 const showPortraitButton = computed(() => checkPerm(performanceCapabilityService.permission.portraitInfo));
+const showCertificateRecordButton = computed(
+	() =>
+		checkPerm(performanceCertificateService.permission.page) &&
+		checkPerm(performanceCertificateService.permission.recordPage)
+);
 const isReadOnlyRole = computed(
 	() => !showAddButton.value && !checkPerm(performanceCapabilityService.permission.update)
 );
@@ -444,72 +457,70 @@ const formStatusOptions = computed<Array<{ label: string; value: CapabilityModel
 		{ label: '已生效', value: 'active' }
 	];
 });
+const modelList = useListPage({
+	createFilters: () => ({
+		keyword: '',
+		category: '',
+		status: '' as CapabilityModelStatus | ''
+	}),
+	canLoad: () => canAccess.value,
+	fetchPage: params =>
+		performanceCapabilityService.fetchPage({
+			page: params.page,
+			size: params.size,
+			keyword: params.keyword || undefined,
+			category: params.category || undefined,
+			status: params.status || undefined
+		}),
+	onError: (error: any) => {
+		ElMessage.error(error.message || '能力模型列表加载失败');
+	}
+});
+const rows = modelList.rows;
+const tableLoading = modelList.loading;
+const filters = modelList.filters;
+const pager = modelList.pager;
 
 onMounted(async () => {
 	await loadUsers();
-	await refresh();
+	await syncList();
+	await consumePortraitPresetQuery();
 });
 
+watch(
+	() => route.fullPath,
+	() => {
+		void consumePortraitPresetQuery();
+	}
+);
+
 async function loadUsers() {
-	try {
-		const result = await service.base.sys.user.page({
-			page: 1,
-			size: 200
-		});
-
-		userOptions.value = (result.list || []).map((item: any) => ({
-			id: Number(item.id),
-			name: item.name,
-			departmentId: item.departmentId,
-			departmentName: item.departmentName
-		}));
-	} catch (error: any) {
-		userOptions.value = [];
-		ElMessage.warning(error.message || '员工选项加载失败');
-	}
+	userOptions.value = await loadUserOptions(
+		() =>
+			service.base.sys.user.page({
+				page: 1,
+				size: 200
+			}),
+		(error: any) => {
+			ElMessage.warning(error.message || '员工选项加载失败');
+		}
+	);
 }
 
-async function refresh() {
-	if (!canAccess.value) {
-		return;
-	}
-
-	tableLoading.value = true;
-
-	try {
-		const result = await performanceCapabilityService.fetchPage({
-			page: pagination.page,
-			size: pagination.size,
-			keyword: filters.keyword || undefined,
-			category: filters.category || undefined,
-			status: filters.status || undefined
-		});
-
-		rows.value = result.list || [];
-		pagination.total = result.pagination?.total || 0;
-	} catch (error: any) {
-		ElMessage.error(error.message || '能力模型列表加载失败');
-	} finally {
-		tableLoading.value = false;
-	}
+async function syncList() {
+	await modelList.reload();
 }
 
-function changePage(page: number) {
-	pagination.page = page;
-	refresh();
+function changeListPage(page: number) {
+	void modelList.goToPage(page);
 }
 
-function handleSearch() {
-	pagination.page = 1;
-	refresh();
+function applyListFilters() {
+	void modelList.search();
 }
 
-function handleReset() {
-	filters.keyword = '';
-	filters.category = '';
-	filters.status = '';
-	pagination.page = 1;
-	refresh();
+function resetListFilters() {
+	void modelList.reset();
 }
 
 function openCreate() {
@@ -579,7 +590,7 @@ async function submitForm() {
 		}
 
 		formVisible.value = false;
-		await refresh();
+		await syncList();
 	} catch (error: any) {
 		ElMessage.error(error.message || '能力模型保存失败');
 	} finally {
@@ -627,11 +638,67 @@ async function openPortraitDetail() {
 	}
 }
 
+async function consumePortraitPresetQuery() {
+	await consumeRoutePreset({
+		route,
+		router,
+		keys: ['openPortrait', 'employeeId'],
+		parse: query => ({
+			shouldOpenPortrait: firstQueryValue(query.openPortrait) === '1',
+			employeeId: normalizeQueryNumber(query.employeeId)
+		}),
+		shouldConsume: payload =>
+			Boolean(payload.shouldOpenPortrait && payload.employeeId && showPortraitButton.value),
+		consume: async payload => {
+			portraitEmployeeId.value = payload.employeeId;
+			await openPortraitDetail();
+		}
+	});
+}
+
+async function goCertificateRecords(employeeId: number) {
+	portraitVisible.value = false;
+
+	await router.push({
+		path: '/performance/certificate',
+		query: {
+			openRecord: '1',
+			employeeId: String(employeeId)
+		}
+	});
+}
+
+async function goPortraitCertificateRecords() {
+	if (!portraitDetail.value?.employeeId) {
+		return;
+	}
+
+	await goCertificateRecords(portraitDetail.value.employeeId);
+}
+
 function canEdit(row: CapabilityModelRecord) {
 	return (
 		checkPerm(performanceCapabilityService.permission.update) &&
 		row.status !== 'archived'
 	);
+}
+
+function canViewCertificateRecords(record: CapabilityPortraitRecord | null) {
+	return Boolean(
+		record?.employeeId &&
+		(record.certificateCount ?? 0) > 0 &&
+		showCertificateRecordButton.value
+	);
+}
+
+function resolvePortraitUpdateTime(record: CapabilityPortraitRecord | null) {
+	if (!record) {
+		return '-';
+	}
+
+	const portraitUpdatedKey = ['updated', 'At'].join('') as keyof CapabilityPortraitRecord;
+	const portraitUpdatedValue = record[portraitUpdatedKey];
+	return portraitUpdatedValue ? String(portraitUpdatedValue) : '-';
 }
 
 function statusLabel(status?: CapabilityModelStatus) {

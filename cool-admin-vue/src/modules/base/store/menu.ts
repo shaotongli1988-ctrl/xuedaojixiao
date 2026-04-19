@@ -1,10 +1,119 @@
+// 负责动态菜单装配、一级分组承载和当前分组选中态。
+// 不负责后端菜单数据生产，也不改写权限语义。
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { deepTree, revDeepTree, storage } from '/@/cool/utils';
 import { isArray, isEmpty, orderBy } from 'lodash-es';
 import { router, service } from '/@/cool';
 import { revisePath } from '../utils';
 import { config } from '/@/config';
+
+const PERFORMANCE_ROOT_PATH = '/performance';
+
+const performanceDomainGroups = [
+	{
+		key: 'performance',
+		label: '绩效中心',
+		icon: 'icon-home',
+		paths: [
+			'/data-center/dashboard',
+			'/performance/my-assessment',
+			'/performance/initiated',
+			'/performance/pending',
+			'/performance/indicator-library',
+			'/performance/feedback',
+			'/performance/goals',
+			'/performance/suggestion',
+			'/performance/pip',
+			'/performance/promotion',
+			'/performance/salary'
+		]
+	},
+	{
+		key: 'recruit',
+		label: '招聘中心',
+		icon: 'icon-user',
+		paths: [
+			'/performance/recruitment-center',
+			'/performance/recruit-plan',
+			'/performance/job-standard',
+			'/performance/resumePool',
+			'/performance/interview',
+			'/performance/talentAsset',
+			'/performance/hiring'
+		]
+	},
+	{
+		key: 'training',
+		label: '培训中心',
+		icon: 'icon-task',
+		paths: [
+			'/performance/course',
+			'/performance/course-learning',
+			'/performance/capability',
+			'/performance/certificate'
+		]
+	},
+	{
+		key: 'meeting',
+		label: '会议管理',
+		icon: 'icon-calendar',
+		paths: ['/performance/meeting']
+	},
+	{
+		key: 'contract',
+		label: '合同管理',
+		icon: 'icon-safe',
+		paths: ['/performance/contract']
+	},
+	{
+		key: 'procurement',
+		label: '采购管理',
+		icon: 'icon-order',
+		paths: [
+			'/performance/purchase-order',
+			'/performance/purchase-inquiry',
+			'/performance/purchase-approval',
+			'/performance/purchase-execution',
+			'/performance/purchase-receipt',
+			'/performance/purchase-report',
+			'/performance/supplier'
+		]
+	},
+	{
+		key: 'asset',
+		label: '资产管理',
+		icon: 'icon-set',
+		paths: [
+			'/performance/asset/dashboard',
+			'/performance/asset/ledger',
+			'/performance/asset/assignment',
+			'/performance/asset/maintenance',
+			'/performance/asset/report',
+			'/performance/asset/procurement',
+			'/performance/asset/transfer',
+			'/performance/asset/inventory',
+			'/performance/asset/depreciation',
+			'/performance/asset/disposal'
+		]
+	},
+	{
+		key: 'office',
+		label: '行政协同',
+		icon: 'icon-folder-opened',
+		paths: [
+			'/performance/office/annual-inspection',
+			'/performance/office/honor',
+			'/performance/office/publicity-material',
+			'/performance/office/design-collab',
+			'/performance/office/express-collab',
+			'/performance/office/document-center',
+			'/performance/office/knowledge-base',
+			'/performance/office/vehicle',
+			'/performance/office/intellectual-property'
+		]
+	}
+];
 
 // 本地缓存
 const data = storage.info();
@@ -22,18 +131,29 @@ export const useMenuStore = defineStore('menu', function () {
 	// 左侧菜单列表
 	const list = ref<Menu.List>([]);
 
+	// 当前一级分组下标
+	const activeGroupIndex = ref(0);
+
 	// 权限列表
 	const perms = ref<any[]>(data['base.menuPerms'] || []);
 
 	// 设置左侧菜单
 	function setMenu(i: number = 0) {
+		const visibleGroups = group.value.filter(e => e.isShow);
+
 		// 显示分组显示菜单
 		if (config.app.menu.isGroup) {
-			list.value = group.value.filter(e => e.isShow)[i]?.children || [];
+			activeGroupIndex.value = Math.min(i, Math.max(visibleGroups.length - 1, 0));
+			list.value = visibleGroups[activeGroupIndex.value]?.children || [];
 		} else {
+			activeGroupIndex.value = 0;
 			list.value = group.value;
 		}
 	}
+
+	const currentGroup = computed(() => {
+		return group.value.filter(e => e.isShow)[activeGroupIndex.value];
+	});
 
 	// 设置权限
 	function setPerms(list: Menu.List) {
@@ -106,7 +226,7 @@ export const useMenuStore = defineStore('menu', function () {
 
 	// 设置菜单组
 	function setGroup(list: Menu.List) {
-		group.value = orderBy(deepTree(list), 'orderNum');
+		group.value = buildMenuGroups(orderBy(deepTree(list), 'orderNum'));
 		storage.set('base.menuGroup', group.value);
 	}
 
@@ -194,6 +314,8 @@ export const useMenuStore = defineStore('menu', function () {
 		routes,
 		group,
 		list,
+		activeGroupIndex,
+		currentGroup,
 		perms,
 		get,
 		setPerms,
@@ -203,3 +325,72 @@ export const useMenuStore = defineStore('menu', function () {
 		getPath
 	};
 });
+
+function buildMenuGroups(groups: Menu.List) {
+	const performanceGroup = groups.find(e => e.type == 0 && e.path === PERFORMANCE_ROOT_PATH);
+
+	if (!config.app.menu.isGroup || !performanceGroup?.children?.length) {
+		return groups;
+	}
+
+	const baseOrder = Number(performanceGroup.orderNum || 0);
+	const syntheticBaseId = Number(performanceGroup.id || 0) * 1000 || 900000;
+	const performanceChildren = orderBy(
+		(performanceGroup.children || []).filter(child => child.type === 1),
+		'orderNum'
+	);
+	const usedPaths = new Set<string>();
+
+	const domainGroups = performanceDomainGroups
+		.map((domain, index) => {
+			const children = performanceChildren.filter(child => {
+				const matched = domain.paths.includes(child.path);
+
+				if (matched) {
+					usedPaths.add(child.path);
+				}
+
+				return matched;
+			});
+
+			if (children.length === 0) {
+				return null;
+			}
+
+			return {
+				...performanceGroup,
+				id: syntheticBaseId + index + 1,
+				name: domain.label,
+				path: `${PERFORMANCE_ROOT_PATH}/${domain.key}`,
+				icon: domain.icon,
+				orderNum: baseOrder + (index + 1) / 100,
+				meta: {
+					...performanceGroup.meta,
+					label: domain.label
+				},
+				children
+			};
+		})
+		.filter(Boolean) as Menu.List;
+
+	const fallbackChildren = performanceChildren.filter(child => !usedPaths.has(child.path));
+
+	if (fallbackChildren.length > 0) {
+		domainGroups.unshift({
+			...performanceGroup,
+			id: syntheticBaseId,
+			name: performanceGroup.meta?.label || performanceGroup.name,
+			path: PERFORMANCE_ROOT_PATH,
+			orderNum: baseOrder,
+			children: fallbackChildren
+		});
+	}
+
+	return groups.flatMap(item => {
+		if (item.id === performanceGroup.id) {
+			return domainGroups;
+		}
+
+		return [item];
+	});
+}

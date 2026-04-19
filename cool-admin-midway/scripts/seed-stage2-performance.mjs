@@ -4672,7 +4672,7 @@ async function main() {
       seededSuppliers.map(item => [item.code || item.name, item])
     );
 
-    await replacePurchaseOrders([
+    const seededPurchaseOrders = await replacePurchaseOrders([
       {
         orderNo: 'PMS-PO-DRAFT-001',
         title: '联调-主题11平台草稿采购单',
@@ -4680,21 +4680,253 @@ async function main() {
         departmentId: platformGroupId,
         requesterId: managerUserId,
         orderDate: '2026-05-20',
+        expectedDeliveryDate: '2026-05-28',
+        items: [
+          {
+            itemName: '云主机扩容',
+            quantity: 3,
+            unitPrice: 4296.17,
+            amount: 12888.5,
+          },
+        ],
         totalAmount: 12888.5,
         currency: 'CNY',
         remark: '主题11联调-草稿采购单，可删除',
         status: 'draft',
       },
       {
-        orderNo: 'PMS-PO-ACTIVE-001',
-        title: '联调-主题11平台生效采购单',
+        orderNo: 'PMS-PO-INQUIRING-001',
+        title: '联调-主题11平台询价采购单',
+        supplierId: supplierByCode.get('PMS-SUPPLIER-ACTIVE-001').id,
+        departmentId: platformGroupId,
+        requesterId: managerUserId,
+        orderDate: '2026-05-18',
+        expectedDeliveryDate: '2026-05-30',
+        items: [
+          {
+            itemName: '询价带宽扩容',
+            quantity: 2,
+            unitPrice: 4600,
+            amount: 9200,
+          },
+        ],
+        inquiryRecords: [
+          {
+            round: 1,
+            supplierName: '联调-主题11平台云服务商',
+            quotedAmount: 9200,
+            quotedAt: '2026-05-18 14:00:00',
+            operatorId: managerUserId,
+            operatorName: '研发经理',
+          },
+        ],
+        totalAmount: 9200,
+        currency: 'CNY',
+        remark: '主题11联调-询价中样例',
+        status: 'inquiring',
+      },
+      {
+        orderNo: 'PMS-PO-PENDING-001',
+        title: '联调-主题11待审批采购单',
+        supplierId: supplierByCode.get('PMS-SUPPLIER-ACTIVE-001').id,
+        departmentId: platformGroupId,
+        requesterId: managerUserId,
+        orderDate: '2026-05-17',
+        expectedDeliveryDate: '2026-05-29',
+        items: [
+          {
+            itemName: '审批前服务器采购',
+            quantity: 4,
+            unitPrice: 5250,
+            amount: 21000,
+          },
+        ],
+        inquiryRecords: [
+          {
+            round: 1,
+            supplierName: '联调-主题11平台云服务商',
+            quotedAmount: 21000,
+            quotedAt: '2026-05-17 16:30:00',
+            operatorId: managerUserId,
+            operatorName: '研发经理',
+          },
+        ],
+        totalAmount: 21000,
+        currency: 'CNY',
+        remark: '主题11联调-待审批样例',
+        status: 'pendingApproval',
+      },
+      {
+        orderNo: 'PMS-PO-APPROVED-001',
+        title: '联调-主题11已审批采购单',
+        supplierId: supplierByCode.get('PMS-SUPPLIER-ACTIVE-001').id,
+        departmentId: platformGroupId,
+        requesterId: managerUserId,
+        orderDate: '2026-05-16',
+        expectedDeliveryDate: '2026-05-27',
+        approvedBy: hrUserId,
+        approvedAt: '2026-05-16 18:00:00',
+        approvalRemark: '预算已核定，同意采购。',
+        items: [
+          {
+            itemName: '数据库许可证',
+            quantity: 5,
+            unitPrice: 3000,
+            amount: 15000,
+          },
+        ],
+        inquiryRecords: [
+          {
+            round: 1,
+            supplierName: '联调-主题11平台云服务商',
+            quotedAmount: 15000,
+            quotedAt: '2026-05-16 11:00:00',
+            operatorId: managerUserId,
+            operatorName: '研发经理',
+          },
+        ],
+        approvalLogs: [
+          {
+            decision: 'approved',
+            remark: '预算已核定，同意采购。',
+            operatorId: hrUserId,
+            operatorName: 'HR管理员',
+            operatedAt: '2026-05-16 18:00:00',
+          },
+        ],
+        totalAmount: 15000,
+        currency: 'CNY',
+        remark: '主题11联调-已审批样例',
+        status: 'approved',
+      },
+      {
+        orderNo: 'PMS-PO-RECEIVED-001',
+        title: '联调-主题11已收货采购单',
+        supplierId: supplierByCode.get('PMS-SUPPLIER-ACTIVE-001').id,
+        departmentId: platformGroupId,
+        requesterId: managerUserId,
+        orderDate: '2026-05-15',
+        expectedDeliveryDate: '2026-05-26',
+        approvedBy: hrUserId,
+        approvedAt: '2026-05-15 15:20:00',
+        approvalRemark: '分批收货，允许入场。',
+        receivedQuantity: 6,
+        receivedAt: '2026-05-19 10:00:00',
+        items: [
+          {
+            itemName: '办公终端',
+            quantity: 6,
+            unitPrice: 1800,
+            amount: 10800,
+          },
+        ],
+        inquiryRecords: [
+          {
+            round: 1,
+            supplierName: '联调-主题11平台云服务商',
+            quotedAmount: 10800,
+            quotedAt: '2026-05-15 10:30:00',
+            operatorId: managerUserId,
+            operatorName: '研发经理',
+          },
+        ],
+        approvalLogs: [
+          {
+            decision: 'approved',
+            remark: '同意收货。',
+            operatorId: hrUserId,
+            operatorName: 'HR管理员',
+            operatedAt: '2026-05-15 15:20:00',
+          },
+        ],
+        receiptRecords: [
+          {
+            receivedQuantity: 6,
+            receivedAt: '2026-05-19 10:00:00',
+            operatorId: managerUserId,
+            operatorName: '研发经理',
+            remark: '首批到货验收完成。',
+          },
+        ],
+        totalAmount: 10800,
+        currency: 'CNY',
+        remark: '主题11联调-已收货样例',
+        status: 'received',
+      },
+      {
+        orderNo: 'PMS-PO-CLOSED-001',
+        title: '联调-主题11已关闭采购单',
+        supplierId: supplierByCode.get('联调-主题11咨询供应商').id,
+        departmentId: platformGroupId,
+        requesterId: managerUserId,
+        orderDate: '2026-05-12',
+        expectedDeliveryDate: '2026-05-22',
+        approvedBy: hrUserId,
+        approvedAt: '2026-05-13 09:00:00',
+        approvalRemark: '项目结项前补充采购。',
+        closedReason: '项目已验收，采购执行完成。',
+        receivedQuantity: 1,
+        receivedAt: '2026-05-18 17:30:00',
+        items: [
+          {
+            itemName: '咨询交付包',
+            quantity: 1,
+            unitPrice: 9800,
+            amount: 9800,
+          },
+        ],
+        inquiryRecords: [
+          {
+            round: 1,
+            supplierName: '联调-主题11咨询供应商',
+            quotedAmount: 9800,
+            quotedAt: '2026-05-12 14:00:00',
+            operatorId: managerUserId,
+            operatorName: '研发经理',
+          },
+        ],
+        approvalLogs: [
+          {
+            decision: 'approved',
+            remark: '项目结项前补充采购。',
+            operatorId: hrUserId,
+            operatorName: 'HR管理员',
+            operatedAt: '2026-05-13 09:00:00',
+          },
+        ],
+        receiptRecords: [
+          {
+            receivedQuantity: 1,
+            receivedAt: '2026-05-18 17:30:00',
+            operatorId: managerUserId,
+            operatorName: '研发经理',
+            remark: '咨询材料已验收并归档。',
+          },
+        ],
+        totalAmount: 9800,
+        currency: 'CNY',
+        remark: '主题11联调-已关闭样例',
+        status: 'closed',
+      },
+      {
+        orderNo: 'PMS-PO-ACTIVE-LEGACY-001',
+        title: '联调-主题11兼容生效采购单',
         supplierId: supplierByCode.get('PMS-SUPPLIER-INACTIVE-001').id,
         departmentId: platformGroupId,
         requesterId: managerUserId,
         orderDate: '2026-05-18',
+        expectedDeliveryDate: '2026-05-31',
+        items: [
+          {
+            itemName: '遗留兼容硬件采购',
+            quantity: 2,
+            unitPrice: 17800,
+            amount: 35600,
+          },
+        ],
         totalAmount: 35600,
         currency: 'CNY',
-        remark: '主题11联调-生效采购单，验证删除限制',
+        remark: '主题11联调-兼容现有 supplier delete guard 的 legacy active 样例',
         status: 'active',
       },
       {
@@ -4704,6 +4936,15 @@ async function main() {
         departmentId: salesCenterId,
         requesterId: salesEmployeeUserId,
         orderDate: '2026-05-10',
+        expectedDeliveryDate: '2026-05-19',
+        items: [
+          {
+            itemName: '跨部门咨询采购',
+            quantity: 1,
+            unitPrice: 8888,
+            amount: 8888,
+          },
+        ],
         totalAmount: 8888,
         currency: 'CNY',
         remark: '主题11联调-跨部门取消采购单',
@@ -5626,9 +5867,39 @@ async function main() {
       },
     ]);
 
+    const purchaseOrderByNo = new Map(
+      seededPurchaseOrders.map(item => [item.orderNo || item.title, item])
+    );
+
     seedMeta = await syncStage2RuntimeMeta({
       recruitPlanImportSpaceId,
       recruitPlanImportSpaceName: 'stage2-theme16-recruit-plan-import-template.xlsx',
+      theme11SupplierInfoId: Number(supplierByCode.get('PMS-SUPPLIER-ACTIVE-001')?.id || 0),
+      theme11PurchaseOrderInfoId: Number(
+        purchaseOrderByNo.get('PMS-PO-APPROVED-001')?.id || 0
+      ),
+      theme11ProtectedOrderDeleteId: Number(
+        purchaseOrderByNo.get('PMS-PO-APPROVED-001')?.id || 0
+      ),
+      theme11ReferencedSupplierDeleteId: Number(
+        supplierByCode.get('PMS-SUPPLIER-INACTIVE-001')?.id || 0
+      ),
+      theme11InquiryOrderId: Number(
+        purchaseOrderByNo.get('PMS-PO-INQUIRING-001')?.id || 0
+      ),
+      theme11PendingApprovalOrderId: Number(
+        purchaseOrderByNo.get('PMS-PO-PENDING-001')?.id || 0
+      ),
+      theme11ApprovedOrderId: Number(
+        purchaseOrderByNo.get('PMS-PO-APPROVED-001')?.id || 0
+      ),
+      theme11ReceivedOrderId: Number(
+        purchaseOrderByNo.get('PMS-PO-RECEIVED-001')?.id || 0
+      ),
+      theme11ClosedOrderId: Number(
+        purchaseOrderByNo.get('PMS-PO-CLOSED-001')?.id || 0
+      ),
+      theme11ProcurementSampleDepartmentId: Number(platformGroupId || 0),
     });
 
     await connection.commit();

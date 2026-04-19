@@ -54,7 +54,13 @@ git config core.hooksPath .githooks
 
 1. 同时检查 `HEAD` 相对上游分支的待推送变更，以及当前工作区未提交/未跟踪变更。
 2. 命中临时产物或测试运行产物时，直接阻断 push。
-3. 按变更路径触发最小验证：
+3. 命中菜单、权限、页面目录、自动化脚本或测试资产变更时，先跑仓库一致性守卫：
+   - `scripts/check-directory-naming-conflicts.mjs`
+   - `scripts/check-menu-route-viewpath-drift.mjs`
+   - `scripts/check-permission-key-alignment.mjs`
+   - `scripts/check-doc-contract-writeback.mjs`
+   - 聚合入口：`scripts/run-repo-consistency-guards.mjs`
+4. 按变更路径触发最小验证：
    - `cool-admin-midway` 命中主题 1-9 / 跨模块驾驶舱后端实现时，跑定向回归测试和阶段 2 smoke。
    - `cool-admin-vue` 命中后台前端实现时，跑 `corepack pnpm run type-check` 和 `corepack pnpm run build`。
    - `cool-uni` 命中移动端实现时，跑 `corepack pnpm exec tsc --noEmit -p tsconfig.json`。
@@ -62,4 +68,5 @@ git config core.hooksPath .githooks
 维护要求：
 
 - 主题冻结范围或验证矩阵变化后，必须同步更新 `scripts/git-pre-push-gate.mjs` 中的阻断路径和命令映射。
+- 仓库一致性守卫的路径范围、文档映射或命名空间变化后，必须同步更新 `scripts/repo-consistency-config.mjs`。
 - 这套门禁只负责本地 push 前阻断，不替代远端分支保护或代码评审。

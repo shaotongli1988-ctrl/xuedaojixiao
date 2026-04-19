@@ -19,6 +19,14 @@
 					placeholder="请输入课程 ID"
 				/>
 				<el-button type="primary" @click="applyCourseId">进入课程学习</el-button>
+				<el-button
+					v-if="showCourseDetailButton && courseId"
+					type="primary"
+					plain
+					@click="goCourseDetail(courseId)"
+				>
+					查看课程详情
+				</el-button>
 				<el-button @click="reloadCurrentCourse">刷新当前课程</el-button>
 				<span class="course-learning-page__hint">当前课程 ID：{{ courseId || '-' }}</span>
 			</div>
@@ -305,6 +313,7 @@ import type {
 	CourseLearningTaskRecord,
 	CourseLearningTaskStatus
 } from '../../course-learning';
+import { performanceCourseService } from '../../service/course';
 import {
 	performanceCourseExamService,
 	performanceCoursePracticeService,
@@ -337,6 +346,11 @@ const canAccess = computed(() => {
 		'performance:courseExam:summary'
 	].some(checkPerm);
 });
+const showCourseDetailButton = computed(
+	() =>
+		checkPerm(performanceCourseService.permission.page) &&
+		checkPerm(performanceCourseService.permission.info)
+);
 
 const activeTab = ref<LearningTab>('recite');
 const courseIdInput = ref<number | undefined>();
@@ -428,6 +442,16 @@ async function applyCourseId() {
 		query: {
 			...route.query,
 			courseId: String(courseIdInput.value)
+		}
+	});
+}
+
+async function goCourseDetail(courseId: number) {
+	await router.push({
+		path: '/performance/course',
+		query: {
+			openDetail: '1',
+			courseId: String(courseId)
 		}
 	});
 }

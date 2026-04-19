@@ -32,6 +32,24 @@ const alwaysBlockedPrefixes = [
 
 const commandGroups = [
   {
+    id: 'repo-consistency-guards',
+    description: '仓库一致性守卫（目录命名、菜单路由、权限键、文档回写）',
+    cwd: '.',
+    command: ['node', './scripts/run-repo-consistency-guards.mjs'],
+    matches(filePath) {
+      return (
+        filePath === 'cool-admin-midway/src/modules/base/menu.json' ||
+        filePath === 'cool-admin-vue/src/modules/base/store/menu.ts' ||
+        filePath.startsWith('cool-admin-vue/src/modules/performance/') ||
+        filePath.startsWith('cool-admin-midway/src/modules/performance/') ||
+        filePath.startsWith('scripts/') ||
+        filePath.startsWith('performance-management-system/test/') ||
+        filePath.startsWith('cool-admin-midway/test/') ||
+        filePath.startsWith('cool-admin-vue/test/')
+      );
+    },
+  },
+  {
     id: 'midway-tests',
     description: '后端主题 1-9 与跨模块驾驶舱定向回归测试',
     cwd: 'cool-admin-midway',

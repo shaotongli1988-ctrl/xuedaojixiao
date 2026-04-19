@@ -112,7 +112,7 @@ function s2ab(s) {
 	return buf;
 }
 
-export function export_table_to_excel(id) {
+export function exportTableToExcel(id) {
 	const theTable = document.getElementById(id);
 	const oo = generateArray(theTable);
 	const ranges = oo[1];
@@ -146,7 +146,7 @@ export function export_table_to_excel(id) {
 	);
 }
 
-export function export_json_to_excel({
+export function exportJsonToExcel({
 	multiHeader = [] as string[],
 	header = [] as string[],
 	data = [] as any[],

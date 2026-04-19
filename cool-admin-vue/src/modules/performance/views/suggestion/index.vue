@@ -54,7 +54,7 @@
 						<el-option
 							v-for="item in departmentOptions"
 							:key="item.id"
-							:label="item.name"
+							:label="item.label"
 							:value="item.id"
 						/>
 					</el-select>
@@ -277,6 +277,10 @@ import SuggestionDetailDrawer from '../../components/suggestion-detail-drawer.vu
 import { performancePipService } from '../../service/pip';
 import { performancePromotionService } from '../../service/promotion';
 import { performanceSuggestionService } from '../../service/suggestion';
+import {
+	loadDepartmentOptions,
+	loadUserOptions
+} from '../../utils/lookup-options.js';
 import type {
 	SuggestionAcceptResult,
 	SuggestionRecord,
@@ -287,7 +291,7 @@ import type {
 
 interface DepartmentOption {
 	id: number;
-	name: string;
+	label: string;
 }
 
 const router = useRouter();
@@ -359,31 +363,25 @@ onMounted(async () => {
 });
 
 async function loadUsers() {
-	try {
-		const result = await service.base.sys.user.page({
+	userOptions.value = await loadUserOptions(
+		() =>
+			service.base.sys.user.page({
 			page: 1,
 			size: 200
-		});
-
-		userOptions.value = (result.list || []).map((item: any) => ({
-			id: Number(item.id),
-			name: item.name,
-			departmentId: item.departmentId,
-			departmentName: item.departmentName
-		}));
-	} catch (error: any) {
-		ElMessage.warning(error.message || '用户选项加载失败');
-	}
+			}),
+		(error: any) => {
+			ElMessage.warning(error.message || '用户选项加载失败');
+		}
+	);
 }
 
 async function loadDepartments() {
-	try {
-		const result = await service.base.sys.department.list();
-		departmentOptions.value = flattenDepartments(result || []);
-	} catch (error: any) {
-		departmentOptions.value = [];
-		ElMessage.warning(error.message || '部门选项加载失败');
-	}
+	departmentOptions.value = await loadDepartmentOptions(
+		() => service.base.sys.department.list(),
+		(error: any) => {
+			ElMessage.warning(error.message || '部门选项加载失败');
+		}
+	);
 }
 
 async function refresh() {
@@ -701,24 +699,6 @@ function linkedEntityLabel(row: SuggestionRecord) {
 	return `${row.linkedEntityType} #${row.linkedEntityId}`;
 }
 
-function flattenDepartments(list: any[], result: DepartmentOption[] = []) {
-	for (const item of list) {
-		if (!item?.id) {
-			continue;
-		}
-
-		result.push({
-			id: Number(item.id),
-			name: item.name
-		});
-
-		if (Array.isArray(item.children) && item.children.length) {
-			flattenDepartments(item.children, result);
-		}
-	}
-
-	return result;
-}
 </script>
 
 <style lang="scss" scoped>

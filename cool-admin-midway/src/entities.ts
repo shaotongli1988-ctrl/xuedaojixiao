@@ -39,44 +39,50 @@ import * as entity36 from './modules/performance/entity/course-exam-result';
 import * as entity37 from './modules/performance/entity/course-practice';
 import * as entity38 from './modules/performance/entity/course-recite';
 import * as entity39 from './modules/performance/entity/course';
-import * as entity40 from './modules/performance/entity/feedback-record';
-import * as entity41 from './modules/performance/entity/feedback-task';
-import * as entity42 from './modules/performance/entity/goal-progress';
-import * as entity43 from './modules/performance/entity/goal';
-import * as entity44 from './modules/performance/entity/hiring';
-import * as entity45 from './modules/performance/entity/indicator';
-import * as entity46 from './modules/performance/entity/interview';
-import * as entity47 from './modules/performance/entity/job-standard';
-import * as entity48 from './modules/performance/entity/meeting';
-import * as entity49 from './modules/performance/entity/pip-record';
-import * as entity50 from './modules/performance/entity/pip';
-import * as entity51 from './modules/performance/entity/promotion-record';
-import * as entity52 from './modules/performance/entity/promotion';
-import * as entity53 from './modules/performance/entity/purchase-order';
-import * as entity54 from './modules/performance/entity/recruit-plan';
-import * as entity55 from './modules/performance/entity/resumePool';
-import * as entity56 from './modules/performance/entity/salary-change';
-import * as entity57 from './modules/performance/entity/salary';
-import * as entity58 from './modules/performance/entity/suggestion';
-import * as entity59 from './modules/performance/entity/supplier';
-import * as entity60 from './modules/performance/entity/talent-asset';
-import * as entity61 from './modules/performance/entity/teacher-agent-audit';
-import * as entity62 from './modules/performance/entity/teacher-agent-relation';
-import * as entity63 from './modules/performance/entity/teacher-agent';
-import * as entity64 from './modules/performance/entity/teacher-attribution-conflict';
-import * as entity65 from './modules/performance/entity/teacher-attribution';
-import * as entity66 from './modules/performance/entity/teacher-class';
-import * as entity67 from './modules/performance/entity/teacher-follow';
-import * as entity68 from './modules/performance/entity/teacher-info';
-import * as entity69 from './modules/plugin/entity/info';
-import * as entity70 from './modules/recycle/entity/data';
-import * as entity71 from './modules/space/entity/info';
-import * as entity72 from './modules/space/entity/type';
-import * as entity73 from './modules/task/entity/info';
-import * as entity74 from './modules/task/entity/log';
-import * as entity75 from './modules/user/entity/address';
-import * as entity76 from './modules/user/entity/info';
-import * as entity77 from './modules/user/entity/wx';
+import * as entity40 from './modules/performance/entity/documentCenter';
+import * as entity41 from './modules/performance/entity/feedback-record';
+import * as entity42 from './modules/performance/entity/feedback-task';
+import * as entity43 from './modules/performance/entity/goal-progress';
+import * as entity44 from './modules/performance/entity/goal';
+import * as entity45 from './modules/performance/entity/hiring';
+import * as entity46 from './modules/performance/entity/indicator';
+import * as entity47 from './modules/performance/entity/intellectualProperty';
+import * as entity48 from './modules/performance/entity/interview';
+import * as entity49 from './modules/performance/entity/job-standard';
+import * as entity50 from './modules/performance/entity/knowledgeBase';
+import * as entity51 from './modules/performance/entity/knowledgeQa';
+import * as entity52 from './modules/performance/entity/meeting';
+import * as entity53 from './modules/performance/entity/officeCollab';
+import * as entity54 from './modules/performance/entity/pip-record';
+import * as entity55 from './modules/performance/entity/pip';
+import * as entity56 from './modules/performance/entity/promotion-record';
+import * as entity57 from './modules/performance/entity/promotion';
+import * as entity58 from './modules/performance/entity/purchase-order';
+import * as entity59 from './modules/performance/entity/recruit-plan';
+import * as entity60 from './modules/performance/entity/resumePool';
+import * as entity61 from './modules/performance/entity/salary-change';
+import * as entity62 from './modules/performance/entity/salary';
+import * as entity63 from './modules/performance/entity/suggestion';
+import * as entity64 from './modules/performance/entity/supplier';
+import * as entity65 from './modules/performance/entity/talentAsset';
+import * as entity66 from './modules/performance/entity/teacher-agent-audit';
+import * as entity67 from './modules/performance/entity/teacher-agent-relation';
+import * as entity68 from './modules/performance/entity/teacher-agent';
+import * as entity69 from './modules/performance/entity/teacher-attribution-conflict';
+import * as entity70 from './modules/performance/entity/teacher-attribution';
+import * as entity71 from './modules/performance/entity/teacher-class';
+import * as entity72 from './modules/performance/entity/teacher-follow';
+import * as entity73 from './modules/performance/entity/teacher-info';
+import * as entity74 from './modules/performance/entity/vehicle';
+import * as entity75 from './modules/plugin/entity/info';
+import * as entity76 from './modules/recycle/entity/data';
+import * as entity77 from './modules/space/entity/info';
+import * as entity78 from './modules/space/entity/type';
+import * as entity79 from './modules/task/entity/info';
+import * as entity80 from './modules/task/entity/log';
+import * as entity81 from './modules/user/entity/address';
+import * as entity82 from './modules/user/entity/info';
+import * as entity83 from './modules/user/entity/wx';
 export const entities = [
   ...Object.values(entity0),
   ...Object.values(entity1),
@@ -156,4 +162,10 @@ export const entities = [
   ...Object.values(entity75),
   ...Object.values(entity76),
   ...Object.values(entity77),
+  ...Object.values(entity78),
+  ...Object.values(entity79),
+  ...Object.values(entity80),
+  ...Object.values(entity81),
+  ...Object.values(entity82),
+  ...Object.values(entity83),
 ];

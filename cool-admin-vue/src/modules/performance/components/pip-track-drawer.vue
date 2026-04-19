@@ -96,6 +96,14 @@
 
 			<div class="pip-track-drawer__footer">
 				<el-button @click="$emit('update:modelValue', false)">关闭</el-button>
+				<el-button
+					v-if="showSourceAssessmentButton && pip?.assessmentId"
+					type="primary"
+					plain
+					@click="goSourceAssessment(pip.assessmentId)"
+				>
+					查看来源评估单
+				</el-button>
 				<el-button v-if="canTrack" type="primary" :loading="loading" @click="submit">
 					提交跟进
 				</el-button>
@@ -107,7 +115,10 @@
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue';
 import { ElMessage } from 'element-plus';
+import { useRouter } from 'vue-router';
+import { checkPerm } from '/$/base/utils/permission';
 import type { PipRecord } from '../types';
+import { performanceAssessmentService } from '../service/assessment';
 
 const props = defineProps<{
 	modelValue: boolean;
@@ -124,6 +135,7 @@ const emit = defineEmits<{
 const recordDate = ref('');
 const progress = ref('');
 const nextPlan = ref('');
+const router = useRouter();
 
 const statusLabel = computed(() => {
 	switch (props.pip?.status) {
@@ -136,6 +148,13 @@ const statusLabel = computed(() => {
 		default:
 			return '草稿';
 	}
+});
+
+const showSourceAssessmentButton = computed(() => {
+	return (
+		checkPerm(performanceAssessmentService.permission.info) &&
+		resolveAssessmentPagePath() !== ''
+	);
 });
 
 watch(
@@ -170,6 +189,40 @@ function submit() {
 		progress: progress.value.trim(),
 		nextPlan: nextPlan.value.trim()
 	});
+}
+
+async function goSourceAssessment(assessmentId: number) {
+	const path = resolveAssessmentPagePath();
+
+	if (!path) {
+		return;
+	}
+
+	emit('update:modelValue', false);
+
+	await router.push({
+		path,
+		query: {
+			openDetail: '1',
+			assessmentId: String(assessmentId)
+		}
+	});
+}
+
+function resolveAssessmentPagePath() {
+	if (checkPerm(performanceAssessmentService.permission.page)) {
+		return '/performance/initiated';
+	}
+
+	if (checkPerm(performanceAssessmentService.permission.myPage)) {
+		return '/performance/my-assessment';
+	}
+
+	if (checkPerm(performanceAssessmentService.permission.pendingPage)) {
+		return '/performance/pending';
+	}
+
+	return '';
 }
 </script>
 

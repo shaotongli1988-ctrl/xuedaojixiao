@@ -1,0 +1,361 @@
+{
+  "name": "detail-action-links-gui",
+  "description": "详情内动作入口最小 GUI 点测",
+  "configPath": "/Users/shaotongli/Documents/xuedao/performance-management-system/test/gui/scenarios/detail-action-links.json",
+  "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/detail-action-links",
+  "uiBaseUrl": "http://127.0.0.1:9007",
+  "apiBaseUrl": "http://127.0.0.1:8006",
+  "chromeDebugUrl": "http://127.0.0.1:9222",
+  "generatedAt": "2026-04-18T17:08:43.676Z",
+  "scenarios": [
+    {
+      "name": "hr-detail-actions",
+      "username": "hr_admin",
+      "route": "/performance/initiated",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "已发起考核",
+            "详情"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "详情"
+        },
+        {
+          "index": 3,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "评估单详情",
+            "发起环评",
+            "发起 PIP",
+            "发起晋升"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 4,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/detail-action-links/detail-action-hr-assessment-actions.png"
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "发起环评"
+        },
+        {
+          "index": 6,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "360 环评任务",
+            "发起环评任务",
+            "来源评估单",
+            "被评价人"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 7,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/detail-action-links/detail-action-hr-feedback-create.png"
+        },
+        {
+          "index": 8,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/initiated"
+        },
+        {
+          "index": 9,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "已发起考核",
+            "详情"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "详情"
+        },
+        {
+          "index": 11,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "评估单详情",
+            "发起 PIP"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "发起 PIP"
+        },
+        {
+          "index": 13,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "PIP 追踪",
+            "新建 PIP",
+            "当前为评估单来源创建",
+            "来源评估单"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 14,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/detail-action-links/detail-action-hr-pip-create.png"
+        },
+        {
+          "index": 15,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/initiated"
+        },
+        {
+          "index": 16,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "已发起考核",
+            "详情"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "详情"
+        },
+        {
+          "index": 18,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "评估单详情",
+            "发起晋升"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "发起晋升"
+        },
+        {
+          "index": 20,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "晋升管理",
+            "新建晋升单",
+            "来源评估单ID",
+            "所属员工"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 21,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/detail-action-links/detail-action-hr-promotion-create.png"
+        },
+        {
+          "index": 22,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/meeting"
+        },
+        {
+          "index": 23,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "会议管理",
+            "签到"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "签到"
+        },
+        {
+          "index": 25,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "会议签到",
+            "执行会议级签到",
+            "不记录逐参会人签到明细"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 26,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/detail-action-links/detail-action-hr-meeting-checkin-confirm.png"
+        }
+      ]
+    },
+    {
+      "name": "manager-detail-actions-restricted",
+      "username": "manager_rd",
+      "route": "/performance/pending",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "待我审批",
+            "详情"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "详情"
+        },
+        {
+          "index": 3,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "评估单详情",
+            "关闭"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 4,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "评估单详情",
+            "关闭"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 5,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/detail-action-links/detail-action-manager-assessment-restricted.png"
+        }
+      ]
+    },
+    {
+      "name": "employee-detail-actions-no-entry",
+      "username": "employee_platform",
+      "route": "/performance/my-assessment",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "我的考核",
+            "详情"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "详情"
+        },
+        {
+          "index": 3,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "评估单详情",
+            "关闭"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 4,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "评估单详情",
+            "关闭"
+          ],
+          "excludes": [
+            "发起环评",
+            "发起 PIP",
+            "发起晋升"
+          ]
+        },
+        {
+          "index": 5,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/detail-action-links/detail-action-employee-assessment-restricted.png"
+        },
+        {
+          "index": 6,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/pip"
+        },
+        {
+          "index": 7,
+          "type": "assertBodyText",
+          "status": "passed",
+          "includes": [
+            "404",
+            "找不到您要查找的页面"
+          ],
+          "excludes": [
+            "PIP 管理"
+          ]
+        },
+        {
+          "index": 8,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/detail-action-links/detail-action-employee-pip-404.png"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "pass": 3,
+    "fail": 0
+  }
+}

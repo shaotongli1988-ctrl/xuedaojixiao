@@ -1509,27 +1509,34 @@
 3. 删除只允许在 `draft` 状态执行。
 4. 首批不与主题 5 自动审批流耦合，不通过合同资源自动创建审批实例。
 
-## 二期主题 11：采购与供应商管理接口冻结基线（2026-04-18）
+## 二期主题 11：采购与供应商管理接口冻结基线（2026-04-19）
 
-本节只冻结采购与供应商管理进入设计 / 开发前必须遵守的最小接口方向，不代表主题 11 已完成阶段 0 冻结。
+本节只冻结采购与供应商管理扩容重冻后进入开发 / 联调必须遵守的最小接口方向，不代表主题 11 已自动扩展到付款、对账或库存总账。
 
 ### 当前冻结结论
 
-- 当前唯一结论：`采购与供应商管理接口方向已冻结`
+- 当前唯一结论：`采购与供应商管理扩容接口方向已冻结`
 
 ### 资源边界
 
-1. 主题 11 允许在同一冻结包内同时定义两组最小资源：
+1. 主题 11 允许在同一冻结包内定义以下资源：
    - `purchaseOrder`
    - `supplier`
-2. 首批只冻结采购订单与供应商台账主链，不扩到：
-   - 采购计划
+   - `purchaseReport`
+2. `orderManagement` 只是 `purchaseOrder` 的执行视角兼容名，不新增第二主资源。
+3. 当前纳入：
+   - 采购管理 / 创建采购单 / 采购单详情
    - 询价管理
+   - 采购审批
    - 收货管理
    - 采购报表
-   - 对账 / 付款
+   - 供应商管理
+4. 当前明确不纳入：
+   - 采购计划
+   - 付款 / 对账
+   - 库存总账联动
+   - 财务凭证
    - 外部 ERP / 财务系统接入
-3. 首批 API 固定只允许 `page / info / add / update / delete`，不提前引入 `submit / approve / receive / pay` 等复杂采购流动作接口。
 
 ### 标准接口
 
@@ -1540,11 +1547,20 @@
 | 新增采购订单 | `/admin/performance/purchaseOrder/add` | `POST` | `performance:purchaseOrder:add` |
 | 修改采购订单 | `/admin/performance/purchaseOrder/update` | `POST` | `performance:purchaseOrder:update` |
 | 删除采购订单 | `/admin/performance/purchaseOrder/delete` | `POST` | `performance:purchaseOrder:delete` |
+| 提交询价 | `/admin/performance/purchaseOrder/submitInquiry` | `POST` | `performance:purchaseOrder:submitInquiry` |
+| 提交审批 | `/admin/performance/purchaseOrder/submitApproval` | `POST` | `performance:purchaseOrder:submitApproval` |
+| 审批通过 | `/admin/performance/purchaseOrder/approve` | `POST` | `performance:purchaseOrder:approve` |
+| 审批驳回 | `/admin/performance/purchaseOrder/reject` | `POST` | `performance:purchaseOrder:reject` |
+| 收货 | `/admin/performance/purchaseOrder/receive` | `POST` | `performance:purchaseOrder:receive` |
+| 关闭 | `/admin/performance/purchaseOrder/close` | `POST` | `performance:purchaseOrder:close` |
 | 供应商分页 | `/admin/performance/supplier/page` | `POST` | `performance:supplier:page` |
 | 供应商详情 | `/admin/performance/supplier/info` | `GET` | `performance:supplier:info` |
 | 新增供应商 | `/admin/performance/supplier/add` | `POST` | `performance:supplier:add` |
 | 修改供应商 | `/admin/performance/supplier/update` | `POST` | `performance:supplier:update` |
 | 删除供应商 | `/admin/performance/supplier/delete` | `POST` | `performance:supplier:delete` |
+| 采购报表汇总 | `/admin/performance/purchaseReport/summary` | `GET` | `performance:purchaseReport:summary` |
+| 采购报表趋势 | `/admin/performance/purchaseReport/trend` | `GET` | `performance:purchaseReport:trend` |
+| 供应商统计 | `/admin/performance/purchaseReport/supplierStats` | `GET` | `performance:purchaseReport:supplierStats` |
 
 ### 采购订单分页请求参数
 
@@ -1555,7 +1571,7 @@
 | keyword | string | 否 | 订单编号 / 标题关键字 |
 | supplierId | number | 否 | 供应商 ID |
 | departmentId | number | 否 | 申请部门 ID；最终仍由服务端按权限裁剪 |
-| status | string | 否 | `draft / active / cancelled` |
+| status | string | 否 | `draft / inquiring / pendingApproval / approved / received / closed / cancelled` |
 | startDate | string | 否 | 采购日期开始 |
 | endDate | string | 否 | 采购日期结束 |
 
@@ -1569,31 +1585,39 @@
 | departmentId | number | 是 | 申请部门 ID |
 | requesterId | number | 是 | 申请人 ID |
 | orderDate | string | 是 | 采购日期 |
+| expectedDeliveryDate | string | 否 | 预计到货日期 |
 | totalAmount | number | 是 | 订单总金额 |
 | currency | string | 否 | 币种，默认 `CNY` |
 | remark | string | 否 | 备注 |
+| items | array | 否 | 采购明细快照 |
 | status | string | 否 | 默认 `draft`；合法值见状态机 |
+
+### 采购订单动作最小请求字段
+
+| 动作 | 最小请求字段 | 说明 |
+| --- | --- | --- |
+| `submitInquiry` | `id` | `draft -> inquiring` |
+| `submitApproval` | `id` | `inquiring -> pendingApproval` |
+| `approve` | `id`, `approvalRemark?` | `pendingApproval -> approved` |
+| `reject` | `id`, `approvalRemark?` | `pendingApproval -> draft` |
+| `receive` | `id`, `receivedQuantity`, `receivedAt?`, `warehouseRemark?` | 支持累计收货 |
+| `close` | `id`, `closedReason` | 仅允许 `approved / received` |
 
 ### 采购订单详情返回最小字段
 
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| id | number | 主键 |
-| orderNo | string \| null | 订单编号 |
-| title | string | 采购标题 |
-| supplierId | number | 供应商 ID |
-| supplierName | string | 供应商名称 |
-| departmentId | number | 申请部门 ID |
-| departmentName | string | 申请部门名称 |
-| requesterId | number | 申请人 ID |
-| requesterName | string | 申请人姓名 |
-| orderDate | string | 采购日期 |
-| totalAmount | number | 订单总金额；字段裁剪见 `12` |
-| currency | string | 币种 |
-| remark | string \| null | 备注 |
-| status | string | 采购订单状态 |
-| createTime | string | 创建时间 |
-| updateTime | string | 更新时间 |
+在原有基础字段外，允许增加：
+
+- `expectedDeliveryDate`
+- `approvedBy`
+- `approvedAt`
+- `approvalRemark`
+- `closedReason`
+- `receivedQuantity`
+- `receivedAt`
+- `items`
+- `inquiryRecords`
+- `approvalLogs`
+- `receiptRecords`
 
 ### 供应商分页请求参数
 
@@ -1620,31 +1644,25 @@
 | remark | string | 否 | 备注 |
 | status | string | 否 | 默认 `active`；合法值见状态机 |
 
-### 供应商详情返回最小字段
+### 采购报表请求参数
 
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| id | number | 主键 |
-| name | string | 供应商名称 |
-| code | string \| null | 供应商编码 |
-| category | string \| null | 供应商分类 |
-| contactName | string \| null | 联系人姓名；字段裁剪见 `12` |
-| contactPhone | string \| null | 联系电话；字段裁剪见 `12` |
-| contactEmail | string \| null | 联系邮箱；字段裁剪见 `12` |
-| bankAccount | string \| null | 银行账户；字段裁剪见 `12` |
-| taxNo | string \| null | 税号；字段裁剪见 `12` |
-| remark | string \| null | 备注 |
-| status | string | 供应商状态 |
-| createTime | string | 创建时间 |
-| updateTime | string | 更新时间 |
+`summary / trend / supplierStats` 只允许查询：
+
+- `startDate`
+- `endDate`
+- `departmentId?`
+- `supplierId?`
 
 ### 业务规则
 
-1. 采购与供应商管理允许作为同一主题 11 冻结包中的两组最小 API 共同冻结，但仍不得口头扩展为采购全链。
-2. 采购订单删除只允许在 `draft` 状态执行。
-3. 供应商删除只允许在 `inactive` 状态执行，且首批要求无关联有效采购订单。
-4. 首批不新增订单明细行、收货记录、付款记录、审批轨迹等扩展对象。
-5. 首批不把供应商详情扩展为结算中心；银行账户、税号、联系人等敏感字段的查看口径以 [12-数据权限与脱敏规则.md](/Users/shaotongli/Documents/xuedao/performance-management-system/docs/12-数据权限与脱敏规则.md) 为准。
+1. `purchaseOrder` 是唯一主资源，`订单管理` 只是执行态视图别名。
+2. 删除只允许在 `draft` 状态执行。
+3. `reject` 固定 `pendingApproval -> draft`。
+4. `receive` 仅允许在 `approved / received` 执行。
+5. `close` 仅允许在 `approved / received` 执行，且必须记录关闭原因。
+6. 供应商删除只允许在 `inactive` 状态执行，且要求无关联有效采购订单。
+7. 当前允许订单明细快照、询价记录、审批轨迹和收货记录的轻量字段，不引入付款记录、对账记录或财务凭证对象。
+8. 供应商详情不扩展为结算中心；银行账户、税号、联系人等敏感字段的查看口径以 [12-数据权限与脱敏规则.md](/Users/shaotongli/Documents/xuedao/performance-management-system/docs/12-数据权限与脱敏规则.md) 为准。
 
 ## 二期主题 12：招聘人才资产增强接口冻结基线（2026-04-18）
 
@@ -2010,3 +2028,693 @@
 3. `submit` 只接收文本型 `submissionText`，首批不开放音频、图片、附件、多轮对话与流式返回。
 4. `courseExam/summary` 只返回结果摘要，不返回试卷、题目列表、标准答案或外部 `AI` 推理痕迹。
 5. 真实 `AI` 能力调用若后续需要接入，只允许作为服务端内部实现细节；前端和公开接口不暴露厂商、模型、Prompt 模板或调用链字段。
+
+## 二期主题 15：招聘简历池管理接口冻结基线（2026-04-18）
+
+本节只冻结招聘简历池管理进入开发前评审前必须遵守的最小接口方向，不代表主题 15 已进入实现开发。
+
+### 当前冻结结论
+
+- 当前唯一结论：`招聘简历池管理接口方向已冻结，且主题15已完成阶段0冻结`
+
+### 资源边界
+
+1. 主题 15 统一资源名固定为 `resumePool`
+2. 首批只冻结招聘简历池主链，不扩到：
+   - 招聘计划
+   - 职位标准
+   - 录用管理
+   - 招聘驾驶舱
+3. 主题8 继续负责面试主链；`resumePool/createInterview` 只复制候选人快照字段创建面试，不建立强绑定主数据关系
+4. 主题12 继续负责人才资产摘要主链；`resumePool/convertToTalentAsset` 只创建摘要人才资产记录，不把主题12改成全文资源
+5. 首批不冻结删除接口，不新增 `delete` 能力
+
+### 标准接口
+
+| 接口名称 | 请求路径 | 请求方式 | 权限要求 |
+| --- | --- | --- | --- |
+| 简历分页 | `/admin/performance/resumePool/page` | `POST` | `performance:resumePool:page` |
+| 简历详情 | `/admin/performance/resumePool/info` | `GET` | `performance:resumePool:info` |
+| 新增简历 | `/admin/performance/resumePool/add` | `POST` | `performance:resumePool:add` |
+| 修改简历 | `/admin/performance/resumePool/update` | `POST` | `performance:resumePool:update` |
+| 导入简历 | `/admin/performance/resumePool/import` | `POST` | `performance:resumePool:import` |
+| 导出简历 | `/admin/performance/resumePool/export` | `POST` | `performance:resumePool:export` |
+| 上传附件 | `/admin/performance/resumePool/uploadAttachment` | `POST` | `performance:resumePool:uploadAttachment` |
+| 下载附件 | `/admin/performance/resumePool/downloadAttachment` | `POST` | `performance:resumePool:downloadAttachment` |
+| 转人才资产 | `/admin/performance/resumePool/convertToTalentAsset` | `POST` | `performance:resumePool:convertToTalentAsset` |
+| 发起面试 | `/admin/performance/resumePool/createInterview` | `POST` | `performance:resumePool:createInterview` |
+
+### 简历分页请求参数
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| page | number | 是 | 页码 |
+| size | number | 是 | 页大小 |
+| keyword | string | 否 | 候选人姓名 / 手机号 / 邮箱 / 目标岗位关键字 |
+| targetDepartmentId | number | 否 | 目标部门 ID；经理范围按此字段判定 |
+| status | string | 否 | `new / screening / interviewing / archived` |
+| sourceType | string | 否 | `manual / attachment / external / referral` |
+
+### 简历新增 / 修改请求字段
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| candidateName | string | 是 | 候选人姓名 |
+| targetDepartmentId | number | 是 | 目标部门 ID |
+| targetPosition | string | 否 | 目标岗位 |
+| phone | string | 是 | 手机号，首批返回完整值 |
+| email | string | 否 | 邮箱，首批返回完整值 |
+| resumeText | string | 是 | 简历全文 |
+| sourceType | string | 是 | `manual / attachment / external / referral` |
+| sourceRemark | string | 否 | 来源补充说明 |
+| externalLink | string | 否 | 外部简历链接，仅 `sourceType=external` 时允许填写 |
+| attachmentIdList | number[] | 否 | 已上传附件 ID 列表 |
+| status | string | 否 | 默认 `new` |
+
+### 简历详情返回最小字段
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | number | 主键 |
+| candidateName | string | 候选人姓名 |
+| targetDepartmentId | number | 目标部门 ID |
+| targetDepartmentName | string | 目标部门名称 |
+| targetPosition | string \| null | 目标岗位 |
+| phone | string | 手机号 |
+| email | string \| null | 邮箱 |
+| resumeText | string | 简历全文 |
+| sourceType | string | 来源类型 |
+| sourceRemark | string \| null | 来源补充说明 |
+| externalLink | string \| null | 外部简历链接 |
+| attachmentSummaryList | object[] | 附件摘要列表，仅包含 `id / name / size / uploadTime` |
+| status | string | 当前状态 |
+| linkedTalentAssetId | number \| null | 已转人才资产 ID |
+| latestInterviewId | number \| null | 最近一次发起面试 ID |
+| createTime | string | 创建时间 |
+| updateTime | string | 更新时间 |
+
+### 导入 / 附件 / 转换动作请求字段
+
+| 接口 | 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- | --- |
+| `import` | fileId | number | 是 | 导入文件 ID |
+| `uploadAttachment` | id | number | 是 | 简历 ID |
+| `uploadAttachment` | fileId | number | 是 | 附件文件 ID |
+| `downloadAttachment` | id | number | 是 | 简历 ID |
+| `downloadAttachment` | attachmentId | number | 是 | 附件 ID |
+| `convertToTalentAsset` | id | number | 是 | 简历 ID |
+| `createInterview` | id | number | 是 | 简历 ID |
+
+### 业务规则
+
+1. `resumePool/export` 与 `resumePool/downloadAttachment` 首批只允许 `HR` 执行。
+2. `HR` 与部门经理都可查看完整简历正文、完整联系方式和附件摘要；经理无附件下载权限。
+3. 导入、附件上传、转人才资产和发起面试首批都允许 `HR` 与部门经理在本人部门树范围内执行。
+4. `createInterview` 创建主题8面试单时，只复制 `candidateName / targetDepartmentId / targetPosition / phone / email` 等候选人快照字段，不建立强绑定主数据关系。
+5. `convertToTalentAsset` 创建主题12人才资产时，只复制摘要字段，不把简历全文、联系方式和附件全文写入主题12资源。
+
+## 二期主题 16：招聘计划管理接口冻结基线（2026-04-19）
+
+本节只冻结招聘计划管理进入开发前评审前必须遵守的最小接口方向，不代表主题 16 已进入实现开发。
+
+### 当前冻结结论
+
+- 当前唯一结论：`招聘计划管理接口方向已按备案制扩展版重新冻结，且主题16已完成新一轮阶段0冻结`
+
+### 资源边界
+
+1. 主题 16 统一资源名固定为 `recruitPlan`
+2. 首批冻结招聘计划备案制主链，不扩到：
+   - 职位标准资源库
+   - 简历池
+   - 面试主链
+   - 录用管理
+   - 招聘驾驶舱
+   - 审批流引擎
+3. 首批导出只开放招聘计划摘要导出，不开放审批轨迹、面试统计和录用结果汇总接口。
+
+### 标准接口
+
+| 接口名称 | 请求路径 | 请求方式 | 权限要求 |
+| --- | --- | --- | --- |
+| 招聘计划分页 | `/admin/performance/recruitPlan/page` | `POST` | `performance:recruitPlan:page` |
+| 招聘计划详情 | `/admin/performance/recruitPlan/info` | `GET` | `performance:recruitPlan:info` |
+| 新增招聘计划 | `/admin/performance/recruitPlan/add` | `POST` | `performance:recruitPlan:add` |
+| 修改招聘计划 | `/admin/performance/recruitPlan/update` | `POST` | `performance:recruitPlan:update` |
+| 删除招聘计划 | `/admin/performance/recruitPlan/delete` | `POST` | `performance:recruitPlan:delete` |
+| 导入招聘计划 | `/admin/performance/recruitPlan/import` | `POST` | `performance:recruitPlan:import` |
+| 导出招聘计划摘要 | `/admin/performance/recruitPlan/export` | `POST` | `performance:recruitPlan:export` |
+| 提交招聘计划 | `/admin/performance/recruitPlan/submit` | `POST` | `performance:recruitPlan:submit` |
+| 关闭招聘计划 | `/admin/performance/recruitPlan/close` | `POST` | `performance:recruitPlan:close` |
+| 作废招聘计划 | `/admin/performance/recruitPlan/void` | `POST` | `performance:recruitPlan:void` |
+| 重新开启招聘计划 | `/admin/performance/recruitPlan/reopen` | `POST` | `performance:recruitPlan:reopen` |
+
+### 招聘计划分页请求参数
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| page | number | 是 | 页码 |
+| size | number | 是 | 页大小 |
+| keyword | string | 否 | 计划标题 / 目标岗位关键字 |
+| targetDepartmentId | number | 否 | 目标部门 ID |
+| status | string | 否 | `draft / active / voided / closed` |
+| startDate | string | 否 | 计划开始日期 |
+| endDate | string | 否 | 计划结束日期 |
+
+### 招聘计划新增 / 修改请求字段
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| title | string | 是 | 招聘计划标题 |
+| targetDepartmentId | number | 是 | 目标部门 ID，经理范围按此字段判定 |
+| positionName | string | 是 | 目标岗位名称 |
+| headcount | number | 是 | 计划招聘人数 |
+| startDate | string | 是 | 计划开始日期 |
+| endDate | string | 是 | 计划结束日期 |
+| recruiterId | number | 否 | 负责人 ID |
+| requirementSummary | string | 否 | 需求摘要 |
+| status | string | 否 | 默认 `draft`，首批不允许手填非 `draft` 值 |
+
+### 招聘计划扩展动作请求字段
+
+| 接口 | 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- | --- |
+| `delete` | id | number | 是 | 招聘计划 ID |
+| `import` | fileId | number | 是 | 导入文件 ID |
+| `submit` | id | number | 是 | 招聘计划 ID |
+| `close` | id | number | 是 | 招聘计划 ID |
+| `void` | id | number | 是 | 招聘计划 ID |
+| `reopen` | id | number | 是 | 招聘计划 ID |
+
+### 招聘计划导出请求字段
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| keyword | string | 否 | 与分页筛选一致 |
+| targetDepartmentId | number | 否 | 与分页筛选一致 |
+| status | string | 否 | `draft / active / voided / closed` |
+| startDate | string | 否 | 与分页筛选一致 |
+| endDate | string | 否 | 与分页筛选一致 |
+
+### 招聘计划详情返回最小字段
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | number | 主键 |
+| title | string | 招聘计划标题 |
+| targetDepartmentId | number | 目标部门 ID |
+| targetDepartmentName | string | 目标部门名称 |
+| positionName | string | 目标岗位名称 |
+| headcount | number | 计划招聘人数 |
+| startDate | string | 计划开始日期 |
+| endDate | string | 计划结束日期 |
+| recruiterId | number \| null | 负责人 ID |
+| recruiterName | string \| null | 负责人姓名 |
+| requirementSummary | string \| null | 需求摘要 |
+| status | string | 当前状态 |
+| createTime | string | 创建时间 |
+| updateTime | string | 更新时间 |
+
+### 业务规则
+
+1. 新增招聘计划首批允许手工创建，不要求必须绑定职位标准。
+2. `submit` 表示备案生效，只把计划从 `draft` 推进到 `active`，不引入审批流、审批节点和审批意见对象。
+3. `delete` 只允许 `draft` 且无下游引用时执行。
+4. `import` 只允许导入招聘计划摘要模板字段，导入成功后统一落为 `draft`。
+5. `export` 固定导出招聘计划摘要列，不导出联系方式、预算、Offer、审批或跨主题明细。
+6. `void` 只允许 `active -> voided`；`reopen` 只允许 `closed / voided -> active`。
+7. `close` 只负责关闭计划，不自动关闭简历池、面试或录用主链，也不反向改写主题8 / 15 / 18状态。
+8. `recruitPlan/info` 首批不返回简历全文、候选人联系方式、面试评语全文、录用决策全文或预算明细对象。
+
+## 二期主题 17：职位标准管理接口冻结基线（2026-04-19）
+
+本节只冻结职位标准管理进入开发前评审前必须遵守的最小接口方向，不代表主题 17 已进入实现开发。
+
+### 当前冻结结论
+
+- 当前唯一结论：`职位标准管理接口方向已冻结，且主题17已完成阶段0冻结`
+
+### 资源边界
+
+1. 主题 17 统一资源名固定为 `jobStandard`
+2. 首批只冻结职位标准主链，不扩到：
+   - 招聘计划主链
+   - 简历池
+   - 面试排期与结果流转
+   - 录用管理
+   - 培训课程、能力地图和证书管理
+3. 首批不冻结删除、导出、评价模板设计器、题库化维度配置和审批流接口。
+
+### 标准接口
+
+| 接口名称 | 请求路径 | 请求方式 | 权限要求 |
+| --- | --- | --- | --- |
+| 职位标准分页 | `/admin/performance/jobStandard/page` | `POST` | `performance:jobStandard:page` |
+| 职位标准详情 | `/admin/performance/jobStandard/info` | `GET` | `performance:jobStandard:info` |
+| 新增职位标准 | `/admin/performance/jobStandard/add` | `POST` | `performance:jobStandard:add` |
+| 修改职位标准 | `/admin/performance/jobStandard/update` | `POST` | `performance:jobStandard:update` |
+| 更新职位标准状态 | `/admin/performance/jobStandard/setStatus` | `POST` | `performance:jobStandard:setStatus` |
+
+### 职位标准分页请求参数
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| page | number | 是 | 页码 |
+| size | number | 是 | 页大小 |
+| keyword | string | 否 | 岗位名称 / 任职要求关键字 |
+| targetDepartmentId | number | 否 | 目标部门 ID |
+| status | string | 否 | `draft / active / inactive` |
+
+### 职位标准新增 / 修改请求字段
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| positionName | string | 是 | 岗位名称 |
+| targetDepartmentId | number | 是 | 目标部门 ID |
+| jobLevel | string | 否 | 岗位级别摘要 |
+| profileSummary | string | 否 | 岗位画像摘要 |
+| requirementSummary | string | 否 | 任职要求摘要 |
+| skillTagList | string[] | 否 | 技能标签摘要 |
+| interviewTemplateSummary | string | 否 | 面试评价模板摘要 |
+| status | string | 否 | 默认 `draft` |
+
+### 职位标准详情返回最小字段
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | number | 主键 |
+| positionName | string | 岗位名称 |
+| targetDepartmentId | number | 目标部门 ID |
+| targetDepartmentName | string | 目标部门名称 |
+| jobLevel | string \| null | 岗位级别摘要 |
+| profileSummary | string \| null | 岗位画像摘要 |
+| requirementSummary | string \| null | 任职要求摘要 |
+| skillTagList | string[] | 技能标签摘要 |
+| interviewTemplateSummary | string \| null | 面试评价模板摘要 |
+| status | string | 当前状态 |
+| createTime | string | 创建时间 |
+| updateTime | string | 更新时间 |
+
+### 业务规则
+
+1. 首批把岗位画像、任职要求和面试评价模板都冻结为摘要字段，不引入独立配置子资源。
+2. 首批不要求招聘计划、面试或录用必须引用 `jobStandard`，相关主题只允许后续按弱引用或快照方式扩展，不能反向把主题17做成流程前置中心。
+3. `setStatus` 只负责 `draft / active / inactive` 的状态切换，不自动改写招聘计划、面试或录用对象。
+4. `jobStandard/info` 首批不返回简历全文、候选人联系方式、面试评语全文、录用决策全文和薪资区间对象。
+5. 首批不开放 `delete` 动作；若后续要增加删除或引用校验，必须重新打开阶段0冻结。
+
+## 招聘中心跨模块整合接口协同基线（2026-04-19）
+
+本节只冻结招聘中心跨模块整合进入设计前必须遵守的最小协同契约，不代表当前仓库已经实现统一入口或跨主题引用写链。
+
+### 当前冻结结论
+
+- 当前唯一结论：`招聘中心跨模块整合接口协同基线已冻结，允许按统一入口 + 独立资源 + 单向引用 + 摘要/快照进入跨主题设计`
+
+### 统一入口与资源边界
+
+1. 一级业务入口语义固定为 `recruitment-center`，建议聚合路由固定为 `/performance/recruitment-center`。
+2. 统一入口只承担：
+   - 领域导航
+   - 聚合视图
+   - 跨模块跳转
+   - 来源引用查看
+3. 统一入口不承担：
+   - 替代各子资源原始接口
+   - 合并各子资源状态机
+   - 作为新的跨主题超级写入 API
+4. 招聘中心子资源继续保持独立，不合并为单表或单资源：
+   - `talentAsset`
+   - `recruitPlan`
+   - `jobStandard`
+   - `resumePool`
+   - `interview`
+   - `hiring`
+
+### 首批允许的引用字段
+
+| 来源资源 | 引用字段 | 指向资源 | 说明 |
+| --- | --- | --- | --- |
+| `recruitPlan` | `jobStandardId` | `jobStandard` | 招聘计划引用目标职位标准 |
+| `resumePool` | `recruitPlanId` | `recruitPlan` | 简历归属到某个招聘计划 |
+| `resumePool` | `jobStandardId` | `jobStandard` | 简历与岗位标准建立来源对应 |
+| `interview` | `resumePoolId` | `resumePool` | 面试引用候选人简历主记录 |
+| `interview` | `recruitPlanId` | `recruitPlan` | 面试回溯招聘计划来源 |
+| `hiring` | `interviewId` | `interview` | 录用单引用来源面试 |
+| `hiring` | `resumePoolId` | `resumePool` | 录用单引用来源简历 |
+| `hiring` | `recruitPlanId` | `recruitPlan` | 录用单回溯招聘计划来源 |
+
+### 引用返回与禁止事项
+
+1. 首批统一采用：`引用 ID + 来源摘要 + 来源快照`。
+2. 下游列表 / 详情允许返回来源摘要或来源快照，但不得直接内联上游全文对象。
+3. `talentAsset` 当前保留在招聘中心统一入口中展示和跳转，但首批不冻结为强引用必经节点。
+4. 禁止 `recruitPlan submit / close / void / reopen` 自动改写：
+   - `resumePool.status`
+   - `interview.status`
+   - `hiring.status`
+5. 禁止 `hiring` 的状态动作自动改写：
+   - `resumePool`
+   - `talentAsset`
+   - `interview`
+6. 禁止招聘中心统一入口直接调用多个子资源写接口做事务编排。
+
+## 二期主题 19：班主任化 V0.1 - 班主任渠道合作管理接口冻结基线（2026-04-19）
+
+本节只冻结班主任化 V0.1 进入开发前评审前必须遵守的最小接口方向，不代表主题19已进入实现开发。
+
+### 当前冻结结论
+
+- 当前唯一结论：`班主任化 V0.1 接口方向已冻结，且主题19已完成阶段0冻结`
+
+### 资源边界
+
+1. 主题19 统一资源名固定为：
+   - `teacherInfo`
+   - `teacherFollow`
+   - `teacherCooperation`
+   - `teacherClass`
+   - `teacherDashboard`
+   - `teacherTodo`
+2. 首批只冻结 `资源录入 -> 跟进 -> 合作 -> 建班级 -> 看板 / 待办` 主链，不扩到：
+   - 代理体系
+   - 绩效核算
+   - 复杂报表
+   - 渠道结算
+   - Excel 导入导出
+3. 首批不冻结上传附件、批量导入、渠道结算和绩效汇总接口。
+
+### 标准接口
+
+| 接口名称 | 请求路径 | 请求方式 | 权限要求 |
+| --- | --- | --- | --- |
+| 班主任资源分页 | `/admin/performance/teacherInfo/page` | `POST` | `performance:teacherInfo:page` |
+| 班主任资源详情 | `/admin/performance/teacherInfo/info` | `GET` | `performance:teacherInfo:info` |
+| 新增班主任资源 | `/admin/performance/teacherInfo/add` | `POST` | `performance:teacherInfo:add` |
+| 编辑班主任资源 | `/admin/performance/teacherInfo/update` | `POST` | `performance:teacherInfo:update` |
+| 分配资源归属 | `/admin/performance/teacherInfo/assign` | `POST` | `performance:teacherInfo:assign` |
+| 更新合作状态 | `/admin/performance/teacherInfo/updateStatus` | `POST` | `performance:teacherInfo:updateStatus` |
+| 跟进记录分页 | `/admin/performance/teacherFollow/page` | `POST` | `performance:teacherFollow:page` |
+| 新增跟进记录 | `/admin/performance/teacherFollow/add` | `POST` | `performance:teacherFollow:add` |
+| 标记合作 | `/admin/performance/teacherCooperation/mark` | `POST` | `performance:teacherCooperation:mark` |
+| 班级分页 | `/admin/performance/teacherClass/page` | `POST` | `performance:teacherClass:page` |
+| 班级详情 | `/admin/performance/teacherClass/info` | `GET` | `performance:teacherClass:info` |
+| 新增班级 | `/admin/performance/teacherClass/add` | `POST` | `performance:teacherClass:add` |
+| 编辑班级 | `/admin/performance/teacherClass/update` | `POST` | `performance:teacherClass:update` |
+| 删除班级 | `/admin/performance/teacherClass/delete` | `POST` | `performance:teacherClass:delete` |
+| 首页看板汇总 | `/admin/performance/teacherDashboard/summary` | `GET` | `performance:teacherDashboard:summary` |
+| 我的待跟进分页 | `/admin/performance/teacherTodo/page` | `POST` | `performance:teacherTodo:page` |
+
+### 业务规则
+
+1. 新增资源默认写入 `uncontacted`，首批不允许手工直接创建为 `partnered`。
+2. 首次新增跟进后，若资源处于 `uncontacted`，可推进到 `contacted`。
+3. `mark` 只允许在至少存在一条跟进记录后，把资源从 `contacted / negotiating` 推进到 `partnered`。
+4. 只允许对 `partnered` 的班主任创建班级。
+5. `teacherDashboard/summary` 与 `teacherTodo/page` 只返回当前权限范围内的聚合和待办，不返回跨范围原始明细。
+6. 首批不开放 `import / export / performance / settlement / agent` 等扩展动作。
+## 二期主题 20：资产管理全生命周期接口冻结基线（2026-04-19）
+
+本节只冻结资产管理进入开发前评审前必须遵守的最小接口方向，不代表主题20已进入实现开发。
+
+### 当前冻结结论
+
+- 当前唯一结论：`资产管理全生命周期接口方向已冻结，且主题20已完成阶段0冻结`
+
+### 资源边界
+
+1. 主题20 统一资源名固定为：
+   - `assetInfo`
+   - `assetAssignment`
+   - `assetMaintenance`
+   - `assetProcurement`
+   - `assetTransfer`
+   - `assetInventory`
+   - `assetDepreciation`
+   - `assetDisposal`
+   - `assetDashboard`
+   - `assetReport`
+2. 首批只冻结资产侧全生命周期主链，不扩到：
+   - 供应商主数据中心
+   - 采购订单审批全流程
+   - 财务总账 / 凭证
+   - RFID / IoT / 移动扫码
+3. 主题20允许弱引用 `purchaseOrderId / supplierId`，但不接管主题11主链。
+
+### 标准接口
+
+| 接口名称 | 请求路径 | 请求方式 | 权限要求 |
+| --- | --- | --- | --- |
+| 资产首页汇总 | `/admin/performance/assetDashboard/summary` | `GET` | `performance:assetDashboard:summary` |
+| 资产台账分页 | `/admin/performance/assetInfo/page` | `POST` | `performance:assetInfo:page` |
+| 资产详情 | `/admin/performance/assetInfo/info` | `GET` | `performance:assetInfo:info` |
+| 新增资产 | `/admin/performance/assetInfo/add` | `POST` | `performance:assetInfo:add` |
+| 编辑资产 | `/admin/performance/assetInfo/update` | `POST` | `performance:assetInfo:update` |
+| 删除资产 | `/admin/performance/assetInfo/delete` | `POST` | `performance:assetInfo:delete` |
+| 更新资产状态 | `/admin/performance/assetInfo/updateStatus` | `POST` | `performance:assetInfo:updateStatus` |
+| 领用记录分页 | `/admin/performance/assetAssignment/page` | `POST` | `performance:assetAssignment:page` |
+| 新增领用记录 | `/admin/performance/assetAssignment/add` | `POST` | `performance:assetAssignment:add` |
+| 编辑领用记录 | `/admin/performance/assetAssignment/update` | `POST` | `performance:assetAssignment:update` |
+| 归还资产 | `/admin/performance/assetAssignment/return` | `POST` | `performance:assetAssignment:return` |
+| 标记丢失 | `/admin/performance/assetAssignment/markLost` | `POST` | `performance:assetAssignment:markLost` |
+| 删除领用记录 | `/admin/performance/assetAssignment/delete` | `POST` | `performance:assetAssignment:delete` |
+| 维护记录分页 | `/admin/performance/assetMaintenance/page` | `POST` | `performance:assetMaintenance:page` |
+| 新增维护记录 | `/admin/performance/assetMaintenance/add` | `POST` | `performance:assetMaintenance:add` |
+| 编辑维护记录 | `/admin/performance/assetMaintenance/update` | `POST` | `performance:assetMaintenance:update` |
+| 完成维护 | `/admin/performance/assetMaintenance/complete` | `POST` | `performance:assetMaintenance:complete` |
+| 取消维护 | `/admin/performance/assetMaintenance/cancel` | `POST` | `performance:assetMaintenance:cancel` |
+| 删除维护记录 | `/admin/performance/assetMaintenance/delete` | `POST` | `performance:assetMaintenance:delete` |
+| 采购入库分页 | `/admin/performance/assetProcurement/page` | `POST` | `performance:assetProcurement:page` |
+| 采购入库详情 | `/admin/performance/assetProcurement/info` | `GET` | `performance:assetProcurement:info` |
+| 新增采购入库单 | `/admin/performance/assetProcurement/add` | `POST` | `performance:assetProcurement:add` |
+| 编辑采购入库单 | `/admin/performance/assetProcurement/update` | `POST` | `performance:assetProcurement:update` |
+| 提交采购入库单 | `/admin/performance/assetProcurement/submit` | `POST` | `performance:assetProcurement:submit` |
+| 确认入库 | `/admin/performance/assetProcurement/receive` | `POST` | `performance:assetProcurement:receive` |
+| 取消采购入库单 | `/admin/performance/assetProcurement/cancel` | `POST` | `performance:assetProcurement:cancel` |
+| 调拨单分页 | `/admin/performance/assetTransfer/page` | `POST` | `performance:assetTransfer:page` |
+| 调拨单详情 | `/admin/performance/assetTransfer/info` | `GET` | `performance:assetTransfer:info` |
+| 新增调拨单 | `/admin/performance/assetTransfer/add` | `POST` | `performance:assetTransfer:add` |
+| 编辑调拨单 | `/admin/performance/assetTransfer/update` | `POST` | `performance:assetTransfer:update` |
+| 提交调拨单 | `/admin/performance/assetTransfer/submit` | `POST` | `performance:assetTransfer:submit` |
+| 完成调拨 | `/admin/performance/assetTransfer/complete` | `POST` | `performance:assetTransfer:complete` |
+| 取消调拨单 | `/admin/performance/assetTransfer/cancel` | `POST` | `performance:assetTransfer:cancel` |
+| 盘点单分页 | `/admin/performance/assetInventory/page` | `POST` | `performance:assetInventory:page` |
+| 盘点单详情 | `/admin/performance/assetInventory/info` | `GET` | `performance:assetInventory:info` |
+| 新增盘点单 | `/admin/performance/assetInventory/add` | `POST` | `performance:assetInventory:add` |
+| 编辑盘点单 | `/admin/performance/assetInventory/update` | `POST` | `performance:assetInventory:update` |
+| 开始盘点 | `/admin/performance/assetInventory/start` | `POST` | `performance:assetInventory:start` |
+| 完成盘点 | `/admin/performance/assetInventory/complete` | `POST` | `performance:assetInventory:complete` |
+| 关闭盘点 | `/admin/performance/assetInventory/close` | `POST` | `performance:assetInventory:close` |
+| 折旧分页 | `/admin/performance/assetDepreciation/page` | `POST` | `performance:assetDepreciation:page` |
+| 折旧汇总 | `/admin/performance/assetDepreciation/summary` | `GET` | `performance:assetDepreciation:summary` |
+| 折旧重算 | `/admin/performance/assetDepreciation/recalculate` | `POST` | `performance:assetDepreciation:recalculate` |
+| 报废单分页 | `/admin/performance/assetDisposal/page` | `POST` | `performance:assetDisposal:page` |
+| 报废单详情 | `/admin/performance/assetDisposal/info` | `GET` | `performance:assetDisposal:info` |
+| 新增报废单 | `/admin/performance/assetDisposal/add` | `POST` | `performance:assetDisposal:add` |
+| 编辑报废单 | `/admin/performance/assetDisposal/update` | `POST` | `performance:assetDisposal:update` |
+| 提交报废单 | `/admin/performance/assetDisposal/submit` | `POST` | `performance:assetDisposal:submit` |
+| 审批报废单 | `/admin/performance/assetDisposal/approve` | `POST` | `performance:assetDisposal:approve` |
+| 执行报废 | `/admin/performance/assetDisposal/execute` | `POST` | `performance:assetDisposal:execute` |
+| 取消报废单 | `/admin/performance/assetDisposal/cancel` | `POST` | `performance:assetDisposal:cancel` |
+| 资产报表汇总 | `/admin/performance/assetReport/summary` | `GET` | `performance:assetReport:summary` |
+| 资产报表分页 | `/admin/performance/assetReport/page` | `POST` | `performance:assetReport:page` |
+| 导出资产报表 | `/admin/performance/assetReport/export` | `GET` | `performance:assetReport:export` |
+
+### 业务规则
+
+1. `assetProcurement/receive` 必须落资产台账主记录，不允许只改变单据状态。
+2. 只允许对 `available` 资产发起领用、调拨和盘点。
+3. 维护完成后必须回写资产状态，不允许停留在孤立维护记录。
+4. `assetDepreciation` 首批只提供分页、汇总和重算，不引入会计凭证生成。
+5. `assetDisposal/execute` 必须把资产主状态推进到 `scrapped`。
+
+## 二期主题 21：文件管理与知识库接口冻结基线（2026-04-19）
+
+本节只冻结文件管理与知识库进入开发前评审前必须遵守的最小接口方向，不代表主题21已进入实现开发。
+
+### 当前冻结结论
+
+- 当前唯一结论：`文件管理与知识库接口方向已冻结，且主题21已完成阶段0冻结`
+
+### 资源边界
+
+1. 主题21 统一资源名固定为：
+   - `documentCenter`
+   - `knowledgeBase`
+2. 当前阶段0保持一个合并主题，不拆成“文件管理 / 知识库”两个独立主题。
+3. 首批只冻结文件元数据台账、知识条目元数据、知识图谱、关键词搜索和百问百答元数据，不冻结：
+   - 文件目录树
+   - 权限继承
+   - 二进制文件存储服务
+   - 正文富文本编辑器
+   - AI 问答 / RAG / 模型推理
+   - 员工自助知识门户
+
+### 标准接口
+
+| 接口名称 | 请求路径 | 请求方式 | 权限要求 |
+| --- | --- | --- | --- |
+| 文件分页 | `/admin/performance/documentCenter/page` | `POST` | `performance:documentCenter:page` |
+| 文件详情 | `/admin/performance/documentCenter/info` | `GET` | `performance:documentCenter:info` |
+| 文件统计 | `/admin/performance/documentCenter/stats` | `GET` | `performance:documentCenter:stats` |
+| 新增文件元数据 | `/admin/performance/documentCenter/add` | `POST` | `performance:documentCenter:add` |
+| 编辑文件元数据 | `/admin/performance/documentCenter/update` | `POST` | `performance:documentCenter:update` |
+| 删除文件元数据 | `/admin/performance/documentCenter/delete` | `POST` | `performance:documentCenter:delete` |
+| 知识条目分页 | `/admin/performance/knowledgeBase/page` | `POST` | `performance:knowledgeBase:page` |
+| 知识条目统计 | `/admin/performance/knowledgeBase/stats` | `GET` | `performance:knowledgeBase:stats` |
+| 新增知识条目 | `/admin/performance/knowledgeBase/add` | `POST` | `performance:knowledgeBase:add` |
+| 编辑知识条目 | `/admin/performance/knowledgeBase/update` | `POST` | `performance:knowledgeBase:update` |
+| 删除知识条目 | `/admin/performance/knowledgeBase/delete` | `POST` | `performance:knowledgeBase:delete` |
+| 知识图谱 | `/admin/performance/knowledgeBase/graph` | `GET` | `performance:knowledgeBase:graph` |
+| 知识搜索 | `/admin/performance/knowledgeBase/search` | `GET` | `performance:knowledgeBase:search` |
+| 百问百答列表 | `/admin/performance/knowledgeBase/qaList` | `GET` | `performance:knowledgeBase:qaList` |
+| 新增百问百答 | `/admin/performance/knowledgeBase/qaAdd` | `POST` | `performance:knowledgeBase:qaAdd` |
+
+### 业务规则
+
+1. `documentCenter` 首批只管理文件元数据台账与统计，不承接真实二进制上传、目录树和权限继承能力。
+2. `documentCenter/page` 允许按 `status / category / confidentiality / storage / keyword` 过滤。
+3. `documentCenter/update` 负责元数据编辑和状态切换，首批不再单独冻结 `publish / archive` 专用动作接口。
+4. `knowledgeBase/page` 允许按 `status / category / tag / keyword` 过滤。
+5. `knowledgeBase/graph` 只返回“知识条目 - 分类 - 标签 - 关联文件”图谱，不引入向量检索或外部知识源。
+6. `knowledgeBase/search` 只聚合知识条目、关联文件摘要和百问百答元数据，不生成 AI 答案。
+7. `knowledgeBase/qaAdd` 只写入问答元数据，不承接员工自助问答入口和模型推理。
+
+## 二期主题 22：行政协同记录管理接口冻结基线（2026-04-19）
+
+本节只冻结行政协同记录管理进入开发前评审前必须遵守的最小接口方向，不代表主题22已进入实现开发。
+
+### 当前冻结结论
+
+- 当前唯一结论：`行政协同记录管理接口方向已冻结，且主题22已完成阶段0冻结`
+
+### 资源边界
+
+1. 主题22 当前阶段0保持一个合并主题，不拆成“年检材料 / 荣誉管理 / 宣传资料 / 美工协同 / 快递协同”5 个独立主题。
+2. 对外资源固定为：
+   - `annualInspection`
+   - `honor`
+   - `publicityMaterial`
+   - `designCollab`
+   - `expressCollab`
+3. 后端允许内部复用共享实体 / service / 兼容层，但这些内部命名不构成对外 API 资源名。
+4. 首批只冻结 `HR-only` 元数据台账，不冻结：
+   - 文件管理 / 知识库
+   - 车辆管理 / 知识产权管理
+   - 真实文件上传 / 下载 / 物理存储
+   - 快递同步 / 配置 / 测试连接
+   - 设计评论流 / 审稿流 / 审批流
+
+### 标准接口
+
+| 模块 | 分页 | 详情 | 统计 | 新增 | 编辑 | 删除 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `annualInspection` | `/admin/performance/annualInspection/page` | `/admin/performance/annualInspection/info` | `/admin/performance/annualInspection/stats` | `/admin/performance/annualInspection/add` | `/admin/performance/annualInspection/update` | `/admin/performance/annualInspection/delete` |
+| `honor` | `/admin/performance/honor/page` | `/admin/performance/honor/info` | `/admin/performance/honor/stats` | `/admin/performance/honor/add` | `/admin/performance/honor/update` | `/admin/performance/honor/delete` |
+| `publicityMaterial` | `/admin/performance/publicityMaterial/page` | `/admin/performance/publicityMaterial/info` | `/admin/performance/publicityMaterial/stats` | `/admin/performance/publicityMaterial/add` | `/admin/performance/publicityMaterial/update` | `/admin/performance/publicityMaterial/delete` |
+| `designCollab` | `/admin/performance/designCollab/page` | `/admin/performance/designCollab/info` | `/admin/performance/designCollab/stats` | `/admin/performance/designCollab/add` | `/admin/performance/designCollab/update` | `/admin/performance/designCollab/delete` |
+| `expressCollab` | `/admin/performance/expressCollab/page` | `/admin/performance/expressCollab/info` | `/admin/performance/expressCollab/stats` | `/admin/performance/expressCollab/add` | `/admin/performance/expressCollab/update` | `/admin/performance/expressCollab/delete` |
+
+### 业务规则
+
+1. 5 个页面外壳继续统一收敛到共享实现域，但对外请求路径和权限键以各模块自身资源名为准。
+2. `page` 至少支持 `keyword / status` 公共过滤，并支持各模块自己的附加过滤字段：
+   - `annualInspection`：`category / department`
+   - `honor`：`honorType / level / department`
+   - `publicityMaterial`：`materialType / channel`
+   - `designCollab`：`priority`
+   - `expressCollab`：`courierCompany / serviceLevel / syncStatus / sourceSystem`
+3. `stats` 只返回当前权限范围内的聚合摘要，不返回正文、二进制或外部系统凭证。
+4. `add / update` 只写入元数据与轻量扩展摘要，不写真实附件、快递配置、设计稿二进制和外部系统凭证。
+5. 宣传资料允许通过 `relatedDocumentId` 关联文件管理元数据；前端可使用 `documentIds` 壳层字段映射到该单值字段。
+
+## 行政协同主模块补充：车辆与知识产权接口冻结基线（2026-04-19）
+
+本节只冻结行政协同主模块下 `vehicle / intellectualProperty` 两条 HR-only 台账主链的最小接口方向，不扩成流程型业务系统。
+
+### 当前冻结结论
+
+- 当前唯一结论：`车辆管理与知识产权管理已形成独立资源 + 共享台账壳层的最小接口闭环`
+
+### 资源边界
+
+1. 对外资源固定为：
+   - `vehicle`
+   - `intellectualProperty`
+2. 两个资源都只开放 `page / info / stats / add / update / delete`。
+3. 当前明确不纳入：
+   - 用车申请 / 派车 / 回车 / 维修工单 / 费用结算 / 违章处理
+   - 证书附件上传 / 续费审批 / 维权流程 / 侵权处置
+
+### 标准接口
+
+| 模块 | 分页 | 详情 | 统计 | 新增 | 编辑 | 删除 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `vehicle` | `/admin/performance/vehicle/page` | `/admin/performance/vehicle/info` | `/admin/performance/vehicle/stats` | `/admin/performance/vehicle/add` | `/admin/performance/vehicle/update` | `/admin/performance/vehicle/delete` |
+| `intellectualProperty` | `/admin/performance/intellectualProperty/page` | `/admin/performance/intellectualProperty/info` | `/admin/performance/intellectualProperty/stats` | `/admin/performance/intellectualProperty/add` | `/admin/performance/intellectualProperty/update` | `/admin/performance/intellectualProperty/delete` |
+
+### 车辆管理最小字段与规则
+
+1. `vehicle/page` 至少支持：
+   - `keyword`
+   - `status`
+   - `vehicleType`
+2. `vehicle` 主字段固定为：
+   - `vehicleNo`
+   - `plateNo`
+   - `brand`
+   - `model`
+   - `vehicleType`
+   - `ownerDepartment`
+   - `managerName`
+   - `seats`
+   - `registerDate`
+   - `inspectionDueDate`
+   - `insuranceDueDate`
+   - `status`
+   - `usageScope`
+   - `notes`
+3. `vehicleType` 只允许：
+   - `sedan / suv / mpv / bus / truck / other`
+4. `status` 只允许：
+   - `idle / in_use / maintenance / inspection_due / retired`
+5. `vehicle/stats` 只返回：
+   - `total`
+   - `inUseCount`
+   - `maintenanceCount`
+   - `inspectionDueCount`
+6. `vehicleNo / plateNo` 必须唯一。
+7. `inspectionDueDate / insuranceDueDate` 不得早于 `registerDate`。
+
+### 知识产权管理最小字段与规则
+
+1. `intellectualProperty/page` 至少支持：
+   - `keyword`
+   - `status`
+   - `ipType`
+2. `intellectualProperty` 主字段固定为：
+   - `ipNo`
+   - `title`
+   - `ipType`
+   - `ownerDepartment`
+   - `ownerName`
+   - `applicantName`
+   - `applyDate`
+   - `grantDate`
+   - `expiryDate`
+   - `status`
+   - `registryNo`
+   - `usageScope`
+   - `riskLevel`
+   - `notes`
+3. `ipType` 只允许：
+   - `patent / trademark / copyright / softwareCopyright`
+4. `status` 只允许：
+   - `drafting / applying / registered / expired / invalidated`
+5. `intellectualProperty/stats` 只返回：
+   - `total`
+   - `registeredCount`
+   - `expiringCount`
+   - `expiredCount`
+6. `ipNo` 必须唯一。
+7. `grantDate` 不得早于 `applyDate`；`expiryDate` 不得早于 `applyDate / grantDate`。
