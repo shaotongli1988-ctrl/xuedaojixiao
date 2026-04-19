@@ -21,6 +21,7 @@ export const STAGE2_RUNTIME_META_SCOPES = Object.freeze([
   'theme15-resume-pool',
   'theme16-recruit-plan',
   'theme17-job-standard',
+  'theme18-hiring',
   'theme19-teacher-channel',
 ]);
 

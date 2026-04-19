@@ -2375,6 +2375,67 @@
                 ]
             },
             {
+                "name": "录用管理",
+                "router": "/performance/hiring",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-user",
+                "orderNum": 15,
+                "viewPath": "modules/performance/views/hiring/index.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": [
+                    {
+                        "name": "查询",
+                        "router": null,
+                        "perms": "performance:hiring:page,performance:hiring:info",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 1,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "新增",
+                        "router": null,
+                        "perms": "performance:hiring:add",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 2,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "接受/拒绝",
+                        "router": null,
+                        "perms": "performance:hiring:updateStatus",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 3,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "撤回/关闭",
+                        "router": null,
+                        "perms": "performance:hiring:close",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 4,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    }
+                ]
+            },
+            {
                 "name": "会议管理",
                 "router": "/performance/meeting",
                 "perms": null,

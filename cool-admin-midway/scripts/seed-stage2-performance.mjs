@@ -39,6 +39,7 @@ const stage2MenuRouters = new Set([
   '/performance/job-standard',
   '/performance/resumePool',
   '/performance/interview',
+  '/performance/hiring',
   '/performance/meeting',
   '/performance/contract',
   '/performance/talentAsset',
@@ -834,6 +835,42 @@ async function replaceResumePools(seedRows) {
         row.status,
         row.linkedTalentAssetId ?? null,
         row.latestInterviewId ?? null,
+        now(),
+        now(),
+      ]
+    );
+  }
+}
+
+async function replaceHirings(seedRows) {
+  const candidateNames = [...new Set(seedRows.map(item => item.candidateName).filter(Boolean))];
+
+  if (candidateNames.length) {
+    await connection.query(
+      'DELETE FROM performance_hiring WHERE candidateName IN (?)',
+      [candidateNames]
+    );
+  }
+
+  for (const row of seedRows) {
+    await connection.query(
+      `INSERT INTO performance_hiring
+        (candidateName, targetDepartmentId, targetPosition, decisionContent, sourceType, sourceId, sourceSnapshot, status, offeredAt, acceptedAt, rejectedAt, closedAt, closeReason, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.candidateName,
+        row.targetDepartmentId,
+        row.targetPosition ?? null,
+        row.decisionContent ?? null,
+        row.sourceType ?? 'manual',
+        row.sourceId ?? null,
+        row.sourceSnapshot ? JSON.stringify(row.sourceSnapshot) : null,
+        row.status ?? 'offered',
+        row.offeredAt ?? now(),
+        row.acceptedAt ?? null,
+        row.rejectedAt ?? null,
+        row.closedAt ?? null,
+        row.closeReason ?? null,
         now(),
         now(),
       ]
@@ -1737,6 +1774,43 @@ async function ensureResumePoolTable() {
   `);
 }
 
+async function ensureHiringTable() {
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_hiring (
+      id int NOT NULL AUTO_INCREMENT,
+      candidateName varchar(100) NOT NULL,
+      targetDepartmentId int NOT NULL,
+      targetPosition varchar(100) DEFAULT NULL,
+      decisionContent text DEFAULT NULL,
+      sourceType varchar(20) NOT NULL DEFAULT 'manual',
+      sourceId int DEFAULT NULL,
+      sourceSnapshot json DEFAULT NULL,
+      status varchar(20) NOT NULL DEFAULT 'offered',
+      offeredAt varchar(19) DEFAULT NULL,
+      acceptedAt varchar(19) DEFAULT NULL,
+      rejectedAt varchar(19) DEFAULT NULL,
+      closedAt varchar(19) DEFAULT NULL,
+      closeReason text DEFAULT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      KEY idx_performance_hiring_candidate_name (candidateName),
+      KEY idx_performance_hiring_target_department_id (targetDepartmentId),
+      KEY idx_performance_hiring_source_type (sourceType),
+      KEY idx_performance_hiring_source_id (sourceId),
+      KEY idx_performance_hiring_status (status),
+      KEY idx_performance_hiring_offered_at (offeredAt),
+      KEY idx_performance_hiring_accepted_at (acceptedAt),
+      KEY idx_performance_hiring_rejected_at (rejectedAt),
+      KEY idx_performance_hiring_closed_at (closedAt),
+      KEY idx_performance_hiring_create_time (createTime),
+      KEY idx_performance_hiring_update_time (updateTime),
+      KEY idx_performance_hiring_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
 async function ensureRecruitPlanTable() {
   await connection.query(`
     CREATE TABLE IF NOT EXISTS performance_recruit_plan (
@@ -2310,6 +2384,7 @@ async function main() {
     await ensureMeetingTable();
     await ensureTalentAssetTable();
     await ensureResumePoolTable();
+    await ensureHiringTable();
     await ensureRecruitPlanTable();
     await ensureJobStandardTable();
     await ensureTeacherChannelTables();
@@ -2428,6 +2503,7 @@ async function main() {
         '/performance/job-standard',
         '/performance/resumePool',
         '/performance/interview',
+        '/performance/hiring',
         '/performance/meeting',
         '/performance/contract',
         '/performance/talentAsset',
@@ -2562,6 +2638,11 @@ async function main() {
         'performance:interview:add',
         'performance:interview:update',
         'performance:interview:delete',
+        'performance:hiring:page',
+        'performance:hiring:info',
+        'performance:hiring:add',
+        'performance:hiring:updateStatus',
+        'performance:hiring:close',
         'performance:meeting:page',
         'performance:meeting:info',
         'performance:meeting:add',
@@ -2612,6 +2693,7 @@ async function main() {
         '/performance/job-standard',
         '/performance/resumePool',
         '/performance/interview',
+        '/performance/hiring',
         '/performance/meeting',
         '/performance/purchase-order',
         '/performance/supplier',
@@ -2713,6 +2795,11 @@ async function main() {
         'performance:interview:info',
         'performance:interview:add',
         'performance:interview:update',
+        'performance:hiring:page',
+        'performance:hiring:info',
+        'performance:hiring:add',
+        'performance:hiring:updateStatus',
+        'performance:hiring:close',
         'performance:purchaseOrder:page',
         'performance:purchaseOrder:info',
         'performance:purchaseOrder:add',
@@ -3244,6 +3331,35 @@ async function main() {
         externalLink: null,
         attachmentIdList: [],
         status: 'screening',
+      },
+    ]);
+
+    await replaceHirings([
+      {
+        candidateName: '联调-主题18平台录用',
+        targetDepartmentId: platformGroupId,
+        targetPosition: '平台高级工程师',
+        decisionContent: '主题18联调-平台部门录用样例，用于 HR 与经理范围内成功校验。',
+        sourceType: 'manual',
+        sourceId: null,
+        sourceSnapshot: {
+          sourceStatusSnapshot: 'manual-created',
+          sourceType: 'manual',
+        },
+        status: 'offered',
+      },
+      {
+        candidateName: '联调-主题18销售录用',
+        targetDepartmentId: salesCenterId,
+        targetPosition: '销售顾问',
+        decisionContent: '主题18联调-销售部门录用样例，用于经理范围外拒绝校验。',
+        sourceType: 'manual',
+        sourceId: null,
+        sourceSnapshot: {
+          sourceStatusSnapshot: 'manual-created',
+          sourceType: 'manual',
+        },
+        status: 'offered',
       },
     ]);
 
