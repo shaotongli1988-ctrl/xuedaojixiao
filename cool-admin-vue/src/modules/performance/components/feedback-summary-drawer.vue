@@ -106,14 +106,30 @@
 					</el-table-column>
 				</el-table>
 			</el-card>
+
+			<div class="feedback-summary-drawer__footer">
+				<el-button @click="$emit('update:modelValue', false)">关闭</el-button>
+				<el-button
+					v-if="showSourceAssessmentButton && task?.assessmentId"
+					type="primary"
+					plain
+					@click="goSourceAssessment(task.assessmentId)"
+				>
+					查看来源评估单
+				</el-button>
+			</div>
 		</div>
 	</el-drawer>
 </template>
 
 <script lang="ts" setup>
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { checkPerm } from '/$/base/utils/permission';
 import type { FeedbackSummary, FeedbackTaskRecord } from '../types';
+import { performanceAssessmentService } from '../service/assessment';
 
-defineProps<{
+const props = defineProps<{
 	modelValue: boolean;
 	task: FeedbackTaskRecord | null;
 	summary: FeedbackSummary | null;
@@ -121,9 +137,18 @@ defineProps<{
 	canViewRecords?: boolean;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
 	(e: 'update:modelValue', value: boolean): void;
 }>();
+
+const router = useRouter();
+
+const showSourceAssessmentButton = computed(() => {
+	return (
+		checkPerm(performanceAssessmentService.permission.info) &&
+		resolveAssessmentPagePath() !== ''
+	);
+});
 
 function relationTypeLabel(value?: string) {
 	switch (value) {
@@ -138,6 +163,40 @@ function relationTypeLabel(value?: string) {
 		default:
 			return value || '-';
 	}
+}
+
+async function goSourceAssessment(assessmentId: number) {
+	const path = resolveAssessmentPagePath();
+
+	if (!path) {
+		return;
+	}
+
+	emit('update:modelValue', false);
+
+	await router.push({
+		path,
+		query: {
+			openDetail: '1',
+			assessmentId: String(assessmentId)
+		}
+	});
+}
+
+function resolveAssessmentPagePath() {
+	if (checkPerm(performanceAssessmentService.permission.page)) {
+		return '/performance/initiated';
+	}
+
+	if (checkPerm(performanceAssessmentService.permission.myPage)) {
+		return '/performance/my-assessment';
+	}
+
+	if (checkPerm(performanceAssessmentService.permission.pendingPage)) {
+		return '/performance/pending';
+	}
+
+	return '';
 }
 </script>
 
@@ -162,6 +221,12 @@ function relationTypeLabel(value?: string) {
 		white-space: pre-wrap;
 		line-height: 1.7;
 		color: var(--el-text-color-regular);
+	}
+
+	&__footer {
+		display: flex;
+		justify-content: flex-end;
+		gap: 12px;
 	}
 }
 </style>

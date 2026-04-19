@@ -316,7 +316,7 @@ defineOptions({
 import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
-import { export_json_to_excel } from '/@/plugins/excel/utils';
+import { exportJsonToExcel } from '/@/plugins/excel/utils';
 import { service } from '/@/cool';
 import { useBase } from '/$/base';
 import GoalProgressDrawer from '../../components/goal-progress-drawer.vue';
@@ -326,6 +326,7 @@ import {
 	createEmptyGoal
 } from '../../types';
 import { performanceGoalService } from '../../service/goal';
+import { loadUserOptions } from '../../utils/lookup-options.js';
 
 const { user } = useBase();
 
@@ -399,21 +400,16 @@ onMounted(async () => {
 });
 
 async function loadUsers() {
-	try {
-		const result = await service.base.sys.user.page({
+	userOptions.value = await loadUserOptions(
+		() =>
+			service.base.sys.user.page({
 			page: 1,
 			size: 200
-		});
-
-		userOptions.value = (result.list || []).map((item: any) => ({
-			id: Number(item.id),
-			name: item.name,
-			departmentId: item.departmentId,
-			departmentName: item.departmentName
-		}));
-	} catch (error: any) {
-		ElMessage.warning(error.message || '用户选项加载失败');
-	}
+			}),
+		(error: any) => {
+			ElMessage.warning(error.message || '用户选项加载失败');
+		}
+	);
 }
 
 async function refresh() {
@@ -569,7 +565,7 @@ async function handleExport() {
 			endDate: filters.endDate || undefined
 		});
 
-		export_json_to_excel({
+		exportJsonToExcel({
 			header: [
 				'员工',
 				'部门',

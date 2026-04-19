@@ -9,14 +9,14 @@
 						placeholder="按证书名称或编码筛选"
 						clearable
 						style="width: 240px"
-						@keyup.enter="handleSearch"
+						@keyup.enter="applyListFilters"
 					/>
 					<el-input
 						v-model="filters.category"
 						placeholder="证书分类"
 						clearable
 						style="width: 180px"
-						@keyup.enter="handleSearch"
+						@keyup.enter="applyListFilters"
 					/>
 					<el-select
 						v-model="filters.status"
@@ -34,8 +34,8 @@
 				</div>
 
 				<div class="certificate-page__toolbar-right">
-					<el-button @click="handleSearch">查询</el-button>
-					<el-button @click="handleReset">重置</el-button>
+					<el-button @click="applyListFilters">查询</el-button>
+					<el-button @click="resetListFilters">重置</el-button>
 					<el-button v-if="showAddButton" type="primary" @click="openCreate">
 						新增证书
 					</el-button>
@@ -94,9 +94,17 @@
 					</template>
 				</el-table-column>
 				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
-				<el-table-column label="操作" fixed="right" min-width="290">
+				<el-table-column label="操作" fixed="right" min-width="380">
 					<template #default="{ row }">
 						<el-button v-if="showInfoButton" text @click="openDetail(row)">详情</el-button>
+						<el-button
+							v-if="canViewSourceCourse(row)"
+							text
+							type="primary"
+							@click="goSourceCourse(row.sourceCourseId!)"
+						>
+							来源课程
+						</el-button>
 						<el-button v-if="canEdit(row)" text type="primary" @click="openEdit(row)">
 							编辑
 						</el-button>
@@ -119,10 +127,10 @@
 				<el-pagination
 					background
 					layout="total, prev, pager, next"
-					:current-page="pagination.page"
-					:page-size="pagination.size"
-					:total="pagination.total"
-					@current-change="changePage"
+					:current-page="pager.page"
+					:page-size="pager.size"
+					:total="pager.total"
+					@current-change="changeListPage"
 				/>
 			</div>
 		</el-card>
@@ -174,6 +182,17 @@
 					</el-descriptions-item>
 				</el-descriptions>
 			</div>
+
+			<template #footer>
+				<el-button @click="detailVisible = false">关闭</el-button>
+				<el-button
+					v-if="showSourceCourseButton && detailCertificate?.sourceCourseId"
+					type="primary"
+					@click="goSourceCourse(detailCertificate.sourceCourseId)"
+				>
+					查看来源课程
+				</el-button>
+			</template>
 		</el-dialog>
 
 		<el-dialog
@@ -437,6 +456,26 @@
 						</el-tag>
 					</template>
 				</el-table-column>
+				<el-table-column label="操作" fixed="right" min-width="220">
+					<template #default="{ row }">
+						<el-button
+							v-if="canViewCapabilityPortrait(row)"
+							text
+							type="primary"
+							@click="goCapabilityPortrait(row.employeeId!)"
+						>
+							能力画像
+						</el-button>
+						<el-button
+							v-if="canViewSourceCourse(row)"
+							text
+							type="primary"
+							@click="goSourceCourse(row.sourceCourseId!)"
+						>
+							来源课程
+						</el-button>
+					</template>
+				</el-table-column>
 			</el-table>
 
 			<div class="certificate-page__pagination">
@@ -462,11 +501,24 @@ defineOptions({
 	name: 'performance-certificate'
 });
 
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
 import { service } from '/@/cool';
+import { useRoute, useRouter } from 'vue-router';
+import { useListPage } from '../../composables/use-list-page.js';
+import { performanceCapabilityService } from '../../service/capability';
+import { performanceCourseService } from '../../service/course';
 import { performanceCertificateService } from '../../service/certificate';
+import {
+	loadDepartmentOptions,
+	loadUserOptions
+} from '../../utils/lookup-options.js';
+import {
+	consumeRoutePreset,
+	firstQueryValue,
+	normalizeQueryNumber
+} from '../../utils/route-preset.js';
 import type {
 	CertificateLedgerRecord,
 	CertificateRecord,
@@ -481,11 +533,9 @@ interface DepartmentOption {
 	label: string;
 }
 
-const rows = ref<CertificateRecord[]>([]);
 const recordRows = ref<CertificateLedgerRecord[]>([]);
 const userOptions = ref<UserOption[]>([]);
 const departmentOptions = ref<DepartmentOption[]>([]);
-const tableLoading = ref(false);
 const recordLoading = ref(false);
 const submitLoading = ref(false);
 const formVisible = ref(false);
@@ -497,18 +547,8 @@ const detailCertificate = ref<CertificateRecord | null>(null);
 const issueTarget = ref<CertificateRecord | null>(null);
 const formRef = ref<FormInstance>();
 const issueFormRef = ref<FormInstance>();
-
-const filters = reactive({
-	keyword: '',
-	category: '',
-	status: '' as CertificateStatus | ''
-});
-
-const pagination = reactive({
-	page: 1,
-	size: 10,
-	total: 0
-});
+const route = useRoute();
+const router = useRouter();
 
 const recordFilters = reactive({
 	certificateId: undefined as number | undefined,
@@ -558,6 +598,16 @@ const recordStatusOptions: Array<{ label: string; value: CertificateRecordStatus
 const canAccess = computed(() => checkPerm(performanceCertificateService.permission.page));
 const showInfoButton = computed(() => checkPerm(performanceCertificateService.permission.info));
 const showAddButton = computed(() => checkPerm(performanceCertificateService.permission.add));
+const showSourceCourseButton = computed(
+	() =>
+		checkPerm(performanceCourseService.permission.page) &&
+		checkPerm(performanceCourseService.permission.info)
+);
+const showCapabilityPortraitButton = computed(
+	() =>
+		checkPerm(performanceCapabilityService.permission.page) &&
+		checkPerm(performanceCapabilityService.permission.portraitInfo)
+);
 const showRecordButton = computed(() => checkPerm(performanceCertificateService.permission.recordPage));
 const isReadOnlyRole = computed(
 	() =>
@@ -600,64 +650,69 @@ const issueSourceCourseIdModel = computed<number | undefined>({
 		issueForm.sourceCourseId = value;
 	}
 });
+const certificateList = useListPage({
+	createFilters: () => ({
+		keyword: '',
+		category: '',
+		status: '' as CertificateStatus | ''
+	}),
+	canLoad: () => canAccess.value,
+	fetchPage: params =>
+		performanceCertificateService.fetchPage({
+			page: params.page,
+			size: params.size,
+			keyword: params.keyword ? String(params.keyword) : undefined,
+			category: params.category ? String(params.category) : undefined,
+			status: params.status ? String(params.status) : undefined
+		}),
+	onError: (error: any) => {
+		ElMessage.error(error.message || '证书列表加载失败');
+	}
+});
+const rows = certificateList.rows;
+const tableLoading = certificateList.loading;
+const filters = certificateList.filters;
+const pager = certificateList.pager;
 
 onMounted(async () => {
 	await Promise.all([loadUsers(), loadDepartments()]);
-	await refresh();
+	await syncList();
+	await consumeCreatePresetQuery();
+	await consumeRecordPresetQuery();
 });
 
-async function loadUsers() {
-	try {
-		const result = await service.base.sys.user.page({
-			page: 1,
-			size: 200
-		});
-
-		userOptions.value = (result.list || []).map((item: any) => ({
-			id: Number(item.id),
-			name: item.name,
-			departmentId: item.departmentId,
-			departmentName: item.departmentName
-		}));
-	} catch (error: any) {
-		userOptions.value = [];
-		ElMessage.warning(error.message || '员工选项加载失败');
+watch(
+	() => route.fullPath,
+	() => {
+		void consumeCreatePresetQuery();
+		void consumeRecordPresetQuery();
 	}
+);
+
+async function loadUsers() {
+	userOptions.value = await loadUserOptions(
+		() =>
+			service.base.sys.user.page({
+				page: 1,
+				size: 200
+			}),
+		(error: any) => {
+			ElMessage.warning(error.message || '员工选项加载失败');
+		}
+	);
 }
 
 async function loadDepartments() {
-	try {
-		const result = await service.base.sys.department.list();
-		departmentOptions.value = flattenDepartments(result || []);
-	} catch (error: any) {
-		departmentOptions.value = [];
-		ElMessage.warning(error.message || '部门选项加载失败');
-	}
+	departmentOptions.value = await loadDepartmentOptions(
+		() => service.base.sys.department.list(),
+		(error: any) => {
+			ElMessage.warning(error.message || '部门选项加载失败');
+		}
+	);
 }
 
-async function refresh() {
-	if (!canAccess.value) {
-		return;
-	}
-
-	tableLoading.value = true;
-
-	try {
-		const result = await performanceCertificateService.fetchPage({
-			page: pagination.page,
-			size: pagination.size,
-			keyword: filters.keyword || undefined,
-			category: filters.category || undefined,
-			status: filters.status || undefined
-		});
-
-		rows.value = result.list || [];
-		pagination.total = result.pagination?.total || 0;
-	} catch (error: any) {
-		ElMessage.error(error.message || '证书列表加载失败');
-	} finally {
-		tableLoading.value = false;
-	}
+async function syncList() {
+	await certificateList.reload();
 }
 
 async function refreshRecords() {
@@ -686,9 +741,8 @@ async function refreshRecords() {
 	}
 }
 
-function changePage(page: number) {
-	pagination.page = page;
-	refresh();
+function changeListPage(page: number) {
+	void certificateList.goToPage(page);
 }
 
 function changeRecordPage(page: number) {
@@ -696,17 +750,12 @@ function changeRecordPage(page: number) {
 	refreshRecords();
 }
 
-function handleSearch() {
-	pagination.page = 1;
-	refresh();
+function applyListFilters() {
+	void certificateList.search();
 }
 
-function handleReset() {
-	filters.keyword = '';
-	filters.category = '';
-	filters.status = '';
-	pagination.page = 1;
-	refresh();
+function resetListFilters() {
+	void certificateList.reset();
 }
 
 function resetRecordFilters() {
@@ -723,6 +772,46 @@ function openCreate() {
 	formVisible.value = true;
 }
 
+async function consumeCreatePresetQuery() {
+	await consumeRoutePreset({
+		route,
+		router,
+		keys: ['openCreate', 'sourceCourseId'],
+		parse: query => ({
+			shouldOpenCreate: firstQueryValue(query.openCreate) === '1',
+			sourceCourseId: normalizeQueryNumber(query.sourceCourseId)
+		}),
+		shouldConsume: payload => Boolean(payload.shouldOpenCreate && showAddButton.value),
+		consume: payload => {
+			openCreate();
+			form.sourceCourseId = payload.sourceCourseId ?? null;
+		}
+	});
+}
+
+async function consumeRecordPresetQuery() {
+	await consumeRoutePreset({
+		route,
+		router,
+		keys: ['openRecord', 'employeeId'],
+		parse: query => ({
+			shouldOpenRecord: firstQueryValue(query.openRecord) === '1',
+			employeeId: normalizeQueryNumber(query.employeeId)
+		}),
+		shouldConsume: payload =>
+			Boolean(payload.shouldOpenRecord && showRecordButton.value && payload.employeeId),
+		consume: async payload => {
+			recordFilters.certificateId = undefined;
+			recordFilters.employeeId = payload.employeeId;
+			recordFilters.departmentId = undefined;
+			recordFilters.status = '';
+			recordPagination.page = 1;
+			recordVisible.value = true;
+			await refreshRecords();
+		}
+	});
+}
+
 async function openDetail(row: CertificateRecord) {
 	if (!row.id) {
 		return;
@@ -734,6 +823,30 @@ async function openDetail(row: CertificateRecord) {
 	} catch (error: any) {
 		ElMessage.error(error.message || '证书详情加载失败');
 	}
+}
+
+async function goSourceCourse(sourceCourseId: number) {
+	detailVisible.value = false;
+
+	await router.push({
+		path: '/performance/course',
+		query: {
+			openDetail: '1',
+			courseId: String(sourceCourseId)
+		}
+	});
+}
+
+async function goCapabilityPortrait(employeeId: number) {
+	recordVisible.value = false;
+
+	await router.push({
+		path: '/performance/capability',
+		query: {
+			openPortrait: '1',
+			employeeId: String(employeeId)
+		}
+	});
 }
 
 async function openEdit(row: CertificateRecord) {
@@ -760,7 +873,7 @@ function openIssue(row: CertificateRecord) {
 	issueForm.employeeId = undefined;
 	issueForm.issuedAt = '';
 	issueForm.remark = '';
-	issueForm.sourceCourseId = undefined;
+	issueForm.sourceCourseId = normalizeOptionalNumber(row.sourceCourseId) ?? undefined;
 	issueVisible.value = true;
 }
 
@@ -808,7 +921,7 @@ async function submitForm() {
 		}
 
 		formVisible.value = false;
-		await refresh();
+		await syncList();
 	} catch (error: any) {
 		ElMessage.error(error.message || '证书保存失败');
 	} finally {
@@ -835,7 +948,7 @@ async function submitIssue() {
 
 		ElMessage.success('证书已发放');
 		issueVisible.value = false;
-		await Promise.all([refresh(), recordVisible.value ? refreshRecords() : Promise.resolve()]);
+		await Promise.all([syncList(), recordVisible.value ? refreshRecords() : Promise.resolve()]);
 	} catch (error: any) {
 		ElMessage.error(error.message || '证书发放失败');
 	} finally {
@@ -848,6 +961,14 @@ function canEdit(row: CertificateRecord) {
 		checkPerm(performanceCertificateService.permission.update) &&
 		row.status !== 'retired'
 	);
+}
+
+function canViewSourceCourse(row: CertificateRecord | CertificateLedgerRecord) {
+	return Boolean(row.sourceCourseId) && showSourceCourseButton.value;
+}
+
+function canViewCapabilityPortrait(row: CertificateLedgerRecord) {
+	return Boolean(row.employeeId) && showCapabilityPortraitButton.value;
 }
 
 function canIssue(row: CertificateRecord) {
@@ -938,23 +1059,6 @@ function normalizeOptionalNumber(value?: number | null) {
 	return Number(value);
 }
 
-function flattenDepartments(
-	nodes: Array<Record<string, any>>,
-	result: DepartmentOption[] = []
-): DepartmentOption[] {
-	for (const item of nodes || []) {
-		result.push({
-			id: Number(item.id),
-			label: item.name
-		});
-
-		if (Array.isArray(item.children) && item.children.length) {
-			flattenDepartments(item.children, result);
-		}
-	}
-
-	return result;
-}
 </script>
 
 <style lang="scss" scoped>

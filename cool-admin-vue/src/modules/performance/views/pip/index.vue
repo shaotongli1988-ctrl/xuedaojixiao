@@ -142,6 +142,14 @@
 				<el-table-column label="操作" fixed="right" min-width="360">
 					<template #default="{ row }">
 						<el-button text @click="openDetail(row)">详情</el-button>
+						<el-button
+							v-if="canViewSourceAssessment(row)"
+							text
+							type="primary"
+							@click="goSourceAssessment(row.assessmentId!)"
+						>
+							来源评估单
+						</el-button>
 						<el-button v-if="canEdit(row)" text type="primary" @click="openEdit(row)">
 							编辑
 						</el-button>
@@ -329,13 +337,15 @@ defineOptions({
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus';
-import { useRoute } from 'vue-router';
-import { export_json_to_excel } from '/@/plugins/excel/utils';
+import { useRoute, useRouter } from 'vue-router';
+import { exportJsonToExcel } from '/@/plugins/excel/utils';
 import { service } from '/@/cool';
 import { checkPerm } from '/$/base/utils/permission';
 import PipTrackDrawer from '../../components/pip-track-drawer.vue';
 import { performanceAssessmentService } from '../../service/assessment';
 import { performancePipService } from '../../service/pip';
+import { loadUserOptions } from '../../utils/lookup-options.js';
+import { clearRoutePresetQuery } from '../../utils/route-preset.js';
 import {
 	type PipExportRow,
 	type PipRecord,
@@ -344,6 +354,7 @@ import {
 } from '../../types';
 
 const route = useRoute();
+const router = useRouter();
 
 const rows = ref<PipRecord[]>([]);
 const userOptions = ref<UserOption[]>([]);
@@ -446,25 +457,21 @@ onMounted(async () => {
 		openCreate();
 		assessmentIdInput.value = presetAssessmentId.value;
 		await applyAssessmentSource();
+		await clearPresetQuery();
 	}
 });
 
 async function loadUsers() {
-	try {
-		const result = await service.base.sys.user.page({
+	userOptions.value = await loadUserOptions(
+		() =>
+			service.base.sys.user.page({
 			page: 1,
 			size: 200
-		});
-
-		userOptions.value = (result.list || []).map((item: any) => ({
-			id: Number(item.id),
-			name: item.name,
-			departmentId: item.departmentId,
-			departmentName: item.departmentName
-		}));
-	} catch (error: any) {
-		ElMessage.warning(error.message || '用户选项加载失败');
-	}
+			}),
+		(error: any) => {
+			ElMessage.warning(error.message || '用户选项加载失败');
+		}
+	);
 }
 
 async function refresh() {
@@ -679,7 +686,7 @@ async function handleExport() {
 			assessmentId: presetAssessmentId.value
 		});
 
-		export_json_to_excel({
+		exportJsonToExcel({
 			header: [
 				'PIP ID',
 				'来源评估单',
@@ -751,6 +758,50 @@ function statusTagType(status?: string) {
 		default:
 			return 'info';
 	}
+}
+
+async function clearPresetQuery() {
+	await clearRoutePresetQuery({
+		route,
+		router,
+		keys: ['assessmentId', 'employeeId', 'suggestionId', 'suggestionType']
+	});
+}
+
+function canViewSourceAssessment(row: PipRecord) {
+	return Boolean(row.assessmentId) && resolveAssessmentPagePath() !== '';
+}
+
+async function goSourceAssessment(assessmentId: number) {
+	const path = resolveAssessmentPagePath();
+
+	if (!path) {
+		return;
+	}
+
+	await router.push({
+		path,
+		query: {
+			openDetail: '1',
+			assessmentId: String(assessmentId)
+		}
+	});
+}
+
+function resolveAssessmentPagePath() {
+	if (checkPerm(performanceAssessmentService.permission.page)) {
+		return '/performance/initiated';
+	}
+
+	if (checkPerm(performanceAssessmentService.permission.myPage)) {
+		return '/performance/my-assessment';
+	}
+
+	if (checkPerm(performanceAssessmentService.permission.pendingPage)) {
+		return '/performance/pending';
+	}
+
+	return '';
 }
 </script>
 

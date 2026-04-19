@@ -1,87 +1,12 @@
 declare namespace Eps {
 	interface BaseSysDepartmentEntity {
 		/**
-		 * ID
-		 */
-		id?: number;
-
-		/**
-		 * 部门名称
-		 */
-		name?: string;
-
-		/**
-		 * 创建者ID
-		 */
-		userId?: number;
-
-		/**
-		 * 上级部门ID
-		 */
-		parentId?: number;
-
-		/**
-		 * 排序
-		 */
-		orderNum?: number;
-
-		/**
-		 * 创建时间
-		 */
-		createTime?: string;
-
-		/**
-		 * 更新时间
-		 */
-		updateTime?: string;
-
-		/**
 		 * 任意键值
 		 */
 		[key: string]: any;
 	}
 
 	interface BaseSysLogEntity {
-		/**
-		 * ID
-		 */
-		id?: number;
-
-		/**
-		 * 用户ID
-		 */
-		userId?: number;
-
-		/**
-		 * 行为
-		 */
-		action?: string;
-
-		/**
-		 * ip
-		 */
-		ip?: string;
-
-		/**
-		 * 参数
-		 */
-		params?: any;
-
-		/**
-		 * 创建时间
-		 */
-		createTime?: string;
-
-		/**
-		 * 更新时间
-		 */
-		updateTime?: string;
-
-		/**
-		 * 姓名
-		 */
-		name?: string;
-
 		/**
 		 * 任意键值
 		 */
@@ -90,117 +15,12 @@ declare namespace Eps {
 
 	interface BaseSysMenuEntity {
 		/**
-		 * ID
-		 */
-		id?: number;
-
-		/**
-		 * 父菜单ID
-		 */
-		parentId?: number;
-
-		/**
-		 * 菜单名称
-		 */
-		name?: string;
-
-		/**
-		 * 菜单地址
-		 */
-		router?: string;
-
-		/**
-		 * 权限标识
-		 */
-		perms?: string;
-
-		/**
-		 * 类型 0-目录 1-菜单 2-按钮
-		 */
-		type?: number;
-
-		/**
-		 * 图标
-		 */
-		icon?: string;
-
-		/**
-		 * 排序
-		 */
-		orderNum?: number;
-
-		/**
-		 * 视图地址
-		 */
-		viewPath?: string;
-
-		/**
-		 * 路由缓存
-		 */
-		keepAlive?: boolean;
-
-		/**
-		 * 是否显示
-		 */
-		isShow?: boolean;
-
-		/**
-		 * 创建时间
-		 */
-		createTime?: string;
-
-		/**
-		 * 更新时间
-		 */
-		updateTime?: string;
-
-		/**
 		 * 任意键值
 		 */
 		[key: string]: any;
 	}
 
 	interface BaseSysParamEntity {
-		/**
-		 * ID
-		 */
-		id?: number;
-
-		/**
-		 * 键
-		 */
-		keyName?: string;
-
-		/**
-		 * 名称
-		 */
-		name?: string;
-
-		/**
-		 * 数据
-		 */
-		data?: string;
-
-		/**
-		 * 数据类型 0-字符串 1-富文本 2-文件
-		 */
-		dataType?: number;
-
-		/**
-		 * 备注
-		 */
-		remark?: string;
-
-		/**
-		 * 创建时间
-		 */
-		createTime?: string;
-
-		/**
-		 * 更新时间
-		 */
-		updateTime?: string;
-
 		/**
 		 * 任意键值
 		 */
@@ -209,142 +29,12 @@ declare namespace Eps {
 
 	interface BaseSysRoleEntity {
 		/**
-		 * ID
-		 */
-		id?: number;
-
-		/**
-		 * 用户ID
-		 */
-		userId?: string;
-
-		/**
-		 * 名称
-		 */
-		name?: string;
-
-		/**
-		 * 角色标签
-		 */
-		label?: string;
-
-		/**
-		 * 备注
-		 */
-		remark?: string;
-
-		/**
-		 * 数据权限是否关联上下级
-		 */
-		relevance?: boolean;
-
-		/**
-		 * 菜单权限
-		 */
-		menuIdList?: any;
-
-		/**
-		 * 部门权限
-		 */
-		departmentIdList?: any;
-
-		/**
-		 * 创建时间
-		 */
-		createTime?: string;
-
-		/**
-		 * 更新时间
-		 */
-		updateTime?: string;
-
-		/**
 		 * 任意键值
 		 */
 		[key: string]: any;
 	}
 
 	interface BaseSysUserEntity {
-		/**
-		 * ID
-		 */
-		id?: number;
-
-		/**
-		 * 部门ID
-		 */
-		departmentId?: number;
-
-		/**
-		 * 创建者ID
-		 */
-		userId?: number;
-
-		/**
-		 * 姓名
-		 */
-		name?: string;
-
-		/**
-		 * 用户名
-		 */
-		username?: string;
-
-		/**
-		 * 密码
-		 */
-		password?: string;
-
-		/**
-		 * 密码版本, 作用是改完密码，让原来的token失效
-		 */
-		passwordV?: number;
-
-		/**
-		 * 昵称
-		 */
-		nickName?: string;
-
-		/**
-		 * 头像
-		 */
-		headImg?: string;
-
-		/**
-		 * 手机
-		 */
-		phone?: string;
-
-		/**
-		 * 邮箱
-		 */
-		email?: string;
-
-		/**
-		 * 备注
-		 */
-		remark?: string;
-
-		/**
-		 * 状态 0-禁用 1-启用
-		 */
-		status?: number;
-
-		/**
-		 * socketId
-		 */
-		socketId?: string;
-
-		/**
-		 * 创建时间
-		 */
-		createTime?: string;
-
-		/**
-		 * 更新时间
-		 */
-		updateTime?: string;
-
 		/**
 		 * 任意键值
 		 */
@@ -353,117 +43,12 @@ declare namespace Eps {
 
 	interface DemoGoodsEntity {
 		/**
-		 * ID
-		 */
-		id?: number;
-
-		/**
-		 * 标题
-		 */
-		title?: string;
-
-		/**
-		 * 价格
-		 */
-		price?: number;
-
-		/**
-		 * 描述
-		 */
-		description?: string;
-
-		/**
-		 * 主图
-		 */
-		mainImage?: string;
-
-		/**
-		 * 分类
-		 */
-		type?: number;
-
-		/**
-		 * 状态
-		 */
-		status?: number;
-
-		/**
-		 * 示例图
-		 */
-		exampleImages?: any;
-
-		/**
-		 * 库存
-		 */
-		stock?: number;
-
-		/**
-		 * 创建时间
-		 */
-		createTime?: string;
-
-		/**
-		 * 更新时间
-		 */
-		updateTime?: string;
-
-		/**
-		 * 昵称
-		 */
-		userName?: string;
-
-		/**
 		 * 任意键值
 		 */
 		[key: string]: any;
 	}
 
 	interface DictInfoEntity {
-		/**
-		 * ID
-		 */
-		id?: number;
-
-		/**
-		 * 类型ID
-		 */
-		typeId?: number;
-
-		/**
-		 * 名称
-		 */
-		name?: string;
-
-		/**
-		 * 值
-		 */
-		value?: string;
-
-		/**
-		 * 排序
-		 */
-		orderNum?: number;
-
-		/**
-		 * 备注
-		 */
-		remark?: string;
-
-		/**
-		 * 父ID
-		 */
-		parentId?: number;
-
-		/**
-		 * 创建时间
-		 */
-		createTime?: string;
-
-		/**
-		 * 更新时间
-		 */
-		updateTime?: string;
-
 		/**
 		 * 任意键值
 		 */
@@ -472,117 +57,12 @@ declare namespace Eps {
 
 	interface DictTypeEntity {
 		/**
-		 * ID
-		 */
-		id?: number;
-
-		/**
-		 * 名称
-		 */
-		name?: string;
-
-		/**
-		 * 标识
-		 */
-		key?: string;
-
-		/**
-		 * 创建时间
-		 */
-		createTime?: string;
-
-		/**
-		 * 更新时间
-		 */
-		updateTime?: string;
-
-		/**
 		 * 任意键值
 		 */
 		[key: string]: any;
 	}
 
 	interface PluginInfoEntity {
-		/**
-		 * ID
-		 */
-		id?: number;
-
-		/**
-		 * 名称
-		 */
-		name?: string;
-
-		/**
-		 * 简介
-		 */
-		description?: string;
-
-		/**
-		 * Key名
-		 */
-		keyName?: string;
-
-		/**
-		 * Hook
-		 */
-		hook?: string;
-
-		/**
-		 * 描述
-		 */
-		readme?: string;
-
-		/**
-		 * 版本
-		 */
-		version?: string;
-
-		/**
-		 * Logo(base64)
-		 */
-		logo?: string;
-
-		/**
-		 * 作者
-		 */
-		author?: string;
-
-		/**
-		 * 状态 0-禁用 1-启用
-		 */
-		status?: number;
-
-		/**
-		 * 内容
-		 */
-		content?: any;
-
-		/**
-		 * ts内容
-		 */
-		tsContent?: any;
-
-		/**
-		 * 插件的plugin.json
-		 */
-		pluginJson?: any;
-
-		/**
-		 * 配置
-		 */
-		config?: any;
-
-		/**
-		 * 创建时间
-		 */
-		createTime?: string;
-
-		/**
-		 * 更新时间
-		 */
-		updateTime?: string;
-
 		/**
 		 * 任意键值
 		 */
@@ -591,117 +71,12 @@ declare namespace Eps {
 
 	interface RecycleDataEntity {
 		/**
-		 * ID
-		 */
-		id?: number;
-
-		/**
-		 * 表
-		 */
-		entityInfo?: any;
-
-		/**
-		 * 操作人
-		 */
-		userId?: number;
-
-		/**
-		 * 被删除的数据
-		 */
-		data?: any;
-
-		/**
-		 * 请求的接口
-		 */
-		url?: string;
-
-		/**
-		 * 请求参数
-		 */
-		params?: any;
-
-		/**
-		 * 删除数据条数
-		 */
-		count?: number;
-
-		/**
-		 * 创建时间
-		 */
-		createTime?: string;
-
-		/**
-		 * 更新时间
-		 */
-		updateTime?: string;
-
-		/**
-		 * 姓名
-		 */
-		userName?: string;
-
-		/**
 		 * 任意键值
 		 */
 		[key: string]: any;
 	}
 
 	interface SpaceInfoEntity {
-		/**
-		 * ID
-		 */
-		id?: number;
-
-		/**
-		 * 地址
-		 */
-		url?: string;
-
-		/**
-		 * 类型
-		 */
-		type?: string;
-
-		/**
-		 * 分类ID
-		 */
-		classifyId?: number;
-
-		/**
-		 * 文件id
-		 */
-		fileId?: string;
-
-		/**
-		 * 文件名
-		 */
-		name?: string;
-
-		/**
-		 * 文件大小
-		 */
-		size?: number;
-
-		/**
-		 * 文档版本
-		 */
-		version?: number;
-
-		/**
-		 * 文件位置
-		 */
-		key?: string;
-
-		/**
-		 * 创建时间
-		 */
-		createTime?: string;
-
-		/**
-		 * 更新时间
-		 */
-		updateTime?: string;
-
 		/**
 		 * 任意键值
 		 */
@@ -710,137 +85,12 @@ declare namespace Eps {
 
 	interface SpaceTypeEntity {
 		/**
-		 * ID
-		 */
-		id?: number;
-
-		/**
-		 * 类别名称
-		 */
-		name?: string;
-
-		/**
-		 * 父分类ID
-		 */
-		parentId?: number;
-
-		/**
-		 * 创建时间
-		 */
-		createTime?: string;
-
-		/**
-		 * 更新时间
-		 */
-		updateTime?: string;
-
-		/**
 		 * 任意键值
 		 */
 		[key: string]: any;
 	}
 
 	interface TaskInfoEntity {
-		/**
-		 * ID
-		 */
-		id?: number;
-
-		/**
-		 * 任务ID
-		 */
-		jobId?: string;
-
-		/**
-		 * 任务配置
-		 */
-		repeatConf?: string;
-
-		/**
-		 * 名称
-		 */
-		name?: string;
-
-		/**
-		 * cron
-		 */
-		cron?: string;
-
-		/**
-		 * 最大执行次数 不传为无限次
-		 */
-		limit?: number;
-
-		/**
-		 * 每间隔多少毫秒执行一次 如果cron设置了 这项设置就无效
-		 */
-		every?: number;
-
-		/**
-		 * 备注
-		 */
-		remark?: string;
-
-		/**
-		 * 状态 0-停止 1-运行
-		 */
-		status?: number;
-
-		/**
-		 * 开始时间
-		 */
-		startDate?: Date;
-
-		/**
-		 * 结束时间
-		 */
-		endDate?: Date;
-
-		/**
-		 * 数据
-		 */
-		data?: string;
-
-		/**
-		 * 执行的service实例ID
-		 */
-		service?: string;
-
-		/**
-		 * 状态 0-系统 1-用户
-		 */
-		type?: number;
-
-		/**
-		 * 下一次执行时间
-		 */
-		nextRunTime?: Date;
-
-		/**
-		 * 状态 0-cron 1-时间间隔
-		 */
-		taskType?: number;
-
-		/**
-		 * undefined
-		 */
-		lastExecuteTime?: Date;
-
-		/**
-		 * undefined
-		 */
-		lockExpireTime?: Date;
-
-		/**
-		 * 创建时间
-		 */
-		createTime?: string;
-
-		/**
-		 * 更新时间
-		 */
-		updateTime?: string;
-
 		/**
 		 * 任意键值
 		 */
@@ -849,127 +99,12 @@ declare namespace Eps {
 
 	interface UserAddressEntity {
 		/**
-		 * ID
-		 */
-		id?: number;
-
-		/**
-		 * 用户ID
-		 */
-		userId?: number;
-
-		/**
-		 * 联系人
-		 */
-		contact?: string;
-
-		/**
-		 * 手机号
-		 */
-		phone?: string;
-
-		/**
-		 * 省
-		 */
-		province?: string;
-
-		/**
-		 * 市
-		 */
-		city?: string;
-
-		/**
-		 * 区
-		 */
-		district?: string;
-
-		/**
-		 * 地址
-		 */
-		address?: string;
-
-		/**
-		 * 是否默认
-		 */
-		isDefault?: boolean;
-
-		/**
-		 * 创建时间
-		 */
-		createTime?: string;
-
-		/**
-		 * 更新时间
-		 */
-		updateTime?: string;
-
-		/**
 		 * 任意键值
 		 */
 		[key: string]: any;
 	}
 
 	interface UserInfoEntity {
-		/**
-		 * ID
-		 */
-		id?: number;
-
-		/**
-		 * 登录唯一ID
-		 */
-		unionid?: string;
-
-		/**
-		 * 头像
-		 */
-		avatarUrl?: string;
-
-		/**
-		 * 昵称
-		 */
-		nickName?: string;
-
-		/**
-		 * 手机号
-		 */
-		phone?: string;
-
-		/**
-		 * 性别
-		 */
-		gender?: number;
-
-		/**
-		 * 状态
-		 */
-		status?: number;
-
-		/**
-		 * 登录方式
-		 */
-		loginType?: number;
-
-		/**
-		 * 密码
-		 */
-		password?: string;
-
-		/**
-		 * 介绍
-		 */
-		description?: string;
-
-		/**
-		 * 创建时间
-		 */
-		createTime?: string;
-
-		/**
-		 * 更新时间
-		 */
-		updateTime?: string;
-
 		/**
 		 * 任意键值
 		 */
@@ -1031,7 +166,57 @@ declare namespace Eps {
 		list: DictTypeEntity[];
 	}
 
+	interface PerformanceAnnualInspectionPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
 	interface PerformanceAssessmentPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceAssetAssignmentPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceAssetDepreciationPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceAssetDisposalPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceAssetInfoPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceAssetInventoryPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceAssetMaintenancePageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceAssetProcurementPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceAssetReportPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceAssetTransferPageResponse {
 		pagination: PagePagination;
 		list: any[];
 	}
@@ -1066,6 +251,21 @@ declare namespace Eps {
 		list: any[];
 	}
 
+	interface PerformanceDesignCollabPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceDocumentCenterPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceExpressCollabPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
 	interface PerformanceFeedbackPageResponse {
 		pagination: PagePagination;
 		list: any[];
@@ -1076,12 +276,37 @@ declare namespace Eps {
 		list: any[];
 	}
 
+	interface PerformanceHiringPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceHonorPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
 	interface PerformanceIndicatorPageResponse {
 		pagination: PagePagination;
 		list: any[];
 	}
 
+	interface PerformanceIntellectualPropertyPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
 	interface PerformanceInterviewPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceJobStandardPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceKnowledgeBasePageResponse {
 		pagination: PagePagination;
 		list: any[];
 	}
@@ -1101,7 +326,22 @@ declare namespace Eps {
 		list: any[];
 	}
 
+	interface PerformancePublicityMaterialPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
 	interface PerformancePurchaseOrderPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceRecruitPlanPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceResumePoolPageResponse {
 		pagination: PagePagination;
 		list: any[];
 	}
@@ -1122,6 +362,56 @@ declare namespace Eps {
 	}
 
 	interface PerformanceTalentAssetPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceTeacherAgentAuditPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceTeacherAgentRelationPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceTeacherAgentPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceTeacherAttributionConflictPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceTeacherAttributionPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceTeacherClassPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceTeacherFollowPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceTeacherInfoPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceTeacherTodoPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceVehiclePageResponse {
 		pagination: PagePagination;
 		list: any[];
 	}
@@ -1163,12 +453,12 @@ declare namespace Eps {
 
 	interface BaseCoding {
 		/**
-		 * 获取模块目录结构
+		 * getModuleTree
 		 */
 		getModuleTree(data?: any): Promise<any>;
 
 		/**
-		 * 创建代码
+		 * createCode
 		 */
 		createCode(data?: any): Promise<any>;
 
@@ -1187,37 +477,37 @@ declare namespace Eps {
 
 	interface BaseComm {
 		/**
-		 * 修改个人信息
+		 * personUpdate
 		 */
 		personUpdate(data?: any): Promise<any>;
 
 		/**
-		 * 文件上传模式
+		 * uploadMode
 		 */
 		uploadMode(data?: any): Promise<any>;
 
 		/**
-		 * 权限与菜单
+		 * permmenu
 		 */
 		permmenu(data?: any): Promise<any>;
 
 		/**
-		 * 编程
+		 * program
 		 */
 		program(data?: any): Promise<any>;
 
 		/**
-		 * 个人信息
+		 * person
 		 */
 		person(data?: any): Promise<any>;
 
 		/**
-		 * 文件上传
+		 * upload
 		 */
 		upload(data?: any): Promise<any>;
 
 		/**
-		 * 退出
+		 * logout
 		 */
 		logout(data?: any): Promise<any>;
 
@@ -1252,32 +542,32 @@ declare namespace Eps {
 
 	interface BaseOpen {
 		/**
-		 * 刷新token
+		 * refreshToken
 		 */
 		refreshToken(data?: any): Promise<any>;
 
 		/**
-		 * 运行态元信息
+		 * runtimeMeta
 		 */
 		runtimeMeta(data?: any): Promise<any>;
 
 		/**
-		 * 验证码
+		 * captcha
 		 */
 		captcha(data?: any): Promise<any>;
 
 		/**
-		 * 登录
+		 * login
 		 */
 		login(data?: any): Promise<any>;
 
 		/**
-		 * 获得网页内容的参数值
+		 * html
 		 */
 		html(data?: any): Promise<any>;
 
 		/**
-		 * 实体信息与路径
+		 * eps
 		 */
 		eps(data?: any): Promise<any>;
 
@@ -1310,27 +600,27 @@ declare namespace Eps {
 
 	interface BaseSysDepartment {
 		/**
-		 * 删除
+		 * delete
 		 */
 		delete(data?: any): Promise<any>;
 
 		/**
-		 * 修改
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 排序
+		 * order
 		 */
 		order(data?: any): Promise<any>;
 
 		/**
-		 * 列表查询
+		 * list
 		 */
 		list(data?: any): Promise<BaseSysDepartmentEntity[]>;
 
 		/**
-		 * 新增
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -1355,22 +645,22 @@ declare namespace Eps {
 
 	interface BaseSysLog {
 		/**
-		 * 日志保存时间
+		 * setKeep
 		 */
 		setKeep(data?: any): Promise<any>;
 
 		/**
-		 * 获得日志保存时间
+		 * getKeep
 		 */
 		getKeep(data?: any): Promise<any>;
 
 		/**
-		 * 清理
+		 * clear
 		 */
 		clear(data?: any): Promise<any>;
 
 		/**
-		 * 分页查询
+		 * page
 		 */
 		page(data?: any): Promise<BaseSysLogPageResponse>;
 
@@ -1389,52 +679,52 @@ declare namespace Eps {
 
 	interface BaseSysMenu {
 		/**
-		 * 创建代码
+		 * create
 		 */
 		create(data?: any): Promise<any>;
 
 		/**
-		 * 导出
+		 * export
 		 */
 		export(data?: any): Promise<any>;
 
 		/**
-		 * 导入
+		 * import
 		 */
 		import(data?: any): Promise<any>;
 
 		/**
-		 * 删除
+		 * delete
 		 */
 		delete(data?: any): Promise<any>;
 
 		/**
-		 * 修改
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 解析
+		 * parse
 		 */
 		parse(data?: any): Promise<any>;
 
 		/**
-		 * 单个信息
+		 * info
 		 */
 		info(data?: any): Promise<BaseSysMenuEntity>;
 
 		/**
-		 * 列表查询
+		 * list
 		 */
 		list(data?: any): Promise<BaseSysMenuEntity[]>;
 
 		/**
-		 * 分页查询
+		 * page
 		 */
 		page(data?: any): Promise<BaseSysMenuPageResponse>;
 
 		/**
-		 * 新增
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -1475,32 +765,32 @@ declare namespace Eps {
 
 	interface BaseSysParam {
 		/**
-		 * 删除
+		 * delete
 		 */
 		delete(data?: any): Promise<any>;
 
 		/**
-		 * 修改
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 获得网页内容的参数值
+		 * html
 		 */
 		html(data?: any): Promise<any>;
 
 		/**
-		 * 单个信息
+		 * info
 		 */
 		info(data?: any): Promise<BaseSysParamEntity>;
 
 		/**
-		 * 分页查询
+		 * page
 		 */
 		page(data?: any): Promise<BaseSysParamPageResponse>;
 
 		/**
-		 * 新增
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -1533,32 +823,32 @@ declare namespace Eps {
 
 	interface BaseSysRole {
 		/**
-		 * 删除
+		 * delete
 		 */
 		delete(data?: any): Promise<any>;
 
 		/**
-		 * 修改
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 单个信息
+		 * info
 		 */
 		info(data?: any): Promise<BaseSysRoleEntity>;
 
 		/**
-		 * 列表查询
+		 * list
 		 */
 		list(data?: any): Promise<BaseSysRoleEntity[]>;
 
 		/**
-		 * 分页查询
+		 * page
 		 */
 		page(data?: any): Promise<BaseSysRolePageResponse>;
 
 		/**
-		 * 新增
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -1591,37 +881,37 @@ declare namespace Eps {
 
 	interface BaseSysUser {
 		/**
-		 * 删除
+		 * delete
 		 */
 		delete(data?: any): Promise<any>;
 
 		/**
-		 * 修改
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 移动部门
+		 * move
 		 */
 		move(data?: any): Promise<any>;
 
 		/**
-		 * 单个信息
+		 * info
 		 */
 		info(data?: any): Promise<BaseSysUserEntity>;
 
 		/**
-		 * 列表查询
+		 * list
 		 */
 		list(data?: any): Promise<BaseSysUserEntity[]>;
 
 		/**
-		 * 分页查询
+		 * page
 		 */
 		page(data?: any): Promise<BaseSysUserPageResponse>;
 
 		/**
-		 * 新增
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -1656,32 +946,32 @@ declare namespace Eps {
 
 	interface DemoGoods {
 		/**
-		 * 删除
+		 * delete
 		 */
 		delete(data?: any): Promise<any>;
 
 		/**
-		 * 修改
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 单个信息
+		 * info
 		 */
 		info(data?: any): Promise<DemoGoodsEntity>;
 
 		/**
-		 * 列表查询
+		 * list
 		 */
 		list(data?: any): Promise<DemoGoodsEntity[]>;
 
 		/**
-		 * 分页查询
+		 * page
 		 */
 		page(data?: any): Promise<DemoGoodsPageResponse>;
 
 		/**
-		 * 新增
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -1714,12 +1004,12 @@ declare namespace Eps {
 
 	interface DemoTenant {
 		/**
-		 * 局部不使用多租户
+		 * noTenant
 		 */
 		noTenant(data?: any): Promise<any>;
 
 		/**
-		 * 不使用多租户
+		 * noUse
 		 */
 		noUse(data?: any): Promise<any>;
 
@@ -1743,42 +1033,42 @@ declare namespace Eps {
 
 	interface DictInfo {
 		/**
-		 * 删除
+		 * delete
 		 */
 		delete(data?: any): Promise<any>;
 
 		/**
-		 * 修改
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 获得所有字典类型
+		 * types
 		 */
 		types(data?: any): Promise<any>;
 
 		/**
-		 * 获得字典数据
+		 * data
 		 */
 		data(data?: any): Promise<any>;
 
 		/**
-		 * 单个信息
+		 * info
 		 */
 		info(data?: any): Promise<DictInfoEntity>;
 
 		/**
-		 * 列表查询
+		 * list
 		 */
 		list(data?: any): Promise<DictInfoEntity[]>;
 
 		/**
-		 * 分页查询
+		 * page
 		 */
 		page(data?: any): Promise<DictInfoPageResponse>;
 
 		/**
-		 * 新增
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -1815,32 +1105,32 @@ declare namespace Eps {
 
 	interface DictType {
 		/**
-		 * 删除
+		 * delete
 		 */
 		delete(data?: any): Promise<any>;
 
 		/**
-		 * 修改
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 单个信息
+		 * info
 		 */
 		info(data?: any): Promise<DictTypeEntity>;
 
 		/**
-		 * 列表查询
+		 * list
 		 */
 		list(data?: any): Promise<DictTypeEntity[]>;
 
 		/**
-		 * 分页查询
+		 * page
 		 */
 		page(data?: any): Promise<DictTypePageResponse>;
 
 		/**
-		 * 新增
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -1871,59 +1161,117 @@ declare namespace Eps {
 		request: Request;
 	}
 
-	interface PerformanceApprovalFlow {
+	interface PerformanceAnnualInspection {
 		/**
-		 * 审批流配置详情
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * delete
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * stats
+		 */
+		stats(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceAnnualInspectionPageResponse>;
+
+		/**
+		 * info
 		 */
 		info(data?: any): Promise<any>;
 
 		/**
-		 * 审批流配置保存
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			update: string;
+			delete: string;
+			stats: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			update: boolean;
+			delete: boolean;
+			stats: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceApprovalFlow {
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * save
 		 */
 		save(data?: any): Promise<any>;
 
 		/**
-		 * HR 强制终止
+		 * terminate
 		 */
 		terminate(data?: any): Promise<any>;
 
 		/**
-		 * 当前节点转办
+		 * transfer
 		 */
 		transfer(data?: any): Promise<any>;
 
 		/**
-		 * 发起人撤回
+		 * withdraw
 		 */
 		withdraw(data?: any): Promise<any>;
 
 		/**
-		 * 回退到手工审批主链
+		 * fallback
 		 */
 		fallback(data?: any): Promise<any>;
 
 		/**
-		 * 审批通过
+		 * approve
 		 */
 		approve(data?: any): Promise<any>;
 
 		/**
-		 * HR 人工指定或恢复
+		 * resolve
 		 */
 		resolve(data?: any): Promise<any>;
 
 		/**
-		 * 审批驳回
+		 * reject
 		 */
 		reject(data?: any): Promise<any>;
 
 		/**
-		 * 催办当前节点
+		 * remind
 		 */
 		remind(data?: any): Promise<any>;
 
 		/**
-		 * 审批实例详情
+		 * info
 		 */
 		info(data?: any): Promise<any>;
 
@@ -1964,47 +1312,47 @@ declare namespace Eps {
 
 	interface PerformanceAssessment {
 		/**
-		 * 审批通过
+		 * approve
 		 */
 		approve(data?: any): Promise<any>;
 
 		/**
-		 * 修改评估单
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 删除评估单
+		 * delete
 		 */
 		delete(data?: any): Promise<any>;
 
 		/**
-		 * 提交评估单
+		 * submit
 		 */
 		submit(data?: any): Promise<any>;
 
 		/**
-		 * 审批驳回
+		 * reject
 		 */
 		reject(data?: any): Promise<any>;
 
 		/**
-		 * 导出评估单
+		 * export
 		 */
 		export(data?: any): Promise<any>;
 
 		/**
-		 * 评估单分页
+		 * page
 		 */
 		page(data?: any): Promise<PerformanceAssessmentPageResponse>;
 
 		/**
-		 * 评估单详情
+		 * info
 		 */
 		info(data?: any): Promise<any>;
 
 		/**
-		 * 新增评估单
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -2041,9 +1389,527 @@ declare namespace Eps {
 		request: Request;
 	}
 
+	interface PerformanceAssetAssignment {
+		/**
+		 * markLost
+		 */
+		markLost(data?: any): Promise<any>;
+
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * return
+		 */
+		return(data?: any): Promise<any>;
+
+		/**
+		 * delete
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceAssetAssignmentPageResponse>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			markLost: string;
+			update: string;
+			return: string;
+			delete: string;
+			page: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			markLost: boolean;
+			update: boolean;
+			return: boolean;
+			delete: boolean;
+			page: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceAssetDashboard {
+		/**
+		 * summary
+		 */
+		summary(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { summary: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: { summary: boolean };
+
+		request: Request;
+	}
+
+	interface PerformanceAssetDepreciation {
+		/**
+		 * recalculate
+		 */
+		recalculate(data?: any): Promise<any>;
+
+		/**
+		 * summary
+		 */
+		summary(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceAssetDepreciationPageResponse>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { recalculate: string; summary: string; page: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: { recalculate: boolean; summary: boolean; page: boolean };
+
+		request: Request;
+	}
+
+	interface PerformanceAssetDisposal {
+		/**
+		 * approve
+		 */
+		approve(data?: any): Promise<any>;
+
+		/**
+		 * execute
+		 */
+		execute(data?: any): Promise<any>;
+
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * submit
+		 */
+		submit(data?: any): Promise<any>;
+
+		/**
+		 * cancel
+		 */
+		cancel(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceAssetDisposalPageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			approve: string;
+			execute: string;
+			update: string;
+			submit: string;
+			cancel: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			approve: boolean;
+			execute: boolean;
+			update: boolean;
+			submit: boolean;
+			cancel: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceAssetInfo {
+		/**
+		 * updateStatus
+		 */
+		updateStatus(data?: any): Promise<any>;
+
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * delete
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceAssetInfoPageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			updateStatus: string;
+			update: string;
+			delete: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			updateStatus: boolean;
+			update: boolean;
+			delete: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceAssetInventory {
+		/**
+		 * complete
+		 */
+		complete(data?: any): Promise<any>;
+
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * start
+		 */
+		start(data?: any): Promise<any>;
+
+		/**
+		 * close
+		 */
+		close(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceAssetInventoryPageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			complete: string;
+			update: string;
+			start: string;
+			close: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			complete: boolean;
+			update: boolean;
+			start: boolean;
+			close: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceAssetMaintenance {
+		/**
+		 * complete
+		 */
+		complete(data?: any): Promise<any>;
+
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * cancel
+		 */
+		cancel(data?: any): Promise<any>;
+
+		/**
+		 * delete
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceAssetMaintenancePageResponse>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			complete: string;
+			update: string;
+			cancel: string;
+			delete: string;
+			page: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			complete: boolean;
+			update: boolean;
+			cancel: boolean;
+			delete: boolean;
+			page: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceAssetProcurement {
+		/**
+		 * receive
+		 */
+		receive(data?: any): Promise<any>;
+
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * submit
+		 */
+		submit(data?: any): Promise<any>;
+
+		/**
+		 * cancel
+		 */
+		cancel(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceAssetProcurementPageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			receive: string;
+			update: string;
+			submit: string;
+			cancel: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			receive: boolean;
+			update: boolean;
+			submit: boolean;
+			cancel: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceAssetReport {
+		/**
+		 * summary
+		 */
+		summary(data?: any): Promise<any>;
+
+		/**
+		 * export
+		 */
+		export(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceAssetReportPageResponse>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { summary: string; export: string; page: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: { summary: boolean; export: boolean; page: boolean };
+
+		request: Request;
+	}
+
+	interface PerformanceAssetTransfer {
+		/**
+		 * complete
+		 */
+		complete(data?: any): Promise<any>;
+
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * submit
+		 */
+		submit(data?: any): Promise<any>;
+
+		/**
+		 * cancel
+		 */
+		cancel(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceAssetTransferPageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			complete: string;
+			update: string;
+			submit: string;
+			cancel: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			complete: boolean;
+			update: boolean;
+			submit: boolean;
+			cancel: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
 	interface PerformanceCapabilityItem {
 		/**
-		 * 能力项详情
+		 * info
 		 */
 		info(data?: any): Promise<any>;
 
@@ -2062,22 +1928,22 @@ declare namespace Eps {
 
 	interface PerformanceCapabilityModel {
 		/**
-		 * 修改能力模型
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 能力模型分页
+		 * page
 		 */
 		page(data?: any): Promise<PerformanceCapabilityModelPageResponse>;
 
 		/**
-		 * 能力模型详情
+		 * info
 		 */
 		info(data?: any): Promise<any>;
 
 		/**
-		 * 新增能力模型
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -2096,7 +1962,7 @@ declare namespace Eps {
 
 	interface PerformanceCapabilityPortrait {
 		/**
-		 * 能力画像摘要
+		 * info
 		 */
 		info(data?: any): Promise<any>;
 
@@ -2115,32 +1981,32 @@ declare namespace Eps {
 
 	interface PerformanceCertificate {
 		/**
-		 * 证书发放记录分页
+		 * recordPage
 		 */
 		recordPage(data?: any): Promise<any>;
 
 		/**
-		 * 修改证书
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 发放证书
+		 * issue
 		 */
 		issue(data?: any): Promise<any>;
 
 		/**
-		 * 证书分页
+		 * page
 		 */
 		page(data?: any): Promise<PerformanceCertificatePageResponse>;
 
 		/**
-		 * 证书详情
+		 * info
 		 */
 		info(data?: any): Promise<any>;
 
 		/**
-		 * 新增证书
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -2173,27 +2039,27 @@ declare namespace Eps {
 
 	interface PerformanceContract {
 		/**
-		 * 修改合同
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 删除合同
+		 * delete
 		 */
 		delete(data?: any): Promise<any>;
 
 		/**
-		 * 合同分页
+		 * page
 		 */
 		page(data?: any): Promise<PerformanceContractPageResponse>;
 
 		/**
-		 * 合同详情
+		 * info
 		 */
 		info(data?: any): Promise<any>;
 
 		/**
-		 * 新增合同
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -2218,7 +2084,7 @@ declare namespace Eps {
 
 	interface PerformanceCourseExam {
 		/**
-		 * 考试结果摘要
+		 * summary
 		 */
 		summary(data?: any): Promise<any>;
 
@@ -2237,17 +2103,17 @@ declare namespace Eps {
 
 	interface PerformanceCoursePractice {
 		/**
-		 * 提交练习任务
+		 * submit
 		 */
 		submit(data?: any): Promise<any>;
 
 		/**
-		 * 练习任务分页
+		 * page
 		 */
 		page(data?: any): Promise<PerformanceCoursePracticePageResponse>;
 
 		/**
-		 * 练习任务详情
+		 * info
 		 */
 		info(data?: any): Promise<any>;
 
@@ -2266,17 +2132,17 @@ declare namespace Eps {
 
 	interface PerformanceCourseRecite {
 		/**
-		 * 提交背诵任务
+		 * submit
 		 */
 		submit(data?: any): Promise<any>;
 
 		/**
-		 * 背诵任务分页
+		 * page
 		 */
 		page(data?: any): Promise<PerformanceCourseRecitePageResponse>;
 
 		/**
-		 * 背诵任务详情
+		 * info
 		 */
 		info(data?: any): Promise<any>;
 
@@ -2295,32 +2161,32 @@ declare namespace Eps {
 
 	interface PerformanceCourse {
 		/**
-		 * 课程报名列表
+		 * enrollmentPage
 		 */
 		enrollmentPage(data?: any): Promise<any>;
 
 		/**
-		 * 修改课程
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 删除课程
+		 * delete
 		 */
 		delete(data?: any): Promise<any>;
 
 		/**
-		 * 课程分页
+		 * page
 		 */
 		page(data?: any): Promise<PerformanceCoursePageResponse>;
 
 		/**
-		 * 课程详情
+		 * info
 		 */
 		info(data?: any): Promise<any>;
 
 		/**
-		 * 新增课程
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -2353,12 +2219,12 @@ declare namespace Eps {
 
 	interface PerformanceDashboard {
 		/**
-		 * 跨模块驾驶舱汇总
+		 * crossSummary
 		 */
 		crossSummary(data?: any): Promise<any>;
 
 		/**
-		 * 绩效驾驶舱汇总
+		 * summary
 		 */
 		summary(data?: any): Promise<any>;
 
@@ -2375,34 +2241,208 @@ declare namespace Eps {
 		request: Request;
 	}
 
-	interface PerformanceFeedback {
+	interface PerformanceDesignCollab {
 		/**
-		 * 环评汇总
+		 * update
 		 */
-		summary(data?: any): Promise<any>;
+		update(data?: any): Promise<any>;
 
 		/**
-		 * 提交环评反馈
+		 * delete
 		 */
-		submit(data?: any): Promise<any>;
+		delete(data?: any): Promise<any>;
 
 		/**
-		 * 导出环评汇总摘要
+		 * stats
 		 */
-		export(data?: any): Promise<any>;
+		stats(data?: any): Promise<any>;
 
 		/**
-		 * 环评任务分页
+		 * page
 		 */
-		page(data?: any): Promise<PerformanceFeedbackPageResponse>;
+		page(data?: any): Promise<PerformanceDesignCollabPageResponse>;
 
 		/**
-		 * 环评任务详情
+		 * info
 		 */
 		info(data?: any): Promise<any>;
 
 		/**
-		 * 新增环评任务
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			update: string;
+			delete: string;
+			stats: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			update: boolean;
+			delete: boolean;
+			stats: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceDocumentCenter {
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * delete
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * stats
+		 */
+		stats(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceDocumentCenterPageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			update: string;
+			delete: string;
+			stats: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			update: boolean;
+			delete: boolean;
+			stats: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceExpressCollab {
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * delete
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * stats
+		 */
+		stats(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceExpressCollabPageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			update: string;
+			delete: string;
+			stats: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			update: boolean;
+			delete: boolean;
+			stats: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceFeedback {
+		/**
+		 * summary
+		 */
+		summary(data?: any): Promise<any>;
+
+		/**
+		 * submit
+		 */
+		submit(data?: any): Promise<any>;
+
+		/**
+		 * export
+		 */
+		export(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceFeedbackPageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -2435,37 +2475,37 @@ declare namespace Eps {
 
 	interface PerformanceGoal {
 		/**
-		 * 更新目标进度
+		 * progressUpdate
 		 */
 		progressUpdate(data?: any): Promise<any>;
 
 		/**
-		 * 修改目标
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 删除目标
+		 * delete
 		 */
 		delete(data?: any): Promise<any>;
 
 		/**
-		 * 导出目标
+		 * export
 		 */
 		export(data?: any): Promise<any>;
 
 		/**
-		 * 目标分页
+		 * page
 		 */
 		page(data?: any): Promise<PerformanceGoalPageResponse>;
 
 		/**
-		 * 目标详情
+		 * info
 		 */
 		info(data?: any): Promise<any>;
 
 		/**
-		 * 新增目标
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -2498,29 +2538,138 @@ declare namespace Eps {
 		request: Request;
 	}
 
-	interface PerformanceIndicator {
+	interface PerformanceHiring {
 		/**
-		 * 修改指标
+		 * updateStatus
 		 */
-		update(data?: any): Promise<any>;
+		updateStatus(data?: any): Promise<any>;
 
 		/**
-		 * 删除指标
+		 * close
 		 */
-		delete(data?: any): Promise<any>;
+		close(data?: any): Promise<any>;
 
 		/**
-		 * 指标分页
+		 * page
 		 */
-		page(data?: any): Promise<PerformanceIndicatorPageResponse>;
+		page(data?: any): Promise<PerformanceHiringPageResponse>;
 
 		/**
-		 * 指标详情
+		 * info
 		 */
 		info(data?: any): Promise<any>;
 
 		/**
-		 * 新增指标
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			updateStatus: string;
+			close: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			updateStatus: boolean;
+			close: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceHonor {
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * delete
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * stats
+		 */
+		stats(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceHonorPageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			update: string;
+			delete: string;
+			stats: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			update: boolean;
+			delete: boolean;
+			stats: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceIndicator {
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * delete
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceIndicatorPageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -2535,6 +2684,64 @@ declare namespace Eps {
 		_permission: {
 			update: boolean;
 			delete: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceIntellectualProperty {
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * delete
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * stats
+		 */
+		stats(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceIntellectualPropertyPageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			update: string;
+			delete: string;
+			stats: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			update: boolean;
+			delete: boolean;
+			stats: boolean;
 			page: boolean;
 			info: boolean;
 			add: boolean;
@@ -2545,27 +2752,27 @@ declare namespace Eps {
 
 	interface PerformanceInterview {
 		/**
-		 * 修改面试
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 删除面试
+		 * delete
 		 */
 		delete(data?: any): Promise<any>;
 
 		/**
-		 * 面试分页
+		 * page
 		 */
 		page(data?: any): Promise<PerformanceInterviewPageResponse>;
 
 		/**
-		 * 面试详情
+		 * info
 		 */
 		info(data?: any): Promise<any>;
 
 		/**
-		 * 新增面试
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -2588,34 +2795,158 @@ declare namespace Eps {
 		request: Request;
 	}
 
-	interface PerformanceMeeting {
+	interface PerformanceJobStandard {
 		/**
-		 * 会议签到
+		 * setStatus
 		 */
-		checkIn(data?: any): Promise<any>;
+		setStatus(data?: any): Promise<any>;
 
 		/**
-		 * 修改会议
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 删除会议
+		 * page
 		 */
-		delete(data?: any): Promise<any>;
+		page(data?: any): Promise<PerformanceJobStandardPageResponse>;
 
 		/**
-		 * 会议分页
-		 */
-		page(data?: any): Promise<PerformanceMeetingPageResponse>;
-
-		/**
-		 * 会议详情
+		 * info
 		 */
 		info(data?: any): Promise<any>;
 
 		/**
-		 * 新增会议
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { setStatus: string; update: string; page: string; info: string; add: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			setStatus: boolean;
+			update: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceKnowledgeBase {
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * delete
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * search
+		 */
+		search(data?: any): Promise<any>;
+
+		/**
+		 * qaList
+		 */
+		qaList(data?: any): Promise<any>;
+
+		/**
+		 * stats
+		 */
+		stats(data?: any): Promise<any>;
+
+		/**
+		 * graph
+		 */
+		graph(data?: any): Promise<any>;
+
+		/**
+		 * qaAdd
+		 */
+		qaAdd(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceKnowledgeBasePageResponse>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			update: string;
+			delete: string;
+			search: string;
+			qaList: string;
+			stats: string;
+			graph: string;
+			qaAdd: string;
+			page: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			update: boolean;
+			delete: boolean;
+			search: boolean;
+			qaList: boolean;
+			stats: boolean;
+			graph: boolean;
+			qaAdd: boolean;
+			page: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceMeeting {
+		/**
+		 * checkIn
+		 */
+		checkIn(data?: any): Promise<any>;
+
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * delete
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceMeetingPageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -2648,47 +2979,47 @@ declare namespace Eps {
 
 	interface PerformancePip {
 		/**
-		 * 完成 PIP
+		 * complete
 		 */
 		complete(data?: any): Promise<any>;
 
 		/**
-		 * 修改 PIP
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 导出 PIP 摘要
+		 * export
 		 */
 		export(data?: any): Promise<any>;
 
 		/**
-		 * 启动 PIP
+		 * start
 		 */
 		start(data?: any): Promise<any>;
 
 		/**
-		 * 提交 PIP 跟进
+		 * track
 		 */
 		track(data?: any): Promise<any>;
 
 		/**
-		 * 关闭 PIP
+		 * close
 		 */
 		close(data?: any): Promise<any>;
 
 		/**
-		 * PIP 分页
+		 * page
 		 */
 		page(data?: any): Promise<PerformancePipPageResponse>;
 
 		/**
-		 * PIP 详情
+		 * info
 		 */
 		info(data?: any): Promise<any>;
 
 		/**
-		 * 新增 PIP
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -2727,32 +3058,32 @@ declare namespace Eps {
 
 	interface PerformancePromotion {
 		/**
-		 * 修改晋升单
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 提交晋升单
+		 * submit
 		 */
 		submit(data?: any): Promise<any>;
 
 		/**
-		 * 评审晋升单
+		 * review
 		 */
 		review(data?: any): Promise<any>;
 
 		/**
-		 * 晋升分页
+		 * page
 		 */
 		page(data?: any): Promise<PerformancePromotionPageResponse>;
 
 		/**
-		 * 晋升详情
+		 * info
 		 */
 		info(data?: any): Promise<any>;
 
 		/**
-		 * 新增晋升单
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -2783,36 +3114,48 @@ declare namespace Eps {
 		request: Request;
 	}
 
-	interface PerformancePurchaseOrder {
+	interface PerformancePublicityMaterial {
 		/**
-		 * 修改采购订单
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 删除采购订单
+		 * delete
 		 */
 		delete(data?: any): Promise<any>;
 
 		/**
-		 * 采购订单分页
+		 * stats
 		 */
-		page(data?: any): Promise<PerformancePurchaseOrderPageResponse>;
+		stats(data?: any): Promise<any>;
 
 		/**
-		 * 采购订单详情
+		 * page
+		 */
+		page(data?: any): Promise<PerformancePublicityMaterialPageResponse>;
+
+		/**
+		 * info
 		 */
 		info(data?: any): Promise<any>;
 
 		/**
-		 * 新增采购订单
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
 		/**
 		 * 权限标识
 		 */
-		permission: { update: string; delete: string; page: string; info: string; add: string };
+		permission: {
+			update: string;
+			delete: string;
+			stats: string;
+			page: string;
+			info: string;
+			add: string;
+		};
 
 		/**
 		 * 权限状态
@@ -2820,6 +3163,308 @@ declare namespace Eps {
 		_permission: {
 			update: boolean;
 			delete: boolean;
+			stats: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformancePurchaseOrder {
+		/**
+		 * submitApproval
+		 */
+		submitApproval(data?: any): Promise<any>;
+
+		/**
+		 * submitInquiry
+		 */
+		submitInquiry(data?: any): Promise<any>;
+
+		/**
+		 * approve
+		 */
+		approve(data?: any): Promise<any>;
+
+		/**
+		 * receive
+		 */
+		receive(data?: any): Promise<any>;
+
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * reject
+		 */
+		reject(data?: any): Promise<any>;
+
+		/**
+		 * delete
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * close
+		 */
+		close(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformancePurchaseOrderPageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			submitApproval: string;
+			submitInquiry: string;
+			approve: string;
+			receive: string;
+			update: string;
+			reject: string;
+			delete: string;
+			close: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			submitApproval: boolean;
+			submitInquiry: boolean;
+			approve: boolean;
+			receive: boolean;
+			update: boolean;
+			reject: boolean;
+			delete: boolean;
+			close: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformancePurchaseReport {
+		/**
+		 * supplierStats
+		 */
+		supplierStats(data?: any): Promise<any>;
+
+		/**
+		 * summary
+		 */
+		summary(data?: any): Promise<any>;
+
+		/**
+		 * trend
+		 */
+		trend(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { supplierStats: string; summary: string; trend: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: { supplierStats: boolean; summary: boolean; trend: boolean };
+
+		request: Request;
+	}
+
+	interface PerformanceRecruitPlan {
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * delete
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * import
+		 */
+		import(data?: any): Promise<any>;
+
+		/**
+		 * export
+		 */
+		export(data?: any): Promise<any>;
+
+		/**
+		 * submit
+		 */
+		submit(data?: any): Promise<any>;
+
+		/**
+		 * reopen
+		 */
+		reopen(data?: any): Promise<any>;
+
+		/**
+		 * close
+		 */
+		close(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceRecruitPlanPageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * void
+		 */
+		void(data?: any): Promise<any>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			update: string;
+			delete: string;
+			import: string;
+			export: string;
+			submit: string;
+			reopen: string;
+			close: string;
+			page: string;
+			info: string;
+			void: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			update: boolean;
+			delete: boolean;
+			import: boolean;
+			export: boolean;
+			submit: boolean;
+			reopen: boolean;
+			close: boolean;
+			page: boolean;
+			info: boolean;
+			void: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceResumePool {
+		/**
+		 * convertToTalentAsset
+		 */
+		convertToTalentAsset(data?: any): Promise<any>;
+
+		/**
+		 * downloadAttachment
+		 */
+		downloadAttachment(data?: any): Promise<any>;
+
+		/**
+		 * uploadAttachment
+		 */
+		uploadAttachment(data?: any): Promise<any>;
+
+		/**
+		 * createInterview
+		 */
+		createInterview(data?: any): Promise<any>;
+
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * import
+		 */
+		import(data?: any): Promise<any>;
+
+		/**
+		 * export
+		 */
+		export(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceResumePoolPageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			convertToTalentAsset: string;
+			downloadAttachment: string;
+			uploadAttachment: string;
+			createInterview: string;
+			update: string;
+			import: string;
+			export: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			convertToTalentAsset: boolean;
+			downloadAttachment: boolean;
+			uploadAttachment: boolean;
+			createInterview: boolean;
+			update: boolean;
+			import: boolean;
+			export: boolean;
 			page: boolean;
 			info: boolean;
 			add: boolean;
@@ -2830,37 +3475,37 @@ declare namespace Eps {
 
 	interface PerformanceSalary {
 		/**
-		 * 新增薪资调整记录
+		 * changeAdd
 		 */
 		changeAdd(data?: any): Promise<any>;
 
 		/**
-		 * 确认薪资
+		 * confirm
 		 */
 		confirm(data?: any): Promise<any>;
 
 		/**
-		 * 归档薪资
+		 * archive
 		 */
 		archive(data?: any): Promise<any>;
 
 		/**
-		 * 修改薪资
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 薪资分页
+		 * page
 		 */
 		page(data?: any): Promise<PerformanceSalaryPageResponse>;
 
 		/**
-		 * 薪资详情
+		 * info
 		 */
 		info(data?: any): Promise<any>;
 
 		/**
-		 * 新增薪资
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -2895,32 +3540,32 @@ declare namespace Eps {
 
 	interface PerformanceSuggestion {
 		/**
-		 * 采用建议
+		 * accept
 		 */
 		accept(data?: any): Promise<any>;
 
 		/**
-		 * 忽略建议
+		 * ignore
 		 */
 		ignore(data?: any): Promise<any>;
 
 		/**
-		 * 驳回建议
+		 * reject
 		 */
 		reject(data?: any): Promise<any>;
 
 		/**
-		 * 撤销建议
+		 * revoke
 		 */
 		revoke(data?: any): Promise<any>;
 
 		/**
-		 * 建议分页
+		 * page
 		 */
 		page(data?: any): Promise<PerformanceSuggestionPageResponse>;
 
 		/**
-		 * 建议详情
+		 * info
 		 */
 		info(data?: any): Promise<any>;
 
@@ -2953,27 +3598,27 @@ declare namespace Eps {
 
 	interface PerformanceSupplier {
 		/**
-		 * 修改供应商
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 删除供应商
+		 * delete
 		 */
 		delete(data?: any): Promise<any>;
 
 		/**
-		 * 供应商分页
+		 * page
 		 */
 		page(data?: any): Promise<PerformanceSupplierPageResponse>;
 
 		/**
-		 * 供应商详情
+		 * info
 		 */
 		info(data?: any): Promise<any>;
 
 		/**
-		 * 新增供应商
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -2998,27 +3643,27 @@ declare namespace Eps {
 
 	interface PerformanceTalentAsset {
 		/**
-		 * 修改人才资产
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 删除人才资产
+		 * delete
 		 */
 		delete(data?: any): Promise<any>;
 
 		/**
-		 * 人才资产分页
+		 * page
 		 */
 		page(data?: any): Promise<PerformanceTalentAssetPageResponse>;
 
 		/**
-		 * 人才资产详情
+		 * info
 		 */
 		info(data?: any): Promise<any>;
 
 		/**
-		 * 新增人才资产
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -3041,39 +3686,497 @@ declare namespace Eps {
 		request: Request;
 	}
 
-	interface PluginInfo {
+	interface PerformanceTeacherAgentAudit {
 		/**
-		 * 安装插件
+		 * page
 		 */
-		install(data?: any): Promise<any>;
+		page(data?: any): Promise<PerformanceTeacherAgentAuditPageResponse>;
 
 		/**
-		 * 删除
+		 * info
 		 */
-		delete(data?: any): Promise<any>;
+		info(data?: any): Promise<any>;
 
 		/**
-		 * 修改
+		 * 权限标识
+		 */
+		permission: { page: string; info: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: { page: boolean; info: boolean };
+
+		request: Request;
+	}
+
+	interface PerformanceTeacherAgentRelation {
+		/**
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 单个信息
+		 * delete
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceTeacherAgentRelationPageResponse>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { update: string; delete: string; page: string; add: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: { update: boolean; delete: boolean; page: boolean; add: boolean };
+
+		request: Request;
+	}
+
+	interface PerformanceTeacherAgent {
+		/**
+		 * updateStatus
+		 */
+		updateStatus(data?: any): Promise<any>;
+
+		/**
+		 * unblacklist
+		 */
+		unblacklist(data?: any): Promise<any>;
+
+		/**
+		 * blacklist
+		 */
+		blacklist(data?: any): Promise<any>;
+
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceTeacherAgentPageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			updateStatus: string;
+			unblacklist: string;
+			blacklist: string;
+			update: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			updateStatus: boolean;
+			unblacklist: boolean;
+			blacklist: boolean;
+			update: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceTeacherAttributionConflict {
+		/**
+		 * resolve
+		 */
+		resolve(data?: any): Promise<any>;
+
+		/**
+		 * create
+		 */
+		create(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceTeacherAttributionConflictPageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { resolve: string; create: string; page: string; info: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: { resolve: boolean; create: boolean; page: boolean; info: boolean };
+
+		request: Request;
+	}
+
+	interface PerformanceTeacherAttribution {
+		/**
+		 * assign
+		 */
+		assign(data?: any): Promise<any>;
+
+		/**
+		 * change
+		 */
+		change(data?: any): Promise<any>;
+
+		/**
+		 * remove
+		 */
+		remove(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceTeacherAttributionPageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { assign: string; change: string; remove: string; page: string; info: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			assign: boolean;
+			change: boolean;
+			remove: boolean;
+			page: boolean;
+			info: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceTeacherClass {
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * delete
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceTeacherClassPageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { update: string; delete: string; page: string; info: string; add: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			update: boolean;
+			delete: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceTeacherCooperation {
+		/**
+		 * mark
+		 */
+		mark(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { mark: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: { mark: boolean };
+
+		request: Request;
+	}
+
+	interface PerformanceTeacherDashboard {
+		/**
+		 * summary
+		 */
+		summary(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { summary: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: { summary: boolean };
+
+		request: Request;
+	}
+
+	interface PerformanceTeacherFollow {
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceTeacherFollowPageResponse>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { page: string; add: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: { page: boolean; add: boolean };
+
+		request: Request;
+	}
+
+	interface PerformanceTeacherInfo {
+		/**
+		 * attributionHistory
+		 */
+		attributionHistory(data?: any): Promise<any>;
+
+		/**
+		 * attributionInfo
+		 */
+		attributionInfo(data?: any): Promise<any>;
+
+		/**
+		 * updateStatus
+		 */
+		updateStatus(data?: any): Promise<any>;
+
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * assign
+		 */
+		assign(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceTeacherInfoPageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			attributionHistory: string;
+			attributionInfo: string;
+			updateStatus: string;
+			update: string;
+			assign: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			attributionHistory: boolean;
+			attributionInfo: boolean;
+			updateStatus: boolean;
+			update: boolean;
+			assign: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceTeacherTodo {
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceTeacherTodoPageResponse>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { page: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: { page: boolean };
+
+		request: Request;
+	}
+
+	interface PerformanceVehicle {
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * delete
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * stats
+		 */
+		stats(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceVehiclePageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			update: string;
+			delete: string;
+			stats: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			update: boolean;
+			delete: boolean;
+			stats: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PluginInfo {
+		/**
+		 * install
+		 */
+		install(data?: any): Promise<any>;
+
+		/**
+		 * delete
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * info
 		 */
 		info(data?: any): Promise<PluginInfoEntity>;
 
 		/**
-		 * 列表查询
+		 * list
 		 */
 		list(data?: any): Promise<PluginInfoEntity[]>;
 
 		/**
-		 * 分页查询
+		 * page
 		 */
 		page(data?: any): Promise<PluginInfoPageResponse>;
 
 		/**
-		 * 新增
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -3108,17 +4211,17 @@ declare namespace Eps {
 
 	interface RecycleData {
 		/**
-		 * 恢复数据
+		 * restore
 		 */
 		restore(data?: any): Promise<any>;
 
 		/**
-		 * 单个信息
+		 * info
 		 */
 		info(data?: any): Promise<RecycleDataEntity>;
 
 		/**
-		 * 分页查询
+		 * page
 		 */
 		page(data?: any): Promise<RecycleDataPageResponse>;
 
@@ -3137,32 +4240,32 @@ declare namespace Eps {
 
 	interface SpaceInfo {
 		/**
-		 * 删除
+		 * delete
 		 */
 		delete(data?: any): Promise<any>;
 
 		/**
-		 * 修改
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 单个信息
+		 * info
 		 */
 		info(data?: any): Promise<SpaceInfoEntity>;
 
 		/**
-		 * 列表查询
+		 * list
 		 */
 		list(data?: any): Promise<SpaceInfoEntity[]>;
 
 		/**
-		 * 分页查询
+		 * page
 		 */
 		page(data?: any): Promise<SpaceInfoPageResponse>;
 
 		/**
-		 * 新增
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -3195,32 +4298,32 @@ declare namespace Eps {
 
 	interface SpaceType {
 		/**
-		 * 删除
+		 * delete
 		 */
 		delete(data?: any): Promise<any>;
 
 		/**
-		 * 修改
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 单个信息
+		 * info
 		 */
 		info(data?: any): Promise<SpaceTypeEntity>;
 
 		/**
-		 * 列表查询
+		 * list
 		 */
 		list(data?: any): Promise<SpaceTypeEntity[]>;
 
 		/**
-		 * 分页查询
+		 * page
 		 */
 		page(data?: any): Promise<SpaceTypePageResponse>;
 
 		/**
-		 * 新增
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -3253,47 +4356,47 @@ declare namespace Eps {
 
 	interface TaskInfo {
 		/**
-		 * 删除
+		 * delete
 		 */
 		delete(data?: any): Promise<any>;
 
 		/**
-		 * 修改
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 开始
+		 * start
 		 */
 		start(data?: any): Promise<any>;
 
 		/**
-		 * 执行一次
+		 * once
 		 */
 		once(data?: any): Promise<any>;
 
 		/**
-		 * 停止
+		 * stop
 		 */
 		stop(data?: any): Promise<any>;
 
 		/**
-		 * 单个信息
+		 * info
 		 */
 		info(data?: any): Promise<TaskInfoEntity>;
 
 		/**
-		 * 分页查询
+		 * page
 		 */
 		page(data?: any): Promise<TaskInfoPageResponse>;
 
 		/**
-		 * 日志
+		 * log
 		 */
 		log(data?: any): Promise<any>;
 
 		/**
-		 * 新增
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -3332,32 +4435,32 @@ declare namespace Eps {
 
 	interface UserAddress {
 		/**
-		 * 删除
+		 * delete
 		 */
 		delete(data?: any): Promise<any>;
 
 		/**
-		 * 修改
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 单个信息
+		 * info
 		 */
 		info(data?: any): Promise<UserAddressEntity>;
 
 		/**
-		 * 列表查询
+		 * list
 		 */
 		list(data?: any): Promise<UserAddressEntity[]>;
 
 		/**
-		 * 分页查询
+		 * page
 		 */
 		page(data?: any): Promise<UserAddressPageResponse>;
 
 		/**
-		 * 新增
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -3390,32 +4493,32 @@ declare namespace Eps {
 
 	interface UserInfo {
 		/**
-		 * 删除
+		 * delete
 		 */
 		delete(data?: any): Promise<any>;
 
 		/**
-		 * 修改
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 单个信息
+		 * info
 		 */
 		info(data?: any): Promise<UserInfoEntity>;
 
 		/**
-		 * 列表查询
+		 * list
 		 */
 		list(data?: any): Promise<UserInfoEntity[]>;
 
 		/**
-		 * 分页查询
+		 * page
 		 */
 		page(data?: any): Promise<UserInfoPageResponse>;
 
 		/**
-		 * 新增
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -3458,8 +4561,6 @@ declare namespace Eps {
 
 	type Request = (options: RequestOptions) => Promise<any>;
 
-	type DictKey = string;
-
 	type Service = {
 		request: Request;
 
@@ -3479,8 +4580,19 @@ declare namespace Eps {
 		demo: { goods: DemoGoods; tenant: DemoTenant };
 		dict: { info: DictInfo; type: DictType };
 		performance: {
+			annualInspection: PerformanceAnnualInspection;
 			approvalFlow: PerformanceApprovalFlow;
 			assessment: PerformanceAssessment;
+			assetAssignment: PerformanceAssetAssignment;
+			assetDashboard: PerformanceAssetDashboard;
+			assetDepreciation: PerformanceAssetDepreciation;
+			assetDisposal: PerformanceAssetDisposal;
+			assetInfo: PerformanceAssetInfo;
+			assetInventory: PerformanceAssetInventory;
+			assetMaintenance: PerformanceAssetMaintenance;
+			assetProcurement: PerformanceAssetProcurement;
+			assetReport: PerformanceAssetReport;
+			assetTransfer: PerformanceAssetTransfer;
 			capabilityItem: PerformanceCapabilityItem;
 			capabilityModel: PerformanceCapabilityModel;
 			capabilityPortrait: PerformanceCapabilityPortrait;
@@ -3491,18 +4603,42 @@ declare namespace Eps {
 			courseRecite: PerformanceCourseRecite;
 			course: PerformanceCourse;
 			dashboard: PerformanceDashboard;
+			designCollab: PerformanceDesignCollab;
+			documentCenter: PerformanceDocumentCenter;
+			expressCollab: PerformanceExpressCollab;
 			feedback: PerformanceFeedback;
 			goal: PerformanceGoal;
+			hiring: PerformanceHiring;
+			honor: PerformanceHonor;
 			indicator: PerformanceIndicator;
+			intellectualProperty: PerformanceIntellectualProperty;
 			interview: PerformanceInterview;
+			jobStandard: PerformanceJobStandard;
+			knowledgeBase: PerformanceKnowledgeBase;
 			meeting: PerformanceMeeting;
 			pip: PerformancePip;
 			promotion: PerformancePromotion;
+			publicityMaterial: PerformancePublicityMaterial;
 			purchaseOrder: PerformancePurchaseOrder;
+			purchaseReport: PerformancePurchaseReport;
+			recruitPlan: PerformanceRecruitPlan;
+			resumePool: PerformanceResumePool;
 			salary: PerformanceSalary;
 			suggestion: PerformanceSuggestion;
 			supplier: PerformanceSupplier;
 			talentAsset: PerformanceTalentAsset;
+			teacherAgentAudit: PerformanceTeacherAgentAudit;
+			teacherAgentRelation: PerformanceTeacherAgentRelation;
+			teacherAgent: PerformanceTeacherAgent;
+			teacherAttributionConflict: PerformanceTeacherAttributionConflict;
+			teacherAttribution: PerformanceTeacherAttribution;
+			teacherClass: PerformanceTeacherClass;
+			teacherCooperation: PerformanceTeacherCooperation;
+			teacherDashboard: PerformanceTeacherDashboard;
+			teacherFollow: PerformanceTeacherFollow;
+			teacherInfo: PerformanceTeacherInfo;
+			teacherTodo: PerformanceTeacherTodo;
+			vehicle: PerformanceVehicle;
 		};
 		plugin: { info: PluginInfo };
 		recycle: { data: RecycleData };

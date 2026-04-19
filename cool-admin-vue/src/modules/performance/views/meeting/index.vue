@@ -207,6 +207,7 @@ import { useBase } from '/$/base';
 import MeetingDetailDrawer from '../../components/meeting-detail-drawer.vue';
 import MeetingForm from '../../components/meeting-form.vue';
 import { performanceMeetingService } from '../../service/meeting';
+import { loadUserOptions } from '../../utils/lookup-options.js';
 import {
 	type MeetingRecord,
 	type MeetingStatus,
@@ -290,21 +291,16 @@ onMounted(async () => {
 });
 
 async function loadUsers() {
-	try {
-		const result = await service.base.sys.user.page({
+	userOptions.value = await loadUserOptions(
+		() =>
+			service.base.sys.user.page({
 			page: 1,
 			size: 200
-		});
-
-		userOptions.value = (result.list || []).map((item: any) => ({
-			id: Number(item.id),
-			name: item.name,
-			departmentId: item.departmentId,
-			departmentName: item.departmentName
-		}));
-	} catch (error: any) {
-		ElMessage.warning(error.message || '用户选项加载失败');
-	}
+			}),
+		(error: any) => {
+			ElMessage.warning(error.message || '用户选项加载失败');
+		}
+	);
 }
 
 async function refresh() {

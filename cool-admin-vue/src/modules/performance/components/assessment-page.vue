@@ -130,6 +130,31 @@
 
 		<el-dialog v-model="detailVisible" title="评估单详情" width="920px" destroy-on-close>
 			<assessment-detail :assessment="detailRecord" />
+
+			<template #footer>
+				<el-button @click="detailVisible = false">关闭</el-button>
+				<el-button
+					v-if="showCreateFeedbackButton && detailRecord?.id && detailRecord.employeeId"
+					type="success"
+					@click="goCreateFeedback(detailRecord.id, detailRecord.employeeId)"
+				>
+					发起环评
+				</el-button>
+				<el-button
+					v-if="showCreatePipButton && detailRecord?.id && detailRecord.employeeId"
+					type="warning"
+					@click="goCreatePip(detailRecord.id, detailRecord.employeeId)"
+				>
+					发起 PIP
+				</el-button>
+				<el-button
+					v-if="showCreatePromotionButton && detailRecord?.id && detailRecord.employeeId"
+					type="primary"
+					@click="goCreatePromotion(detailRecord.id, detailRecord.employeeId)"
+				>
+					发起晋升
+				</el-button>
+			</template>
 		</el-dialog>
 
 		<approval-drawer
@@ -154,7 +179,8 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
 import { service } from '/@/cool';
 import { useBase } from '/$/base';
-import { export_json_to_excel } from '/@/plugins/excel/utils';
+import { exportJsonToExcel } from '/@/plugins/excel/utils';
+import { useRoute, useRouter } from 'vue-router';
 import AssessmentForm from './assessment-form.vue';
 import AssessmentDetail from './assessment-detail.vue';
 import ApprovalDrawer from './approval-drawer.vue';
@@ -165,6 +191,15 @@ import {
 	createEmptyAssessment
 } from '../types';
 import { performanceAssessmentService } from '../service/assessment';
+import { performanceFeedbackService } from '../service/feedback';
+import { performancePipService } from '../service/pip';
+import { performancePromotionService } from '../service/promotion';
+import { loadUserOptions } from '../utils/lookup-options.js';
+import {
+	consumeRoutePreset,
+	firstQueryValue,
+	normalizeQueryNumber
+} from '../utils/route-preset.js';
 
 const props = defineProps<{
 	title: string;
@@ -172,6 +207,8 @@ const props = defineProps<{
 }>();
 
 const { user } = useBase();
+const route = useRoute();
+const router = useRouter();
 
 const rows = ref<AssessmentRecord[]>([]);
 const tableLoading = ref(false);
@@ -226,6 +263,13 @@ const canApproveReview = computed(() =>
 const canRejectReview = computed(() =>
 	checkPerm(performanceAssessmentService.permission.reject)
 );
+const showCreateFeedbackButton = computed(() =>
+	checkPerm(performanceFeedbackService.permission.add)
+);
+const showCreatePipButton = computed(() => checkPerm(performancePipService.permission.add));
+const showCreatePromotionButton = computed(() =>
+	checkPerm(performancePromotionService.permission.add)
+);
 
 const modeLabel = computed(() => {
 	switch (props.mode) {
@@ -244,26 +288,20 @@ onMounted(async () => {
 	}
 
 	await refresh();
+	await consumeRouteDetailQuery();
 });
 
 async function loadUsers() {
-	try {
-		const result = await service.base.sys.user.page({
+	userOptions.value = await loadUserOptions(
+		() =>
+			service.base.sys.user.page({
 			page: 1,
 			size: 200
-		});
-
-		userOptions.value = (result.list || []).map((item: any) => {
-			return {
-				id: Number(item.id),
-				name: item.name,
-				departmentId: item.departmentId,
-				departmentName: item.departmentName
-			};
-		});
-	} catch (error: any) {
-		ElMessage.warning(error.message || '用户选项加载失败');
-	}
+			}),
+		(error: any) => {
+			ElMessage.warning(error.message || '用户选项加载失败');
+		}
+	);
 }
 
 async function refresh() {
@@ -321,6 +359,27 @@ async function openDetail(row: AssessmentRecord) {
 	});
 }
 
+async function consumeRouteDetailQuery() {
+	await consumeRoutePreset({
+		route,
+		router,
+		keys: ['openDetail', 'assessmentId'],
+		parse: query => ({
+			shouldOpenDetail: firstQueryValue(query.openDetail) === '1',
+			assessmentId: normalizeQueryNumber(query.assessmentId)
+		}),
+		shouldConsume: payload => Boolean(payload.shouldOpenDetail && payload.assessmentId),
+		consume: async payload => {
+			const record = await fetchDetail(payload.assessmentId!);
+
+			if (record) {
+				detailRecord.value = record;
+				detailVisible.value = true;
+			}
+		}
+	});
+}
+
 async function openApproval(row: AssessmentRecord) {
 	await loadDetail(row.id!, record => {
 		detailRecord.value = record;
@@ -328,12 +387,57 @@ async function openApproval(row: AssessmentRecord) {
 	});
 }
 
-async function loadDetail(id: number, next: (record: AssessmentRecord) => void) {
+async function goCreateFeedback(assessmentId: number, employeeId: number) {
+	detailVisible.value = false;
+
+	await router.push({
+		path: '/performance/feedback',
+		query: {
+			openCreate: '1',
+			assessmentId: String(assessmentId),
+			employeeId: String(employeeId)
+		}
+	});
+}
+
+async function goCreatePip(assessmentId: number, employeeId: number) {
+	detailVisible.value = false;
+
+	await router.push({
+		path: '/performance/pip',
+		query: {
+			assessmentId: String(assessmentId),
+			employeeId: String(employeeId)
+		}
+	});
+}
+
+async function goCreatePromotion(assessmentId: number, employeeId: number) {
+	detailVisible.value = false;
+
+	await router.push({
+		path: '/performance/promotion',
+		query: {
+			assessmentId: String(assessmentId),
+			employeeId: String(employeeId)
+		}
+	});
+}
+
+async function fetchDetail(id: number) {
 	try {
-		const record = await performanceAssessmentService.fetchInfo({ id });
-		next(record);
+		return await performanceAssessmentService.fetchInfo({ id });
 	} catch (error: any) {
 		ElMessage.error(error.message || '评估单详情加载失败');
+		return null;
+	}
+}
+
+async function loadDetail(id: number, next: (record: AssessmentRecord) => void) {
+	const record = await fetchDetail(id);
+
+	if (record) {
+		next(record);
 	}
 }
 
@@ -428,7 +532,7 @@ async function handleExport() {
 			status: filters.status || undefined
 		});
 
-		export_json_to_excel({
+		exportJsonToExcel({
 			header: [
 				'编号',
 				'被考核人',
@@ -520,6 +624,7 @@ function statusTagType(status?: string) {
 			return 'info';
 	}
 }
+
 </script>
 
 <style lang="scss" scoped>

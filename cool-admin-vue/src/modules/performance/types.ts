@@ -12,10 +12,17 @@ export type DashboardCrossMetricCode =
 export type DashboardCrossSourceDomain = 'recruitment' | 'training' | 'meeting';
 export type DashboardCrossScopeType = 'global' | 'department_tree';
 export type DashboardCrossDataStatus = 'ready' | 'delayed' | 'unavailable';
-export type RecruitPlanStatus = 'draft' | 'active' | 'closed';
+export type RecruitPlanStatus = 'draft' | 'active' | 'voided' | 'closed';
 export type ContractStatus = 'draft' | 'active' | 'expired' | 'terminated';
 export type ContractType = 'full-time' | 'part-time' | 'internship' | 'other';
-export type PurchaseOrderStatus = 'draft' | 'active' | 'cancelled';
+export type PurchaseOrderStatus =
+	| 'draft'
+	| 'inquiring'
+	| 'pendingApproval'
+	| 'approved'
+	| 'received'
+	| 'closed'
+	| 'cancelled';
 export type SupplierStatus = 'active' | 'inactive';
 export type CapabilityModelStatus = 'draft' | 'active' | 'archived';
 export type CourseStatus = 'draft' | 'published' | 'closed';

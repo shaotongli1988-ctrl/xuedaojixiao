@@ -121,9 +121,17 @@
 					</template>
 				</el-table-column>
 				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
-				<el-table-column label="操作" fixed="right" min-width="280">
+				<el-table-column label="操作" fixed="right" min-width="360">
 					<template #default="{ row }">
 						<el-button text @click="openDetail(row)">详情</el-button>
+						<el-button
+							v-if="canViewSourceAssessment(row)"
+							text
+							type="primary"
+							@click="goSourceAssessment(row.assessmentId!)"
+						>
+							来源评估单
+						</el-button>
 						<el-button v-if="canEdit(row)" text type="primary" @click="openEdit(row)">
 							编辑
 						</el-button>
@@ -252,20 +260,24 @@ defineOptions({
 });
 
 import { computed, onMounted, reactive, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
 import { service } from '/@/cool';
 import { useBase } from '/$/base';
 import PromotionReviewDrawer from '../../components/promotion-review-drawer.vue';
+import { performanceAssessmentService } from '../../service/assessment';
 import {
 	type PromotionRecord,
 	type UserOption,
 	createEmptyPromotion
 } from '../../types';
 import { performancePromotionService } from '../../service/promotion';
+import { loadUserOptions } from '../../utils/lookup-options.js';
+import { clearRoutePresetQuery } from '../../utils/route-preset.js';
 
 const route = useRoute();
+const router = useRouter();
 const { user } = useBase();
 
 const rows = ref<PromotionRecord[]>([]);
@@ -336,28 +348,23 @@ const detailCanReview = computed(() => {
 onMounted(async () => {
 	await loadUsers();
 	await refresh();
-	applyRoutePreset();
+	await applyRoutePreset();
 });
 
 async function loadUsers() {
-	try {
-		const result = await service.base.sys.user.page({
+	userOptions.value = await loadUserOptions(
+		() =>
+			service.base.sys.user.page({
 			page: 1,
 			size: 200
-		});
-
-		userOptions.value = (result.list || []).map((item: any) => ({
-			id: Number(item.id),
-			name: item.name,
-			departmentId: item.departmentId,
-			departmentName: item.departmentName
-		}));
-	} catch (error: any) {
-		ElMessage.warning(error.message || '用户选项加载失败');
-	}
+			}),
+		(error: any) => {
+			ElMessage.warning(error.message || '用户选项加载失败');
+		}
+	);
 }
 
-function applyRoutePreset() {
+async function applyRoutePreset() {
 	const assessmentId = Number(route.query.assessmentId || 0);
 	const employeeId = Number(route.query.employeeId || 0);
 
@@ -369,6 +376,8 @@ function applyRoutePreset() {
 		assessmentId: assessmentId || undefined,
 		employeeId: employeeId || undefined
 	});
+
+	await clearPresetQuery();
 }
 
 async function refresh() {
@@ -543,6 +552,50 @@ function statusTagType(status?: string) {
 		default:
 			return 'info';
 	}
+}
+
+async function clearPresetQuery() {
+	await clearRoutePresetQuery({
+		route,
+		router,
+		keys: ['assessmentId', 'employeeId', 'suggestionId', 'suggestionType']
+	});
+}
+
+function canViewSourceAssessment(row: PromotionRecord) {
+	return Boolean(row.assessmentId) && resolveAssessmentPagePath() !== '';
+}
+
+async function goSourceAssessment(assessmentId: number) {
+	const path = resolveAssessmentPagePath();
+
+	if (!path) {
+		return;
+	}
+
+	await router.push({
+		path,
+		query: {
+			openDetail: '1',
+			assessmentId: String(assessmentId)
+		}
+	});
+}
+
+function resolveAssessmentPagePath() {
+	if (checkPerm(performanceAssessmentService.permission.page)) {
+		return '/performance/initiated';
+	}
+
+	if (checkPerm(performanceAssessmentService.permission.myPage)) {
+		return '/performance/my-assessment';
+	}
+
+	if (checkPerm(performanceAssessmentService.permission.pendingPage)) {
+		return '/performance/pending';
+	}
+
+	return '';
 }
 </script>
 

@@ -401,6 +401,10 @@ import { checkPerm } from '/$/base/utils/permission';
 import { service } from '/@/cool';
 import { performanceContractService } from '../../service/contract';
 import {
+	loadDepartmentOptions,
+	loadUserOptions
+} from '../../utils/lookup-options.js';
+import {
 	type ContractRecord,
 	type ContractStatus,
 	type ContractType,
@@ -545,32 +549,25 @@ onMounted(async () => {
 });
 
 async function loadUsers() {
-	try {
-		const result = await service.base.sys.user.page({
-			page: 1,
-			size: 500
-		});
-
-		userOptions.value = (result.list || []).map((item: any) => ({
-			id: Number(item.id),
-			name: item.name,
-			departmentId: item.departmentId,
-			departmentName: item.departmentName
-		}));
-	} catch (error: any) {
-		userOptions.value = [];
-		ElMessage.warning(error.message || '员工选项加载失败');
-	}
+	userOptions.value = await loadUserOptions(
+		() =>
+			service.base.sys.user.page({
+				page: 1,
+				size: 500
+			}),
+		(error: any) => {
+			ElMessage.warning(error.message || '员工选项加载失败');
+		}
+	);
 }
 
 async function loadDepartments() {
-	try {
-		const result = await service.base.sys.department.list();
-		departmentOptions.value = flattenDepartments(result || []);
-	} catch (error: any) {
-		departmentOptions.value = [];
-		ElMessage.warning(error.message || '部门选项加载失败');
-	}
+	departmentOptions.value = await loadDepartmentOptions(
+		() => service.base.sys.department.list(),
+		(error: any) => {
+			ElMessage.warning(error.message || '部门选项加载失败');
+		}
+	);
 }
 
 async function refresh() {
@@ -853,20 +850,6 @@ function formatInteger(value?: number | null) {
 	return `${Number(value)}`;
 }
 
-function flattenDepartments(list: any[], result: DepartmentOption[] = []) {
-	for (const item of list) {
-		result.push({
-			id: Number(item.id),
-			label: item.name
-		});
-
-		if (item.children?.length) {
-			flattenDepartments(item.children, result);
-		}
-	}
-
-	return result;
-}
 </script>
 
 <style lang="scss" scoped>

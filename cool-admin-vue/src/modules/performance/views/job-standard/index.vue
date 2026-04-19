@@ -227,6 +227,25 @@
 					</el-descriptions-item>
 				</el-descriptions>
 			</div>
+
+			<template #footer>
+				<div class="job-standard-page__dialog-footer">
+					<el-button @click="detailVisible = false">关闭</el-button>
+					<el-button
+						v-if="canCreateRecruitPlanFromJobStandard"
+						type="primary"
+						@click="goCreateRecruitPlan(detailRecord)"
+					>
+						新建招聘计划
+					</el-button>
+					<el-button
+						v-if="canCreateResumeFromJobStandard"
+						@click="goCreateResumePool(detailRecord)"
+					>
+						新建简历
+					</el-button>
+				</div>
+			</template>
 		</el-dialog>
 
 		<el-dialog
@@ -366,8 +385,16 @@ import { computed, nextTick, onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
 import { service } from '/@/cool';
+import { useRoute, useRouter } from 'vue-router';
+import { performanceRecruitPlanService } from '../../service/recruit-plan';
+import { performanceResumePoolService } from '../../service/resumePool';
 import { performanceJobStandardService } from '../../service/job-standard';
 import { loadDepartmentOptions } from '../../utils/lookup-options.js';
+import {
+	consumeRoutePreset,
+	firstQueryValue,
+	normalizeQueryNumber
+} from '../../utils/route-preset.js';
 import {
 	type JobStandardRecord,
 	type JobStandardStatus,
@@ -390,6 +417,8 @@ const editingRecord = ref<JobStandardRecord | null>(null);
 const formRef = ref<FormInstance>();
 const statusLoadingId = ref<number | null>(null);
 const statusLoadingTarget = ref<JobStandardStatus | null>(null);
+const route = useRoute();
+const router = useRouter();
 
 const filters = reactive({
 	keyword: '',
@@ -429,6 +458,12 @@ const showAddButton = computed(() => checkPerm(performanceJobStandardService.per
 const showUpdateButton = computed(() => checkPerm(performanceJobStandardService.permission.update));
 const showSetStatusButton = computed(() =>
 	checkPerm(performanceJobStandardService.permission.setStatus)
+);
+const canCreateRecruitPlanFromJobStandard = computed(() =>
+	checkPerm(performanceRecruitPlanService.permission.add)
+);
+const canCreateResumeFromJobStandard = computed(() =>
+	checkPerm(performanceResumePoolService.permission.add)
 );
 const isReadOnlyRole = computed(
 	() => !showAddButton.value && !showUpdateButton.value && !showSetStatusButton.value
@@ -478,6 +513,7 @@ const skillTagOptions = computed<string[]>(() => {
 onMounted(async () => {
 	await loadDepartments();
 	await refresh();
+	await consumeRouteOpenDetail();
 });
 
 async function loadDepartments() {
@@ -742,6 +778,72 @@ function normalizeTagList(list?: string[]) {
 	);
 
 	return deduplicated.length ? deduplicated : undefined;
+}
+
+async function consumeRouteOpenDetail() {
+	await consumeRoutePreset({
+		route,
+		router,
+		keys: ['openDetail', 'jobStandardId'],
+		parse: query => ({
+			shouldOpenDetail: firstQueryValue(query.openDetail) === '1',
+			jobStandardId: normalizeQueryNumber(query.jobStandardId)
+		}),
+		shouldConsume: payload => Boolean(payload.shouldOpenDetail && payload.jobStandardId),
+		consume: async payload => {
+			if (!showInfoButton.value || !payload.jobStandardId) {
+				return;
+			}
+
+			try {
+				detailRecord.value = await performanceJobStandardService.fetchInfo({
+					id: payload.jobStandardId
+				});
+				detailVisible.value = true;
+			} catch (error: any) {
+				ElMessage.error(error.message || '职位标准详情加载失败');
+			}
+		}
+	});
+}
+
+async function goCreateRecruitPlan(record?: JobStandardRecord | null) {
+	if (!record?.id) {
+		return;
+	}
+
+	detailVisible.value = false;
+	await router.push({
+		path: '/performance/recruit-plan',
+		query: {
+			openCreate: '1',
+			targetDepartmentId: record.targetDepartmentId ? String(record.targetDepartmentId) : undefined,
+			positionName: record.positionName || undefined,
+			requirementSummary: record.requirementSummary || undefined,
+			jobStandardId: String(record.id),
+			jobStandardPositionName: record.positionName || undefined,
+			jobStandardRequirementSummary: record.requirementSummary || undefined
+		}
+	});
+}
+
+async function goCreateResumePool(record?: JobStandardRecord | null) {
+	if (!record?.id) {
+		return;
+	}
+
+	detailVisible.value = false;
+	await router.push({
+		path: '/performance/resumePool',
+		query: {
+			openCreate: '1',
+			targetDepartmentId: record.targetDepartmentId ? String(record.targetDepartmentId) : undefined,
+			targetPosition: record.positionName || undefined,
+			jobStandardId: String(record.id),
+			jobStandardPositionName: record.positionName || undefined,
+			jobStandardRequirementSummary: record.requirementSummary || undefined
+		}
+	});
 }
 </script>
 
