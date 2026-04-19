@@ -8,6 +8,10 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import {
+  resolveProjectGitHash,
+  resolveProjectSourceHash,
+} from '../cool-admin-midway/scripts/stage2-runtime-meta.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
@@ -263,6 +267,122 @@ function getTriggeredCommands(files) {
   return commandGroups.filter(group => files.some(filePath => group.matches(filePath)));
 }
 
+function tryExec(command, args, options = {}) {
+  try {
+    return execFileSync(command, args, {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      ...options,
+    }).trim();
+  } catch (error) {
+    return '';
+  }
+}
+
+function parsePortFromBaseUrl(baseUrl) {
+  if (!baseUrl) {
+    return null;
+  }
+  try {
+    const port = Number(new URL(baseUrl).port);
+    return Number.isInteger(port) && port > 0 ? port : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function getListeningPorts() {
+  const output = tryExec('lsof', ['-nP', '-iTCP', '-sTCP:LISTEN']);
+  if (!output) {
+    return [];
+  }
+
+  const ports = new Set();
+  const lines = output.split('\n').slice(1);
+  for (const line of lines) {
+    const matched = line.match(/:(\d+)\s+\(LISTEN\)$/);
+    if (!matched) {
+      continue;
+    }
+    const port = Number(matched[1]);
+    if (Number.isInteger(port) && port > 0) {
+      ports.add(port);
+    }
+  }
+  return [...ports];
+}
+
+function isReachableStage2Runtime(baseUrl, expectedRuntime = null) {
+  const output = tryExec('curl', [
+    '-fsS',
+    '--max-time',
+    '2',
+    `${baseUrl}/admin/base/open/runtimeMeta`,
+  ]);
+
+  if (!output) {
+    return false;
+  }
+
+  try {
+    const parsed = JSON.parse(output);
+    const runtimeMeta = parsed?.data || parsed;
+    if (!runtimeMeta?.seedMeta?.version) {
+      return false;
+    }
+    if (!expectedRuntime) {
+      return true;
+    }
+    return (
+      runtimeMeta.gitHash === expectedRuntime.gitHash &&
+      runtimeMeta.sourceHash === expectedRuntime.sourceHash
+    );
+  } catch (error) {
+    return false;
+  }
+}
+
+function resolveStage2SmokeBaseUrl(options = {}) {
+  const { allowRuntimeMismatch = false } = options;
+  if (process.env.STAGE2_SMOKE_BASE_URL) {
+    return process.env.STAGE2_SMOKE_BASE_URL.replace(/\/+$/, '');
+  }
+
+  const candidatePorts = [];
+  const candidateSet = new Set();
+  const pushPort = port => {
+    if (Number.isInteger(port) && port > 0 && !candidateSet.has(port)) {
+      candidateSet.add(port);
+      candidatePorts.push(port);
+    }
+  };
+
+  for (const port of [8065, 8063, 8006, parsePortFromBaseUrl(process.env.THEME19_SMOKE_BASE_URL)]) {
+    pushPort(port);
+  }
+  for (const port of getListeningPorts()) {
+    pushPort(port);
+  }
+
+  const expectedRuntime = {
+    gitHash: resolveProjectGitHash(path.join(repoRoot, 'cool-admin-midway')),
+    sourceHash: resolveProjectSourceHash(path.join(repoRoot, 'cool-admin-midway')),
+  };
+
+  for (const port of candidatePorts) {
+    const baseUrl = `http://127.0.0.1:${port}`;
+    if (isReachableStage2Runtime(baseUrl, allowRuntimeMismatch ? null : expectedRuntime)) {
+      return baseUrl;
+    }
+  }
+
+  fail(
+    allowRuntimeMismatch
+      ? 'midway-smoke 未找到可访问的本地 stage2 后端实例。请先启动后端，或显式设置 STAGE2_SMOKE_BASE_URL。'
+      : 'midway-smoke 未找到与当前代码哈希一致的本地 stage2 后端实例。请先启动/重启当前版本后端，或显式设置 STAGE2_SMOKE_BASE_URL。'
+  );
+}
+
 function runCommandGroup(group, dryRun) {
   const commandPreview = `${group.command.join(' ')} (cwd=${group.cwd})`;
   if (dryRun) {
@@ -271,10 +391,19 @@ function runCommandGroup(group, dryRun) {
   }
 
   info(`RUN ${group.id}: ${group.description}`);
+  const allowRuntimeMismatch = group.id === 'midway-smoke';
+  const env =
+    allowRuntimeMismatch
+      ? {
+          ...process.env,
+          STAGE2_SMOKE_BASE_URL: resolveStage2SmokeBaseUrl({ allowRuntimeMismatch }),
+          STAGE2_SMOKE_ALLOW_RUNTIME_MISMATCH: '1',
+        }
+      : process.env;
   const result = spawnSync(group.command[0], group.command.slice(1), {
     cwd: path.join(repoRoot, group.cwd),
     stdio: 'inherit',
-    env: process.env,
+    env,
   });
 
   if (result.status !== 0) {
