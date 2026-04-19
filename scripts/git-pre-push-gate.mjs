@@ -185,19 +185,107 @@ function runGit(args) {
   }
 }
 
-function getUpstreamRef() {
+function tryRunGit(args) {
   try {
-    return runGit(['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}']).trim();
+    return execFileSync('git', ['-C', repoRoot, '-c', 'core.quotePath=false', ...args], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trimEnd();
   } catch (error) {
     return '';
   }
 }
 
-function getPendingCommitFiles(upstreamRef) {
-  if (!upstreamRef) {
-    fail('当前分支未配置上游分支，严格门禁无法判定待推送范围。请先设置 upstream。');
+function getUpstreamRef() {
+  return tryRunGit(['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}']).trim();
+}
+
+function getCurrentBranchName() {
+  return tryRunGit(['rev-parse', '--abbrev-ref', 'HEAD']).trim();
+}
+
+function getPreferredRemoteName() {
+  const currentBranch = getCurrentBranchName();
+  const candidates = [
+    currentBranch
+      ? tryRunGit(['config', '--get', `branch.${currentBranch}.pushRemote`]).trim()
+      : '',
+    currentBranch ? tryRunGit(['config', '--get', `branch.${currentBranch}.remote`]).trim() : '',
+    tryRunGit(['config', '--get', 'remote.pushDefault']).trim(),
+  ].filter(Boolean);
+
+  if (candidates.length > 0) {
+    return candidates[0];
   }
-  const output = runGit(['diff', '--name-only', '--diff-filter=ACMR', `${upstreamRef}..HEAD`]);
+
+  const remotes = tryRunGit(['remote']).split('\n').map(item => item.trim()).filter(Boolean);
+  if (remotes.length === 1) {
+    return remotes[0];
+  }
+  if (remotes.includes('origin')) {
+    return 'origin';
+  }
+  if (remotes.includes('xuedaojixiao')) {
+    return 'xuedaojixiao';
+  }
+
+  return remotes[0] || '';
+}
+
+function getDefaultRemoteHeadRef() {
+  const preferredRemote = getPreferredRemoteName();
+  if (preferredRemote) {
+    const preferredHead = tryRunGit([
+      'symbolic-ref',
+      '--quiet',
+      '--short',
+      `refs/remotes/${preferredRemote}/HEAD`,
+    ]).trim();
+    if (preferredHead) {
+      return preferredHead;
+    }
+  }
+
+  const remoteHeadRefs = tryRunGit([
+    'for-each-ref',
+    '--format=%(refname:short)',
+    'refs/remotes/*/HEAD',
+  ])
+    .split('\n')
+    .map(item => item.trim())
+    .filter(Boolean);
+
+  return remoteHeadRefs[0] || '';
+}
+
+function resolveDiffBase(upstreamRef) {
+  if (upstreamRef) {
+    return upstreamRef;
+  }
+
+  const remoteHeadRef = getDefaultRemoteHeadRef();
+  if (remoteHeadRef) {
+    const mergeBase = tryRunGit(['merge-base', 'HEAD', remoteHeadRef]).trim();
+    if (mergeBase) {
+      return mergeBase;
+    }
+  }
+
+  const headParent = tryRunGit(['rev-parse', 'HEAD^']).trim();
+  if (headParent) {
+    return headParent;
+  }
+
+  return '';
+}
+
+function getPendingCommitFiles(diffBaseRef) {
+  if (!diffBaseRef) {
+    const output = tryRunGit(['diff-tree', '--no-commit-id', '--name-only', '-r', '--diff-filter=ACMR', 'HEAD']);
+    return output ? output.split('\n').map(normalizePath).filter(Boolean) : [];
+  }
+
+  const output = runGit(['diff', '--name-only', '--diff-filter=ACMR', `${diffBaseRef}..HEAD`]);
   return output ? output.split('\n').map(normalizePath).filter(Boolean) : [];
 }
 
@@ -250,11 +338,14 @@ function collectChangedFiles(fileOverrides) {
   }
 
   const upstreamRef = getUpstreamRef();
-  const pendingCommitFiles = getPendingCommitFiles(upstreamRef);
+  const diffBaseRef = resolveDiffBase(upstreamRef);
+  const pendingCommitFiles = getPendingCommitFiles(diffBaseRef);
   const worktreeFiles = getWorktreeFiles();
   const changedFiles = [...new Set([...pendingCommitFiles, ...worktreeFiles])];
 
   return {
+    upstreamRef,
+    diffBaseRef,
     pendingCommitFiles,
     worktreeFiles,
     changedFiles,
@@ -409,13 +500,14 @@ function runCommandGroup(group, dryRun) {
   }
 
   info(`RUN ${group.id}: ${group.description}`);
-  const allowRuntimeMismatch = group.id === 'midway-smoke';
+  const allowRuntimeMismatch =
+    group.id === 'midway-smoke' && process.env.STAGE2_SMOKE_ALLOW_RUNTIME_MISMATCH === '1';
   const env =
-    allowRuntimeMismatch
+    group.id === 'midway-smoke'
       ? {
           ...process.env,
           STAGE2_SMOKE_BASE_URL: resolveStage2SmokeBaseUrl({ allowRuntimeMismatch }),
-          STAGE2_SMOKE_ALLOW_RUNTIME_MISMATCH: '1',
+          ...(allowRuntimeMismatch ? { STAGE2_SMOKE_ALLOW_RUNTIME_MISMATCH: '1' } : {}),
         }
       : process.env;
   const result = spawnSync(group.command[0], group.command.slice(1), {
@@ -431,7 +523,8 @@ function runCommandGroup(group, dryRun) {
 
 function main() {
   const args = parseArgs(process.argv.slice(2));
-  const { pendingCommitFiles, worktreeFiles, changedFiles } = collectChangedFiles(args.files);
+  const { upstreamRef, diffBaseRef, pendingCommitFiles, worktreeFiles, changedFiles } =
+    collectChangedFiles(args.files);
 
   if (changedFiles.length === 0) {
     info('未检测到待推送或工作区变更，跳过门禁。');
@@ -444,6 +537,13 @@ function main() {
   }
   if (worktreeFiles.length > 0) {
     info(`工作区未提交变更数: ${worktreeFiles.length}`);
+  }
+  if (!args.files.length && !upstreamRef) {
+    info(
+      diffBaseRef
+        ? `当前分支未配置 upstream，已退化为基于 ${diffBaseRef.slice(0, 12)}..HEAD 与工作区计算门禁范围。`
+        : '当前分支未配置 upstream，已退化为仅基于 HEAD 最近一次提交与工作区计算门禁范围。'
+    );
   }
 
   const blockedMatches = getBlockedMatches(changedFiles);
