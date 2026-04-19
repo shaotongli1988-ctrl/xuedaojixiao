@@ -182,6 +182,9 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .app-process {
+	--process-close-hover-bg: rgba(0, 0, 0, 0.1);
+	--process-active-text: #fff;
+
 	display: flex;
 	align-items: center;
 	position: relative;
@@ -242,7 +245,7 @@ onMounted(() => {
 			opacity: 0;
 
 			&:hover {
-				background-color: rgba(0, 0, 0, 0.1);
+				background-color: var(--process-close-hover-bg);
 			}
 		}
 
@@ -262,7 +265,7 @@ onMounted(() => {
 		&.active {
 			background-color: var(--el-color-primary);
 			border-color: var(--el-color-primary);
-			color: #fff;
+			color: var(--process-active-text);
 		}
 
 		&:hover,
@@ -274,6 +277,12 @@ onMounted(() => {
 				opacity: 1;
 			}
 		}
+	}
+}
+
+:global(html.dark) {
+	.app-process {
+		--process-close-hover-bg: rgba(255, 255, 255, 0.08);
 	}
 }
 </style>

@@ -27,6 +27,12 @@ const performanceDomainGroups = [
 		]
 	},
 	{
+		key: 'workbench',
+		label: '工作台',
+		icon: 'icon-workbench',
+		paths: ['/performance/workbench']
+	},
+	{
 		key: 'talent',
 		label: '人才中心',
 		icon: 'icon-user',

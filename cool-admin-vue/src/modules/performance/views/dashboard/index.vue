@@ -693,14 +693,24 @@ function formatPercent(value: number) {
 
 <style lang="scss" scoped>
 .dashboard-page {
+	--dashboard-hero-border: #dbe4f3;
+	--dashboard-hero-bg:
+		radial-gradient(circle at top right, rgba(47, 111, 237, 0.14), transparent 36%),
+		linear-gradient(135deg, #f7faff 0%, #ffffff 58%, #eef4ff 100%);
+	--dashboard-eyebrow-color: #6c7a92;
+	--dashboard-title-color: #18202f;
+	--dashboard-description-color: #566176;
+	--dashboard-emphasis-color: #183153;
+	--dashboard-cross-bg: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+	--dashboard-cross-delayed-bg: linear-gradient(180deg, #fffaf1 0%, #ffffff 100%);
+	--dashboard-cross-unavailable-bg: linear-gradient(180deg, #fbfbfc 0%, #ffffff 100%);
+
 	display: grid;
 	gap: 16px;
 
 	&__hero {
-		border: 1px solid #dbe4f3;
-		background:
-			radial-gradient(circle at top right, rgba(47, 111, 237, 0.14), transparent 36%),
-			linear-gradient(135deg, #f7faff 0%, #ffffff 58%, #eef4ff 100%);
+		border: 1px solid var(--dashboard-hero-border);
+		background: var(--dashboard-hero-bg);
 	}
 
 	&__hero-main {
@@ -716,14 +726,14 @@ function formatPercent(value: number) {
 		font-size: 12px;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
-		color: #6c7a92;
+		color: var(--dashboard-eyebrow-color);
 	}
 
 	&__title {
 		margin: 0;
 		font-size: 28px;
 		line-height: 1.2;
-		color: #18202f;
+		color: var(--dashboard-title-color);
 	}
 
 	&__description {
@@ -731,7 +741,7 @@ function formatPercent(value: number) {
 		margin: 12px 0 0;
 		font-size: 14px;
 		line-height: 1.7;
-		color: #566176;
+		color: var(--dashboard-description-color);
 	}
 
 	&__filters {
@@ -759,7 +769,7 @@ function formatPercent(value: number) {
 		font-size: 34px;
 		font-weight: 700;
 		line-height: 1;
-		color: #183153;
+		color: var(--dashboard-emphasis-color);
 	}
 
 	&__metric-tip {
@@ -816,17 +826,17 @@ function formatPercent(value: number) {
 		padding: 18px;
 		border: 1px solid var(--el-border-color-light);
 		border-radius: 16px;
-		background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+		background: var(--dashboard-cross-bg);
 	}
 
 	&__cross-metric--delayed {
 		border-color: rgba(230, 162, 60, 0.38);
-		background: linear-gradient(180deg, #fffaf1 0%, #ffffff 100%);
+		background: var(--dashboard-cross-delayed-bg);
 	}
 
 	&__cross-metric--unavailable {
 		border-color: rgba(144, 147, 153, 0.32);
-		background: linear-gradient(180deg, #fbfbfc 0%, #ffffff 100%);
+		background: var(--dashboard-cross-unavailable-bg);
 	}
 
 	&__cross-head {
@@ -859,7 +869,7 @@ function formatPercent(value: number) {
 		font-size: 32px;
 		font-weight: 700;
 		line-height: 1;
-		color: #183153;
+		color: var(--dashboard-emphasis-color);
 	}
 
 	&__cross-value small {
@@ -915,6 +925,20 @@ function formatPercent(value: number) {
 		height: 340px;
 		width: 100%;
 	}
+}
+
+:global(html.dark .dashboard-page) {
+	--dashboard-hero-border: rgba(103, 126, 176, 0.28);
+	--dashboard-hero-bg:
+		radial-gradient(circle at top right, rgba(79, 137, 255, 0.16), transparent 34%),
+		linear-gradient(135deg, rgba(24, 31, 46, 0.96) 0%, rgba(19, 24, 36, 0.98) 58%, rgba(15, 20, 31, 1) 100%);
+	--dashboard-eyebrow-color: #95a5c6;
+	--dashboard-title-color: #eef3ff;
+	--dashboard-description-color: #b5c0d4;
+	--dashboard-emphasis-color: #dbe6ff;
+	--dashboard-cross-bg: linear-gradient(180deg, rgba(29, 36, 52, 0.94) 0%, rgba(20, 26, 39, 0.98) 100%);
+	--dashboard-cross-delayed-bg: linear-gradient(180deg, rgba(58, 45, 19, 0.94) 0%, rgba(33, 28, 18, 0.98) 100%);
+	--dashboard-cross-unavailable-bg: linear-gradient(180deg, rgba(40, 43, 49, 0.94) 0%, rgba(26, 29, 35, 0.98) 100%);
 }
 
 @media (max-width: 1080px) {

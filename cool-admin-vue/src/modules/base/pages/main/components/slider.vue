@@ -58,6 +58,15 @@ const currentGroupName = computed(() => menu.currentGroup?.meta?.label || '');
 	$slider-menu-height: 50px;
 	--slider-bg-color: #2c3147;
 	--slider-text-color: #e5eaf3;
+	--slider-title-color: #fff;
+	--slider-section-bg: rgba(255, 255, 255, 0.06);
+	--slider-section-border: rgba(255, 255, 255, 0.08);
+	--slider-section-tip-color: rgba(229, 234, 243, 0.68);
+	--slider-search-bg: rgba(200, 200, 200, 0.1);
+	--slider-badge-bg: rgba(255, 255, 255, 0.2);
+	--slider-badge-text: #fff;
+	--slider-item-hover-bg: rgba(0, 0, 0, 0.25);
+	--slider-item-hover-color: #fff;
 
 	height: 100%;
 	display: flex;
@@ -78,7 +87,7 @@ const currentGroupName = computed(() => menu.currentGroup?.meta?.label || '');
 		}
 
 		span {
-			color: #fff;
+			color: var(--slider-title-color);
 			font-weight: bold;
 			font-size: 20px;
 			margin-left: 10px;
@@ -91,13 +100,13 @@ const currentGroupName = computed(() => menu.currentGroup?.meta?.label || '');
 		margin: 0 12px 10px;
 		padding: 10px 12px;
 		border-radius: 10px;
-		background: rgba(255, 255, 255, 0.06);
-		border: 1px solid rgba(255, 255, 255, 0.08);
+		background: var(--slider-section-bg);
+		border: 1px solid var(--slider-section-border);
 		overflow: hidden;
 	}
 
 	&__section-label {
-		color: #fff;
+		color: var(--slider-title-color);
 		font-size: 13px;
 		font-weight: 700;
 		letter-spacing: 0.08em;
@@ -108,7 +117,7 @@ const currentGroupName = computed(() => menu.currentGroup?.meta?.label || '');
 
 	&__section-tip {
 		margin-top: 4px;
-		color: rgba(229, 234, 243, 0.68);
+		color: var(--slider-section-tip-color);
 		font-size: 11px;
 	}
 
@@ -118,7 +127,7 @@ const currentGroupName = computed(() => menu.currentGroup?.meta?.label || '');
 		border-radius: 6px;
 
 		.el-input__wrapper {
-			background-color: rgba(200, 200, 200, 0.1);
+			background-color: var(--slider-search-bg);
 			box-shadow: none;
 			height: 36px;
 			padding: 0 14px;
@@ -147,9 +156,9 @@ const currentGroupName = computed(() => menu.currentGroup?.meta?.label || '');
 			min-width: 14px;
 			padding: 0 3px;
 			border-radius: 4px;
-			background-color: rgba(255, 255, 255, 0.2);
+			background-color: var(--slider-badge-bg);
 			font-weight: bold;
-			color: #fff;
+			color: var(--slider-badge-text);
 			transition: background-color 0.3s;
 		}
 
@@ -191,8 +200,8 @@ const currentGroupName = computed(() => menu.currentGroup?.meta?.label || '');
 
 					&.is-active,
 					&:hover {
-						background-color: rgba(0, 0, 0, 0.25);
-						color: #fff;
+						background-color: var(--slider-item-hover-bg);
+						color: var(--slider-item-hover-color);
 					}
 
 					&.is-active {
@@ -223,10 +232,24 @@ const currentGroupName = computed(() => menu.currentGroup?.meta?.label || '');
 		.app-slider__menu {
 			.el-sub-menu {
 				&.is-active {
-					background-color: rgba(0, 0, 0, 0.25);
+					background-color: var(--slider-item-hover-bg);
 				}
 			}
 		}
+	}
+}
+
+html.dark {
+	.app-slider {
+		--slider-title-color: var(--el-text-color-primary);
+		--slider-section-bg: rgba(255, 255, 255, 0.04);
+		--slider-section-border: rgba(148, 163, 184, 0.16);
+		--slider-section-tip-color: var(--el-text-color-secondary);
+		--slider-search-bg: rgba(255, 255, 255, 0.06);
+		--slider-badge-bg: rgba(255, 255, 255, 0.16);
+		--slider-badge-text: var(--el-text-color-primary);
+		--slider-item-hover-bg: rgba(255, 255, 255, 0.08);
+		--slider-item-hover-color: var(--el-text-color-primary);
 	}
 }
 </style>

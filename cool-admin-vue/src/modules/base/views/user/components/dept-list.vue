@@ -388,6 +388,9 @@ onMounted(function () {
 
 <style lang="scss" scoped>
 .dept-tree {
+	--dept-tree-node-icon-bg: var(--el-fill-color-light);
+	--dept-tree-node-icon-color: var(--el-text-color-secondary);
+
 	height: 100%;
 	width: 100%;
 
@@ -491,13 +494,21 @@ onMounted(function () {
 			display: flex;
 			align-items: center;
 			justify-content: center;
-			background-color: #eee;
+			background-color: var(--dept-tree-node-icon-bg);
+			color: var(--dept-tree-node-icon-color);
 			height: 26px;
 			width: 26px;
 			text-align: center;
 			margin-right: 5px;
 			border-radius: 6px;
 		}
+	}
+}
+
+:global(html.dark) {
+	.dept-tree {
+		--dept-tree-node-icon-bg: rgba(255, 255, 255, 0.08);
+		--dept-tree-node-icon-color: var(--el-text-color-primary);
 	}
 }
 </style>

@@ -4,8 +4,8 @@
     "description": "导航栏与侧栏改造最小 GUI 点测"
   },
   "defaults": {
-    "uiBaseUrl": "http://127.0.0.1:9007",
-    "apiBaseUrl": "http://127.0.0.1:8006",
+    "uiBaseUrl": "http://127.0.0.1:9000",
+    "apiBaseUrl": "http://127.0.0.1:8129",
     "chromeDebugUrl": "http://127.0.0.1:9222",
     "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/navigation-shell-layout",
     "password": "123456",
@@ -39,11 +39,10 @@
           "type": "assertVisibleText",
           "includes": [
             "绩效中心",
-            "招聘中心",
-            "培训中心",
-            "会议管理",
-            "合同管理",
-            "采购管理"
+            "人才中心",
+            "目标&计划",
+            "行政协同",
+            "采购&资产"
           ]
         },
         {
@@ -66,55 +65,13 @@
         {
           "type": "assertVisibleText",
           "includes": [
-            "招聘中心",
+            "人才中心",
             "新建人才资产"
           ]
         },
         {
           "type": "screenshot",
           "file": "nav-shell-hr-recruit-talent.png"
-        },
-        {
-          "type": "clickText",
-          "text": "招聘简历池",
-          "index": 0,
-          "waitAfterMs": 1800
-        },
-        {
-          "type": "waitBodyText",
-          "includes": [
-            "招聘简历池管理"
-          ],
-          "timeoutMs": 10000
-        },
-        {
-          "type": "assertVisibleText",
-          "includes": [
-            "转人才资产",
-            "发起面试"
-          ]
-        },
-        {
-          "type": "screenshot",
-          "file": "nav-shell-hr-recruit-resume.png"
-        },
-        {
-          "type": "clickText",
-          "text": "招聘面试",
-          "index": 0,
-          "waitAfterMs": 1800
-        },
-        {
-          "type": "waitBodyText",
-          "includes": [
-            "招聘面试管理",
-            "新建面试"
-          ],
-          "timeoutMs": 10000
-        },
-        {
-          "type": "screenshot",
-          "file": "nav-shell-hr-recruit-interview.png"
         },
         {
           "type": "navigate",
@@ -132,7 +89,7 @@
         {
           "type": "assertVisibleText",
           "includes": [
-            "培训中心",
+            "人才中心",
             "新增课程",
             "HR 管理"
           ]
@@ -157,6 +114,56 @@
         },
         {
           "type": "navigate",
+          "route": "/performance/goals",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "目标地图",
+            "当前业务域菜单"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "目标&计划",
+            "目标&计划总览",
+            "班主任化"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "nav-shell-hr-goal-plan-overview.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/teacher-channel/dashboard",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "班主任渠道合作看板",
+            "当前业务域菜单"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "目标&计划",
+            "班主任化",
+            "首页看板"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "nav-shell-hr-goal-plan-teacher-dashboard.png"
+        },
+        {
+          "type": "navigate",
           "route": "/performance/meeting",
           "waitAfterMs": 1800
         },
@@ -171,36 +178,14 @@
         {
           "type": "assertVisibleText",
           "includes": [
+            "行政协同",
             "会议管理",
-            "详情仅返回参与人数摘要"
-          ]
-        },
-        {
-          "type": "screenshot",
-          "file": "nav-shell-hr-meeting.png"
-        },
-        {
-          "type": "navigate",
-          "route": "/performance/contract",
-          "waitAfterMs": 1800
-        },
-        {
-          "type": "waitBodyText",
-          "includes": [
-            "合同管理",
-            "新建合同"
-          ],
-          "timeoutMs": 10000
-        },
-        {
-          "type": "assertVisibleText",
-          "includes": [
             "合同管理"
           ]
         },
         {
           "type": "screenshot",
-          "file": "nav-shell-hr-contract.png"
+          "file": "nav-shell-hr-office-meeting.png"
         },
         {
           "type": "navigate",
@@ -210,15 +195,16 @@
         {
           "type": "waitBodyText",
           "includes": [
-            "采购订单管理"
+            "采购管理",
+            "创建采购单"
           ],
           "timeoutMs": 10000
         },
         {
           "type": "assertVisibleText",
           "includes": [
-            "采购管理",
-            "新增采购订单"
+            "采购&资产",
+            "创建采购单"
           ]
         },
         {
@@ -227,7 +213,7 @@
         },
         {
           "type": "clickText",
-          "text": "供应商管理",
+          "text": "供应商",
           "index": 0,
           "waitAfterMs": 1800
         },
@@ -242,6 +228,29 @@
         {
           "type": "screenshot",
           "file": "nav-shell-hr-procurement-supplier.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/asset/dashboard",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "资产首页"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "采购&资产",
+            "资产台账"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "nav-shell-hr-procurement-asset-dashboard.png"
         }
       ]
     },
@@ -266,15 +275,10 @@
         {
           "type": "assertVisibleText",
           "includes": [
-            "绩效中心",
-            "招聘中心",
-            "培训中心",
-            "会议管理",
-            "采购管理",
+            "人才中心",
             "经理只读"
           ],
           "excludes": [
-            "合同管理",
             "新增课程"
           ]
         },
@@ -308,6 +312,30 @@
         {
           "type": "screenshot",
           "file": "nav-shell-manager-capability.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/goals",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "目标地图",
+            "当前业务域菜单"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "目标&计划",
+            "目标&计划总览"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "nav-shell-manager-goal-plan.png"
         },
         {
           "type": "navigate",
@@ -352,13 +380,12 @@
           "type": "assertVisibleText",
           "includes": [
             "绩效中心",
-            "培训中心"
+            "人才中心",
+            "目标&计划"
           ],
           "excludes": [
-            "招聘中心",
-            "会议管理",
-            "合同管理",
-            "采购管理"
+            "行政协同",
+            "采购&资产"
           ]
         },
         {
@@ -366,10 +393,9 @@
           "file": "nav-shell-employee-assessment.png"
         },
         {
-          "type": "clickText",
-          "text": "目标地图",
-          "index": 0,
-          "waitAfterMs": 1600
+          "type": "navigate",
+          "route": "/performance/goals",
+          "waitAfterMs": 1800
         },
         {
           "type": "waitBodyText",
@@ -377,6 +403,13 @@
             "目标地图"
           ],
           "timeoutMs": 10000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "目标&计划",
+            "目标&计划总览"
+          ]
         },
         {
           "type": "screenshot",

@@ -131,12 +131,27 @@ async function goToEntry(path: string) {
 
 <style lang="scss" scoped>
 .recruitment-center-page {
+	--recruitment-hero-bg: var(--el-bg-color);
+	--recruitment-hero-border: var(--el-border-color-light);
+	--recruitment-eyebrow-color: var(--el-text-color-secondary);
+	--recruitment-title-color: var(--el-text-color-primary);
+	--recruitment-description-color: var(--el-text-color-regular);
+	--recruitment-card-bg: var(--el-bg-color-overlay);
+	--recruitment-card-border-hover: var(--el-color-primary-light-7);
+	--recruitment-card-shadow: 0 10px 24px rgba(31, 35, 41, 0.08);
+	--recruitment-card-title-color: var(--el-text-color-primary);
+	--recruitment-card-topic-color: var(--el-text-color-secondary);
+	--recruitment-card-description-color: var(--el-text-color-regular);
+	--recruitment-card-foot-color: var(--el-text-color-secondary);
+
 	display: flex;
 	flex-direction: column;
 	gap: 16px;
 
 	&__hero {
 		border-radius: 12px;
+		border: 1px solid var(--recruitment-hero-border);
+		background: var(--recruitment-hero-bg);
 	}
 
 	&__hero-main {
@@ -149,7 +164,7 @@ async function goToEntry(path: string) {
 
 	&__eyebrow {
 		font-size: 13px;
-		color: #909399;
+		color: var(--recruitment-eyebrow-color);
 		margin-bottom: 8px;
 	}
 
@@ -157,14 +172,14 @@ async function goToEntry(path: string) {
 		margin: 0 0 8px;
 		font-size: 28px;
 		line-height: 1.2;
-		color: #303133;
+		color: var(--recruitment-title-color);
 	}
 
 	&__description {
 		margin: 0;
 		max-width: 720px;
 		line-height: 1.7;
-		color: #606266;
+		color: var(--recruitment-description-color);
 	}
 
 	&__grid {
@@ -174,12 +189,13 @@ async function goToEntry(path: string) {
 	&__card {
 		height: 100%;
 		border-radius: 12px;
+		background: var(--recruitment-card-bg);
 		transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 
 		&:hover {
 			transform: translateY(-2px);
-			border-color: #c6e2ff;
-			box-shadow: 0 10px 24px rgba(31, 35, 41, 0.08);
+			border-color: var(--recruitment-card-border-hover);
+			box-shadow: var(--recruitment-card-shadow);
 		}
 	}
 
@@ -195,19 +211,19 @@ async function goToEntry(path: string) {
 		font-size: 18px;
 		font-weight: 600;
 		line-height: 1.4;
-		color: #303133;
+		color: var(--recruitment-card-title-color);
 	}
 
 	&__card-topic {
 		margin-top: 4px;
 		font-size: 13px;
-		color: #909399;
+		color: var(--recruitment-card-topic-color);
 	}
 
 	&__card-description {
 		min-height: 66px;
 		line-height: 1.7;
-		color: #606266;
+		color: var(--recruitment-card-description-color);
 	}
 
 	&__card-foot {
@@ -217,8 +233,25 @@ async function goToEntry(path: string) {
 		gap: 12px;
 		margin-top: 20px;
 		font-size: 13px;
-		color: #909399;
+		color: var(--recruitment-card-foot-color);
 	}
+}
+
+:global(html.dark .recruitment-center-page) {
+	--recruitment-hero-bg:
+		radial-gradient(circle at top right, rgba(79, 137, 255, 0.12), transparent 34%),
+		linear-gradient(135deg, rgba(24, 31, 46, 0.96) 0%, rgba(19, 24, 36, 0.98) 100%);
+	--recruitment-hero-border: rgba(103, 126, 176, 0.24);
+	--recruitment-eyebrow-color: #95a5c6;
+	--recruitment-title-color: #eef3ff;
+	--recruitment-description-color: #b5c0d4;
+	--recruitment-card-bg: linear-gradient(180deg, rgba(28, 35, 50, 0.95) 0%, rgba(20, 26, 39, 0.98) 100%);
+	--recruitment-card-border-hover: rgba(117, 160, 255, 0.5);
+	--recruitment-card-shadow: 0 12px 28px rgba(5, 8, 15, 0.36);
+	--recruitment-card-title-color: #e8eefc;
+	--recruitment-card-topic-color: #95a5c6;
+	--recruitment-card-description-color: #b9c4d8;
+	--recruitment-card-foot-color: #95a5c6;
 }
 
 @media (max-width: 767px) {

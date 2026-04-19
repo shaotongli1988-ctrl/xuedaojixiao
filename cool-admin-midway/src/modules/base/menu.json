@@ -989,6 +989,18 @@
                 ]
             },
             {
+                "name": "工作台",
+                "router": "/performance/workbench",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-workbench",
+                "orderNum": 2,
+                "viewPath": "modules/performance/views/workbench/index.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": []
+            },
+            {
                 "name": "我的考核",
                 "router": "/performance/my-assessment",
                 "perms": null,
