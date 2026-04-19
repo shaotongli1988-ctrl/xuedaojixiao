@@ -2718,3 +2718,51 @@
    - `expiredCount`
 6. `ipNo` 必须唯一。
 7. `grantDate` 不得早于 `applyDate`；`expiryDate` 不得早于 `applyDate / grantDate`。
+
+## 2026-04-19 多主题收口补充
+
+### 本次补充覆盖的资源
+
+1. 招聘链路补充：
+   - `recruitPlan`
+   - `resumePool`
+   - `talentAsset`
+2. 采购链路补充：
+   - `purchaseOrder`
+   - `purchaseReport`
+3. 班主任化补充：
+   - `teacherInfo`
+   - `teacherFollow`
+   - `teacherCooperation`
+   - `teacherClass`
+   - `teacherDashboard`
+   - `teacherTodo`
+4. 行政协同补充：
+   - `annualInspection`
+   - `honor`
+   - `publicityMaterial`
+   - `designCollab`
+   - `expressCollab`
+   - `documentCenter`
+   - `knowledgeBase`
+   - `vehicle`
+   - `intellectualProperty`
+
+### 补充接口边界
+
+1. `recruitPlan / resumePool / talentAsset` 统一维持后台管理资源形态，最小主链保持 `page / info / add / update`，主题已单独冻结的状态流与详情能力继续沿用各自任务卡。
+2. `purchaseOrder` 在保留原 `page / info / add / update` 的基础上，补充按工作台阶段拆分的前端消费入口；`purchaseReport` 仅提供报表摘要与分页查询，不扩展为独立结算链。
+3. `teacherInfo` 维持 `page / info / add / update / assign / updateStatus`，`teacherFollow` 维持 `page / add`，`teacherCooperation` 维持 `mark`，`teacherClass` 维持 `page / info / add / update / delete`，`teacherDashboard` 维持 `summary`，`teacherTodo` 维持 `page`。
+4. `documentCenter / knowledgeBase / annualInspection / honor / publicityMaterial / designCollab / expressCollab / vehicle / intellectualProperty` 统一沿用后台资源模式：
+   - `page`
+   - `info`
+   - `stats`
+   - `add`
+   - `update`
+   - `delete`
+
+### 契约对齐备注
+
+1. `talent-asset` 的代码路径已统一收敛为 `talentAsset`，资源名与权限键保持 `talentAsset`，不再混用连字符文件名。
+2. 前端 service、菜单、运行态 smoke、GUI 脚本与当前合同快照已按同一资源名回写。
+3. 本节是总文档补充说明；具体字段、状态和异常语义仍以各主题冻结卡和 `docs/contracts/current/*` 为实现期唯一事实源。
