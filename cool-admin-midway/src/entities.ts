@@ -35,28 +35,32 @@ import * as entity32 from './modules/performance/entity/feedback-record';
 import * as entity33 from './modules/performance/entity/feedback-task';
 import * as entity34 from './modules/performance/entity/goal-progress';
 import * as entity35 from './modules/performance/entity/goal';
-import * as entity36 from './modules/performance/entity/indicator';
-import * as entity37 from './modules/performance/entity/interview';
-import * as entity38 from './modules/performance/entity/meeting';
-import * as entity39 from './modules/performance/entity/pip-record';
-import * as entity40 from './modules/performance/entity/pip';
-import * as entity41 from './modules/performance/entity/promotion-record';
-import * as entity42 from './modules/performance/entity/promotion';
-import * as entity43 from './modules/performance/entity/purchase-order';
-import * as entity44 from './modules/performance/entity/salary-change';
-import * as entity45 from './modules/performance/entity/salary';
-import * as entity46 from './modules/performance/entity/suggestion';
-import * as entity47 from './modules/performance/entity/supplier';
-import * as entity48 from './modules/performance/entity/talent-asset';
-import * as entity49 from './modules/plugin/entity/info';
-import * as entity50 from './modules/recycle/entity/data';
-import * as entity51 from './modules/space/entity/info';
-import * as entity52 from './modules/space/entity/type';
-import * as entity53 from './modules/task/entity/info';
-import * as entity54 from './modules/task/entity/log';
-import * as entity55 from './modules/user/entity/address';
-import * as entity56 from './modules/user/entity/info';
-import * as entity57 from './modules/user/entity/wx';
+import * as entity36 from './modules/performance/entity/hiring';
+import * as entity37 from './modules/performance/entity/indicator';
+import * as entity38 from './modules/performance/entity/interview';
+import * as entity39 from './modules/performance/entity/job-standard';
+import * as entity40 from './modules/performance/entity/meeting';
+import * as entity41 from './modules/performance/entity/pip-record';
+import * as entity42 from './modules/performance/entity/pip';
+import * as entity43 from './modules/performance/entity/promotion-record';
+import * as entity44 from './modules/performance/entity/promotion';
+import * as entity45 from './modules/performance/entity/purchase-order';
+import * as entity46 from './modules/performance/entity/recruit-plan';
+import * as entity47 from './modules/performance/entity/resume-pool';
+import * as entity48 from './modules/performance/entity/salary-change';
+import * as entity49 from './modules/performance/entity/salary';
+import * as entity50 from './modules/performance/entity/suggestion';
+import * as entity51 from './modules/performance/entity/supplier';
+import * as entity52 from './modules/performance/entity/talent-asset';
+import * as entity53 from './modules/plugin/entity/info';
+import * as entity54 from './modules/recycle/entity/data';
+import * as entity55 from './modules/space/entity/info';
+import * as entity56 from './modules/space/entity/type';
+import * as entity57 from './modules/task/entity/info';
+import * as entity58 from './modules/task/entity/log';
+import * as entity59 from './modules/user/entity/address';
+import * as entity60 from './modules/user/entity/info';
+import * as entity61 from './modules/user/entity/wx';
 export const entities = [
   ...Object.values(entity0),
   ...Object.values(entity1),
@@ -116,4 +120,8 @@ export const entities = [
   ...Object.values(entity55),
   ...Object.values(entity56),
   ...Object.values(entity57),
+  ...Object.values(entity58),
+  ...Object.values(entity59),
+  ...Object.values(entity60),
+  ...Object.values(entity61),
 ];

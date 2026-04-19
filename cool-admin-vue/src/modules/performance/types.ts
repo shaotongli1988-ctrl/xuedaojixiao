@@ -12,6 +12,7 @@ export type DashboardCrossMetricCode =
 export type DashboardCrossSourceDomain = 'recruitment' | 'training' | 'meeting';
 export type DashboardCrossScopeType = 'global' | 'department_tree';
 export type DashboardCrossDataStatus = 'ready' | 'delayed' | 'unavailable';
+export type RecruitPlanStatus = 'draft' | 'active' | 'closed';
 export type ContractStatus = 'draft' | 'active' | 'expired' | 'terminated';
 export type ContractType = 'full-time' | 'part-time' | 'internship' | 'other';
 export type PurchaseOrderStatus = 'draft' | 'active' | 'cancelled';
@@ -22,8 +23,13 @@ export type CertificateRecordStatus = 'issued' | 'revoked';
 export type CertificateStatus = 'draft' | 'active' | 'retired';
 export type InterviewStatus = 'scheduled' | 'completed' | 'cancelled';
 export type InterviewType = 'technical' | 'behavioral' | 'manager' | 'hr';
+export type ResumePoolStatus = 'new' | 'screening' | 'interviewing' | 'archived';
+export type ResumePoolSourceType = 'manual' | 'attachment' | 'external' | 'referral';
 export type MeetingStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
 export type TalentAssetStatus = 'new' | 'tracking' | 'archived';
+export type JobStandardStatus = 'draft' | 'active' | 'inactive';
+export type HiringStatus = 'offered' | 'accepted' | 'rejected' | 'closed';
+export type HiringSourceType = 'manual' | 'resumePool' | 'talentAsset' | 'interview';
 
 export interface DashboardCrossSummaryQuery {
 	periodType?: string;
@@ -170,6 +176,32 @@ export interface GoalExportRow {
 	startDate: string;
 	endDate: string;
 	updateTime?: string;
+}
+
+export interface RecruitPlanRecord {
+	id?: number;
+	title: string;
+	targetDepartmentId: number | undefined;
+	targetDepartmentName?: string | null;
+	positionName: string;
+	headcount: number;
+	startDate: string;
+	endDate: string;
+	recruiterId?: number | null;
+	recruiterName?: string | null;
+	requirementSummary?: string | null;
+	status?: RecruitPlanStatus;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface RecruitPlanPageResult {
+	list: RecruitPlanRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
 }
 
 export interface ContractRecord {
@@ -407,6 +439,43 @@ export interface InterviewPageResult {
 	};
 }
 
+export interface ResumePoolAttachmentSummary {
+	id: number;
+	name: string;
+	size: number;
+	uploadTime: string;
+}
+
+export interface ResumePoolRecord {
+	id?: number;
+	candidateName: string;
+	targetDepartmentId: number | undefined;
+	targetDepartmentName?: string;
+	targetPosition?: string | null;
+	phone: string;
+	email?: string | null;
+	resumeText: string;
+	sourceType: ResumePoolSourceType;
+	sourceRemark?: string | null;
+	externalLink?: string | null;
+	attachmentIdList?: number[];
+	attachmentSummaryList?: ResumePoolAttachmentSummary[];
+	status?: ResumePoolStatus;
+	linkedTalentAssetId?: number | null;
+	latestInterviewId?: number | null;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface ResumePoolPageResult {
+	list: ResumePoolRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
 export interface MeetingRecord {
 	id?: number;
 	title: string;
@@ -452,6 +521,59 @@ export interface TalentAssetRecord {
 
 export interface TalentAssetPageResult {
 	list: TalentAssetRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface HiringRecord {
+	id?: number;
+	candidateName: string;
+	targetDepartmentId: number | undefined;
+	targetDepartmentName?: string | null;
+	targetPosition?: string | null;
+	sourceType?: HiringSourceType | string | null;
+	sourceId?: number | null;
+	sourceStatusSnapshot?: string | null;
+	hiringDecision?: string | null;
+	status?: HiringStatus;
+	offeredAt?: string | null;
+	acceptedAt?: string | null;
+	rejectedAt?: string | null;
+	closedAt?: string | null;
+	closeReason?: string | null;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface HiringPageResult {
+	list: HiringRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface JobStandardRecord {
+	id?: number;
+	positionName: string;
+	targetDepartmentId: number | undefined;
+	targetDepartmentName?: string;
+	jobLevel?: string | null;
+	profileSummary?: string | null;
+	requirementSummary?: string | null;
+	skillTagList?: string[];
+	interviewTemplateSummary?: string | null;
+	status?: JobStandardStatus;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface JobStandardPageResult {
+	list: JobStandardRecord[];
 	pagination: {
 		page: number;
 		size: number;
@@ -774,6 +896,20 @@ export function createEmptyGoal(): GoalRecord {
 	};
 }
 
+export function createEmptyRecruitPlan(): RecruitPlanRecord {
+	return {
+		title: '',
+		targetDepartmentId: undefined,
+		positionName: '',
+		headcount: 1,
+		startDate: '',
+		endDate: '',
+		recruiterId: undefined,
+		requirementSummary: '',
+		status: 'draft'
+	};
+}
+
 export function createEmptyContract(): ContractRecord {
 	return {
 		employeeId: undefined,
@@ -871,6 +1007,23 @@ export function createEmptyInterview(): InterviewRecord {
 	};
 }
 
+export function createEmptyResumePool(): ResumePoolRecord {
+	return {
+		candidateName: '',
+		targetDepartmentId: undefined,
+		targetPosition: '',
+		phone: '',
+		email: '',
+		resumeText: '',
+		sourceType: 'manual',
+		sourceRemark: '',
+		externalLink: '',
+		attachmentIdList: [],
+		attachmentSummaryList: [],
+		status: 'new'
+	};
+}
+
 export function createEmptyMeeting(currentUserId?: number): MeetingRecord {
 	return {
 		title: '',
@@ -898,6 +1051,33 @@ export function createEmptyTalentAsset(): TalentAssetRecord {
 		followUpSummary: '',
 		nextFollowUpDate: '',
 		status: 'new'
+	};
+}
+
+export function createEmptyHiring(): HiringRecord {
+	return {
+		candidateName: '',
+		targetDepartmentId: undefined,
+		targetPosition: '',
+		sourceType: 'manual',
+		sourceId: undefined,
+		sourceStatusSnapshot: '',
+		hiringDecision: '',
+		status: 'offered',
+		closeReason: ''
+	};
+}
+
+export function createEmptyJobStandard(): JobStandardRecord {
+	return {
+		positionName: '',
+		targetDepartmentId: undefined,
+		jobLevel: '',
+		profileSummary: '',
+		requirementSummary: '',
+		skillTagList: [],
+		interviewTemplateSummary: '',
+		status: 'draft'
 	};
 }
 

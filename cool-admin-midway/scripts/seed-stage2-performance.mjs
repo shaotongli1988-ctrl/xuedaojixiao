@@ -1,8 +1,8 @@
 /**
- * Seeds local integration data for performance modules and theme-7/8/9/12/13/14 management.
+ * Seeds local integration data for performance modules and theme-7/8/9/12/13/14/15 management.
  * This file only prepares local menu, role, user, and sample business data for联调.
  * It does not replace the project's general initialization flow or production release scripts.
- * Maintenance pitfall: dashboard权限、课程/学习任务/人才资产/能力地图/证书/面试/会议/合同样例和 menu.json 必须一起维护，否则真实联调会和 seed 脱节。
+ * Maintenance pitfall: dashboard权限、课程/学习任务/人才资产/简历池/能力地图/证书/面试/会议/合同样例和 menu.json 必须一起维护，否则真实联调会和 seed 脱节。
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -31,6 +31,9 @@ const stage2MenuRouters = new Set([
   '/performance/capability',
   '/performance/certificate',
   '/performance/course-learning',
+  '/performance/recruit-plan',
+  '/performance/job-standard',
+  '/performance/resumePool',
   '/performance/interview',
   '/performance/meeting',
   '/performance/contract',
@@ -780,6 +783,73 @@ async function replaceTalentAssets(seedRows) {
         JSON.stringify(row.tagList || []),
         row.followUpSummary ?? null,
         row.nextFollowUpDate ?? null,
+        row.status,
+        now(),
+        now(),
+      ]
+    );
+  }
+}
+
+async function replaceResumePools(seedRows) {
+  const candidateNames = [...new Set(seedRows.map(item => item.candidateName).filter(Boolean))];
+
+  if (candidateNames.length) {
+    await connection.query(
+      'DELETE FROM performance_resume_pool WHERE candidateName IN (?)',
+      [candidateNames]
+    );
+  }
+
+  for (const row of seedRows) {
+    await connection.query(
+      `INSERT INTO performance_resume_pool
+        (candidateName, targetDepartmentId, targetPosition, phone, email, resumeText, sourceType, sourceRemark, externalLink, attachmentIdList, status, linkedTalentAssetId, latestInterviewId, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.candidateName,
+        row.targetDepartmentId,
+        row.targetPosition ?? null,
+        row.phone,
+        row.email ?? null,
+        row.resumeText,
+        row.sourceType,
+        row.sourceRemark ?? null,
+        row.externalLink ?? null,
+        JSON.stringify(row.attachmentIdList || []),
+        row.status,
+        row.linkedTalentAssetId ?? null,
+        row.latestInterviewId ?? null,
+        now(),
+        now(),
+      ]
+    );
+  }
+}
+
+async function replaceJobStandards(seedRows) {
+  const positionNames = [...new Set(seedRows.map(item => item.positionName).filter(Boolean))];
+
+  if (positionNames.length) {
+    await connection.query(
+      'DELETE FROM performance_job_standard WHERE positionName IN (?)',
+      [positionNames]
+    );
+  }
+
+  for (const row of seedRows) {
+    await connection.query(
+      `INSERT INTO performance_job_standard
+        (positionName, targetDepartmentId, jobLevel, profileSummary, requirementSummary, skillTagList, interviewTemplateSummary, status, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.positionName,
+        row.targetDepartmentId,
+        row.jobLevel ?? null,
+        row.profileSummary ?? null,
+        row.requirementSummary ?? null,
+        JSON.stringify(row.skillTagList || []),
+        row.interviewTemplateSummary ?? null,
         row.status,
         now(),
         now(),
@@ -1617,6 +1687,99 @@ async function ensureTalentAssetTable() {
   `);
 }
 
+async function ensureResumePoolTable() {
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_resume_pool (
+      id int NOT NULL AUTO_INCREMENT,
+      candidateName varchar(100) NOT NULL,
+      targetDepartmentId int NOT NULL,
+      targetPosition varchar(100) DEFAULT NULL,
+      phone varchar(30) NOT NULL,
+      email varchar(100) DEFAULT NULL,
+      resumeText text NOT NULL,
+      sourceType varchar(20) NOT NULL,
+      sourceRemark text DEFAULT NULL,
+      externalLink varchar(500) DEFAULT NULL,
+      attachmentIdList json DEFAULT NULL,
+      status varchar(20) NOT NULL DEFAULT 'new',
+      linkedTalentAssetId int DEFAULT NULL,
+      latestInterviewId int DEFAULT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      KEY idx_performance_resume_pool_candidate_name (candidateName),
+      KEY idx_performance_resume_pool_target_department_id (targetDepartmentId),
+      KEY idx_performance_resume_pool_phone (phone),
+      KEY idx_performance_resume_pool_email (email),
+      KEY idx_performance_resume_pool_source_type (sourceType),
+      KEY idx_performance_resume_pool_status (status),
+      KEY idx_performance_resume_pool_linked_talent_asset_id (linkedTalentAssetId),
+      KEY idx_performance_resume_pool_latest_interview_id (latestInterviewId),
+      KEY idx_performance_resume_pool_create_time (createTime),
+      KEY idx_performance_resume_pool_update_time (updateTime),
+      KEY idx_performance_resume_pool_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function ensureRecruitPlanTable() {
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_recruit_plan (
+      id int NOT NULL AUTO_INCREMENT,
+      title varchar(200) NOT NULL,
+      targetDepartmentId int NOT NULL,
+      positionName varchar(100) NOT NULL,
+      headcount int NOT NULL,
+      startDate varchar(10) NOT NULL,
+      endDate varchar(10) NOT NULL,
+      recruiterId int DEFAULT NULL,
+      requirementSummary text DEFAULT NULL,
+      status varchar(20) NOT NULL DEFAULT 'draft',
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      KEY idx_performance_recruit_plan_title (title),
+      KEY idx_performance_recruit_plan_target_department_id (targetDepartmentId),
+      KEY idx_performance_recruit_plan_position_name (positionName),
+      KEY idx_performance_recruit_plan_start_date (startDate),
+      KEY idx_performance_recruit_plan_end_date (endDate),
+      KEY idx_performance_recruit_plan_recruiter_id (recruiterId),
+      KEY idx_performance_recruit_plan_status (status),
+      KEY idx_performance_recruit_plan_create_time (createTime),
+      KEY idx_performance_recruit_plan_update_time (updateTime),
+      KEY idx_performance_recruit_plan_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function ensureJobStandardTable() {
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_job_standard (
+      id int NOT NULL AUTO_INCREMENT,
+      positionName varchar(100) NOT NULL,
+      targetDepartmentId int NOT NULL,
+      jobLevel varchar(100) DEFAULT NULL,
+      profileSummary text DEFAULT NULL,
+      requirementSummary text DEFAULT NULL,
+      skillTagList json DEFAULT NULL,
+      interviewTemplateSummary text DEFAULT NULL,
+      status varchar(20) NOT NULL DEFAULT 'draft',
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      KEY idx_performance_job_standard_position_name (positionName),
+      KEY idx_performance_job_standard_target_department_id (targetDepartmentId),
+      KEY idx_performance_job_standard_status (status),
+      KEY idx_performance_job_standard_create_time (createTime),
+      KEY idx_performance_job_standard_update_time (updateTime),
+      KEY idx_performance_job_standard_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
 async function ensureContractTable() {
   await connection.query(`
     CREATE TABLE IF NOT EXISTS performance_contract (
@@ -1919,6 +2082,9 @@ async function main() {
     await ensureInterviewTable();
     await ensureMeetingTable();
     await ensureTalentAssetTable();
+    await ensureResumePoolTable();
+    await ensureRecruitPlanTable();
+    await ensureJobStandardTable();
     await ensureContractTable();
     await ensureProcurementTables();
     await ensureFeedbackTables();
@@ -2017,6 +2183,9 @@ async function main() {
         '/performance/course',
         '/performance/capability',
         '/performance/certificate',
+        '/performance/recruit-plan',
+        '/performance/job-standard',
+        '/performance/resumePool',
         '/performance/interview',
         '/performance/meeting',
         '/performance/contract',
@@ -2110,6 +2279,27 @@ async function main() {
         'performance:certificate:update',
         'performance:certificate:issue',
         'performance:certificate:recordPage',
+        'performance:recruitPlan:page',
+        'performance:recruitPlan:info',
+        'performance:recruitPlan:add',
+        'performance:recruitPlan:update',
+        'performance:recruitPlan:submit',
+        'performance:recruitPlan:close',
+        'performance:jobStandard:page',
+        'performance:jobStandard:info',
+        'performance:jobStandard:add',
+        'performance:jobStandard:update',
+        'performance:jobStandard:setStatus',
+        'performance:resumePool:page',
+        'performance:resumePool:info',
+        'performance:resumePool:add',
+        'performance:resumePool:update',
+        'performance:resumePool:import',
+        'performance:resumePool:export',
+        'performance:resumePool:uploadAttachment',
+        'performance:resumePool:downloadAttachment',
+        'performance:resumePool:convertToTalentAsset',
+        'performance:resumePool:createInterview',
         'performance:interview:page',
         'performance:interview:info',
         'performance:interview:add',
@@ -2157,6 +2347,9 @@ async function main() {
         '/performance/course',
         '/performance/capability',
         '/performance/certificate',
+        '/performance/recruit-plan',
+        '/performance/job-standard',
+        '/performance/resumePool',
         '/performance/interview',
         '/performance/meeting',
         '/performance/purchase-order',
@@ -2223,6 +2416,22 @@ async function main() {
         'performance:certificate:page',
         'performance:certificate:info',
         'performance:certificate:recordPage',
+        'performance:recruitPlan:page',
+        'performance:recruitPlan:info',
+        'performance:recruitPlan:add',
+        'performance:recruitPlan:update',
+        'performance:recruitPlan:submit',
+        'performance:recruitPlan:close',
+        'performance:jobStandard:page',
+        'performance:jobStandard:info',
+        'performance:resumePool:page',
+        'performance:resumePool:info',
+        'performance:resumePool:add',
+        'performance:resumePool:update',
+        'performance:resumePool:import',
+        'performance:resumePool:uploadAttachment',
+        'performance:resumePool:convertToTalentAsset',
+        'performance:resumePool:createInterview',
         'performance:interview:page',
         'performance:interview:info',
         'performance:interview:add',
@@ -2685,6 +2894,58 @@ async function main() {
         followUpSummary: '仅用于经理范围外不可见校验。',
         nextFollowUpDate: '2026-05-08',
         status: 'tracking',
+      },
+    ]);
+
+    await replaceResumePools([
+      {
+        candidateName: '联调-主题15平台简历',
+        targetDepartmentId: platformGroupId,
+        targetPosition: '平台高级工程师',
+        phone: '13812340001',
+        email: 'theme15-rd@example.com',
+        resumeText: '主题15联调-平台简历全文，用于 HR 成功与经理范围内查看校验。',
+        sourceType: 'external',
+        sourceRemark: '猎头推荐',
+        externalLink: 'https://example.com/theme15/rd',
+        attachmentIdList: [],
+        status: 'new',
+      },
+      {
+        candidateName: '联调-主题15销售简历',
+        targetDepartmentId: salesCenterId,
+        targetPosition: '销售顾问',
+        phone: '13812340002',
+        email: 'theme15-sales@example.com',
+        resumeText: '主题15联调-销售简历全文，用于经理范围外不可见校验。',
+        sourceType: 'referral',
+        sourceRemark: '内推',
+        externalLink: null,
+        attachmentIdList: [],
+        status: 'screening',
+      },
+    ]);
+
+    await replaceJobStandards([
+      {
+        positionName: '联调-主题17平台职位标准',
+        targetDepartmentId: platformGroupId,
+        jobLevel: 'P6',
+        profileSummary: '负责平台基础能力建设与核心交付稳定性。',
+        requirementSummary: '要求具备 Node.js、Midway 和复杂业务联调经验。',
+        skillTagList: ['Node.js', 'Midway', '联调推进'],
+        interviewTemplateSummary: '技术深度、问题拆解、跨团队协作三维摘要面。',
+        status: 'active',
+      },
+      {
+        positionName: '联调-主题17销售职位标准',
+        targetDepartmentId: salesCenterId,
+        jobLevel: 'M3',
+        profileSummary: '用于经理范围外不可见校验的销售职位标准样例。',
+        requirementSummary: '要求具备销售管理与客户拓展经验。',
+        skillTagList: ['销售管理', '客户拓展'],
+        interviewTemplateSummary: '业务拓展、客户经营、团队带教摘要面。',
+        status: 'draft',
       },
     ]);
 

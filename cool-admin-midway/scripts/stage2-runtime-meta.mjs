@@ -18,6 +18,9 @@ export const STAGE2_RUNTIME_META_SCOPES = Object.freeze([
   'theme12-talent-asset',
   'theme13-capability-certificate',
   'theme14-course-learning',
+  'theme15-resume-pool',
+  'theme16-recruit-plan',
+  'theme17-job-standard',
 ]);
 
 export function buildStage2SeedMeta(updatedAt = new Date().toISOString()) {
