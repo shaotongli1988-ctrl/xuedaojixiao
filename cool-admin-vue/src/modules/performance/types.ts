@@ -1010,6 +1010,359 @@ export interface SuggestionAcceptResult {
 	};
 }
 
+export type AssetStatus =
+	| 'pendingInbound'
+	| 'available'
+	| 'assigned'
+	| 'maintenance'
+	| 'inTransfer'
+	| 'inventorying'
+	| 'scrapped'
+	| 'lost';
+export type AssetAssignmentStatus = 'assigned' | 'returned' | 'lost';
+export type AssetMaintenanceStatus = 'scheduled' | 'inProgress' | 'completed' | 'cancelled';
+export type AssetProcurementStatus = 'draft' | 'submitted' | 'received' | 'cancelled';
+export type AssetTransferStatus = 'draft' | 'submitted' | 'inTransit' | 'completed' | 'cancelled';
+export type AssetInventoryStatus = 'draft' | 'counting' | 'completed' | 'closed';
+export type AssetDisposalStatus = 'draft' | 'submitted' | 'approved' | 'scrapped' | 'cancelled';
+
+export interface AssetStatusDistributionItem {
+	status: AssetStatus;
+	count: number;
+	amount?: number;
+}
+
+export interface AssetCategoryDistributionItem {
+	category: string;
+	count: number;
+	amount?: number;
+}
+
+export interface AssetDashboardActivityItem {
+	id?: number;
+	module:
+		| 'assetInfo'
+		| 'assetAssignment'
+		| 'assetMaintenance'
+		| 'assetProcurement'
+		| 'assetTransfer'
+		| 'assetInventory'
+		| 'assetDisposal';
+	title: string;
+	status?: string;
+	operatorName?: string;
+	occurredAt?: string;
+}
+
+export interface AssetDashboardSummary {
+	totalAssetCount: number;
+	pendingInboundCount: number;
+	availableCount: number;
+	assignedCount: number;
+	maintenanceCount: number;
+	inventoryingCount: number;
+	scrappedCount: number;
+	lostCount: number;
+	totalOriginalAmount: number;
+	monthlyDepreciationAmount: number;
+	pendingDisposalCount: number;
+	expiringWarrantyCount: number;
+	statusDistribution: AssetStatusDistributionItem[];
+	categoryDistribution: AssetCategoryDistributionItem[];
+	recentActivities: AssetDashboardActivityItem[];
+	updatedAt?: string;
+}
+
+export interface AssetInfoRecord {
+	id?: number;
+	assetNo: string;
+	name: string;
+	category: string;
+	assetStatus?: AssetStatus;
+	assetType?: string;
+	brand?: string;
+	model?: string;
+	serialNo?: string;
+	location?: string;
+	departmentId?: number;
+	departmentName?: string;
+	managerId?: number;
+	managerName?: string;
+	purchaseDate?: string;
+	purchaseAmount?: number;
+	supplierId?: number | null;
+	supplierName?: string;
+	purchaseOrderId?: number | null;
+	warrantyExpiry?: string;
+	residualValue?: number;
+	depreciationMonths?: number;
+	depreciationStartMonth?: string;
+	remark?: string;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface AssetInfoPageResult {
+	list: AssetInfoRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface AssetAssignmentRecord {
+	id?: number;
+	assetId?: number;
+	assetNo?: string;
+	assetName?: string;
+	assetStatus?: AssetStatus;
+	assigneeId?: number;
+	assigneeName?: string;
+	departmentId?: number;
+	departmentName?: string;
+	assignDate: string;
+	expectedReturnDate?: string;
+	actualReturnDate?: string;
+	purpose?: string;
+	returnRemark?: string;
+	status?: AssetAssignmentStatus;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface AssetAssignmentPageResult {
+	list: AssetAssignmentRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface AssetMaintenanceRecord {
+	id?: number;
+	assetId?: number;
+	assetNo?: string;
+	assetName?: string;
+	assetStatus?: AssetStatus;
+	maintenanceType?: string;
+	vendorName?: string;
+	cost?: number;
+	planDate?: string;
+	startDate?: string;
+	completeDate?: string;
+	description?: string;
+	resultSummary?: string;
+	status?: AssetMaintenanceStatus;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface AssetMaintenancePageResult {
+	list: AssetMaintenanceRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface AssetProcurementRecord {
+	id?: number;
+	procurementNo?: string;
+	title: string;
+	assetCategory: string;
+	quantity: number;
+	amount: number;
+	departmentId?: number;
+	departmentName?: string;
+	requesterId?: number;
+	requesterName?: string;
+	supplierId?: number | null;
+	supplierName?: string;
+	purchaseOrderId?: number | null;
+	expectedArrivalDate?: string;
+	receiveDate?: string;
+	remark?: string;
+	status?: AssetProcurementStatus;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface AssetProcurementPageResult {
+	list: AssetProcurementRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface AssetTransferRecord {
+	id?: number;
+	transferNo?: string;
+	assetId?: number;
+	assetNo?: string;
+	assetName?: string;
+	assetStatus?: AssetStatus;
+	fromDepartmentId?: number;
+	fromDepartmentName?: string;
+	toDepartmentId?: number;
+	toDepartmentName?: string;
+	fromLocation?: string;
+	toLocation?: string;
+	applicantId?: number;
+	applicantName?: string;
+	submitTime?: string;
+	completeTime?: string;
+	remark?: string;
+	status?: AssetTransferStatus;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface AssetTransferPageResult {
+	list: AssetTransferRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface AssetInventoryRecord {
+	id?: number;
+	inventoryNo?: string;
+	scopeLabel?: string;
+	departmentId?: number;
+	departmentName?: string;
+	location?: string;
+	ownerId?: number;
+	ownerName?: string;
+	plannedDate?: string;
+	completedDate?: string;
+	assetCount?: number;
+	matchedCount?: number;
+	differenceCount?: number;
+	remark?: string;
+	status?: AssetInventoryStatus;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface AssetInventoryPageResult {
+	list: AssetInventoryRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface AssetDepreciationSummary {
+	month?: string;
+	assetCount: number;
+	totalOriginalAmount: number;
+	totalAccumulatedDepreciation: number;
+	totalNetValue: number;
+	currentMonthDepreciation: number;
+	lastRecalculatedAt?: string;
+}
+
+export interface AssetDepreciationRecord {
+	id?: number;
+	assetId?: number;
+	assetNo?: string;
+	assetName?: string;
+	assetStatus?: AssetStatus;
+	departmentId?: number;
+	departmentName?: string;
+	depreciationMonth: string;
+	originalAmount: number;
+	residualValue: number;
+	monthlyDepreciation: number;
+	accumulatedDepreciation: number;
+	netValue: number;
+	updateTime?: string;
+}
+
+export interface AssetDepreciationPageResult {
+	list: AssetDepreciationRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface AssetDisposalRecord {
+	id?: number;
+	disposalNo?: string;
+	assetId?: number;
+	assetNo?: string;
+	assetName?: string;
+	assetStatus?: AssetStatus;
+	departmentId?: number;
+	departmentName?: string;
+	applicantId?: number;
+	applicantName?: string;
+	reason: string;
+	estimatedResidualAmount?: number;
+	submitTime?: string;
+	approveTime?: string;
+	executeTime?: string;
+	remark?: string;
+	status?: AssetDisposalStatus;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface AssetDisposalPageResult {
+	list: AssetDisposalRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface AssetReportSummary {
+	assetCount: number;
+	totalOriginalAmount: number;
+	totalNetValue: number;
+	assignedCount: number;
+	maintenanceCount: number;
+	scrappedCount: number;
+	lostCount: number;
+}
+
+export interface AssetReportRecord {
+	id?: number;
+	reportDate?: string;
+	assetId?: number;
+	assetNo?: string;
+	assetName?: string;
+	category?: string;
+	departmentId?: number;
+	departmentName?: string;
+	assetStatus?: AssetStatus;
+	originalAmount?: number;
+	netValue?: number;
+	monthlyDepreciation?: number;
+	disposalStatus?: AssetDisposalStatus;
+	remark?: string;
+}
+
+export interface AssetReportPageResult {
+	list: AssetReportRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
 export function createEmptyAssessment(): AssessmentRecord {
 	return {
 		employeeId: undefined,
@@ -1215,6 +1568,118 @@ export function createEmptyHiring(): HiringRecord {
 		hiringDecision: '',
 		status: 'offered',
 		closeReason: ''
+	};
+}
+
+export function createEmptyAssetInfo(): AssetInfoRecord {
+	return {
+		assetNo: '',
+		name: '',
+		category: '',
+		assetStatus: 'available',
+		assetType: '',
+		brand: '',
+		model: '',
+		serialNo: '',
+		location: '',
+		departmentId: undefined,
+		managerId: undefined,
+		purchaseDate: '',
+		purchaseAmount: 0,
+		supplierId: undefined,
+		purchaseOrderId: undefined,
+		warrantyExpiry: '',
+		residualValue: 0,
+		depreciationMonths: 0,
+		depreciationStartMonth: '',
+		remark: ''
+	};
+}
+
+export function createEmptyAssetAssignment(): AssetAssignmentRecord {
+	return {
+		assetId: undefined,
+		assigneeId: undefined,
+		departmentId: undefined,
+		assignDate: '',
+		expectedReturnDate: '',
+		actualReturnDate: '',
+		purpose: '',
+		returnRemark: '',
+		status: 'assigned'
+	};
+}
+
+export function createEmptyAssetMaintenance(): AssetMaintenanceRecord {
+	return {
+		assetId: undefined,
+		maintenanceType: '保养',
+		vendorName: '',
+		cost: 0,
+		planDate: '',
+		startDate: '',
+		completeDate: '',
+		description: '',
+		resultSummary: '',
+		status: 'scheduled'
+	};
+}
+
+export function createEmptyAssetProcurement(): AssetProcurementRecord {
+	return {
+		title: '',
+		assetCategory: '',
+		quantity: 1,
+		amount: 0,
+		departmentId: undefined,
+		requesterId: undefined,
+		supplierId: undefined,
+		purchaseOrderId: undefined,
+		expectedArrivalDate: '',
+		receiveDate: '',
+		remark: '',
+		status: 'draft'
+	};
+}
+
+export function createEmptyAssetTransfer(): AssetTransferRecord {
+	return {
+		assetId: undefined,
+		fromDepartmentId: undefined,
+		toDepartmentId: undefined,
+		fromLocation: '',
+		toLocation: '',
+		applicantId: undefined,
+		remark: '',
+		status: 'draft'
+	};
+}
+
+export function createEmptyAssetInventory(): AssetInventoryRecord {
+	return {
+		scopeLabel: '',
+		departmentId: undefined,
+		location: '',
+		ownerId: undefined,
+		plannedDate: '',
+		completedDate: '',
+		assetCount: 0,
+		matchedCount: 0,
+		differenceCount: 0,
+		remark: '',
+		status: 'draft'
+	};
+}
+
+export function createEmptyAssetDisposal(): AssetDisposalRecord {
+	return {
+		assetId: undefined,
+		departmentId: undefined,
+		applicantId: undefined,
+		reason: '',
+		estimatedResidualAmount: 0,
+		remark: '',
+		status: 'draft'
 	};
 }
 

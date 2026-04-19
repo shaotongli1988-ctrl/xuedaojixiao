@@ -1,6 +1,6 @@
 /**
- * Stage-2 smoke verification for performance modules 1, 2, 3, 4, 6, 7, 8, 9, 12, 13, and 14.
- * This file checks captcha, login, menu scope, dashboard/assessment/goal APIs, theme-7 course boundary, and the minimum real API path for indicator/PIP/promotion/salary/meeting/talentAsset/capability/certificate/course-learning.
+ * Stage-2 smoke verification for performance modules 1, 2, 3, 4, 6, 7, 8, 9, 12, 13, 14, and 20.
+ * This file checks captcha, login, menu scope, dashboard/assessment/goal APIs, theme-7 course boundary, and the minimum real API path for indicator/PIP/promotion/salary/meeting/talentAsset/capability/certificate/course-learning/asset.
  * It does not change business data, patch runtime config, or replace seed/bootstrap scripts.
  * Maintenance pitfall: assertions are coupled to seed-stage2-performance.mjs and the current stage-2 scope; update both sides together.
  */
@@ -19,7 +19,6 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
-const defaultBaseUrl = 'http://127.0.0.1:8006';
 const defaultPassword = '123456';
 const successCode = 1000;
 const stage2LearningCourseCode = 'PMS-COURSE-PUBLISHED-001';
@@ -38,9 +37,10 @@ const learningForbiddenKeys = [
 ];
 const stage2PerformanceRequiredScopes = [
   'stage2-performance-core',
-  'theme12-talent-asset',
+  'theme12-talentAsset',
   'theme13-capability-certificate',
   'theme14-course-learning',
+  'theme20-asset-management',
 ];
 
 const expectedUsers = [
@@ -63,6 +63,16 @@ const expectedUsers = [
         '/performance/salary',
         '/performance/meeting',
         '/performance/talentAsset',
+        '/performance/asset/dashboard',
+        '/performance/asset/ledger',
+        '/performance/asset/assignment',
+        '/performance/asset/maintenance',
+        '/performance/asset/report',
+        '/performance/asset/procurement',
+        '/performance/asset/transfer',
+        '/performance/asset/inventory',
+        '/performance/asset/depreciation',
+        '/performance/asset/disposal',
       ],
       routesAbsent: ['/performance/course-learning'],
       permsPresent: [
@@ -103,6 +113,60 @@ const expectedUsers = [
         'performance:meeting:add',
         'performance:meeting:update',
         'performance:meeting:checkIn',
+        'performance:assetDashboard:summary',
+        'performance:assetInfo:page',
+        'performance:assetInfo:info',
+        'performance:assetInfo:add',
+        'performance:assetInfo:update',
+        'performance:assetInfo:delete',
+        'performance:assetInfo:updateStatus',
+        'performance:assetAssignment:page',
+        'performance:assetAssignment:add',
+        'performance:assetAssignment:update',
+        'performance:assetAssignment:return',
+        'performance:assetAssignment:markLost',
+        'performance:assetAssignment:delete',
+        'performance:assetMaintenance:page',
+        'performance:assetMaintenance:add',
+        'performance:assetMaintenance:update',
+        'performance:assetMaintenance:complete',
+        'performance:assetMaintenance:cancel',
+        'performance:assetMaintenance:delete',
+        'performance:assetProcurement:page',
+        'performance:assetProcurement:info',
+        'performance:assetProcurement:add',
+        'performance:assetProcurement:update',
+        'performance:assetProcurement:submit',
+        'performance:assetProcurement:receive',
+        'performance:assetProcurement:cancel',
+        'performance:assetTransfer:page',
+        'performance:assetTransfer:info',
+        'performance:assetTransfer:add',
+        'performance:assetTransfer:update',
+        'performance:assetTransfer:submit',
+        'performance:assetTransfer:complete',
+        'performance:assetTransfer:cancel',
+        'performance:assetInventory:page',
+        'performance:assetInventory:info',
+        'performance:assetInventory:add',
+        'performance:assetInventory:update',
+        'performance:assetInventory:start',
+        'performance:assetInventory:complete',
+        'performance:assetInventory:close',
+        'performance:assetDepreciation:page',
+        'performance:assetDepreciation:summary',
+        'performance:assetDepreciation:recalculate',
+        'performance:assetDisposal:page',
+        'performance:assetDisposal:info',
+        'performance:assetDisposal:add',
+        'performance:assetDisposal:update',
+        'performance:assetDisposal:submit',
+        'performance:assetDisposal:approve',
+        'performance:assetDisposal:execute',
+        'performance:assetDisposal:cancel',
+        'performance:assetReport:summary',
+        'performance:assetReport:page',
+        'performance:assetReport:export',
         'performance:talentAsset:page',
         'performance:talentAsset:info',
         'performance:talentAsset:add',
@@ -312,11 +376,21 @@ const expectedUsers = [
         '/performance/promotion',
         '/performance/meeting',
         '/performance/talentAsset',
+        '/performance/asset/dashboard',
+        '/performance/asset/ledger',
+        '/performance/asset/assignment',
+        '/performance/asset/maintenance',
+        '/performance/asset/report',
+        '/performance/asset/transfer',
+        '/performance/asset/inventory',
+        '/performance/asset/disposal',
       ],
       routesAbsent: [
         '/performance/indicator-library',
         '/performance/salary',
         '/performance/course-learning',
+        '/performance/asset/procurement',
+        '/performance/asset/depreciation',
       ],
       permsPresent: [
         'performance:dashboard:summary',
@@ -348,6 +422,42 @@ const expectedUsers = [
         'performance:meeting:add',
         'performance:meeting:update',
         'performance:meeting:checkIn',
+        'performance:assetDashboard:summary',
+        'performance:assetInfo:page',
+        'performance:assetInfo:info',
+        'performance:assetAssignment:page',
+        'performance:assetAssignment:add',
+        'performance:assetAssignment:update',
+        'performance:assetAssignment:return',
+        'performance:assetMaintenance:page',
+        'performance:assetMaintenance:add',
+        'performance:assetMaintenance:update',
+        'performance:assetMaintenance:complete',
+        'performance:assetMaintenance:cancel',
+        'performance:assetTransfer:page',
+        'performance:assetTransfer:info',
+        'performance:assetTransfer:add',
+        'performance:assetTransfer:update',
+        'performance:assetTransfer:submit',
+        'performance:assetTransfer:complete',
+        'performance:assetTransfer:cancel',
+        'performance:assetInventory:page',
+        'performance:assetInventory:info',
+        'performance:assetInventory:add',
+        'performance:assetInventory:update',
+        'performance:assetInventory:start',
+        'performance:assetInventory:complete',
+        'performance:assetInventory:close',
+        'performance:assetDisposal:page',
+        'performance:assetDisposal:info',
+        'performance:assetDisposal:add',
+        'performance:assetDisposal:update',
+        'performance:assetDisposal:submit',
+        'performance:assetDisposal:approve',
+        'performance:assetDisposal:execute',
+        'performance:assetDisposal:cancel',
+        'performance:assetReport:summary',
+        'performance:assetReport:page',
         'performance:talentAsset:page',
         'performance:talentAsset:info',
         'performance:talentAsset:add',
@@ -370,6 +480,24 @@ const expectedUsers = [
         'performance:certificate:add',
         'performance:certificate:update',
         'performance:certificate:issue',
+        'performance:assetInfo:add',
+        'performance:assetInfo:update',
+        'performance:assetInfo:delete',
+        'performance:assetInfo:updateStatus',
+        'performance:assetAssignment:markLost',
+        'performance:assetAssignment:delete',
+        'performance:assetMaintenance:delete',
+        'performance:assetProcurement:page',
+        'performance:assetProcurement:info',
+        'performance:assetProcurement:add',
+        'performance:assetProcurement:update',
+        'performance:assetProcurement:submit',
+        'performance:assetProcurement:receive',
+        'performance:assetProcurement:cancel',
+        'performance:assetDepreciation:page',
+        'performance:assetDepreciation:summary',
+        'performance:assetDepreciation:recalculate',
+        'performance:assetReport:export',
         'performance:talentAsset:delete',
       ],
     },
@@ -712,7 +840,7 @@ const expectedUsers = [
 
 function parseArgs(argv) {
   const options = {
-    baseUrl: process.env.STAGE2_SMOKE_BASE_URL || defaultBaseUrl,
+    baseUrl: process.env.STAGE2_SMOKE_BASE_URL || '',
     password: process.env.STAGE2_SMOKE_PASSWORD || defaultPassword,
     cacheDir: process.env.STAGE2_SMOKE_CACHE_DIR || resolveDefaultCacheDir(),
   };
@@ -741,6 +869,12 @@ function parseArgs(argv) {
     throw new Error(`Unknown argument: ${current}`);
   }
 
+  if (!options.baseUrl) {
+    throw new Error(
+      'Missing target backend base URL. Pass --base-url URL or set STAGE2_SMOKE_BASE_URL.'
+    );
+  }
+
   options.baseUrl = options.baseUrl.replace(/\/+$/, '');
   return options;
 }
@@ -758,7 +892,7 @@ function printHelp() {
   node ./scripts/smoke-stage2-performance.mjs [--base-url URL] [--password PASS] [--cache-dir DIR]
 
 Environment variables:
-  STAGE2_SMOKE_BASE_URL   Override backend base URL. Default: ${defaultBaseUrl}
+  STAGE2_SMOKE_BASE_URL   Required backend base URL. Example: http://127.0.0.1:8061
   STAGE2_SMOKE_PASSWORD   Override shared password. Default: ${defaultPassword}
   STAGE2_SMOKE_CACHE_DIR  Override local cache directory resolved from src/config/config.default.ts
 
@@ -3086,6 +3220,277 @@ async function verifyCourseLearning(reporter, options, user, token, runtimeState
   reporter.pass(examScope, `status=${examData.resultStatus} score=${examData.latestScore}`);
 }
 
+function userHasPerm(user, perm) {
+  return Boolean(user?.menu?.permsPresent?.includes(perm));
+}
+
+async function verifyAssetDashboardSummary(reporter, options, user, token) {
+  const scope = `${user.username} assetDashboard:summary`;
+  const response = await requestJson(
+    `${options.baseUrl}/admin/performance/assetDashboard/summary`,
+    {
+      headers: {
+        Authorization: token,
+      },
+    }
+  );
+
+  if (!userHasPerm(user, 'performance:assetDashboard:summary')) {
+    const denied = validateDeniedResponse(response, '无权限查看资产首页');
+    if (denied) {
+      reporter.fail(scope, denied);
+      return;
+    }
+    reporter.pass(scope, `denied as expected: ${response.body?.message}`);
+    return;
+  }
+
+  if (response.body?.code !== successCode) {
+    reporter.fail(scope, formatResponse(response.body));
+    return;
+  }
+
+  const data = response.body?.data || {};
+  const numericFields = [
+    'totalAssetCount',
+    'pendingInboundCount',
+    'availableCount',
+    'assignedCount',
+    'maintenanceCount',
+    'inventoryingCount',
+    'scrappedCount',
+    'lostCount',
+    'totalOriginalAmount',
+    'monthlyDepreciationAmount',
+    'pendingDisposalCount',
+    'expiringWarrantyCount',
+  ];
+  const problems = [];
+
+  for (const field of numericFields) {
+    if (typeof data[field] !== 'number') {
+      problems.push(`${field} is not a number`);
+    }
+  }
+
+  if (!Array.isArray(data.statusDistribution)) {
+    problems.push('statusDistribution is not an array');
+  }
+  if (!Array.isArray(data.categoryDistribution)) {
+    problems.push('categoryDistribution is not an array');
+  }
+  if (!Array.isArray(data.recentActivities)) {
+    problems.push('recentActivities is not an array');
+  }
+
+  if (problems.length) {
+    reporter.fail(scope, problems.join('; '));
+    return;
+  }
+
+  reporter.pass(scope, `assets=${data.totalAssetCount} available=${data.availableCount}`);
+}
+
+async function verifyAssetInfoPage(reporter, options, user, token) {
+  const scope = `${user.username} assetInfo:page`;
+  const response = await requestJson(`${options.baseUrl}/admin/performance/assetInfo/page`, {
+    method: 'POST',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      page: 1,
+      size: 10,
+    }),
+  });
+
+  if (!userHasPerm(user, 'performance:assetInfo:page')) {
+    const denied = validateDeniedResponse(response, '无权限查看资产台账');
+    if (denied) {
+      reporter.fail(scope, denied);
+      return;
+    }
+    reporter.pass(scope, `denied as expected: ${response.body?.message}`);
+    return;
+  }
+
+  if (response.body?.code !== successCode) {
+    reporter.fail(scope, formatResponse(response.body));
+    return;
+  }
+
+  const list = listItems(response.body);
+  const total = totalFromPage(response.body);
+  const problems = [];
+
+  if (!Array.isArray(list)) {
+    problems.push('list is not an array');
+  }
+  if (typeof total !== 'number') {
+    problems.push('total is not a number');
+  }
+  if (list.some(item => typeof item.name !== 'string' || typeof item.assetNo !== 'string')) {
+    problems.push('list item missing assetNo or name');
+  }
+
+  if (problems.length) {
+    reporter.fail(scope, problems.join('; '));
+    return;
+  }
+
+  reporter.pass(scope, `total=${total} first=${list[0]?.assetNo || 'none'}`);
+}
+
+async function verifyAssetReportPage(reporter, options, user, token) {
+  const scope = `${user.username} assetReport:page`;
+  const response = await requestJson(`${options.baseUrl}/admin/performance/assetReport/page`, {
+    method: 'POST',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      page: 1,
+      size: 10,
+      reportDate: '2026-04',
+    }),
+  });
+
+  if (!userHasPerm(user, 'performance:assetReport:page')) {
+    const denied = validateDeniedResponse(response, '无权限查看资产报表');
+    if (denied) {
+      reporter.fail(scope, denied);
+      return;
+    }
+    reporter.pass(scope, `denied as expected: ${response.body?.message}`);
+    return;
+  }
+
+  if (response.body?.code !== successCode) {
+    reporter.fail(scope, formatResponse(response.body));
+    return;
+  }
+
+  const list = listItems(response.body);
+  const total = totalFromPage(response.body);
+  const problems = [];
+
+  if (!Array.isArray(list)) {
+    problems.push('list is not an array');
+  }
+  if (typeof total !== 'number') {
+    problems.push('total is not a number');
+  }
+  if (list.some(item => typeof item.assetName !== 'string' || typeof item.assetNo !== 'string')) {
+    problems.push('list item missing assetNo or assetName');
+  }
+
+  if (problems.length) {
+    reporter.fail(scope, problems.join('; '));
+    return;
+  }
+
+  reporter.pass(scope, `total=${total} reportRows=${list.length}`);
+}
+
+async function verifyAssetDepreciationSummary(reporter, options, user, token) {
+  const scope = `${user.username} assetDepreciation:summary`;
+  const response = await requestJson(
+    `${options.baseUrl}/admin/performance/assetDepreciation/summary?depreciationMonth=2026-04`,
+    {
+      headers: {
+        Authorization: token,
+      },
+    }
+  );
+
+  if (!userHasPerm(user, 'performance:assetDepreciation:summary')) {
+    const denied = validateDeniedResponse(response, '无权限查看折旧汇总');
+    if (denied) {
+      reporter.fail(scope, denied);
+      return;
+    }
+    reporter.pass(scope, `denied as expected: ${response.body?.message}`);
+    return;
+  }
+
+  if (response.body?.code !== successCode) {
+    reporter.fail(scope, formatResponse(response.body));
+    return;
+  }
+
+  const data = response.body?.data || {};
+  const numericFields = [
+    'assetCount',
+    'totalOriginalAmount',
+    'totalAccumulatedDepreciation',
+    'totalNetValue',
+    'currentMonthDepreciation',
+  ];
+  const problems = [];
+
+  for (const field of numericFields) {
+    if (typeof data[field] !== 'number') {
+      problems.push(`${field} is not a number`);
+    }
+  }
+
+  if (typeof data.month !== 'string' || !data.month) {
+    problems.push('month missing');
+  }
+
+  if (problems.length) {
+    reporter.fail(scope, problems.join('; '));
+    return;
+  }
+
+  reporter.pass(scope, `month=${data.month} assets=${data.assetCount}`);
+}
+
+async function verifyAssetReportExport(reporter, options, user, token) {
+  const scope = `${user.username} assetReport:export`;
+  const response = await requestJson(
+    `${options.baseUrl}/admin/performance/assetReport/export?reportDate=2026-04`,
+    {
+      headers: {
+        Authorization: token,
+      },
+    }
+  );
+
+  if (!userHasPerm(user, 'performance:assetReport:export')) {
+    const denied = validateDeniedResponse(response, '无权限导出资产报表');
+    if (denied) {
+      reporter.fail(scope, denied);
+      return;
+    }
+    reporter.pass(scope, `denied as expected: ${response.body?.message}`);
+    return;
+  }
+
+  if (response.body?.code !== successCode) {
+    reporter.fail(scope, formatResponse(response.body));
+    return;
+  }
+
+  const list = Array.isArray(response.body?.data) ? response.body.data : null;
+  if (!list) {
+    reporter.fail(scope, 'export payload is not an array');
+    return;
+  }
+
+  reporter.pass(scope, `rows=${list.length}`);
+}
+
+async function verifyAssetManagement(reporter, options, user, token) {
+  await verifyAssetDashboardSummary(reporter, options, user, token);
+  await verifyAssetInfoPage(reporter, options, user, token);
+  await verifyAssetReportPage(reporter, options, user, token);
+  await verifyAssetDepreciationSummary(reporter, options, user, token);
+  await verifyAssetReportExport(reporter, options, user, token);
+}
+
 function formatResponse(body) {
   if (!body) {
     return 'empty response';
@@ -3156,6 +3561,11 @@ async function run() {
       reporter.skip(`${user.username} talentAsset:add`, 'skipped because login failed');
       reporter.skip(`${user.username} talentAsset:update`, 'skipped because login failed');
       reporter.skip(`${user.username} talentAsset:delete`, 'skipped because login failed');
+      reporter.skip(`${user.username} assetDashboard:summary`, 'skipped because login failed');
+      reporter.skip(`${user.username} assetInfo:page`, 'skipped because login failed');
+      reporter.skip(`${user.username} assetReport:page`, 'skipped because login failed');
+      reporter.skip(`${user.username} assetDepreciation:summary`, 'skipped because login failed');
+      reporter.skip(`${user.username} assetReport:export`, 'skipped because login failed');
       continue;
     }
 
@@ -3176,6 +3586,7 @@ async function run() {
     await verifyCourseLearning(reporter, options, user, session.token, runtimeState);
     await verifyMeetingPage(reporter, options, user, session.token);
     await verifyTalentAssetManagement(reporter, options, user, session.token);
+    await verifyAssetManagement(reporter, options, user, session.token);
   }
 
   printSummary(reporter);

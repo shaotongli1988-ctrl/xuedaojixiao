@@ -1,3 +1,9 @@
+/**
+ * Development proxy targets for the admin frontend.
+ * This file only defines proxy routing and the currently selected dev target.
+ * It does not decide backend startup ports or guarantee that a target instance is healthy.
+ * Maintenance pitfall: do not silently fall back to a historical backend port; require an explicit dev target instead.
+ */
 const runtimeEnv = (globalThis as { process?: { env?: Record<string, string | undefined> } })
 	.process?.env;
 
@@ -5,7 +11,9 @@ const proxyTarget =
 	runtimeEnv?.COOL_ADMIN_PROXY_TARGET ||
 	(import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env
 		?.VITE_DEV_PROXY_TARGET ||
-	'http://127.0.0.1:8006';
+	'';
+
+const hasDevProxyTarget = Boolean(proxyTarget);
 
 const proxy = {
 	'/dev/': {
@@ -22,6 +30,6 @@ const proxy = {
 };
 
 const value = 'dev';
-const host = proxy[`/${value}/`]?.target;
+const host = hasDevProxyTarget ? proxy[`/${value}/`]?.target : '';
 
-export { proxy, host, value };
+export { proxy, host, value, hasDevProxyTarget };

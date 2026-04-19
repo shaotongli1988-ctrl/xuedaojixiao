@@ -56,6 +56,8 @@ const stage2MenuRouters = new Set([
   '/performance/asset/inventory',
   '/performance/asset/depreciation',
   '/performance/asset/disposal',
+  '/performance/office/document-center',
+  '/performance/office/knowledge-base',
 ]);
 
 const connection = await mysql.createConnection({
@@ -1459,6 +1461,132 @@ async function replaceContracts(seedRows) {
   }
 }
 
+async function replaceDocumentCenters(seedRows) {
+  const fileNos = seedRows.map(item => item.fileNo).filter(Boolean);
+
+  if (fileNos.length) {
+    await connection.query(
+      'DELETE FROM performance_document_center WHERE fileNo IN (?)',
+      [fileNos]
+    );
+  }
+
+  const inserted = [];
+
+  for (const row of seedRows) {
+    const [result] = await connection.query(
+      `INSERT INTO performance_document_center
+        (fileNo, fileName, category, fileType, storage, confidentiality, ownerName, department, status, version, sizeMb, downloadCount, expireDate, tags, notes, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.fileNo,
+        row.fileName,
+        row.category,
+        row.fileType,
+        row.storage,
+        row.confidentiality,
+        row.ownerName,
+        row.department,
+        row.status,
+        row.version,
+        row.sizeMb ?? 0,
+        row.downloadCount ?? 0,
+        row.expireDate ?? null,
+        JSON.stringify(row.tags || []),
+        row.notes ?? null,
+        now(),
+        now(),
+      ]
+    );
+
+    inserted.push({
+      id: result.insertId,
+      ...row,
+    });
+  }
+
+  return inserted;
+}
+
+async function replaceKnowledgeBases(seedRows) {
+  const kbNos = seedRows.map(item => item.kbNo).filter(Boolean);
+
+  if (kbNos.length) {
+    await connection.query(
+      'DELETE FROM performance_knowledge_base WHERE kbNo IN (?)',
+      [kbNos]
+    );
+  }
+
+  const inserted = [];
+
+  for (const row of seedRows) {
+    const [result] = await connection.query(
+      `INSERT INTO performance_knowledge_base
+        (kbNo, title, category, summary, ownerName, status, tags, relatedFileIds, relatedTopics, importance, viewCount, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.kbNo,
+        row.title,
+        row.category,
+        row.summary,
+        row.ownerName,
+        row.status,
+        JSON.stringify(row.tags || []),
+        JSON.stringify(row.relatedFileIds || []),
+        JSON.stringify(row.relatedTopics || []),
+        row.importance ?? 70,
+        row.viewCount ?? 0,
+        now(),
+        now(),
+      ]
+    );
+
+    inserted.push({
+      id: result.insertId,
+      ...row,
+    });
+  }
+
+  return inserted;
+}
+
+async function replaceKnowledgeQas(seedRows) {
+  const questions = seedRows.map(item => item.question).filter(Boolean);
+
+  if (questions.length) {
+    await connection.query(
+      'DELETE FROM performance_knowledge_qa WHERE question IN (?)',
+      [questions]
+    );
+  }
+
+  const inserted = [];
+
+  for (const row of seedRows) {
+    const [result] = await connection.query(
+      `INSERT INTO performance_knowledge_qa
+        (question, answer, relatedKnowledgeIds, relatedFileIds, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.question,
+        row.answer,
+        JSON.stringify(row.relatedKnowledgeIds || []),
+        JSON.stringify(row.relatedFileIds || []),
+        now(),
+        now(),
+      ]
+    );
+
+    inserted.push({
+      id: result.insertId,
+      ...row,
+    });
+  }
+
+  return inserted;
+}
+
 async function replaceSuppliers(seedRows) {
   const names = seedRows.map(item => item.name);
   const codes = seedRows.map(item => item.code).filter(Boolean);
@@ -2297,6 +2425,89 @@ async function ensureContractTable() {
   `);
 }
 
+async function ensureOfficeKnowledgeTables() {
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_document_center (
+      id int NOT NULL AUTO_INCREMENT,
+      fileNo varchar(64) NOT NULL,
+      fileName varchar(200) NOT NULL,
+      category varchar(32) NOT NULL,
+      fileType varchar(32) NOT NULL,
+      storage varchar(32) NOT NULL,
+      confidentiality varchar(32) NOT NULL,
+      ownerName varchar(100) NOT NULL,
+      department varchar(100) NOT NULL,
+      status varchar(32) NOT NULL DEFAULT 'draft',
+      version varchar(32) NOT NULL,
+      sizeMb decimal(10,2) NOT NULL DEFAULT 0,
+      downloadCount int NOT NULL DEFAULT 0,
+      expireDate varchar(10) DEFAULT NULL,
+      tags text DEFAULT NULL,
+      notes text DEFAULT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_performance_document_center_file_no (fileNo),
+      KEY idx_performance_document_center_file_name (fileName),
+      KEY idx_performance_document_center_category (category),
+      KEY idx_performance_document_center_file_type (fileType),
+      KEY idx_performance_document_center_storage (storage),
+      KEY idx_performance_document_center_confidentiality (confidentiality),
+      KEY idx_performance_document_center_status (status),
+      KEY idx_performance_document_center_create_time (createTime),
+      KEY idx_performance_document_center_update_time (updateTime),
+      KEY idx_performance_document_center_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_knowledge_base (
+      id int NOT NULL AUTO_INCREMENT,
+      kbNo varchar(64) NOT NULL,
+      title varchar(200) NOT NULL,
+      category varchar(64) NOT NULL,
+      summary text NOT NULL,
+      ownerName varchar(100) NOT NULL,
+      status varchar(32) NOT NULL DEFAULT 'draft',
+      tags text DEFAULT NULL,
+      relatedFileIds text DEFAULT NULL,
+      relatedTopics text DEFAULT NULL,
+      importance int NOT NULL DEFAULT 70,
+      viewCount int NOT NULL DEFAULT 0,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_performance_knowledge_base_kb_no (kbNo),
+      KEY idx_performance_knowledge_base_title (title),
+      KEY idx_performance_knowledge_base_category (category),
+      KEY idx_performance_knowledge_base_status (status),
+      KEY idx_performance_knowledge_base_create_time (createTime),
+      KEY idx_performance_knowledge_base_update_time (updateTime),
+      KEY idx_performance_knowledge_base_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_knowledge_qa (
+      id int NOT NULL AUTO_INCREMENT,
+      question varchar(500) NOT NULL,
+      answer text NOT NULL,
+      relatedKnowledgeIds text DEFAULT NULL,
+      relatedFileIds text DEFAULT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      KEY idx_performance_knowledge_qa_question (question(191)),
+      KEY idx_performance_knowledge_qa_create_time (createTime),
+      KEY idx_performance_knowledge_qa_update_time (updateTime),
+      KEY idx_performance_knowledge_qa_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
 async function ensureProcurementTables() {
   await connection.query(`
     CREATE TABLE IF NOT EXISTS performance_supplier (
@@ -2819,6 +3030,7 @@ async function main() {
     await ensureJobStandardTable();
     await ensureTeacherChannelTables();
     await ensureContractTable();
+    await ensureOfficeKnowledgeTables();
     await ensureProcurementTables();
     await ensureAssetTables();
     await ensureFeedbackTables();
@@ -2938,6 +3150,8 @@ async function main() {
         '/performance/hiring',
         '/performance/meeting',
         '/performance/contract',
+        '/performance/office/document-center',
+        '/performance/office/knowledge-base',
         '/performance/talentAsset',
         '/performance/purchase-order',
         '/performance/supplier',
@@ -3101,6 +3315,21 @@ async function main() {
         'performance:contract:add',
         'performance:contract:update',
         'performance:contract:delete',
+        'performance:documentCenter:page',
+        'performance:documentCenter:info',
+        'performance:documentCenter:stats',
+        'performance:documentCenter:add',
+        'performance:documentCenter:update',
+        'performance:documentCenter:delete',
+        'performance:knowledgeBase:page',
+        'performance:knowledgeBase:stats',
+        'performance:knowledgeBase:add',
+        'performance:knowledgeBase:update',
+        'performance:knowledgeBase:delete',
+        'performance:knowledgeBase:graph',
+        'performance:knowledgeBase:search',
+        'performance:knowledgeBase:qaList',
+        'performance:knowledgeBase:qaAdd',
         'performance:purchaseOrder:page',
         'performance:purchaseOrder:info',
         'performance:purchaseOrder:add',
@@ -3700,6 +3929,95 @@ async function main() {
         position: '销售顾问',
         departmentId: salesCenterId,
         status: 'terminated',
+      },
+    ]);
+
+    const documentCenterRows = await replaceDocumentCenters([
+      {
+        fileNo: 'PMS-DOC-21-POLICY-001',
+        fileName: '联调-主题21-入职制度清单',
+        category: 'policy',
+        fileType: 'pdf',
+        storage: 'cloud',
+        confidentiality: 'internal',
+        ownerName: '主题21-HR管理员',
+        department: '行政部',
+        status: 'published',
+        version: 'V1.0',
+        sizeMb: 12.5,
+        downloadCount: 18,
+        expireDate: '2027-12-31',
+        tags: ['主题21', '制度', '入职'],
+        notes: '主题21联调-文件管理已发布样例',
+      },
+      {
+        fileNo: 'PMS-DOC-21-TEMPLATE-001',
+        fileName: '联调-主题21-报销模板',
+        category: 'template',
+        fileType: 'xls',
+        storage: 'local',
+        confidentiality: 'public',
+        ownerName: '主题21-HR管理员',
+        department: '财务协同组',
+        status: 'review',
+        version: 'V0.9',
+        sizeMb: 3.2,
+        downloadCount: 4,
+        expireDate: null,
+        tags: ['主题21', '模板', '报销'],
+        notes: '主题21联调-文件管理待审核样例',
+      },
+    ]);
+
+    const documentCenterIdMap = new Map(
+      documentCenterRows.map(item => [item.fileNo, item.id])
+    );
+
+    const knowledgeBaseRows = await replaceKnowledgeBases([
+      {
+        kbNo: 'PMS-KB-21-ONBOARDING-001',
+        title: '联调-主题21-入职资料归档规范',
+        category: '制度知识',
+        summary: '用于主题21联调的知识条目样例，聚焦入职资料归档、检索和复用规则。',
+        ownerName: '主题21-HR管理员',
+        status: 'published',
+        tags: ['主题21', '制度', '归档'],
+        relatedFileIds: [documentCenterIdMap.get('PMS-DOC-21-POLICY-001')],
+        relatedTopics: ['入职', '资料归档'],
+        importance: 88,
+        viewCount: 26,
+      },
+      {
+        kbNo: 'PMS-KB-21-EXPENSE-001',
+        title: '联调-主题21-费用报销知识卡片',
+        category: '流程知识',
+        summary: '用于主题21联调的知识条目样例，聚焦报销模板、填报要点和附件说明。',
+        ownerName: '主题21-HR管理员',
+        status: 'draft',
+        tags: ['主题21', '流程', '报销'],
+        relatedFileIds: [documentCenterIdMap.get('PMS-DOC-21-TEMPLATE-001')],
+        relatedTopics: ['费用报销', '模板填报'],
+        importance: 72,
+        viewCount: 8,
+      },
+    ]);
+
+    const knowledgeBaseIdMap = new Map(
+      knowledgeBaseRows.map(item => [item.kbNo, item.id])
+    );
+
+    await replaceKnowledgeQas([
+      {
+        question: '联调-主题21-入职资料需要归档到哪里？',
+        answer: '按入职资料归档规范归入文件管理台账，并在知识库挂接对应条目。',
+        relatedKnowledgeIds: [knowledgeBaseIdMap.get('PMS-KB-21-ONBOARDING-001')],
+        relatedFileIds: [documentCenterIdMap.get('PMS-DOC-21-POLICY-001')],
+      },
+      {
+        question: '联调-主题21-报销模板在哪里取？',
+        answer: '在文件管理的报销模板记录获取最新元数据，并在知识库查看填报说明。',
+        relatedKnowledgeIds: [knowledgeBaseIdMap.get('PMS-KB-21-EXPENSE-001')],
+        relatedFileIds: [documentCenterIdMap.get('PMS-DOC-21-TEMPLATE-001')],
       },
     ]);
 

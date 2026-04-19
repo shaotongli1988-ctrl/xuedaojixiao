@@ -19,8 +19,7 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
-const defaultBaseUrl = process.env.THEME11_SMOKE_BASE_URL || 'http://127.0.0.1:8006';
-const defaultPassword = process.env.THEME11_SMOKE_PASSWORD || '123456';
+const defaultPassword = '123456';
 const successCode = 1000;
 const theme11RequiredScopes = ['theme11-procurement-supplier'];
 const theme11PermissionKeys = [
@@ -138,16 +137,63 @@ function parseOptionalIntegerEnv(name) {
   return parsed;
 }
 
-function buildOptions() {
-  return {
-    baseUrl: defaultBaseUrl.replace(/\/+$/, ''),
-    password: defaultPassword,
+function buildOptions(argv = []) {
+  const options = {
+    baseUrl: process.env.THEME11_SMOKE_BASE_URL || '',
+    password: process.env.THEME11_SMOKE_PASSWORD || defaultPassword,
     cacheDir: process.env.THEME11_SMOKE_CACHE_DIR || resolveDefaultCacheDir(),
     supplierInfoId: parseOptionalIntegerEnv('THEME11_SUPPLIER_INFO_ID'),
     purchaseOrderInfoId: parseOptionalIntegerEnv('THEME11_PURCHASE_ORDER_INFO_ID'),
     activeOrderDeleteId: parseOptionalIntegerEnv('THEME11_ACTIVE_ORDER_DELETE_ID'),
     referencedSupplierDeleteId: parseOptionalIntegerEnv('THEME11_REFERENCED_SUPPLIER_DELETE_ID'),
   };
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const current = argv[index];
+    const next = argv[index + 1];
+
+    if ((current === '--base-url' || current === '-u') && next) {
+      options.baseUrl = next;
+      index += 1;
+      continue;
+    }
+
+    if ((current === '--password' || current === '-p') && next) {
+      options.password = next;
+      index += 1;
+      continue;
+    }
+
+    if ((current === '--cache-dir' || current === '-c') && next) {
+      options.cacheDir = next;
+      index += 1;
+      continue;
+    }
+
+    if (current === '--help' || current === '-h') {
+      console.log(`Usage: node ${path.relative(process.cwd(), fileURLToPath(import.meta.url))} [options]
+
+Options:
+  --base-url, -u   Override backend base URL
+  --password, -p   Override login password (default: ${defaultPassword})
+  --cache-dir, -c  Override Cool cache directory
+  --help, -h       Show this help message
+
+Environment variables:
+  THEME11_SMOKE_BASE_URL   Required backend base URL. Example: http://127.0.0.1:8062
+`);
+      process.exit(0);
+    }
+  }
+
+  if (!options.baseUrl) {
+    throw new Error(
+      'Missing target backend base URL. Pass --base-url URL or set THEME11_SMOKE_BASE_URL.'
+    );
+  }
+
+  options.baseUrl = options.baseUrl.replace(/\/+$/, '');
+  return options;
 }
 
 class Reporter {
@@ -554,7 +600,7 @@ async function verifyOptionalDeleteGuards(reporter, options, tokens) {
 
 async function run() {
   const reporter = new Reporter();
-  const options = buildOptions();
+  const options = buildOptions(process.argv.slice(2));
   const tokens = {};
 
   console.log('Theme 11 procurement/supplier smoke');

@@ -18,18 +18,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
-function parseInteger(value, fallback) {
+function parseInteger(value) {
   const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
 function parseArgs(argv) {
   const options = {
-    port: parseInteger(process.env.LATEST_RESET_PORT ?? process.env.PORT, 8006),
-    startTimeoutMs: parseInteger(
-      process.env.LATEST_RESET_START_TIMEOUT_MS,
-      45000
-    ),
+    port: parseInteger(process.env.LATEST_RESET_PORT ?? process.env.PORT),
+    startTimeoutMs: parseInteger(process.env.LATEST_RESET_START_TIMEOUT_MS) || 45000,
     baseUrl: '',
     seedScript:
       process.env.LATEST_RESET_SEED_SCRIPT || './scripts/seed-stage2-performance.mjs',
@@ -45,13 +42,13 @@ function parseArgs(argv) {
     const next = argv[index + 1];
 
     if ((current === '--port' || current === '-p') && next) {
-      options.port = parseInteger(next, options.port);
+      options.port = parseInteger(next);
       index += 1;
       continue;
     }
 
     if (current === '--start-timeout-ms' && next) {
-      options.startTimeoutMs = parseInteger(next, options.startTimeoutMs);
+      options.startTimeoutMs = parseInteger(next) || options.startTimeoutMs;
       index += 1;
       continue;
     }
@@ -92,6 +89,12 @@ function parseArgs(argv) {
     throw new Error(`Unknown argument: ${current}`);
   }
 
+  if (!options.port) {
+    throw new Error(
+      'Missing target backend port. Pass --port PORT or set LATEST_RESET_PORT.'
+    );
+  }
+
   options.baseUrl = `http://127.0.0.1:${options.port}`;
   if (!options.logPath) {
     options.logPath = path.join('/tmp', `cool-admin-latest-${options.port}.log`);
@@ -104,7 +107,7 @@ function printHelp() {
   node ./scripts/latest-reset-and-verify.mjs [options]
 
 Options:
-  --port, -p             Target backend port. Default: 8006
+  --port, -p             Target backend port
   --start-timeout-ms     Wait time for fresh backend startup. Default: 45000
   --seed-script          Seed script path. Default: ./scripts/seed-stage2-performance.mjs
   --smoke-script         Smoke script path. Default: ./scripts/smoke-stage2-performance.mjs
@@ -114,7 +117,7 @@ Options:
   --help, -h             Show help
 
 Environment:
-  LATEST_RESET_PORT
+  LATEST_RESET_PORT      Required target backend port. Example: 8062
   LATEST_RESET_START_TIMEOUT_MS
   LATEST_RESET_SEED_SCRIPT
   LATEST_RESET_SMOKE_SCRIPT
