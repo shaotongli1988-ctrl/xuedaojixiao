@@ -407,6 +407,87 @@
 - 导出字段必须按角色裁剪，不返回无权限字段。
 - 首期目标导出固定为标准摘要列，不导出审批类、薪资类和越权字段。
 
+#### 目标运营台增量接口（2026-04-19）
+
+以下接口为在现有 `goal` 资源下新增的 ops 子能力，目的是在不破坏原 `/admin/performance/goal/*` 兼容前提下，承接 `目标&计划` 的日运营闭环。
+
+| 接口名称 | 请求路径 | 请求方式 | 复用权限要求 |
+| --- | --- | --- | --- |
+| 目标运营台权限画像 | `/admin/performance/goal/opsAccessProfile` | `GET` | `performance:goal:page` |
+| 目标运营台部门配置 | `/admin/performance/goal/opsDepartmentConfig` | `GET` | `performance:goal:page` |
+| 保存目标运营台部门配置 | `/admin/performance/goal/opsDepartmentConfigSave` | `POST` | `performance:goal:add` 或 `performance:goal:update`，且需要 `performance:goal:opsManage` |
+| 目标运营台计划分页 | `/admin/performance/goal/opsPlanPage` | `POST` | `performance:goal:page` |
+| 目标运营台计划详情 | `/admin/performance/goal/opsPlanInfo` | `GET` | `performance:goal:info` |
+| 保存目标运营台计划 | `/admin/performance/goal/opsPlanSave` | `POST` | `performance:goal:add` / `performance:goal:update`；公共目标额外需要 `performance:goal:opsManage`，个人目标场景复用 `performance:goal:update` |
+| 删除目标运营台计划 | `/admin/performance/goal/opsPlanDelete` | `POST` | `performance:goal:delete`，个人目标自删兼容 `performance:goal:update` |
+| 目标运营台日结果填报 | `/admin/performance/goal/opsDailySubmit` | `POST` | `performance:goal:progressUpdate` 或 `performance:goal:update` |
+| 目标运营台日结果自动补零 | `/admin/performance/goal/opsDailyFinalize` | `POST` | `performance:goal:update` 或 `performance:goal:export`，且需要 `performance:goal:opsManage` |
+| 目标运营台总览 | `/admin/performance/goal/opsOverview` | `POST` | `performance:goal:page` |
+| 目标运营台日报详情 | `/admin/performance/goal/opsReportInfo` | `GET` | `performance:goal:page` |
+| 生成目标运营台日报 | `/admin/performance/goal/opsReportGenerate` | `POST` | `performance:goal:update` 或 `performance:goal:export`，且需要 `performance:goal:opsManage` |
+| 更新目标运营台日报状态 | `/admin/performance/goal/opsReportStatusUpdate` | `POST` | `performance:goal:update` 或 `performance:goal:export`，且需要 `performance:goal:opsManage` |
+
+#### 目标运营台权限裁剪补充规则（2026-04-19）
+
+1. `performance:goal:opsManage` 是部门运营台管理专用权限键，只负责公共目标、部门配置、自动补零、日报生成与状态更新。
+2. `performance:goal:add` 不能再被前后端视为“可管理部门运营台”的代替信号。
+3. `opsAccessProfile` 返回 `departmentId / isHr / canManageDepartment / canMaintainPersonalPlan / manageableDepartmentIds`，作为前端视图裁剪的唯一实时依据。
+4. 页面裁剪不能再借用薪酬模块权限推断 HR 身份，必须以 `opsAccessProfile` 和当前目标模块权限结果为准。
+
+#### 目标运营台计划对象返回字段
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | number | 计划 ID |
+| departmentId | number | 部门 ID |
+| departmentName | string | 部门名称 |
+| employeeId | number | 员工 ID |
+| employeeName | string | 员工姓名 |
+| periodType | string | `day / week / month` |
+| planDate | string | 日计划日期；周/月可为空 |
+| periodStartDate | string | 周期开始日期 |
+| periodEndDate | string | 周期结束日期 |
+| sourceType | string | `public / personal` |
+| title | string | 目标标题 |
+| description | string | 目标说明 |
+| targetValue | number | 目标值 |
+| actualValue | number | 实际值 |
+| completionRate | number | 完成率 |
+| unit | string | 单位 |
+| status | string | `assigned / submitted / auto_zero` |
+| parentPlanId | number | 父级计划 ID |
+| isSystemGenerated | boolean | 是否系统生成 |
+| assignedBy | number | 下发人 ID |
+| submittedBy | number | 提交人 ID |
+| submittedAt | string | 提交时间 |
+| createTime | string | 创建时间 |
+| updateTime | string | 更新时间 |
+
+#### 目标运营台总览返回结构
+
+`opsOverview` 至少返回：
+
+1. `departmentSummary`
+2. `leaderboard`
+   - `completionRate[]`
+   - `output[]`
+3. `rows[]`
+
+其中 `rows[]` 和 `departmentSummary` 必须显式返回：
+
+1. `publicTargetValue`
+2. `publicActualValue`
+3. `personalTargetValue`
+4. `personalActualValue`
+5. `totalTargetValue`
+6. `totalActualValue`
+
+补充规则：
+
+1. `opsOverview` 与日报摘要都必须能区分 `公共目标贡献` 和 `个人补充目标贡献`。
+2. 当前后端实现不输出单一“综合总榜分数”。
+3. `opsDailyFinalize` 只对 `periodType = day` 且状态为 `assigned` 的计划项生效。
+
 ### 4. 指标库
 
 | 接口名称 | 请求路径 | 请求方式 | 权限要求 |

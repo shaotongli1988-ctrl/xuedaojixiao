@@ -530,6 +530,104 @@ async function replaceGoals(seedRows) {
   }
 }
 
+async function replaceGoalOpsSeed({ configs = [], plans = [], reports = [] }) {
+  const departmentIds = Array.from(
+    new Set(
+      [...configs, ...plans, ...reports]
+        .map(item => Number(item.departmentId))
+        .filter(item => Number.isInteger(item) && item > 0)
+    )
+  );
+
+  if (departmentIds.length) {
+    await connection.query(
+      'DELETE FROM performance_goal_ops_report WHERE departmentId IN (?)',
+      [departmentIds]
+    );
+    await connection.query(
+      'DELETE FROM performance_goal_ops_plan WHERE departmentId IN (?)',
+      [departmentIds]
+    );
+    await connection.query(
+      'DELETE FROM performance_goal_ops_department_config WHERE departmentId IN (?)',
+      [departmentIds]
+    );
+  }
+
+  for (const row of configs) {
+    await connection.query(
+      `INSERT INTO performance_goal_ops_department_config
+        (departmentId, assignTime, submitDeadline, reportSendTime, reportPushMode, reportPushTarget, updatedBy, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.departmentId,
+        row.assignTime,
+        row.submitDeadline,
+        row.reportSendTime,
+        row.reportPushMode,
+        row.reportPushTarget,
+        row.updatedBy,
+        now(),
+        now(),
+      ]
+    );
+  }
+
+  for (const row of plans) {
+    await connection.query(
+      `INSERT INTO performance_goal_ops_plan
+        (departmentId, employeeId, periodType, planDate, periodStartDate, periodEndDate, sourceType, title, description, targetValue, actualValue, unit, status, parentPlanId, isSystemGenerated, assignedBy, submittedBy, submittedAt, extJson, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.departmentId,
+        row.employeeId,
+        row.periodType,
+        row.planDate,
+        row.periodStartDate,
+        row.periodEndDate,
+        row.sourceType,
+        row.title,
+        row.description,
+        row.targetValue,
+        row.actualValue,
+        row.unit,
+        row.status,
+        row.parentPlanId,
+        row.isSystemGenerated,
+        row.assignedBy,
+        row.submittedBy,
+        row.submittedAt,
+        row.extJson,
+        now(),
+        now(),
+      ]
+    );
+  }
+
+  for (const row of reports) {
+    await connection.query(
+      `INSERT INTO performance_goal_ops_report
+        (departmentId, reportDate, status, summaryJson, generatedAt, sentAt, pushMode, pushTarget, generatedBy, operatedBy, operationRemark, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.departmentId,
+        row.reportDate,
+        row.status,
+        row.summaryJson,
+        row.generatedAt,
+        row.sentAt,
+        row.pushMode,
+        row.pushTarget,
+        row.generatedBy,
+        row.operatedBy,
+        row.operationRemark,
+        now(),
+        now(),
+      ]
+    );
+  }
+}
+
 async function replaceIndicators(seedRows) {
   const codes = seedRows.map(item => item.code);
   if (codes.length) {
@@ -2356,6 +2454,91 @@ async function ensureInterviewTable() {
   );
 }
 
+async function ensureGoalPlanTables() {
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_goal_ops_department_config (
+      id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
+      departmentId bigint NOT NULL COMMENT '部门ID',
+      assignTime varchar(5) NOT NULL DEFAULT '09:00' COMMENT '日目标下发时间',
+      submitDeadline varchar(5) NOT NULL DEFAULT '18:00' COMMENT '结果填报截止时间',
+      reportSendTime varchar(5) NOT NULL DEFAULT '18:30' COMMENT '日报自动发送时间',
+      reportPushMode varchar(32) NOT NULL DEFAULT 'system_and_group' COMMENT '日报推送方式',
+      reportPushTarget varchar(200) DEFAULT NULL COMMENT '日报推送目标',
+      updatedBy bigint DEFAULT NULL COMMENT '最后更新人ID',
+      createTime varchar(19) NOT NULL COMMENT '创建时间',
+      updateTime varchar(19) NOT NULL COMMENT '更新时间',
+      tenantId bigint DEFAULT NULL COMMENT '租户ID',
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_performance_goal_ops_department_config_department (departmentId),
+      KEY idx_performance_goal_ops_department_config_create_time (createTime),
+      KEY idx_performance_goal_ops_department_config_update_time (updateTime),
+      KEY idx_performance_goal_ops_department_config_tenant (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_goal_ops_plan (
+      id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
+      departmentId bigint NOT NULL COMMENT '部门ID',
+      employeeId bigint NOT NULL COMMENT '员工ID',
+      periodType varchar(16) NOT NULL COMMENT '周期类型',
+      planDate varchar(10) DEFAULT NULL COMMENT '计划日期',
+      periodStartDate varchar(10) NOT NULL COMMENT '周期开始日期',
+      periodEndDate varchar(10) NOT NULL COMMENT '周期结束日期',
+      sourceType varchar(16) NOT NULL COMMENT '目标来源',
+      title varchar(200) NOT NULL COMMENT '目标标题',
+      description text DEFAULT NULL COMMENT '目标说明',
+      targetValue decimal(12,2) NOT NULL DEFAULT 0 COMMENT '目标值',
+      actualValue decimal(12,2) NOT NULL DEFAULT 0 COMMENT '实际值',
+      unit varchar(20) DEFAULT NULL COMMENT '单位',
+      status varchar(32) NOT NULL DEFAULT 'assigned' COMMENT '状态',
+      parentPlanId bigint DEFAULT NULL COMMENT '父级计划ID',
+      isSystemGenerated tinyint NOT NULL DEFAULT 0 COMMENT '是否系统生成',
+      assignedBy bigint DEFAULT NULL COMMENT '下发人ID',
+      submittedBy bigint DEFAULT NULL COMMENT '提交人ID',
+      submittedAt varchar(19) DEFAULT NULL COMMENT '提交时间',
+      extJson text DEFAULT NULL COMMENT '扩展JSON',
+      createTime varchar(19) NOT NULL COMMENT '创建时间',
+      updateTime varchar(19) NOT NULL COMMENT '更新时间',
+      tenantId bigint DEFAULT NULL COMMENT '租户ID',
+      PRIMARY KEY (id),
+      KEY idx_performance_goal_ops_plan_department_period_date (departmentId, periodType, planDate),
+      KEY idx_performance_goal_ops_plan_employee_period_date (employeeId, periodType, planDate),
+      KEY idx_performance_goal_ops_plan_source_type (sourceType),
+      KEY idx_performance_goal_ops_plan_status (status),
+      KEY idx_performance_goal_ops_plan_create_time (createTime),
+      KEY idx_performance_goal_ops_plan_update_time (updateTime),
+      KEY idx_performance_goal_ops_plan_tenant (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_goal_ops_report (
+      id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
+      departmentId bigint NOT NULL COMMENT '部门ID',
+      reportDate varchar(10) NOT NULL COMMENT '日报日期',
+      status varchar(32) NOT NULL DEFAULT 'generated' COMMENT '日报状态',
+      summaryJson longtext NOT NULL COMMENT '日报摘要JSON',
+      generatedAt varchar(19) NOT NULL COMMENT '生成时间',
+      sentAt varchar(19) DEFAULT NULL COMMENT '发送时间',
+      pushMode varchar(32) NOT NULL DEFAULT 'system_only' COMMENT '发送方式',
+      pushTarget varchar(200) DEFAULT NULL COMMENT '发送目标',
+      generatedBy bigint DEFAULT NULL COMMENT '生成人ID',
+      operatedBy bigint DEFAULT NULL COMMENT '最后操作人ID',
+      operationRemark text DEFAULT NULL COMMENT '拦截或延期原因',
+      createTime varchar(19) NOT NULL COMMENT '创建时间',
+      updateTime varchar(19) NOT NULL COMMENT '更新时间',
+      tenantId bigint DEFAULT NULL COMMENT '租户ID',
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_performance_goal_ops_report_department_date (departmentId, reportDate),
+      KEY idx_performance_goal_ops_report_status (status),
+      KEY idx_performance_goal_ops_report_create_time (createTime),
+      KEY idx_performance_goal_ops_report_update_time (updateTime),
+      KEY idx_performance_goal_ops_report_tenant (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
 async function ensureMeetingTable() {
   await connection.query(`
     CREATE TABLE IF NOT EXISTS performance_meeting (
@@ -3537,6 +3720,7 @@ async function main() {
     await ensureAssetTables();
     await ensureFeedbackTables();
     await ensureApprovalTables();
+    await ensureGoalPlanTables();
 
     const headquartersId = await ensureDepartment({
       name: '总部',
@@ -3703,6 +3887,7 @@ async function main() {
         'performance:goal:update',
         'performance:goal:delete',
         'performance:goal:progressUpdate',
+        'performance:goal:opsManage',
         'performance:goal:export',
         'performance:feedback:page',
         'performance:feedback:info',
@@ -4019,6 +4204,7 @@ async function main() {
         'performance:goal:update',
         'performance:goal:delete',
         'performance:goal:progressUpdate',
+        'performance:goal:opsManage',
         'performance:goal:export',
         'performance:feedback:page',
         'performance:feedback:info',
@@ -5617,6 +5803,23 @@ async function main() {
       },
     ]);
 
+    const goalPlanSmokeDate = '2026-04-19';
+    await replaceGoalOpsSeed({
+      configs: [
+        {
+          departmentId: platformGroupId,
+          assignTime: '09:15',
+          submitDeadline: '18:00',
+          reportSendTime: '18:30',
+          reportPushMode: 'system_and_group',
+          reportPushTarget: 'goal-plan-stage2-group',
+          updatedBy: managerUserId,
+        },
+      ],
+      plans: [],
+      reports: [],
+    });
+
     await replaceIndicators([
       {
         name: '阶段2-目标达成',
@@ -5872,6 +6075,10 @@ async function main() {
     );
 
     seedMeta = await syncStage2RuntimeMeta({
+      goalPlanSmokeDate,
+      goalPlanDepartmentId: Number(platformGroupId || 0),
+      goalPlanManagerUserId: Number(managerUserId || 0),
+      goalPlanEmployeeUserId: Number(employeeUserId || 0),
       recruitPlanImportSpaceId,
       recruitPlanImportSpaceName: 'stage2-theme16-recruit-plan-import-template.xlsx',
       theme11SupplierInfoId: Number(supplierByCode.get('PMS-SUPPLIER-ACTIVE-001')?.id || 0),

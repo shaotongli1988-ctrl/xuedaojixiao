@@ -215,6 +215,144 @@ export interface GoalExportRow {
 	updateTime?: string;
 }
 
+export type GoalOpsPeriodType = 'day' | 'week' | 'month';
+export type GoalOpsSourceType = 'public' | 'personal';
+export type GoalOpsPlanStatus = 'assigned' | 'submitted' | 'auto_zero';
+export type GoalOpsReportStatus = 'generated' | 'sent' | 'intercepted' | 'delayed';
+
+export interface GoalOpsDepartmentConfig {
+	departmentId?: number;
+	departmentName?: string;
+	assignTime: string;
+	submitDeadline: string;
+	reportSendTime: string;
+	reportPushMode: string;
+	reportPushTarget?: string | null;
+	updatedBy?: number | null;
+	updateTime?: string | null;
+}
+
+export interface GoalOpsAccessProfile {
+	departmentId: number | null;
+	isHr: boolean;
+	canManageDepartment: boolean;
+	canMaintainPersonalPlan: boolean;
+	manageableDepartmentIds: number[];
+}
+
+export interface GoalOpsPlanRecord {
+	id?: number;
+	departmentId?: number;
+	departmentName?: string;
+	employeeId: number | undefined;
+	employeeName?: string;
+	periodType: GoalOpsPeriodType;
+	planDate?: string | null;
+	periodStartDate: string;
+	periodEndDate: string;
+	sourceType: GoalOpsSourceType;
+	title: string;
+	description?: string | null;
+	targetValue: number;
+	actualValue?: number;
+	completionRate?: number;
+	unit?: string | null;
+	status?: GoalOpsPlanStatus;
+	parentPlanId?: number | null;
+	isSystemGenerated?: boolean;
+	assignedBy?: number | null;
+	submittedBy?: number | null;
+	submittedAt?: string | null;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface GoalOpsPlanPageResult {
+	list: GoalOpsPlanRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface GoalOpsOverviewRow {
+	employeeId: number;
+	employeeName: string;
+	departmentId: number;
+	publicTargetValue: number;
+	publicActualValue: number;
+	personalTargetValue: number;
+	personalActualValue: number;
+	totalTargetValue: number;
+	totalActualValue: number;
+	completionRate: number;
+	assignedCount: number;
+	submittedCount: number;
+	autoZeroCount: number;
+}
+
+export interface GoalOpsDepartmentSummary {
+	planDate: string;
+	departmentId: number;
+	employeeCount: number;
+	publicTargetValue: number;
+	publicActualValue: number;
+	personalTargetValue: number;
+	personalActualValue: number;
+	totalTargetValue: number;
+	totalActualValue: number;
+	completionRate: number;
+	assignedCount: number;
+	submittedCount: number;
+	autoZeroCount: number;
+}
+
+export interface GoalOpsLeaderboard {
+	completionRate: GoalOpsOverviewRow[];
+	output: GoalOpsOverviewRow[];
+}
+
+export interface GoalOpsOverview {
+	planDate: string;
+	departmentId: number | null;
+	departmentSummary: GoalOpsDepartmentSummary;
+	leaderboard: GoalOpsLeaderboard;
+	rows: GoalOpsOverviewRow[];
+}
+
+export interface GoalOpsReportAutoZeroEmployee {
+	employeeId: number;
+	employeeName: string;
+	autoZeroCount: number;
+}
+
+export interface GoalOpsReportSummary {
+	planDate: string;
+	departmentId: number;
+	departmentSummary: GoalOpsDepartmentSummary;
+	topCompletionEmployees: GoalOpsOverviewRow[];
+	topOutputEmployees: GoalOpsOverviewRow[];
+	autoZeroEmployees: GoalOpsReportAutoZeroEmployee[];
+}
+
+export interface GoalOpsReportInfo {
+	id?: number;
+	departmentId: number;
+	reportDate: string;
+	status: GoalOpsReportStatus;
+	summary: GoalOpsReportSummary | null;
+	generatedAt?: string | null;
+	sentAt?: string | null;
+	pushMode?: string;
+	pushTarget?: string | null;
+	generatedBy?: number | null;
+	operatedBy?: number | null;
+	operationRemark?: string | null;
+	createTime?: string;
+	updateTime?: string;
+}
+
 export interface RecruitPlanRecord {
 	id?: number;
 	title: string;
@@ -1815,6 +1953,48 @@ export function createEmptyGoal(): GoalRecord {
 		startDate: '',
 		endDate: '',
 		progressRecords: []
+	};
+}
+
+export function createEmptyGoalOpsDepartmentConfig(): GoalOpsDepartmentConfig {
+	return {
+		departmentId: undefined,
+		departmentName: '',
+		assignTime: '09:00',
+		submitDeadline: '18:00',
+		reportSendTime: '18:30',
+		reportPushMode: 'system_and_group',
+		reportPushTarget: ''
+	};
+}
+
+export function createEmptyGoalOpsAccessProfile(): GoalOpsAccessProfile {
+	return {
+		departmentId: null,
+		isHr: false,
+		canManageDepartment: false,
+		canMaintainPersonalPlan: false,
+		manageableDepartmentIds: []
+	};
+}
+
+export function createEmptyGoalOpsPlan(currentUserId?: number): GoalOpsPlanRecord {
+	return {
+		employeeId: currentUserId,
+		departmentId: undefined,
+		periodType: 'day',
+		planDate: '',
+		periodStartDate: '',
+		periodEndDate: '',
+		sourceType: 'public',
+		title: '',
+		description: '',
+		targetValue: 0,
+		actualValue: 0,
+		unit: '',
+		status: 'assigned',
+		parentPlanId: null,
+		isSystemGenerated: false
 	};
 }
 

@@ -1473,12 +1473,24 @@
                         "childMenus": []
                     },
                     {
+                        "name": "运营台管理",
+                        "router": null,
+                        "perms": "performance:goal:opsManage",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 6,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
                         "name": "导出",
                         "router": null,
                         "perms": "performance:goal:export",
                         "type": 2,
                         "icon": null,
-                        "orderNum": 6,
+                        "orderNum": 7,
                         "viewPath": null,
                         "keepAlive": true,
                         "isShow": true,
