@@ -2746,6 +2746,9 @@
 3. `stats` 只返回当前权限范围内的聚合摘要，不返回正文、二进制或外部系统凭证。
 4. `add / update` 只写入元数据与轻量扩展摘要，不写真实附件、快递配置、设计稿二进制和外部系统凭证。
 5. 宣传资料允许通过 `relatedDocumentId` 关联文件管理元数据；前端可使用 `documentIds` 壳层字段映射到该单值字段。
+6. `honor` 模块的 `archived` 为只读终态：
+   - `/admin/performance/honor/update` 对已归档记录必须拒绝
+   - `/admin/performance/honor/delete` 对已归档记录必须拒绝
 
 ## 行政协同主模块补充：车辆与知识产权接口冻结基线（2026-04-19）
 

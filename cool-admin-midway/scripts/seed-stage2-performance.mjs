@@ -61,6 +61,11 @@ const stage2MenuRouters = new Set([
   '/performance/asset/inventory',
   '/performance/asset/depreciation',
   '/performance/asset/disposal',
+  '/performance/office/annual-inspection',
+  '/performance/office/honor',
+  '/performance/office/publicity-material',
+  '/performance/office/design-collab',
+  '/performance/office/express-collab',
   '/performance/office/document-center',
   '/performance/office/knowledge-base',
   '/performance/office/vehicle',
@@ -1960,6 +1965,93 @@ async function replaceKnowledgeQas(seedRows) {
   return inserted;
 }
 
+async function ensureOfficeCollabTable() {
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_office_collab (
+      id int NOT NULL AUTO_INCREMENT COMMENT 'ID',
+      createTime varchar(255) NOT NULL COMMENT '创建时间',
+      updateTime varchar(255) NOT NULL COMMENT '更新时间',
+      tenantId int DEFAULT NULL COMMENT '租户ID',
+      moduleKey varchar(64) NOT NULL COMMENT '模块键',
+      recordNo varchar(64) NOT NULL COMMENT '记录编号',
+      title varchar(200) NOT NULL COMMENT '标题',
+      status varchar(32) NOT NULL DEFAULT 'draft' COMMENT '状态',
+      department varchar(100) DEFAULT NULL COMMENT '所属部门',
+      ownerName varchar(100) DEFAULT NULL COMMENT '负责人/发起人',
+      assigneeName varchar(100) DEFAULT NULL COMMENT '协作人/接收人',
+      category varchar(64) DEFAULT NULL COMMENT '主分类',
+      priority varchar(32) DEFAULT NULL COMMENT '优先级',
+      version varchar(32) DEFAULT NULL COMMENT '版本号',
+      dueDate varchar(19) DEFAULT NULL COMMENT '截止日期',
+      eventDate varchar(19) DEFAULT NULL COMMENT '事件日期/最近事件时间',
+      progressValue int NOT NULL DEFAULT 0 COMMENT '进度/完整度',
+      scoreValue int NOT NULL DEFAULT 0 COMMENT '评分/浏览量',
+      relatedDocumentId int DEFAULT NULL COMMENT '关联文件ID',
+      extJson text COMMENT '扩展 JSON',
+      notes text COMMENT '备注',
+      PRIMARY KEY (id),
+      UNIQUE KEY uq_performance_office_collab_module_record (moduleKey, recordNo),
+      KEY idx_performance_office_collab_createTime (createTime),
+      KEY idx_performance_office_collab_updateTime (updateTime),
+      KEY idx_performance_office_collab_tenantId (tenantId),
+      KEY idx_performance_office_collab_moduleKey (moduleKey),
+      KEY idx_performance_office_collab_title (title),
+      KEY idx_performance_office_collab_status (status),
+      KEY idx_performance_office_collab_relatedDocumentId (relatedDocumentId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='行政协同主题22共享元数据主表'
+  `);
+}
+
+async function replaceOfficeCollabRecords(seedRows) {
+  await ensureOfficeCollabTable();
+  const recordNos = seedRows.map(item => item.recordNo).filter(Boolean);
+
+  if (recordNos.length) {
+    await connection.query(
+      'DELETE FROM performance_office_collab WHERE recordNo IN (?)',
+      [recordNos]
+    );
+  }
+
+  const inserted = [];
+
+  for (const row of seedRows) {
+    const [result] = await connection.query(
+      `INSERT INTO performance_office_collab
+        (moduleKey, recordNo, title, status, department, ownerName, assigneeName, category, priority, version, dueDate, eventDate, progressValue, scoreValue, relatedDocumentId, extJson, notes, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.moduleKey,
+        row.recordNo,
+        row.title,
+        row.status,
+        row.department ?? null,
+        row.ownerName ?? null,
+        row.assigneeName ?? null,
+        row.category ?? null,
+        row.priority ?? null,
+        row.version ?? null,
+        row.dueDate ?? null,
+        row.eventDate ?? null,
+        row.progressValue ?? 0,
+        row.scoreValue ?? 0,
+        row.relatedDocumentId ?? null,
+        JSON.stringify(row.extra || {}),
+        row.notes ?? null,
+        now(),
+        now(),
+      ]
+    );
+
+    inserted.push({
+      id: result.insertId,
+      ...row,
+    });
+  }
+
+  return inserted;
+}
+
 async function replaceSuppliers(seedRows) {
   const names = seedRows.map(item => item.name);
   const codes = seedRows.map(item => item.code).filter(Boolean);
@@ -3836,6 +3928,11 @@ async function main() {
         '/performance/hiring',
         '/performance/meeting',
         '/performance/contract',
+        '/performance/office/annual-inspection',
+        '/performance/office/honor',
+        '/performance/office/publicity-material',
+        '/performance/office/design-collab',
+        '/performance/office/express-collab',
         '/performance/office/document-center',
         '/performance/office/knowledge-base',
         '/performance/office/vehicle',
@@ -4031,6 +4128,36 @@ async function main() {
         'performance:contract:add',
         'performance:contract:update',
         'performance:contract:delete',
+        'performance:annualInspection:page',
+        'performance:annualInspection:info',
+        'performance:annualInspection:stats',
+        'performance:annualInspection:add',
+        'performance:annualInspection:update',
+        'performance:annualInspection:delete',
+        'performance:honor:page',
+        'performance:honor:info',
+        'performance:honor:stats',
+        'performance:honor:add',
+        'performance:honor:update',
+        'performance:honor:delete',
+        'performance:publicityMaterial:page',
+        'performance:publicityMaterial:info',
+        'performance:publicityMaterial:stats',
+        'performance:publicityMaterial:add',
+        'performance:publicityMaterial:update',
+        'performance:publicityMaterial:delete',
+        'performance:designCollab:page',
+        'performance:designCollab:info',
+        'performance:designCollab:stats',
+        'performance:designCollab:add',
+        'performance:designCollab:update',
+        'performance:designCollab:delete',
+        'performance:expressCollab:page',
+        'performance:expressCollab:info',
+        'performance:expressCollab:stats',
+        'performance:expressCollab:add',
+        'performance:expressCollab:update',
+        'performance:expressCollab:delete',
         'performance:documentCenter:page',
         'performance:documentCenter:info',
         'performance:documentCenter:stats',
@@ -4766,6 +4893,97 @@ async function main() {
     const documentCenterIdMap = new Map(
       documentCenterRows.map(item => [item.fileNo, item.id])
     );
+
+    await replaceOfficeCollabRecords([
+      {
+        moduleKey: 'annualInspection',
+        recordNo: 'PMS-T22-NJ-001',
+        title: '联调-主题22-消防设施年检材料',
+        status: 'preparing',
+        department: '行政部',
+        ownerName: '主题22-HR管理员',
+        category: 'safety',
+        version: 'V1.2',
+        dueDate: '2026-12-20',
+        progressValue: 78,
+        extra: {
+          reminderDays: 15,
+        },
+        notes: '主题22联调-年检材料样例',
+      },
+      {
+        moduleKey: 'honor',
+        recordNo: 'PMS-T22-RY-001',
+        title: '联调-主题22-市级优秀校区荣誉',
+        status: 'published',
+        department: '校区运营中心',
+        ownerName: '主题22-校区团队',
+        eventDate: '2026-04-18',
+        scoreValue: 91,
+        extra: {
+          honorType: 'team',
+          level: 'city',
+          issuer: '上海市教委',
+          evidenceUrl: null,
+        },
+        notes: '主题22联调-荣誉管理样例',
+      },
+      {
+        moduleKey: 'publicityMaterial',
+        recordNo: 'PMS-T22-XC-001',
+        title: '联调-主题22-春招宣传海报',
+        status: 'review',
+        ownerName: '主题22-HR管理员',
+        assigneeName: '主题22-设计负责人',
+        eventDate: '2026-04-22',
+        scoreValue: 256,
+        relatedDocumentId: documentCenterIdMap.get('PMS-DOC-21-POLICY-001') ?? null,
+        extra: {
+          materialType: 'poster',
+          channel: 'wechat',
+          downloads: 18,
+        },
+        notes: '主题22联调-宣传资料样例',
+      },
+      {
+        moduleKey: 'designCollab',
+        recordNo: 'PMS-T22-MG-001',
+        title: '联调-主题22-招生物料设计协同',
+        status: 'in_progress',
+        ownerName: '主题22-市场中心',
+        assigneeName: '主题22-视觉设计师',
+        priority: 'high',
+        dueDate: '2026-05-12',
+        progressValue: 64,
+        extra: {
+          workload: 3,
+          relatedMaterialNo: 'PMS-T22-XC-001',
+        },
+        notes: '主题22联调-美工协同样例',
+      },
+      {
+        moduleKey: 'expressCollab',
+        recordNo: 'PMS-T22-KD-001',
+        title: '联调-主题22-校区资料快递协同',
+        status: 'in_transit',
+        ownerName: '主题22-行政专员',
+        assigneeName: '主题22-杭州校区',
+        category: '顺丰',
+        dueDate: '2026-04-28',
+        eventDate: '2026-04-19 10:30:00',
+        extra: {
+          orderNo: 'PMS-T22-EXP-001',
+          courierCompany: '顺丰',
+          serviceLevel: 'express',
+          origin: '上海总部',
+          destination: '杭州校区',
+          sourceSystem: 'manual',
+          syncStatus: 'pending',
+          lastEvent: '已揽收',
+        },
+        notes: '主题22联调-快递协同样例',
+      },
+    ]);
 
     const knowledgeBaseRows = await replaceKnowledgeBases([
       {
