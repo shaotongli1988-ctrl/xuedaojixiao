@@ -30,6 +30,15 @@ export type TalentAssetStatus = 'new' | 'tracking' | 'archived';
 export type JobStandardStatus = 'draft' | 'active' | 'inactive';
 export type HiringStatus = 'offered' | 'accepted' | 'rejected' | 'closed';
 export type HiringSourceType = 'manual' | 'resumePool' | 'talentAsset' | 'interview';
+export type TeacherCooperationStatus =
+	| 'uncontacted'
+	| 'contacted'
+	| 'negotiating'
+	| 'partnered'
+	| 'terminated';
+export type TeacherClassStatus = 'draft' | 'active' | 'closed';
+export type TeacherTodoBucket = 'today' | 'overdue';
+
 
 export interface DashboardCrossSummaryQuery {
 	periodType?: string;
@@ -557,6 +566,147 @@ export interface HiringPageResult {
 	};
 }
 
+export interface TeacherInfoRecord {
+	id?: number;
+	teacherName: string;
+	phone?: string | null;
+	wechat?: string | null;
+	schoolName?: string | null;
+	schoolRegion?: string | null;
+	schoolType?: string | null;
+	grade?: string | null;
+	className?: string | null;
+	subject?: string | null;
+	projectTags?: string[] | string | null;
+	intentionLevel?: string | null;
+	communicationStyle?: string | null;
+	cooperationStatus?: TeacherCooperationStatus;
+	ownerEmployeeId?: number | null;
+	ownerEmployeeName?: string | null;
+	ownerDepartmentId?: number | null;
+	ownerDepartmentName?: string | null;
+	lastFollowTime?: string | null;
+	nextFollowTime?: string | null;
+	cooperationTime?: string | null;
+	classCount?: number | null;
+	createTime?: string | null;
+	updateTime?: string | null;
+	[key: string]: unknown;
+}
+
+export interface TeacherInfoPageResult {
+	list: TeacherInfoRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface TeacherFollowRecord {
+	id?: number;
+	teacherId?: number | null;
+	followTime?: string | null;
+	followMethod?: string | null;
+	content?: string | null;
+	followContent?: string | null;
+	remark?: string | null;
+	nextFollowTime?: string | null;
+	createTime?: string | null;
+	operatorName?: string | null;
+	creatorEmployeeName?: string | null;
+	creatorName?: string | null;
+	[key: string]: unknown;
+}
+
+export interface TeacherFollowPageResult {
+	list: TeacherFollowRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface TeacherClassRecord {
+	id?: number;
+	classId?: number;
+	teacherId: number | undefined;
+	teacherName?: string | null;
+	className: string;
+	schoolName?: string | null;
+	grade?: string | null;
+	projectTag?: string | null;
+	studentCount?: number | null;
+	status?: TeacherClassStatus;
+	ownerEmployeeId?: number | null;
+	ownerDepartmentId?: number | null;
+	createTime?: string | null;
+	updateTime?: string | null;
+	[key: string]: unknown;
+}
+
+export interface TeacherClassPageResult {
+	list: TeacherClassRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface TeacherDashboardDistributionItem {
+	key?: string | null;
+	label?: string | null;
+	name?: string | null;
+	status?: string | null;
+	value?: number | null;
+	count?: number | null;
+	[key: string]: unknown;
+}
+
+export interface TeacherDashboardSummary {
+	resourceTotal?: number | null;
+	pendingFollowCount?: number | null;
+	overdueFollowCount?: number | null;
+	partneredCount?: number | null;
+	classCount?: number | null;
+	memberDistribution?: TeacherDashboardDistributionItem[];
+	cooperationDistribution?: TeacherDashboardDistributionItem[];
+	classStatusDistribution?: TeacherDashboardDistributionItem[];
+	[key: string]: unknown;
+}
+
+export interface TeacherTodoRecord {
+	id?: number;
+	teacherId?: number | null;
+	teacherName?: string | null;
+	phone?: string | null;
+	wechat?: string | null;
+	schoolName?: string | null;
+	schoolRegion?: string | null;
+	subject?: string | null;
+	ownerEmployeeName?: string | null;
+	lastFollowTime?: string | null;
+	nextFollowTime?: string | null;
+	cooperationStatus?: TeacherCooperationStatus;
+	todoBucket?: TeacherTodoBucket;
+	[key: string]: unknown;
+}
+
+export interface TeacherTodoPageResult {
+	list: TeacherTodoRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+	bucketSummary?: {
+		today?: number;
+		overdue?: number;
+	};
+}
+
 export interface JobStandardRecord {
 	id?: number;
 	positionName: string;
@@ -1065,6 +1215,46 @@ export function createEmptyHiring(): HiringRecord {
 		hiringDecision: '',
 		status: 'offered',
 		closeReason: ''
+	};
+}
+
+export function createEmptyTeacherInfo(): TeacherInfoRecord {
+	return {
+		teacherName: '',
+		phone: '',
+		wechat: '',
+		schoolName: '',
+		schoolRegion: '',
+		schoolType: '',
+		grade: '',
+		className: '',
+		subject: '',
+		projectTags: [],
+		intentionLevel: '',
+		communicationStyle: '',
+		cooperationStatus: 'uncontacted',
+		ownerEmployeeId: undefined,
+		nextFollowTime: ''
+	};
+}
+
+export function createEmptyTeacherFollow(): TeacherFollowRecord {
+	return {
+		teacherId: undefined,
+		content: '',
+		nextFollowTime: ''
+	};
+}
+
+export function createEmptyTeacherClass(): TeacherClassRecord {
+	return {
+		teacherId: undefined,
+		className: '',
+		schoolName: '',
+		grade: '',
+		projectTag: '',
+		studentCount: 0,
+		status: 'draft'
 	};
 }
 

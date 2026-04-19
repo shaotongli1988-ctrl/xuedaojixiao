@@ -61,6 +61,9 @@ import * as entity58 from './modules/task/entity/log';
 import * as entity59 from './modules/user/entity/address';
 import * as entity60 from './modules/user/entity/info';
 import * as entity61 from './modules/user/entity/wx';
+import * as entity62 from './modules/performance/entity/teacher-class';
+import * as entity63 from './modules/performance/entity/teacher-follow';
+import * as entity64 from './modules/performance/entity/teacher-info';
 export const entities = [
   ...Object.values(entity0),
   ...Object.values(entity1),
@@ -124,4 +127,7 @@ export const entities = [
   ...Object.values(entity59),
   ...Object.values(entity60),
   ...Object.values(entity61),
+  ...Object.values(entity62),
+  ...Object.values(entity63),
+  ...Object.values(entity64),
 ];

@@ -2690,6 +2690,214 @@
                         "childMenus": []
                     }
                 ]
+            },
+            {
+                "name": "首页看板",
+                "router": "/performance/teacher-channel/dashboard",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-data-board",
+                "orderNum": 23,
+                "viewPath": "modules/performance/views/teacher-channel/dashboard.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": [
+                    {
+                        "name": "查询",
+                        "router": null,
+                        "perms": "performance:teacherDashboard:summary",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 1,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    }
+                ]
+            },
+            {
+                "name": "班主任列表",
+                "router": "/performance/teacher-channel/teacher",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-user",
+                "orderNum": 24,
+                "viewPath": "modules/performance/views/teacher-channel/teacher-list.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": [
+                    {
+                        "name": "查询",
+                        "router": null,
+                        "perms": "performance:teacherInfo:page,performance:teacherInfo:info,performance:teacherFollow:page",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 1,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "新增",
+                        "router": null,
+                        "perms": "performance:teacherInfo:add",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 2,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "编辑",
+                        "router": null,
+                        "perms": "performance:teacherInfo:update",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 3,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "分配",
+                        "router": null,
+                        "perms": "performance:teacherInfo:assign",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 4,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "状态更新",
+                        "router": null,
+                        "perms": "performance:teacherInfo:updateStatus",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 5,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "新增跟进",
+                        "router": null,
+                        "perms": "performance:teacherFollow:add",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 6,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "标记合作",
+                        "router": null,
+                        "perms": "performance:teacherCooperation:mark",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 7,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    }
+                ]
+            },
+            {
+                "name": "我的待跟进",
+                "router": "/performance/teacher-channel/todo",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-time",
+                "orderNum": 25,
+                "viewPath": "modules/performance/views/teacher-channel/todo-list.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": [
+                    {
+                        "name": "查询",
+                        "router": null,
+                        "perms": "performance:teacherTodo:page",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 1,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    }
+                ]
+            },
+            {
+                "name": "班级列表",
+                "router": "/performance/teacher-channel/class",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-course",
+                "orderNum": 26,
+                "viewPath": "modules/performance/views/teacher-channel/class-list.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": [
+                    {
+                        "name": "查询",
+                        "router": null,
+                        "perms": "performance:teacherClass:page,performance:teacherClass:info",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 1,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "新增",
+                        "router": null,
+                        "perms": "performance:teacherClass:add",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 2,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "编辑",
+                        "router": null,
+                        "perms": "performance:teacherClass:update",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 3,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "删除",
+                        "router": null,
+                        "perms": "performance:teacherClass:delete",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 4,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    }
+                ]
             }
         ]
     }

@@ -31,6 +31,10 @@ const stage2MenuRouters = new Set([
   '/performance/capability',
   '/performance/certificate',
   '/performance/course-learning',
+  '/performance/teacher-channel/dashboard',
+  '/performance/teacher-channel/teacher',
+  '/performance/teacher-channel/todo',
+  '/performance/teacher-channel/class',
   '/performance/recruit-plan',
   '/performance/job-standard',
   '/performance/resumePool',
@@ -54,6 +58,16 @@ const password123456 = 'e10adc3949ba59abbe56e057f20f883e';
 
 function now() {
   return new Date().toISOString().slice(0, 19).replace('T', ' ');
+}
+
+function formatDateTime(date) {
+  return new Date(date).toISOString().slice(0, 19).replace('T', ' ');
+}
+
+function addDays(date, days) {
+  const value = new Date(date);
+  value.setDate(value.getDate() + days);
+  return value;
 }
 
 function loadStage2PerformanceMenus() {
@@ -1780,6 +1794,219 @@ async function ensureJobStandardTable() {
   `);
 }
 
+async function replaceTeacherChannelData(seedRows) {
+  const teacherNames = [...new Set(seedRows.map(item => item.teacherName).filter(Boolean))];
+  const classNames = [
+    ...new Set(
+      seedRows.flatMap(item => (item.classes || []).map(classRow => classRow.className).filter(Boolean))
+    ),
+  ];
+
+  if (teacherNames.length) {
+    const [existingTeachers] = await connection.query(
+      'SELECT id FROM performance_teacher_info WHERE teacherName IN (?)',
+      [teacherNames]
+    );
+    const teacherIds = existingTeachers.map(item => item.id);
+
+    if (teacherIds.length) {
+      await connection.query(
+        'DELETE FROM performance_teacher_follow WHERE teacherId IN (?)',
+        [teacherIds]
+      );
+      await connection.query(
+        'DELETE FROM performance_teacher_class WHERE teacherId IN (?)',
+        [teacherIds]
+      );
+      await connection.query(
+        'DELETE FROM performance_teacher_info WHERE id IN (?)',
+        [teacherIds]
+      );
+    }
+  }
+
+  if (classNames.length) {
+    await connection.query(
+      'DELETE FROM performance_teacher_class WHERE className IN (?)',
+      [classNames]
+    );
+  }
+
+  const inserted = [];
+
+  for (const row of seedRows) {
+    const [teacherResult] = await connection.query(
+      `INSERT INTO performance_teacher_info
+        (teacherName, phone, wechat, schoolName, schoolRegion, schoolType, grade, className, subject, projectTags, intentionLevel, communicationStyle, cooperationStatus, ownerEmployeeId, ownerDepartmentId, lastFollowTime, nextFollowTime, cooperationTime, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.teacherName,
+        row.phone ?? null,
+        row.wechat ?? null,
+        row.schoolName ?? null,
+        row.schoolRegion ?? null,
+        row.schoolType ?? null,
+        row.grade ?? null,
+        row.className ?? null,
+        row.subject ?? null,
+        JSON.stringify(row.projectTags || []),
+        row.intentionLevel ?? null,
+        row.communicationStyle ?? null,
+        row.cooperationStatus,
+        row.ownerEmployeeId,
+        row.ownerDepartmentId,
+        row.lastFollowTime ?? null,
+        row.nextFollowTime ?? null,
+        row.cooperationTime ?? null,
+        now(),
+        now(),
+      ]
+    );
+
+    const teacherId = teacherResult.insertId;
+
+    for (const follow of row.follows || []) {
+      await connection.query(
+        `INSERT INTO performance_teacher_follow
+          (teacherId, followTime, nextFollowTime, followMethod, followContent, creatorEmployeeId, creatorEmployeeName, createTime, updateTime, tenantId)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+        [
+          teacherId,
+          follow.followTime,
+          follow.nextFollowTime ?? null,
+          follow.followMethod ?? null,
+          follow.followContent,
+          follow.creatorEmployeeId,
+          follow.creatorEmployeeName,
+          now(),
+          now(),
+        ]
+      );
+    }
+
+    for (const teacherClass of row.classes || []) {
+      await connection.query(
+        `INSERT INTO performance_teacher_class
+          (teacherId, teacherName, className, schoolName, grade, projectTag, studentCount, status, ownerEmployeeId, ownerDepartmentId, createTime, updateTime, tenantId)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+        [
+          teacherId,
+          row.teacherName,
+          teacherClass.className,
+          row.schoolName ?? null,
+          row.grade ?? null,
+          teacherClass.projectTag ?? null,
+          teacherClass.studentCount ?? 0,
+          teacherClass.status,
+          row.ownerEmployeeId,
+          row.ownerDepartmentId,
+          now(),
+          now(),
+        ]
+      );
+    }
+
+    inserted.push({
+      id: teacherId,
+      ...row,
+    });
+  }
+
+  return inserted;
+}
+
+async function ensureTeacherChannelTables() {
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_teacher_info (
+      id int NOT NULL AUTO_INCREMENT,
+      teacherName varchar(100) NOT NULL,
+      phone varchar(20) DEFAULT NULL,
+      wechat varchar(50) DEFAULT NULL,
+      schoolName varchar(100) DEFAULT NULL,
+      schoolRegion varchar(100) DEFAULT NULL,
+      schoolType varchar(100) DEFAULT NULL,
+      grade varchar(50) DEFAULT NULL,
+      className varchar(100) DEFAULT NULL,
+      subject varchar(50) DEFAULT NULL,
+      projectTags json DEFAULT NULL,
+      intentionLevel varchar(30) DEFAULT NULL,
+      communicationStyle varchar(50) DEFAULT NULL,
+      cooperationStatus varchar(20) NOT NULL DEFAULT 'uncontacted',
+      ownerEmployeeId int NOT NULL,
+      ownerDepartmentId int NOT NULL,
+      lastFollowTime varchar(19) DEFAULT NULL,
+      nextFollowTime varchar(19) DEFAULT NULL,
+      cooperationTime varchar(19) DEFAULT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      KEY idx_performance_teacher_info_teacher_name (teacherName),
+      KEY idx_performance_teacher_info_school_name (schoolName),
+      KEY idx_performance_teacher_info_cooperation_status (cooperationStatus),
+      KEY idx_performance_teacher_info_owner_employee_id (ownerEmployeeId),
+      KEY idx_performance_teacher_info_owner_department_id (ownerDepartmentId),
+      KEY idx_performance_teacher_info_last_follow_time (lastFollowTime),
+      KEY idx_performance_teacher_info_next_follow_time (nextFollowTime),
+      KEY idx_performance_teacher_info_cooperation_time (cooperationTime),
+      KEY idx_performance_teacher_info_create_time (createTime),
+      KEY idx_performance_teacher_info_update_time (updateTime),
+      KEY idx_performance_teacher_info_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_teacher_follow (
+      id int NOT NULL AUTO_INCREMENT,
+      teacherId int NOT NULL,
+      followTime varchar(19) NOT NULL,
+      nextFollowTime varchar(19) DEFAULT NULL,
+      followMethod varchar(50) DEFAULT NULL,
+      followContent text NOT NULL,
+      creatorEmployeeId int NOT NULL,
+      creatorEmployeeName varchar(100) NOT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      KEY idx_performance_teacher_follow_teacher_id (teacherId),
+      KEY idx_performance_teacher_follow_follow_time (followTime),
+      KEY idx_performance_teacher_follow_next_follow_time (nextFollowTime),
+      KEY idx_performance_teacher_follow_creator_employee_id (creatorEmployeeId),
+      KEY idx_performance_teacher_follow_create_time (createTime),
+      KEY idx_performance_teacher_follow_update_time (updateTime),
+      KEY idx_performance_teacher_follow_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_teacher_class (
+      id int NOT NULL AUTO_INCREMENT,
+      teacherId int NOT NULL,
+      teacherName varchar(100) NOT NULL,
+      className varchar(100) NOT NULL,
+      schoolName varchar(100) DEFAULT NULL,
+      grade varchar(50) DEFAULT NULL,
+      projectTag varchar(50) DEFAULT NULL,
+      studentCount int NOT NULL DEFAULT 0,
+      status varchar(20) NOT NULL DEFAULT 'draft',
+      ownerEmployeeId int NOT NULL,
+      ownerDepartmentId int NOT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      KEY idx_performance_teacher_class_teacher_id (teacherId),
+      KEY idx_performance_teacher_class_status (status),
+      KEY idx_performance_teacher_class_owner_employee_id (ownerEmployeeId),
+      KEY idx_performance_teacher_class_owner_department_id (ownerDepartmentId),
+      KEY idx_performance_teacher_class_create_time (createTime),
+      KEY idx_performance_teacher_class_update_time (updateTime),
+      KEY idx_performance_teacher_class_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
 async function ensureContractTable() {
   await connection.query(`
     CREATE TABLE IF NOT EXISTS performance_contract (
@@ -2085,6 +2312,7 @@ async function main() {
     await ensureResumePoolTable();
     await ensureRecruitPlanTable();
     await ensureJobStandardTable();
+    await ensureTeacherChannelTables();
     await ensureContractTable();
     await ensureProcurementTables();
     await ensureFeedbackTables();
@@ -2166,6 +2394,15 @@ async function main() {
       email: 'stage2-sales-mailbox',
       remark: '阶段2联调-跨部门校验样例',
     });
+    const readonlyTeacherUserId = await ensureUser({
+      username: 'readonly_teacher',
+      name: '班主任只读',
+      nickName: '班主任只读',
+      departmentId: platformGroupId,
+      phone: 'stage2-readonly-0001',
+      email: 'stage2-readonly-mailbox',
+      remark: '阶段2联调-班主任只读账号',
+    });
 
     const hrMenuIds = await collectMenuIds({
       routers: [
@@ -2183,6 +2420,10 @@ async function main() {
         '/performance/course',
         '/performance/capability',
         '/performance/certificate',
+        '/performance/teacher-channel/dashboard',
+        '/performance/teacher-channel/teacher',
+        '/performance/teacher-channel/todo',
+        '/performance/teacher-channel/class',
         '/performance/recruit-plan',
         '/performance/job-standard',
         '/performance/resumePool',
@@ -2279,6 +2520,22 @@ async function main() {
         'performance:certificate:update',
         'performance:certificate:issue',
         'performance:certificate:recordPage',
+        'performance:teacherDashboard:summary',
+        'performance:teacherInfo:page',
+        'performance:teacherInfo:info',
+        'performance:teacherInfo:add',
+        'performance:teacherInfo:update',
+        'performance:teacherInfo:assign',
+        'performance:teacherInfo:updateStatus',
+        'performance:teacherFollow:page',
+        'performance:teacherFollow:add',
+        'performance:teacherCooperation:mark',
+        'performance:teacherClass:page',
+        'performance:teacherClass:info',
+        'performance:teacherClass:add',
+        'performance:teacherClass:update',
+        'performance:teacherClass:delete',
+        'performance:teacherTodo:page',
         'performance:recruitPlan:page',
         'performance:recruitPlan:info',
         'performance:recruitPlan:add',
@@ -2347,6 +2604,10 @@ async function main() {
         '/performance/course',
         '/performance/capability',
         '/performance/certificate',
+        '/performance/teacher-channel/dashboard',
+        '/performance/teacher-channel/teacher',
+        '/performance/teacher-channel/todo',
+        '/performance/teacher-channel/class',
         '/performance/recruit-plan',
         '/performance/job-standard',
         '/performance/resumePool',
@@ -2416,6 +2677,22 @@ async function main() {
         'performance:certificate:page',
         'performance:certificate:info',
         'performance:certificate:recordPage',
+        'performance:teacherDashboard:summary',
+        'performance:teacherInfo:page',
+        'performance:teacherInfo:info',
+        'performance:teacherInfo:add',
+        'performance:teacherInfo:update',
+        'performance:teacherInfo:assign',
+        'performance:teacherInfo:updateStatus',
+        'performance:teacherFollow:page',
+        'performance:teacherFollow:add',
+        'performance:teacherCooperation:mark',
+        'performance:teacherClass:page',
+        'performance:teacherClass:info',
+        'performance:teacherClass:add',
+        'performance:teacherClass:update',
+        'performance:teacherClass:delete',
+        'performance:teacherTodo:page',
         'performance:recruitPlan:page',
         'performance:recruitPlan:info',
         'performance:recruitPlan:add',
@@ -2460,6 +2737,10 @@ async function main() {
         '/performance/goals',
         '/performance/feedback',
         '/performance/course-learning',
+        '/performance/teacher-channel/dashboard',
+        '/performance/teacher-channel/teacher',
+        '/performance/teacher-channel/todo',
+        '/performance/teacher-channel/class',
       ],
       perms: [
         'performance:assessment:myPage',
@@ -2484,6 +2765,38 @@ async function main() {
         'performance:coursePractice:info',
         'performance:coursePractice:submit',
         'performance:courseExam:summary',
+        'performance:teacherDashboard:summary',
+        'performance:teacherInfo:page',
+        'performance:teacherInfo:info',
+        'performance:teacherInfo:add',
+        'performance:teacherInfo:update',
+        'performance:teacherInfo:updateStatus',
+        'performance:teacherFollow:page',
+        'performance:teacherFollow:add',
+        'performance:teacherCooperation:mark',
+        'performance:teacherClass:page',
+        'performance:teacherClass:info',
+        'performance:teacherClass:add',
+        'performance:teacherClass:update',
+        'performance:teacherClass:delete',
+        'performance:teacherTodo:page',
+      ],
+    });
+    const readonlyMenuIds = await collectMenuIds({
+      routers: [
+        '/performance/teacher-channel/dashboard',
+        '/performance/teacher-channel/teacher',
+        '/performance/teacher-channel/todo',
+        '/performance/teacher-channel/class',
+      ],
+      perms: [
+        'performance:teacherDashboard:summary',
+        'performance:teacherInfo:page',
+        'performance:teacherInfo:info',
+        'performance:teacherFollow:page',
+        'performance:teacherClass:page',
+        'performance:teacherClass:info',
+        'performance:teacherTodo:page',
       ],
     });
     const feedbackMenuIds = await collectMenuIds({
@@ -2531,12 +2844,20 @@ async function main() {
       menuIds: feedbackMenuIds,
       departmentIds: [businessGroupId],
     });
+    const readonlyTeacherRoleId = await ensureRole({
+      name: '班主任只读账号',
+      label: 'performance_teacher_readonly',
+      remark: '阶段2联调-班主任只读账号',
+      menuIds: readonlyMenuIds,
+      departmentIds: [platformGroupId],
+    });
 
     await replaceUserRoles(hrUserId, [hrRoleId]);
     await replaceUserRoles(managerUserId, [managerRoleId]);
     await replaceUserRoles(employeeUserId, [employeeRoleId]);
     await replaceUserRoles(feedbackUserId, [feedbackRoleId]);
     await replaceUserRoles(salesEmployeeUserId, [employeeRoleId]);
+    await replaceUserRoles(readonlyTeacherUserId, [readonlyTeacherRoleId]);
 
     const seededCourses = await replaceCourses([
       {
@@ -2946,6 +3267,151 @@ async function main() {
         skillTagList: ['销售管理', '客户拓展'],
         interviewTemplateSummary: '业务拓展、客户经营、团队带教摘要面。',
         status: 'draft',
+      },
+    ]);
+
+    const currentDate = new Date();
+    const followYesterday = formatDateTime(addDays(currentDate, -1));
+    const followToday = formatDateTime(currentDate);
+    const followTomorrow = formatDateTime(addDays(currentDate, 1));
+    const followAfterTomorrow = formatDateTime(addDays(currentDate, 2));
+    const cooperationYesterday = formatDateTime(addDays(currentDate, -2));
+
+    await replaceTeacherChannelData([
+      {
+        teacherName: '联调-主题19平台待联系班主任',
+        phone: '13812341901',
+        wechat: 'theme19_waiting',
+        schoolName: '联调第一中学',
+        schoolRegion: '上海',
+        schoolType: '公立',
+        grade: '高一',
+        className: '1班',
+        subject: '数学',
+        projectTags: ['主题19', '待建联'],
+        intentionLevel: 'A',
+        communicationStyle: '理性',
+        cooperationStatus: 'uncontacted',
+        ownerEmployeeId: employeeUserId,
+        ownerDepartmentId: platformGroupId,
+        lastFollowTime: null,
+        nextFollowTime: null,
+        cooperationTime: null,
+        follows: [],
+        classes: [],
+      },
+      {
+        teacherName: '联调-主题19平台逾期待跟进班主任',
+        phone: '13812341902',
+        wechat: 'theme19_overdue',
+        schoolName: '联调第二中学',
+        schoolRegion: '上海',
+        schoolType: '民办',
+        grade: '高二',
+        className: '2班',
+        subject: '英语',
+        projectTags: ['主题19', '逾期'],
+        intentionLevel: 'B',
+        communicationStyle: '直接',
+        cooperationStatus: 'contacted',
+        ownerEmployeeId: employeeUserId,
+        ownerDepartmentId: platformGroupId,
+        lastFollowTime: followYesterday,
+        nextFollowTime: followYesterday,
+        cooperationTime: null,
+        follows: [
+          {
+            followTime: followYesterday,
+            nextFollowTime: followYesterday,
+            followMethod: '电话',
+            followContent: '主题19联调-首次跟进，已进入逾期待办。',
+            creatorEmployeeId: employeeUserId,
+            creatorEmployeeName: '平台员工',
+          },
+        ],
+        classes: [],
+      },
+      {
+        teacherName: '联调-主题19平台已合作班主任',
+        phone: '13812341903',
+        wechat: 'theme19_partnered',
+        schoolName: '联调第三中学',
+        schoolRegion: '上海',
+        schoolType: '公立',
+        grade: '高三',
+        className: '3班',
+        subject: '物理',
+        projectTags: ['主题19', '已合作'],
+        intentionLevel: 'S',
+        communicationStyle: '积极',
+        cooperationStatus: 'partnered',
+        ownerEmployeeId: employeeUserId,
+        ownerDepartmentId: platformGroupId,
+        lastFollowTime: followToday,
+        nextFollowTime: followToday,
+        cooperationTime: cooperationYesterday,
+        follows: [
+          {
+            followTime: followToday,
+            nextFollowTime: followToday,
+            followMethod: '到校拜访',
+            followContent: '主题19联调-已合作班主任样例。',
+            creatorEmployeeId: employeeUserId,
+            creatorEmployeeName: '平台员工',
+          },
+        ],
+        classes: [
+          {
+            className: '联调-主题19平台进行中班级',
+            projectTag: '主题19',
+            studentCount: 28,
+            status: 'active',
+          },
+          {
+            className: '联调-主题19平台关闭班级',
+            projectTag: '主题19',
+            studentCount: 26,
+            status: 'closed',
+          },
+        ],
+      },
+      {
+        teacherName: '联调-主题19销售隐藏班主任',
+        phone: '13812341904',
+        wechat: 'theme19_sales_hidden',
+        schoolName: '联调销售校',
+        schoolRegion: '杭州',
+        schoolType: '民办',
+        grade: '初三',
+        className: '销售班',
+        subject: '语文',
+        projectTags: ['主题19', '销售'],
+        intentionLevel: 'A',
+        communicationStyle: '热情',
+        cooperationStatus: 'partnered',
+        ownerEmployeeId: salesEmployeeUserId,
+        ownerDepartmentId: salesCenterId,
+        lastFollowTime: followToday,
+        nextFollowTime: followAfterTomorrow,
+        cooperationTime: cooperationYesterday,
+        follows: [
+          {
+            followTime: followToday,
+            nextFollowTime: followAfterTomorrow,
+            followMethod: '微信',
+            followContent: '主题19联调-销售部门隐藏样例。',
+            creatorEmployeeId: salesEmployeeUserId,
+            creatorEmployeeName: '销售员工',
+          },
+        ],
+        classes: [
+          {
+            className: '联调-主题19销售班级',
+            projectTag: '销售',
+            studentCount: 30,
+            status: 'active',
+          },
+        ],
       },
     ]);
 
@@ -3387,7 +3853,7 @@ async function main() {
     await connection.commit();
 
     console.log('Stage-2 performance seed completed for modules 1/2/4/5/6/7/8/9 baseline.');
-    console.log('Accounts: admin, hr_admin, manager_rd, employee_platform, feedback_peer, employee_sales');
+    console.log('Accounts: admin, hr_admin, manager_rd, employee_platform, feedback_peer, employee_sales, readonly_teacher');
     console.log('Password: 123456');
     console.log(`Runtime seed version: ${seedMeta.version}`);
     console.log(`Runtime seed scopes: ${seedMeta.scopes.join(', ')}`);
