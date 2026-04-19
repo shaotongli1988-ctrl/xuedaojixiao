@@ -1,8 +1,8 @@
 /**
- * Seeds local integration data for performance modules and theme-7/8/9/12/13/14/15 management.
+ * Seeds local integration data for performance modules and theme-7/8/9/10/11/12/13/14/15/16/17/18/20 management.
  * This file only prepares local menu, role, user, and sample business data for联调.
  * It does not replace the project's general initialization flow or production release scripts.
- * Maintenance pitfall: dashboard权限、课程/学习任务/人才资产/简历池/能力地图/证书/面试/会议/合同样例和 menu.json 必须一起维护，否则真实联调会和 seed 脱节。
+ * Maintenance pitfall: dashboard权限、课程/学习任务/人才资产/简历池/面试/录用/能力地图/证书/会议/合同/资产样例和 menu.json 必须一起维护，否则真实联调会和 seed 脱节。
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -35,6 +35,7 @@ const stage2MenuRouters = new Set([
   '/performance/teacher-channel/teacher',
   '/performance/teacher-channel/todo',
   '/performance/teacher-channel/class',
+  '/performance/recruitment-center',
   '/performance/recruit-plan',
   '/performance/job-standard',
   '/performance/resumePool',
@@ -45,6 +46,16 @@ const stage2MenuRouters = new Set([
   '/performance/talentAsset',
   '/performance/purchase-order',
   '/performance/supplier',
+  '/performance/asset/dashboard',
+  '/performance/asset/ledger',
+  '/performance/asset/assignment',
+  '/performance/asset/maintenance',
+  '/performance/asset/report',
+  '/performance/asset/procurement',
+  '/performance/asset/transfer',
+  '/performance/asset/inventory',
+  '/performance/asset/depreciation',
+  '/performance/asset/disposal',
 ]);
 
 const connection = await mysql.createConnection({
@@ -95,6 +106,21 @@ function loadStage2PerformanceMenus() {
 async function queryOne(sql, params = []) {
   const [rows] = await connection.query(sql, params);
   return rows[0] || null;
+}
+
+async function ensureTableColumn(tableName, columnName, columnDefinition) {
+  const [rows] = await connection.query(
+    `SHOW COLUMNS FROM \`${tableName}\` LIKE ?`,
+    [columnName]
+  );
+
+  if (Array.isArray(rows) && rows.length > 0) {
+    return;
+  }
+
+  await connection.query(
+    `ALTER TABLE \`${tableName}\` ADD COLUMN ${columnDefinition}`
+  );
 }
 
 async function upsertMenuNode(menu, parentId = null) {
@@ -297,8 +323,11 @@ async function upsertParam({ keyName, name, data, dataType = 0, remark = null })
   return result.insertId;
 }
 
-async function syncStage2RuntimeMeta() {
-  const seedMeta = buildStage2SeedMeta(new Date().toISOString());
+async function syncStage2RuntimeMeta(extra = {}) {
+  const seedMeta = {
+    ...buildStage2SeedMeta(new Date().toISOString()),
+    ...extra,
+  };
   await upsertParam({
     keyName: STAGE2_RUNTIME_META_PARAM_KEY,
     name: '阶段2运行态种子版本',
@@ -878,6 +907,76 @@ async function replaceHirings(seedRows) {
   }
 }
 
+async function replaceRecruitPlans(seedRows) {
+  const titles = [...new Set(seedRows.map(item => item.title).filter(Boolean))];
+
+  if (titles.length) {
+    await connection.query(
+      'DELETE FROM performance_recruit_plan WHERE title IN (?)',
+      [titles]
+    );
+  }
+
+  for (const row of seedRows) {
+    await connection.query(
+      `INSERT INTO performance_recruit_plan
+        (title, targetDepartmentId, positionName, headcount, startDate, endDate, recruiterId, requirementSummary, status, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.title,
+        row.targetDepartmentId,
+        row.positionName,
+        row.headcount,
+        row.startDate,
+        row.endDate,
+        row.recruiterId ?? null,
+        row.requirementSummary ?? null,
+        row.status ?? 'draft',
+        now(),
+        now(),
+      ]
+    );
+  }
+}
+
+async function upsertSpaceInfoSeed(row) {
+  const existing = await queryOne(
+    'SELECT id FROM space_info WHERE fileId = ? LIMIT 1',
+    [row.fileId]
+  );
+
+  const payload = [
+    row.url,
+    row.type,
+    row.classifyId ?? null,
+    row.fileId,
+    row.name,
+    row.size,
+    row.version ?? 1,
+    row.key,
+    now(),
+  ];
+
+  if (existing) {
+    await connection.query(
+      `UPDATE space_info
+          SET url = ?, type = ?, classifyId = ?, fileId = ?, name = ?, size = ?, version = ?, \`key\` = ?, updateTime = ?
+        WHERE id = ?`,
+      [...payload, existing.id]
+    );
+    return existing.id;
+  }
+
+  const [result] = await connection.query(
+    `INSERT INTO space_info
+      (url, type, classifyId, fileId, name, size, version, \`key\`, createTime, updateTime, tenantId)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+    [...payload.slice(0, 8), now(), now()]
+  );
+
+  return result.insertId;
+}
+
 async function replaceJobStandards(seedRows) {
   const positionNames = [...new Set(seedRows.map(item => item.positionName).filter(Boolean))];
 
@@ -907,6 +1006,127 @@ async function replaceJobStandards(seedRows) {
       ]
     );
   }
+}
+
+async function replaceTeacherChannelData(seedRows) {
+  const teacherNames = [...new Set(seedRows.map(item => item.teacherName).filter(Boolean))];
+  const classNames = [
+    ...new Set(
+      seedRows.flatMap(item => (item.classes || []).map(classRow => classRow.className).filter(Boolean))
+    ),
+  ];
+
+  if (teacherNames.length) {
+    const [existingTeachers] = await connection.query(
+      'SELECT id FROM performance_teacher_info WHERE teacherName IN (?)',
+      [teacherNames]
+    );
+    const teacherIds = existingTeachers.map(item => item.id);
+
+    if (teacherIds.length) {
+      await connection.query(
+        'DELETE FROM performance_teacher_follow WHERE teacherId IN (?)',
+        [teacherIds]
+      );
+      await connection.query(
+        'DELETE FROM performance_teacher_class WHERE teacherId IN (?)',
+        [teacherIds]
+      );
+      await connection.query(
+        'DELETE FROM performance_teacher_info WHERE id IN (?)',
+        [teacherIds]
+      );
+    }
+  }
+
+  if (classNames.length) {
+    await connection.query(
+      'DELETE FROM performance_teacher_class WHERE className IN (?)',
+      [classNames]
+    );
+  }
+
+  const inserted = [];
+
+  for (const row of seedRows) {
+    const [teacherResult] = await connection.query(
+      `INSERT INTO performance_teacher_info
+        (teacherName, phone, wechat, schoolName, schoolRegion, schoolType, grade, className, subject, projectTags, intentionLevel, communicationStyle, cooperationStatus, ownerEmployeeId, ownerDepartmentId, lastFollowTime, nextFollowTime, cooperationTime, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.teacherName,
+        row.phone ?? null,
+        row.wechat ?? null,
+        row.schoolName ?? null,
+        row.schoolRegion ?? null,
+        row.schoolType ?? null,
+        row.grade ?? null,
+        row.className ?? null,
+        row.subject ?? null,
+        JSON.stringify(row.projectTags || []),
+        row.intentionLevel ?? null,
+        row.communicationStyle ?? null,
+        row.cooperationStatus,
+        row.ownerEmployeeId,
+        row.ownerDepartmentId,
+        row.lastFollowTime ?? null,
+        row.nextFollowTime ?? null,
+        row.cooperationTime ?? null,
+        now(),
+        now(),
+      ]
+    );
+
+    const teacherId = teacherResult.insertId;
+
+    for (const follow of row.follows || []) {
+      await connection.query(
+        `INSERT INTO performance_teacher_follow
+          (teacherId, followTime, nextFollowTime, followMethod, followContent, creatorEmployeeId, creatorEmployeeName, createTime, updateTime, tenantId)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+        [
+          teacherId,
+          follow.followTime,
+          follow.nextFollowTime ?? null,
+          follow.followMethod ?? null,
+          follow.followContent,
+          follow.creatorEmployeeId,
+          follow.creatorEmployeeName,
+          now(),
+          now(),
+        ]
+      );
+    }
+
+    for (const teacherClass of row.classes || []) {
+      await connection.query(
+        `INSERT INTO performance_teacher_class
+          (teacherId, teacherName, className, schoolName, grade, projectTag, studentCount, status, ownerEmployeeId, ownerDepartmentId, createTime, updateTime, tenantId)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+        [
+          teacherId,
+          row.teacherName,
+          teacherClass.className,
+          row.schoolName ?? null,
+          row.grade ?? null,
+          teacherClass.projectTag ?? null,
+          teacherClass.studentCount ?? 0,
+          teacherClass.status,
+          row.ownerEmployeeId,
+          row.ownerDepartmentId,
+          now(),
+          now(),
+        ]
+      );
+    }
+
+    inserted.push({
+      id: teacherId,
+      ...row,
+    });
+  }
+
+  return inserted;
 }
 
 async function ensureCourseTables() {
@@ -1674,6 +1894,27 @@ async function ensureInterviewTable() {
       KEY idx_performance_interview_tenant_id (tenantId)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+
+  await ensureTableColumn(
+    'performance_interview',
+    'resumePoolId',
+    '`resumePoolId` int DEFAULT NULL'
+  );
+  await ensureTableColumn(
+    'performance_interview',
+    'recruitPlanId',
+    '`recruitPlanId` int DEFAULT NULL'
+  );
+  await ensureTableColumn(
+    'performance_interview',
+    'resumePoolSnapshot',
+    '`resumePoolSnapshot` json DEFAULT NULL'
+  );
+  await ensureTableColumn(
+    'performance_interview',
+    'recruitPlanSnapshot',
+    '`recruitPlanSnapshot` json DEFAULT NULL'
+  );
 }
 
 async function ensureMeetingTable() {
@@ -1772,6 +2013,27 @@ async function ensureResumePoolTable() {
       KEY idx_performance_resume_pool_tenant_id (tenantId)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+
+  await ensureTableColumn(
+    'performance_resume_pool',
+    'recruitPlanId',
+    '`recruitPlanId` int DEFAULT NULL'
+  );
+  await ensureTableColumn(
+    'performance_resume_pool',
+    'jobStandardId',
+    '`jobStandardId` int DEFAULT NULL'
+  );
+  await ensureTableColumn(
+    'performance_resume_pool',
+    'recruitPlanSnapshot',
+    '`recruitPlanSnapshot` json DEFAULT NULL'
+  );
+  await ensureTableColumn(
+    'performance_resume_pool',
+    'jobStandardSnapshot',
+    '`jobStandardSnapshot` json DEFAULT NULL'
+  );
 }
 
 async function ensureHiringTable() {
@@ -1782,7 +2044,7 @@ async function ensureHiringTable() {
       targetDepartmentId int NOT NULL,
       targetPosition varchar(100) DEFAULT NULL,
       decisionContent text DEFAULT NULL,
-      sourceType varchar(20) NOT NULL DEFAULT 'manual',
+      sourceType varchar(30) DEFAULT NULL,
       sourceId int DEFAULT NULL,
       sourceSnapshot json DEFAULT NULL,
       status varchar(20) NOT NULL DEFAULT 'offered',
@@ -1809,6 +2071,37 @@ async function ensureHiringTable() {
       KEY idx_performance_hiring_tenant_id (tenantId)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+
+  await ensureTableColumn(
+    'performance_hiring',
+    'interviewId',
+    '`interviewId` int DEFAULT NULL'
+  );
+  await ensureTableColumn(
+    'performance_hiring',
+    'resumePoolId',
+    '`resumePoolId` int DEFAULT NULL'
+  );
+  await ensureTableColumn(
+    'performance_hiring',
+    'recruitPlanId',
+    '`recruitPlanId` int DEFAULT NULL'
+  );
+  await ensureTableColumn(
+    'performance_hiring',
+    'interviewSnapshot',
+    '`interviewSnapshot` json DEFAULT NULL'
+  );
+  await ensureTableColumn(
+    'performance_hiring',
+    'resumePoolSnapshot',
+    '`resumePoolSnapshot` json DEFAULT NULL'
+  );
+  await ensureTableColumn(
+    'performance_hiring',
+    'recruitPlanSnapshot',
+    '`recruitPlanSnapshot` json DEFAULT NULL'
+  );
 }
 
 async function ensureRecruitPlanTable() {
@@ -1840,6 +2133,17 @@ async function ensureRecruitPlanTable() {
       KEY idx_performance_recruit_plan_tenant_id (tenantId)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+
+  await ensureTableColumn(
+    'performance_recruit_plan',
+    'jobStandardId',
+    '`jobStandardId` int DEFAULT NULL'
+  );
+  await ensureTableColumn(
+    'performance_recruit_plan',
+    'jobStandardSnapshot',
+    '`jobStandardSnapshot` json DEFAULT NULL'
+  );
 }
 
 async function ensureJobStandardTable() {
@@ -1866,127 +2170,6 @@ async function ensureJobStandardTable() {
       KEY idx_performance_job_standard_tenant_id (tenantId)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
-}
-
-async function replaceTeacherChannelData(seedRows) {
-  const teacherNames = [...new Set(seedRows.map(item => item.teacherName).filter(Boolean))];
-  const classNames = [
-    ...new Set(
-      seedRows.flatMap(item => (item.classes || []).map(classRow => classRow.className).filter(Boolean))
-    ),
-  ];
-
-  if (teacherNames.length) {
-    const [existingTeachers] = await connection.query(
-      'SELECT id FROM performance_teacher_info WHERE teacherName IN (?)',
-      [teacherNames]
-    );
-    const teacherIds = existingTeachers.map(item => item.id);
-
-    if (teacherIds.length) {
-      await connection.query(
-        'DELETE FROM performance_teacher_follow WHERE teacherId IN (?)',
-        [teacherIds]
-      );
-      await connection.query(
-        'DELETE FROM performance_teacher_class WHERE teacherId IN (?)',
-        [teacherIds]
-      );
-      await connection.query(
-        'DELETE FROM performance_teacher_info WHERE id IN (?)',
-        [teacherIds]
-      );
-    }
-  }
-
-  if (classNames.length) {
-    await connection.query(
-      'DELETE FROM performance_teacher_class WHERE className IN (?)',
-      [classNames]
-    );
-  }
-
-  const inserted = [];
-
-  for (const row of seedRows) {
-    const [teacherResult] = await connection.query(
-      `INSERT INTO performance_teacher_info
-        (teacherName, phone, wechat, schoolName, schoolRegion, schoolType, grade, className, subject, projectTags, intentionLevel, communicationStyle, cooperationStatus, ownerEmployeeId, ownerDepartmentId, lastFollowTime, nextFollowTime, cooperationTime, createTime, updateTime, tenantId)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
-      [
-        row.teacherName,
-        row.phone ?? null,
-        row.wechat ?? null,
-        row.schoolName ?? null,
-        row.schoolRegion ?? null,
-        row.schoolType ?? null,
-        row.grade ?? null,
-        row.className ?? null,
-        row.subject ?? null,
-        JSON.stringify(row.projectTags || []),
-        row.intentionLevel ?? null,
-        row.communicationStyle ?? null,
-        row.cooperationStatus,
-        row.ownerEmployeeId,
-        row.ownerDepartmentId,
-        row.lastFollowTime ?? null,
-        row.nextFollowTime ?? null,
-        row.cooperationTime ?? null,
-        now(),
-        now(),
-      ]
-    );
-
-    const teacherId = teacherResult.insertId;
-
-    for (const follow of row.follows || []) {
-      await connection.query(
-        `INSERT INTO performance_teacher_follow
-          (teacherId, followTime, nextFollowTime, followMethod, followContent, creatorEmployeeId, creatorEmployeeName, createTime, updateTime, tenantId)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
-        [
-          teacherId,
-          follow.followTime,
-          follow.nextFollowTime ?? null,
-          follow.followMethod ?? null,
-          follow.followContent,
-          follow.creatorEmployeeId,
-          follow.creatorEmployeeName,
-          now(),
-          now(),
-        ]
-      );
-    }
-
-    for (const teacherClass of row.classes || []) {
-      await connection.query(
-        `INSERT INTO performance_teacher_class
-          (teacherId, teacherName, className, schoolName, grade, projectTag, studentCount, status, ownerEmployeeId, ownerDepartmentId, createTime, updateTime, tenantId)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
-        [
-          teacherId,
-          row.teacherName,
-          teacherClass.className,
-          row.schoolName ?? null,
-          row.grade ?? null,
-          teacherClass.projectTag ?? null,
-          teacherClass.studentCount ?? 0,
-          teacherClass.status,
-          row.ownerEmployeeId,
-          row.ownerDepartmentId,
-          now(),
-          now(),
-        ]
-      );
-    }
-
-    inserted.push({
-      id: teacherId,
-      ...row,
-    });
-  }
-
-  return inserted;
 }
 
 async function ensureTeacherChannelTables() {
@@ -2169,6 +2352,253 @@ async function ensureProcurementTables() {
       KEY idx_performance_purchase_order_create_time (createTime),
       KEY idx_performance_purchase_order_update_time (updateTime),
       KEY idx_performance_purchase_order_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function ensureAssetTables() {
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_asset_info (
+      id int NOT NULL AUTO_INCREMENT,
+      assetNo varchar(50) NOT NULL,
+      assetName varchar(200) NOT NULL,
+      category varchar(100) DEFAULT NULL,
+      assetType varchar(100) DEFAULT NULL,
+      brand varchar(100) DEFAULT NULL,
+      model varchar(100) DEFAULT NULL,
+      serialNo varchar(100) DEFAULT NULL,
+      status varchar(30) NOT NULL DEFAULT 'available',
+      location varchar(200) DEFAULT NULL,
+      ownerDepartmentId int NOT NULL,
+      managerId int DEFAULT NULL,
+      purchaseDate varchar(10) DEFAULT NULL,
+      purchaseCost decimal(12,2) NOT NULL DEFAULT 0,
+      supplierId int DEFAULT NULL,
+      purchaseOrderId int DEFAULT NULL,
+      warrantyExpiry varchar(10) DEFAULT NULL,
+      depreciationMonths int NOT NULL DEFAULT 0,
+      depreciatedAmount decimal(12,2) NOT NULL DEFAULT 0,
+      netBookValue decimal(12,2) NOT NULL DEFAULT 0,
+      lastInventoryTime varchar(19) DEFAULT NULL,
+      remark text DEFAULT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_performance_asset_no (assetNo),
+      KEY idx_performance_asset_info_category (category),
+      KEY idx_performance_asset_info_serial_no (serialNo),
+      KEY idx_performance_asset_info_status (status),
+      KEY idx_performance_asset_info_owner_department_id (ownerDepartmentId),
+      KEY idx_performance_asset_info_manager_id (managerId),
+      KEY idx_performance_asset_info_supplier_id (supplierId),
+      KEY idx_performance_asset_info_purchase_order_id (purchaseOrderId),
+      KEY idx_performance_asset_info_create_time (createTime),
+      KEY idx_performance_asset_info_update_time (updateTime),
+      KEY idx_performance_asset_info_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_asset_assignment (
+      id int NOT NULL AUTO_INCREMENT,
+      assetId int NOT NULL,
+      assigneeId int NOT NULL,
+      departmentId int NOT NULL,
+      assignDate varchar(10) NOT NULL,
+      returnDate varchar(10) DEFAULT NULL,
+      status varchar(20) NOT NULL DEFAULT 'assigned',
+      purpose text DEFAULT NULL,
+      returnNote text DEFAULT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      KEY idx_performance_asset_assignment_asset_id (assetId),
+      KEY idx_performance_asset_assignment_assignee_id (assigneeId),
+      KEY idx_performance_asset_assignment_department_id (departmentId),
+      KEY idx_performance_asset_assignment_status (status),
+      KEY idx_performance_asset_assignment_create_time (createTime),
+      KEY idx_performance_asset_assignment_update_time (updateTime),
+      KEY idx_performance_asset_assignment_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_asset_maintenance (
+      id int NOT NULL AUTO_INCREMENT,
+      assetId int NOT NULL,
+      departmentId int NOT NULL,
+      maintenanceType varchar(50) DEFAULT NULL,
+      vendor varchar(100) DEFAULT NULL,
+      cost decimal(12,2) NOT NULL DEFAULT 0,
+      startDate varchar(19) DEFAULT NULL,
+      completedDate varchar(19) DEFAULT NULL,
+      status varchar(20) NOT NULL DEFAULT 'scheduled',
+      description text DEFAULT NULL,
+      result text DEFAULT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      KEY idx_performance_asset_maintenance_asset_id (assetId),
+      KEY idx_performance_asset_maintenance_department_id (departmentId),
+      KEY idx_performance_asset_maintenance_status (status),
+      KEY idx_performance_asset_maintenance_create_time (createTime),
+      KEY idx_performance_asset_maintenance_update_time (updateTime),
+      KEY idx_performance_asset_maintenance_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_asset_procurement (
+      id int NOT NULL AUTO_INCREMENT,
+      procurementNo varchar(50) NOT NULL,
+      title varchar(200) NOT NULL,
+      purchaseOrderId int DEFAULT NULL,
+      supplierId int DEFAULT NULL,
+      ownerDepartmentId int NOT NULL,
+      managerId int DEFAULT NULL,
+      assetName varchar(200) NOT NULL,
+      category varchar(100) DEFAULT NULL,
+      assetType varchar(100) DEFAULT NULL,
+      brand varchar(100) DEFAULT NULL,
+      model varchar(100) DEFAULT NULL,
+      serialNo varchar(100) DEFAULT NULL,
+      location varchar(200) DEFAULT NULL,
+      purchaseDate varchar(10) DEFAULT NULL,
+      unitCost decimal(12,2) NOT NULL DEFAULT 0,
+      quantity int NOT NULL DEFAULT 1,
+      warrantyExpiry varchar(10) DEFAULT NULL,
+      depreciationMonths int NOT NULL DEFAULT 0,
+      receivedAssetIds json DEFAULT NULL,
+      submittedAt varchar(19) DEFAULT NULL,
+      receivedAt varchar(19) DEFAULT NULL,
+      status varchar(20) NOT NULL DEFAULT 'draft',
+      remark text DEFAULT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_performance_asset_procurement_no (procurementNo),
+      KEY idx_performance_asset_procurement_purchase_order_id (purchaseOrderId),
+      KEY idx_performance_asset_procurement_supplier_id (supplierId),
+      KEY idx_performance_asset_procurement_owner_department_id (ownerDepartmentId),
+      KEY idx_performance_asset_procurement_manager_id (managerId),
+      KEY idx_performance_asset_procurement_category (category),
+      KEY idx_performance_asset_procurement_status (status),
+      KEY idx_performance_asset_procurement_create_time (createTime),
+      KEY idx_performance_asset_procurement_update_time (updateTime),
+      KEY idx_performance_asset_procurement_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_asset_transfer (
+      id int NOT NULL AUTO_INCREMENT,
+      transferNo varchar(50) NOT NULL,
+      assetId int NOT NULL,
+      fromDepartmentId int NOT NULL,
+      toDepartmentId int NOT NULL,
+      toManagerId int DEFAULT NULL,
+      fromLocation varchar(200) DEFAULT NULL,
+      toLocation varchar(200) DEFAULT NULL,
+      reason text DEFAULT NULL,
+      submittedAt varchar(19) DEFAULT NULL,
+      completedAt varchar(19) DEFAULT NULL,
+      status varchar(20) NOT NULL DEFAULT 'draft',
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_performance_asset_transfer_no (transferNo),
+      KEY idx_performance_asset_transfer_asset_id (assetId),
+      KEY idx_performance_asset_transfer_from_department_id (fromDepartmentId),
+      KEY idx_performance_asset_transfer_to_department_id (toDepartmentId),
+      KEY idx_performance_asset_transfer_to_manager_id (toManagerId),
+      KEY idx_performance_asset_transfer_status (status),
+      KEY idx_performance_asset_transfer_create_time (createTime),
+      KEY idx_performance_asset_transfer_update_time (updateTime),
+      KEY idx_performance_asset_transfer_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_asset_inventory (
+      id int NOT NULL AUTO_INCREMENT,
+      inventoryNo varchar(50) NOT NULL,
+      assetId int NOT NULL,
+      ownerDepartmentId int NOT NULL,
+      locationSnapshot varchar(200) DEFAULT NULL,
+      resultSummary text DEFAULT NULL,
+      startedAt varchar(19) DEFAULT NULL,
+      completedAt varchar(19) DEFAULT NULL,
+      closedAt varchar(19) DEFAULT NULL,
+      status varchar(20) NOT NULL DEFAULT 'draft',
+      remark text DEFAULT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_performance_asset_inventory_no (inventoryNo),
+      KEY idx_performance_asset_inventory_asset_id (assetId),
+      KEY idx_performance_asset_inventory_owner_department_id (ownerDepartmentId),
+      KEY idx_performance_asset_inventory_status (status),
+      KEY idx_performance_asset_inventory_create_time (createTime),
+      KEY idx_performance_asset_inventory_update_time (updateTime),
+      KEY idx_performance_asset_inventory_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_asset_depreciation (
+      id int NOT NULL AUTO_INCREMENT,
+      assetId int NOT NULL,
+      periodValue varchar(7) NOT NULL,
+      depreciationAmount decimal(12,2) NOT NULL DEFAULT 0,
+      accumulatedAmount decimal(12,2) NOT NULL DEFAULT 0,
+      netBookValue decimal(12,2) NOT NULL DEFAULT 0,
+      sourceCost decimal(12,2) NOT NULL DEFAULT 0,
+      recalculatedAt varchar(19) DEFAULT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      KEY idx_performance_asset_depreciation_asset_id (assetId),
+      KEY idx_performance_asset_depreciation_period_value (periodValue),
+      KEY idx_performance_asset_depreciation_create_time (createTime),
+      KEY idx_performance_asset_depreciation_update_time (updateTime),
+      KEY idx_performance_asset_depreciation_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_asset_disposal (
+      id int NOT NULL AUTO_INCREMENT,
+      disposalNo varchar(50) NOT NULL,
+      assetId int NOT NULL,
+      ownerDepartmentId int NOT NULL,
+      reason text NOT NULL,
+      remark text DEFAULT NULL,
+      approvedById int DEFAULT NULL,
+      executedById int DEFAULT NULL,
+      submittedAt varchar(19) DEFAULT NULL,
+      approvedAt varchar(19) DEFAULT NULL,
+      executedAt varchar(19) DEFAULT NULL,
+      status varchar(20) NOT NULL DEFAULT 'draft',
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_performance_asset_disposal_no (disposalNo),
+      KEY idx_performance_asset_disposal_asset_id (assetId),
+      KEY idx_performance_asset_disposal_owner_department_id (ownerDepartmentId),
+      KEY idx_performance_asset_disposal_approved_by_id (approvedById),
+      KEY idx_performance_asset_disposal_executed_by_id (executedById),
+      KEY idx_performance_asset_disposal_status (status),
+      KEY idx_performance_asset_disposal_create_time (createTime),
+      KEY idx_performance_asset_disposal_update_time (updateTime),
+      KEY idx_performance_asset_disposal_tenant_id (tenantId)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 }
@@ -2390,6 +2820,7 @@ async function main() {
     await ensureTeacherChannelTables();
     await ensureContractTable();
     await ensureProcurementTables();
+    await ensureAssetTables();
     await ensureFeedbackTables();
     await ensureApprovalTables();
 
@@ -2482,6 +2913,7 @@ async function main() {
     const hrMenuIds = await collectMenuIds({
       routers: [
         '/data-center/dashboard',
+        '/performance/recruitment-center',
         '/performance/my-assessment',
         '/performance/initiated',
         '/performance/pending',
@@ -2509,6 +2941,16 @@ async function main() {
         '/performance/talentAsset',
         '/performance/purchase-order',
         '/performance/supplier',
+        '/performance/asset/dashboard',
+        '/performance/asset/ledger',
+        '/performance/asset/assignment',
+        '/performance/asset/maintenance',
+        '/performance/asset/report',
+        '/performance/asset/procurement',
+        '/performance/asset/transfer',
+        '/performance/asset/inventory',
+        '/performance/asset/depreciation',
+        '/performance/asset/disposal',
       ],
       perms: [
         'performance:dashboard:summary',
@@ -2616,8 +3058,13 @@ async function main() {
         'performance:recruitPlan:info',
         'performance:recruitPlan:add',
         'performance:recruitPlan:update',
+        'performance:recruitPlan:delete',
+        'performance:recruitPlan:import',
+        'performance:recruitPlan:export',
         'performance:recruitPlan:submit',
         'performance:recruitPlan:close',
+        'performance:recruitPlan:void',
+        'performance:recruitPlan:reopen',
         'performance:jobStandard:page',
         'performance:jobStandard:info',
         'performance:jobStandard:add',
@@ -2664,6 +3111,60 @@ async function main() {
         'performance:supplier:add',
         'performance:supplier:update',
         'performance:supplier:delete',
+        'performance:assetDashboard:summary',
+        'performance:assetInfo:page',
+        'performance:assetInfo:info',
+        'performance:assetInfo:add',
+        'performance:assetInfo:update',
+        'performance:assetInfo:delete',
+        'performance:assetInfo:updateStatus',
+        'performance:assetAssignment:page',
+        'performance:assetAssignment:add',
+        'performance:assetAssignment:update',
+        'performance:assetAssignment:return',
+        'performance:assetAssignment:markLost',
+        'performance:assetAssignment:delete',
+        'performance:assetMaintenance:page',
+        'performance:assetMaintenance:add',
+        'performance:assetMaintenance:update',
+        'performance:assetMaintenance:complete',
+        'performance:assetMaintenance:cancel',
+        'performance:assetMaintenance:delete',
+        'performance:assetProcurement:page',
+        'performance:assetProcurement:info',
+        'performance:assetProcurement:add',
+        'performance:assetProcurement:update',
+        'performance:assetProcurement:submit',
+        'performance:assetProcurement:receive',
+        'performance:assetProcurement:cancel',
+        'performance:assetTransfer:page',
+        'performance:assetTransfer:info',
+        'performance:assetTransfer:add',
+        'performance:assetTransfer:update',
+        'performance:assetTransfer:submit',
+        'performance:assetTransfer:complete',
+        'performance:assetTransfer:cancel',
+        'performance:assetInventory:page',
+        'performance:assetInventory:info',
+        'performance:assetInventory:add',
+        'performance:assetInventory:update',
+        'performance:assetInventory:start',
+        'performance:assetInventory:complete',
+        'performance:assetInventory:close',
+        'performance:assetDepreciation:page',
+        'performance:assetDepreciation:summary',
+        'performance:assetDepreciation:recalculate',
+        'performance:assetDisposal:page',
+        'performance:assetDisposal:info',
+        'performance:assetDisposal:add',
+        'performance:assetDisposal:update',
+        'performance:assetDisposal:submit',
+        'performance:assetDisposal:approve',
+        'performance:assetDisposal:execute',
+        'performance:assetDisposal:cancel',
+        'performance:assetReport:summary',
+        'performance:assetReport:page',
+        'performance:assetReport:export',
         'performance:talentAsset:page',
         'performance:talentAsset:info',
         'performance:talentAsset:add',
@@ -2674,6 +3175,7 @@ async function main() {
     const managerMenuIds = await collectMenuIds({
       routers: [
         '/data-center/dashboard',
+        '/performance/recruitment-center',
         '/performance/my-assessment',
         '/performance/initiated',
         '/performance/pending',
@@ -2698,6 +3200,14 @@ async function main() {
         '/performance/purchase-order',
         '/performance/supplier',
         '/performance/talentAsset',
+        '/performance/asset/dashboard',
+        '/performance/asset/ledger',
+        '/performance/asset/assignment',
+        '/performance/asset/maintenance',
+        '/performance/asset/report',
+        '/performance/asset/transfer',
+        '/performance/asset/inventory',
+        '/performance/asset/disposal',
       ],
       perms: [
         'performance:dashboard:summary',
@@ -2779,8 +3289,12 @@ async function main() {
         'performance:recruitPlan:info',
         'performance:recruitPlan:add',
         'performance:recruitPlan:update',
+        'performance:recruitPlan:delete',
+        'performance:recruitPlan:import',
         'performance:recruitPlan:submit',
         'performance:recruitPlan:close',
+        'performance:recruitPlan:void',
+        'performance:recruitPlan:reopen',
         'performance:jobStandard:page',
         'performance:jobStandard:info',
         'performance:resumePool:page',
@@ -2806,6 +3320,42 @@ async function main() {
         'performance:purchaseOrder:update',
         'performance:supplier:page',
         'performance:supplier:info',
+        'performance:assetDashboard:summary',
+        'performance:assetInfo:page',
+        'performance:assetInfo:info',
+        'performance:assetAssignment:page',
+        'performance:assetAssignment:add',
+        'performance:assetAssignment:update',
+        'performance:assetAssignment:return',
+        'performance:assetMaintenance:page',
+        'performance:assetMaintenance:add',
+        'performance:assetMaintenance:update',
+        'performance:assetMaintenance:complete',
+        'performance:assetMaintenance:cancel',
+        'performance:assetTransfer:page',
+        'performance:assetTransfer:info',
+        'performance:assetTransfer:add',
+        'performance:assetTransfer:update',
+        'performance:assetTransfer:submit',
+        'performance:assetTransfer:complete',
+        'performance:assetTransfer:cancel',
+        'performance:assetInventory:page',
+        'performance:assetInventory:info',
+        'performance:assetInventory:add',
+        'performance:assetInventory:update',
+        'performance:assetInventory:start',
+        'performance:assetInventory:complete',
+        'performance:assetInventory:close',
+        'performance:assetDisposal:page',
+        'performance:assetDisposal:info',
+        'performance:assetDisposal:add',
+        'performance:assetDisposal:update',
+        'performance:assetDisposal:submit',
+        'performance:assetDisposal:approve',
+        'performance:assetDisposal:execute',
+        'performance:assetDisposal:cancel',
+        'performance:assetReport:summary',
+        'performance:assetReport:page',
         'performance:meeting:page',
         'performance:meeting:info',
         'performance:meeting:add',
@@ -3360,6 +3910,42 @@ async function main() {
           sourceType: 'manual',
         },
         status: 'offered',
+      },
+    ]);
+
+    const recruitPlanImportSpaceId = await upsertSpaceInfoSeed({
+      url: 'https://example.com/stage2/theme16/recruit-plan-import-template.xlsx',
+      type: 'application',
+      classifyId: 1601,
+      fileId: 'stage2-theme16-recruit-plan-import',
+      name: 'stage2-theme16-recruit-plan-import-template.xlsx',
+      size: 2048,
+      version: 1,
+      key: 'stage2/theme16/recruit-plan-import-template.xlsx',
+    });
+
+    await replaceRecruitPlans([
+      {
+        title: '联调-主题16平台招聘计划',
+        targetDepartmentId: platformGroupId,
+        positionName: '平台高级工程师',
+        headcount: 2,
+        startDate: '2026-04-20',
+        endDate: '2026-05-31',
+        recruiterId: hrUserId,
+        requirementSummary: '主题16联调-平台部门招聘计划样例，用于 HR 与经理范围内查看校验。',
+        status: 'active',
+      },
+      {
+        title: '联调-主题16销售招聘计划',
+        targetDepartmentId: salesCenterId,
+        positionName: '销售顾问',
+        headcount: 1,
+        startDate: '2026-04-25',
+        endDate: '2026-05-20',
+        recruiterId: hrUserId,
+        requirementSummary: '主题16联调-销售部门招聘计划样例，用于经理范围外不可见校验。',
+        status: 'closed',
       },
     ]);
 
@@ -3964,7 +4550,10 @@ async function main() {
       },
     ]);
 
-    seedMeta = await syncStage2RuntimeMeta();
+    seedMeta = await syncStage2RuntimeMeta({
+      recruitPlanImportSpaceId,
+      recruitPlanImportSpaceName: 'stage2-theme16-recruit-plan-import-template.xlsx',
+    });
 
     await connection.commit();
 
