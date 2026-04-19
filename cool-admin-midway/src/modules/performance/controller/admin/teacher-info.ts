@@ -41,4 +41,18 @@ export class AdminPerformanceTeacherInfoController extends BaseController {
   async updateStatus(@Body(ALL) payload: any) {
     return this.ok(await this.performanceTeacherInfoService.updateStatus(payload));
   }
+
+  @Get('/attributionInfo', { summary: '班主任当前归因信息' })
+  async attributionInfo(@Query('id') id: number) {
+    return this.ok(
+      await this.performanceTeacherInfoService.attributionInfo(Number(id))
+    );
+  }
+
+  @Get('/attributionHistory', { summary: '班主任归因历史' })
+  async attributionHistory(@Query('id') id: number) {
+    return this.ok(
+      await this.performanceTeacherInfoService.attributionHistory(Number(id))
+    );
+  }
 }

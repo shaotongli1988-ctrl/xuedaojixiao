@@ -43,6 +43,15 @@
 				<div class="teacher-channel-teacher-page__toolbar-right">
 					<el-button @click="handleSearch">查询</el-button>
 					<el-button @click="handleReset">重置</el-button>
+					<el-button v-if="showAgentPageButton" @click="openAgentCenter">
+						代理主体
+					</el-button>
+					<el-button v-if="showConflictPageButton" @click="openConflictCenter">
+						冲突处理
+					</el-button>
+					<el-button v-if="showAuditPageButton" @click="openAuditCenter">
+						审计留痕
+					</el-button>
 					<el-button v-if="showAddButton" type="primary" @click="openCreate">
 						新增班主任
 					</el-button>
@@ -300,6 +309,141 @@
 					</el-button>
 				</div>
 
+				<section v-if="detailTeacher" class="teacher-channel-teacher-page__follow-section">
+					<div class="teacher-channel-teacher-page__section-header">
+						<div>
+							<h3>代理归因</h3>
+							<p>当前归因、冲突态和历史都以后端返回结果为准，不在前端伪造生效态。</p>
+						</div>
+						<el-tag effect="plain">
+							{{ attributionInfo?.openConflictCount || 0 }} 个待处理冲突
+						</el-tag>
+					</div>
+
+					<el-alert
+						v-if="attributionError"
+						type="warning"
+						:title="attributionError"
+						:closable="false"
+						show-icon
+					/>
+
+					<el-descriptions v-if="attributionInfo?.currentAttribution" :column="2" border>
+						<el-descriptions-item label="当前归因">
+							{{ attributionInfo.currentAttribution.agentName || '直营' }}
+						</el-descriptions-item>
+						<el-descriptions-item label="归因状态">
+							<el-tag
+								:type="
+									attributionInfo.currentAttribution.status === 'active'
+										? 'success'
+										: attributionInfo.currentAttribution.status === 'conflicted'
+											? 'warning'
+											: 'info'
+								"
+							>
+								{{ attributionInfo.currentAttribution.status || '-' }}
+							</el-tag>
+						</el-descriptions-item>
+						<el-descriptions-item label="归因类型">
+							{{ attributionInfo.currentAttribution.attributionType || '-' }}
+						</el-descriptions-item>
+						<el-descriptions-item label="生效时间">
+							{{ attributionInfo.currentAttribution.effectiveTime || '-' }}
+						</el-descriptions-item>
+						<el-descriptions-item label="来源类型">
+							{{ attributionInfo.currentAttribution.sourceType || '-' }}
+						</el-descriptions-item>
+						<el-descriptions-item label="操作人">
+							{{ attributionInfo.currentAttribution.operatorName || '-' }}
+						</el-descriptions-item>
+						<el-descriptions-item label="来源说明" :span="2">
+							{{ attributionInfo.currentAttribution.sourceRemark || '-' }}
+						</el-descriptions-item>
+					</el-descriptions>
+					<el-empty
+						v-else
+						description="当前班主任尚未建立代理归因，可在下方选择代理主体发起归因。"
+					/>
+
+					<el-form
+						v-if="showAttributionWriteActions && detailTeacher"
+						:model="attributionForm"
+						label-width="100px"
+						class="teacher-channel-teacher-page__follow-form"
+					>
+						<el-row :gutter="16">
+							<el-col :span="10">
+								<el-form-item label="代理主体">
+									<el-select
+										v-model="attributionAgentModel"
+										clearable
+										filterable
+										placeholder="留空表示直营"
+										style="width: 100%"
+									>
+											<el-option
+												v-for="item in attributionAgentOptions"
+												:key="item.id"
+												:label="item.name"
+												:value="Number(item.id || 0)"
+											/>
+									</el-select>
+								</el-form-item>
+							</el-col>
+							<el-col :span="10">
+								<el-form-item label="归因说明">
+									<el-input
+										v-model="attributionForm.sourceRemark"
+										maxlength="200"
+										show-word-limit
+									/>
+								</el-form-item>
+							</el-col>
+							<el-col :span="4">
+								<el-form-item label-width="0">
+									<el-button
+										type="primary"
+										:loading="attributionLoading === 'assign'"
+										@click="submitAttribution('assign')"
+									>
+										建立归因
+									</el-button>
+								</el-form-item>
+							</el-col>
+						</el-row>
+						<div class="teacher-channel-teacher-page__detail-actions">
+							<el-button
+								type="warning"
+								:loading="attributionLoading === 'change'"
+								@click="submitAttribution('change')"
+							>
+								调整归因
+							</el-button>
+							<el-button
+								type="danger"
+								:loading="attributionLoading === 'remove'"
+								@click="submitAttribution('remove')"
+							>
+								移除归因
+							</el-button>
+						</div>
+					</el-form>
+
+					<el-table :data="attributionHistoryRows" border v-loading="attributionHistoryLoading">
+						<el-table-column prop="createTime" label="记录时间" min-width="170" />
+						<el-table-column prop="agentName" label="归因主体" min-width="160">
+							<template #default="{ row }">
+								{{ row.agentName || '直营' }}
+							</template>
+						</el-table-column>
+						<el-table-column prop="status" label="状态" width="120" />
+						<el-table-column prop="sourceType" label="来源" width="120" />
+						<el-table-column prop="operatorName" label="操作人" min-width="130" />
+						<el-table-column prop="sourceRemark" label="说明" min-width="220" show-overflow-tooltip />
+					</el-table>
+				</section>
+
 				<section class="teacher-channel-teacher-page__follow-section">
 					<div class="teacher-channel-teacher-page__section-header">
 						<div>
@@ -528,6 +672,262 @@
 				</el-button>
 			</template>
 		</el-dialog>
+
+		<el-dialog v-model="agentCenterVisible" title="代理主体与关系维护" width="1180px" destroy-on-close>
+			<div class="teacher-channel-teacher-page__drawer">
+				<div class="teacher-channel-teacher-page__section-header">
+					<div>
+						<h3>代理主体</h3>
+						<p>停用或黑名单代理不可作为新归因目标。</p>
+					</div>
+					<el-button v-if="showAgentAddButton" type="primary" @click="openAgentForm()">
+						新增代理主体
+					</el-button>
+				</div>
+				<el-table :data="agentRows" border v-loading="agentLoading">
+					<el-table-column prop="name" label="名称" min-width="160" />
+					<el-table-column prop="agentType" label="类型" width="120" />
+					<el-table-column prop="level" label="等级" width="100" />
+					<el-table-column prop="region" label="区域" min-width="120" />
+					<el-table-column prop="status" label="状态" width="100" />
+					<el-table-column prop="blacklistStatus" label="黑名单" width="100" />
+					<el-table-column label="操作" fixed="right" min-width="240">
+						<template #default="{ row }">
+							<el-button v-if="showAgentUpdateButton" text @click="openAgentForm(row)">
+								编辑
+							</el-button>
+							<el-button
+								v-if="showAgentUpdateStatusButton"
+								text
+								type="warning"
+								@click="toggleAgentStatus(row)"
+							>
+								{{ row.status === 'active' ? '停用' : '启用' }}
+							</el-button>
+							<el-button
+								v-if="showAgentBlacklistButton && row.blacklistStatus !== 'blacklisted'"
+								text
+								type="danger"
+								@click="toggleAgentBlacklist(row, true)"
+							>
+								拉黑
+							</el-button>
+							<el-button
+								v-if="showAgentBlacklistButton && row.blacklistStatus === 'blacklisted'"
+								text
+								type="success"
+								@click="toggleAgentBlacklist(row, false)"
+							>
+								解黑
+							</el-button>
+						</template>
+					</el-table-column>
+				</el-table>
+
+				<div class="teacher-channel-teacher-page__section-header">
+					<div>
+						<h3>代理关系</h3>
+						<p>新增或编辑关系时，前后端都要求防止循环代理树。</p>
+					</div>
+					<el-button v-if="showAgentRelationAddButton" @click="openRelationForm()">
+						新增关系
+					</el-button>
+				</div>
+				<el-table :data="relationRows" border v-loading="relationLoading">
+					<el-table-column prop="parentAgentName" label="父级代理" min-width="160" />
+					<el-table-column prop="childAgentName" label="子级代理" min-width="160" />
+					<el-table-column prop="status" label="状态" width="100" />
+					<el-table-column prop="effectiveTime" label="生效时间" min-width="170" />
+					<el-table-column prop="remark" label="备注" min-width="220" show-overflow-tooltip />
+					<el-table-column label="操作" fixed="right" min-width="160">
+						<template #default="{ row }">
+							<el-button v-if="showAgentRelationUpdateButton" text @click="openRelationForm(row)">
+								编辑
+							</el-button>
+							<el-button
+								v-if="showAgentRelationDeleteButton"
+								text
+								type="danger"
+								@click="removeRelation(row)"
+							>
+								失效
+							</el-button>
+						</template>
+					</el-table-column>
+				</el-table>
+			</div>
+		</el-dialog>
+
+		<el-dialog
+			v-model="conflictCenterVisible"
+			title="归因冲突处理"
+			width="1100px"
+			destroy-on-close
+		>
+			<div class="teacher-channel-teacher-page__drawer">
+				<el-table :data="conflictRows" border v-loading="conflictLoading">
+					<el-table-column prop="teacherName" label="班主任" min-width="150" />
+					<el-table-column prop="status" label="状态" width="110" />
+					<el-table-column prop="currentAgentId" label="当前主体" min-width="120" />
+					<el-table-column prop="requestedAgentId" label="申请主体" min-width="120" />
+					<el-table-column prop="resolutionRemark" label="说明" min-width="220" show-overflow-tooltip />
+					<el-table-column label="操作" fixed="right" min-width="150">
+						<template #default="{ row }">
+							<el-button text @click="openConflictDetail(row)">详情</el-button>
+						</template>
+					</el-table-column>
+				</el-table>
+			</div>
+		</el-dialog>
+
+		<el-dialog
+			v-model="conflictDetailVisible"
+			title="冲突详情"
+			width="720px"
+			destroy-on-close
+		>
+			<div v-if="conflictDetail" class="teacher-channel-teacher-page__drawer">
+				<el-descriptions :column="2" border>
+					<el-descriptions-item label="班主任">
+						{{ conflictDetail.teacherName || '-' }}
+					</el-descriptions-item>
+					<el-descriptions-item label="状态">
+						{{ conflictDetail.status || '-' }}
+					</el-descriptions-item>
+					<el-descriptions-item label="当前主体">
+						{{ conflictDetail.currentAgentName || '直营' }}
+					</el-descriptions-item>
+					<el-descriptions-item label="申请主体">
+						{{ conflictDetail.requestedAgentName || '直营' }}
+					</el-descriptions-item>
+					<el-descriptions-item label="说明" :span="2">
+						{{ conflictDetail.resolutionRemark || '-' }}
+					</el-descriptions-item>
+				</el-descriptions>
+				<el-form v-if="showConflictResolveButton" :model="conflictResolveForm" label-width="100px">
+					<el-form-item label="胜出主体">
+						<el-select
+							v-model="conflictResolveAgentModel"
+							clearable
+							filterable
+							placeholder="留空表示直营"
+							style="width: 100%"
+						>
+							<el-option
+								v-for="item in attributionAgentOptions"
+								:key="item.id"
+								:label="item.name"
+								:value="Number(item.id || 0)"
+							/>
+						</el-select>
+					</el-form-item>
+					<el-form-item label="处理说明">
+						<el-input v-model="conflictResolveForm.resolutionRemark" maxlength="200" show-word-limit />
+					</el-form-item>
+				</el-form>
+			</div>
+			<template #footer>
+				<el-button @click="conflictDetailVisible = false">关闭</el-button>
+				<el-button
+					v-if="showConflictResolveButton"
+					type="warning"
+					:loading="conflictResolveLoading === 'cancelled'"
+					@click="submitConflictResolve('cancelled')"
+				>
+					取消冲突
+				</el-button>
+				<el-button
+					v-if="showConflictResolveButton"
+					type="primary"
+					:loading="conflictResolveLoading === 'resolved'"
+					@click="submitConflictResolve('resolved')"
+				>
+					确认胜出
+				</el-button>
+			</template>
+		</el-dialog>
+
+		<el-dialog v-model="auditCenterVisible" title="代理体系审计" width="1100px" destroy-on-close>
+			<el-table :data="auditRows" border v-loading="auditLoading">
+				<el-table-column prop="createTime" label="时间" min-width="170" />
+				<el-table-column prop="resourceType" label="资源类型" width="150" />
+				<el-table-column prop="action" label="动作" width="140" />
+				<el-table-column prop="operatorName" label="操作人" width="120" />
+				<el-table-column prop="resourceId" label="资源 ID" width="100" />
+			</el-table>
+		</el-dialog>
+
+		<el-dialog
+			v-model="agentFormVisible"
+			:title="agentEditingRecord?.id ? '编辑代理主体' : '新增代理主体'"
+			width="620px"
+			destroy-on-close
+		>
+			<el-form :model="agentForm" label-width="100px">
+				<el-form-item label="名称">
+					<el-input v-model="agentForm.name" maxlength="100" />
+				</el-form-item>
+				<el-form-item label="类型">
+					<el-select v-model="agentForm.agentType" style="width: 100%">
+						<el-option label="机构代理" value="institution" />
+						<el-option label="个人代理" value="individual" />
+						<el-option label="直营" value="direct" />
+					</el-select>
+				</el-form-item>
+				<el-form-item label="等级">
+					<el-input v-model="agentForm.level" maxlength="30" />
+				</el-form-item>
+				<el-form-item label="区域">
+					<el-input v-model="agentForm.region" maxlength="50" />
+				</el-form-item>
+				<el-form-item label="备注">
+					<el-input v-model="agentForm.remark" type="textarea" :rows="3" maxlength="200" show-word-limit />
+				</el-form-item>
+			</el-form>
+			<template #footer>
+				<el-button @click="agentFormVisible = false">取消</el-button>
+				<el-button type="primary" :loading="agentFormLoading" @click="submitAgentForm">
+					保存
+				</el-button>
+			</template>
+		</el-dialog>
+
+		<el-dialog
+			v-model="relationFormVisible"
+			:title="relationEditingRecord?.id ? '编辑代理关系' : '新增代理关系'"
+			width="620px"
+			destroy-on-close
+		>
+			<el-form :model="relationForm" label-width="100px">
+				<el-form-item label="父级代理">
+						<el-select v-model="relationParentAgentModel" filterable style="width: 100%">
+							<el-option v-for="item in relationAgentOptions" :key="item.id" :label="item.name" :value="Number(item.id || 0)" />
+						</el-select>
+					</el-form-item>
+					<el-form-item label="子级代理">
+						<el-select v-model="relationChildAgentModel" filterable style="width: 100%">
+							<el-option v-for="item in relationAgentOptions" :key="item.id" :label="item.name" :value="Number(item.id || 0)" />
+						</el-select>
+					</el-form-item>
+				<el-form-item label="生效时间">
+					<el-date-picker
+						v-model="relationEffectiveTimeModel"
+						type="datetime"
+						value-format="YYYY-MM-DD HH:mm:ss"
+						style="width: 100%"
+					/>
+				</el-form-item>
+				<el-form-item label="备注">
+					<el-input v-model="relationForm.remark" type="textarea" :rows="3" maxlength="200" show-word-limit />
+				</el-form-item>
+			</el-form>
+			<template #footer>
+				<el-button @click="relationFormVisible = false">取消</el-button>
+				<el-button type="primary" :loading="relationFormLoading" @click="submitRelationForm">
+					保存
+				</el-button>
+			</template>
+		</el-dialog>
 	</div>
 
 	<el-card v-else shadow="never">
@@ -555,13 +955,31 @@ import { performanceTeacherInfoService } from '../../service/teacherInfo';
 import { performanceTeacherFollowService } from '../../service/teacherFollow';
 import { performanceTeacherCooperationService } from '../../service/teacherCooperation';
 import { performanceTeacherClassService } from '../../service/teacherClass';
+import { performanceTeacherAgentService } from '../../service/teacherAgent';
+import { performanceTeacherAgentRelationService } from '../../service/teacherAgentRelation';
+import { performanceTeacherAttributionService } from '../../service/teacherAttribution';
+import { performanceTeacherAttributionConflictService } from '../../service/teacherAttributionConflict';
+import { performanceTeacherAgentAuditService } from '../../service/teacherAgentAudit';
 import type {
+	TeacherAgentAuditRecord,
+	TeacherAgentRecord,
+	TeacherAgentRelationRecord,
+	TeacherAttributionConflictDetail,
+	TeacherAttributionConflictRecord,
+	TeacherAttributionInfo,
+	TeacherAttributionRecord,
 	TeacherCooperationStatus,
 	TeacherFollowRecord,
 	TeacherInfoRecord,
 	UserOption
 } from '../../types';
-import { createEmptyTeacherFollow, createEmptyTeacherInfo } from '../../types';
+import {
+	createEmptyTeacherAgent,
+	createEmptyTeacherAgentRelation,
+	createEmptyTeacherAttribution,
+	createEmptyTeacherFollow,
+	createEmptyTeacherInfo
+} from '../../types';
 import {
 	canCreateTeacherClass,
 	canMarkTeacherCooperation,
@@ -589,23 +1007,48 @@ const rows = ref<TeacherInfoRecord[]>([]);
 const userOptions = ref<UserOption[]>([]);
 const departmentOptions = ref<DepartmentOption[]>([]);
 const followRows = ref<TeacherFollowRecord[]>([]);
+const agentRows = ref<TeacherAgentRecord[]>([]);
+const relationRows = ref<TeacherAgentRelationRecord[]>([]);
+const conflictRows = ref<TeacherAttributionConflictRecord[]>([]);
+const auditRows = ref<TeacherAgentAuditRecord[]>([]);
+const attributionHistoryRows = ref<TeacherAttributionRecord[]>([]);
 const tableLoading = ref(false);
 const detailLoading = ref(false);
 const followLoading = ref(false);
+const agentLoading = ref(false);
+const relationLoading = ref(false);
+const conflictLoading = ref(false);
+const auditLoading = ref(false);
+const attributionHistoryLoading = ref(false);
 const submitLoading = ref(false);
 const followSubmitLoading = ref(false);
 const assignLoading = ref(false);
+const agentFormLoading = ref(false);
+const relationFormLoading = ref(false);
 const formVisible = ref(false);
 const detailVisible = ref(false);
 const assignVisible = ref(false);
+const agentCenterVisible = ref(false);
+const conflictCenterVisible = ref(false);
+const conflictDetailVisible = ref(false);
+const auditCenterVisible = ref(false);
+const agentFormVisible = ref(false);
+const relationFormVisible = ref(false);
 const pageError = ref('');
 const followError = ref('');
+const attributionError = ref('');
 const detailActionLoading = ref<'' | 'negotiating' | 'partnered' | 'terminated'>('');
+const attributionLoading = ref<'' | 'assign' | 'change' | 'remove'>('');
+const conflictResolveLoading = ref<'' | 'resolved' | 'cancelled'>('');
 const formRef = ref<FormInstance>();
 const followFormRef = ref<FormInstance>();
 const assignFormRef = ref<FormInstance>();
 const editingTeacher = ref<TeacherInfoRecord | null>(null);
 const detailTeacher = ref<TeacherInfoRecord | null>(null);
+const agentEditingRecord = ref<TeacherAgentRecord | null>(null);
+const relationEditingRecord = ref<TeacherAgentRelationRecord | null>(null);
+const conflictDetail = ref<TeacherAttributionConflictDetail | null>(null);
+const attributionInfo = ref<TeacherAttributionInfo | null>(null);
 const assigningTeacherId = ref<number | null>(null);
 
 const filters = reactive({
@@ -625,6 +1068,16 @@ const followForm = reactive<TeacherFollowRecord>(createEmptyTeacherFollow());
 const assignForm = reactive({
 	ownerEmployeeId: undefined as number | undefined
 });
+const attributionForm = reactive({
+	...createEmptyTeacherAttribution(),
+	agentId: undefined as number | undefined
+});
+const conflictResolveForm = reactive({
+	winnerAgentId: undefined as number | undefined,
+	resolutionRemark: ''
+});
+const agentForm = reactive<TeacherAgentRecord>(createEmptyTeacherAgent());
+const relationForm = reactive<TeacherAgentRelationRecord>(createEmptyTeacherAgentRelation());
 
 const rules: FormRules = {
 	teacherName: [
@@ -666,6 +1119,50 @@ const showCooperationMarkButton = computed(() =>
 	checkPerm(performanceTeacherCooperationService.permission.mark)
 );
 const showClassAddButton = computed(() => checkPerm(performanceTeacherClassService.permission.add));
+const showAgentPageButton = computed(
+	() =>
+		checkPerm(performanceTeacherAgentService.permission.page) ||
+		checkPerm(performanceTeacherAgentRelationService.permission.page)
+);
+const showConflictPageButton = computed(() =>
+	checkPerm(performanceTeacherAttributionConflictService.permission.page)
+);
+const showAuditPageButton = computed(() =>
+	checkPerm(performanceTeacherAgentAuditService.permission.page)
+);
+const showAgentAddButton = computed(() => checkPerm(performanceTeacherAgentService.permission.add));
+const showAgentUpdateButton = computed(() =>
+	checkPerm(performanceTeacherAgentService.permission.update)
+);
+const showAgentUpdateStatusButton = computed(() =>
+	checkPerm(performanceTeacherAgentService.permission.updateStatus)
+);
+const showAgentBlacklistButton = computed(
+	() =>
+		checkPerm(performanceTeacherAgentService.permission.blacklist) ||
+		checkPerm(performanceTeacherAgentService.permission.unblacklist)
+);
+const showAgentRelationAddButton = computed(() =>
+	checkPerm(performanceTeacherAgentRelationService.permission.add)
+);
+const showAgentRelationUpdateButton = computed(() =>
+	checkPerm(performanceTeacherAgentRelationService.permission.update)
+);
+const showAgentRelationDeleteButton = computed(() =>
+	checkPerm(performanceTeacherAgentRelationService.permission.delete)
+);
+const showAttributionInfoButton = computed(() =>
+	showInfoButton.value || checkPerm(performanceTeacherAttributionService.permission.info)
+);
+const showAttributionWriteActions = computed(
+	() =>
+		checkPerm(performanceTeacherAttributionService.permission.assign) ||
+		checkPerm(performanceTeacherAttributionService.permission.change) ||
+		checkPerm(performanceTeacherAttributionService.permission.remove)
+);
+const showConflictResolveButton = computed(() =>
+	checkPerm(performanceTeacherAttributionConflictService.permission.resolve)
+);
 const isReadOnlyRole = computed(
 	() =>
 		!hasTeacherWritePermission({
@@ -688,10 +1185,54 @@ const filterDepartmentIdModel = computed<number | undefined>({
 	}
 });
 
+const attributionAgentOptions = computed(() =>
+	agentRows.value.filter(
+		item => item.status === 'active' && item.blacklistStatus !== 'blacklisted'
+	)
+);
+const relationAgentOptions = computed(() =>
+	agentRows.value.filter(item => item.status === 'active')
+);
+
 const assignOwnerModel = computed<number | undefined>({
 	get: () => assignForm.ownerEmployeeId ?? undefined,
 	set: value => {
 		assignForm.ownerEmployeeId = value;
+	}
+});
+
+const attributionAgentModel = computed<number | undefined>({
+	get: () => attributionForm.agentId ?? undefined,
+	set: value => {
+		attributionForm.agentId = value;
+	}
+});
+
+const conflictResolveAgentModel = computed<number | undefined>({
+	get: () => conflictResolveForm.winnerAgentId ?? undefined,
+	set: value => {
+		conflictResolveForm.winnerAgentId = value;
+	}
+});
+
+const relationParentAgentModel = computed<number | undefined>({
+	get: () => relationForm.parentAgentId ?? undefined,
+	set: value => {
+		relationForm.parentAgentId = value;
+	}
+});
+
+const relationChildAgentModel = computed<number | undefined>({
+	get: () => relationForm.childAgentId ?? undefined,
+	set: value => {
+		relationForm.childAgentId = value;
+	}
+});
+
+const relationEffectiveTimeModel = computed<string | undefined>({
+	get: () => String(relationForm.effectiveTime || '') || undefined,
+	set: value => {
+		relationForm.effectiveTime = value ?? undefined;
 	}
 });
 
@@ -915,7 +1456,9 @@ async function openDetailById(
 	try {
 		const [detail, followResult] = await Promise.all([
 			performanceTeacherInfoService.fetchInfo({ id }),
-			loadFollowList(id)
+			loadFollowList(id),
+			loadAttributionDetail(id),
+			loadAgentRows()
 		]);
 
 		detailTeacher.value = normalizeTeacherRecord(detail);
@@ -1176,6 +1719,425 @@ async function consumeTeacherRoutePreset() {
 			});
 		}
 	});
+}
+
+async function loadAgentRows() {
+	if (!checkPerm(performanceTeacherAgentService.permission.page)) {
+		agentRows.value = [];
+		return [];
+	}
+
+	agentLoading.value = true;
+
+	try {
+		const result = await performanceTeacherAgentService.fetchPage({
+			page: 1,
+			size: 200
+		});
+		agentRows.value = result.list || [];
+		return agentRows.value;
+	} catch (error: any) {
+		ElMessage.error(error.message || '代理主体列表加载失败');
+		return [];
+	} finally {
+		agentLoading.value = false;
+	}
+}
+
+async function loadRelationRows() {
+	if (!checkPerm(performanceTeacherAgentRelationService.permission.page)) {
+		relationRows.value = [];
+		return [];
+	}
+
+	relationLoading.value = true;
+
+	try {
+		const result = await performanceTeacherAgentRelationService.fetchPage({
+			page: 1,
+			size: 200
+		});
+		relationRows.value = result.list || [];
+		return relationRows.value;
+	} catch (error: any) {
+		ElMessage.error(error.message || '代理关系列表加载失败');
+		return [];
+	} finally {
+		relationLoading.value = false;
+	}
+}
+
+async function openAgentCenter() {
+	agentCenterVisible.value = true;
+	await Promise.all([loadAgentRows(), loadRelationRows()]);
+}
+
+function openAgentForm(row?: TeacherAgentRecord) {
+	agentEditingRecord.value = row || null;
+	Object.assign(agentForm, createEmptyTeacherAgent(), row || {});
+	agentFormVisible.value = true;
+}
+
+async function submitAgentForm() {
+	if (!normalizeOptionalText(agentForm.name)) {
+		ElMessage.warning('请输入代理主体名称');
+		return;
+	}
+
+	if (!normalizeOptionalText(agentForm.agentType)) {
+		ElMessage.warning('请选择代理主体类型');
+		return;
+	}
+
+	agentFormLoading.value = true;
+
+	try {
+		const payload = {
+			id: agentEditingRecord.value?.id,
+			name: normalizeOptionalText(agentForm.name),
+			agentType: normalizeOptionalText(agentForm.agentType),
+			level: normalizeOptionalText(agentForm.level as string | undefined),
+			region: normalizeOptionalText(agentForm.region as string | undefined),
+			cooperationStatus: normalizeOptionalText(
+				agentForm.cooperationStatus as string | undefined
+			),
+			remark: normalizeOptionalText(agentForm.remark as string | undefined)
+		};
+
+		if (agentEditingRecord.value?.id) {
+			await performanceTeacherAgentService.updateTeacherAgent(
+				payload as Partial<TeacherAgentRecord> & { id: number }
+			);
+		} else {
+			await performanceTeacherAgentService.createTeacherAgent(payload);
+		}
+
+		ElMessage.success('代理主体保存成功');
+		agentFormVisible.value = false;
+		await loadAgentRows();
+	} catch (error: any) {
+		ElMessage.error(error.message || '代理主体保存失败');
+	} finally {
+		agentFormLoading.value = false;
+	}
+}
+
+async function toggleAgentStatus(row: TeacherAgentRecord) {
+	if (!row.id) {
+		return;
+	}
+
+	const targetStatus = row.status === 'active' ? 'inactive' : 'active';
+
+	try {
+		await ElMessageBox.confirm(
+			`确认将代理主体「${row.name}」切换为 ${targetStatus} 吗？`,
+			'状态确认',
+			{ type: 'warning' }
+		);
+	} catch {
+		return;
+	}
+
+	try {
+		await performanceTeacherAgentService.updateStatus({
+			id: row.id,
+			status: targetStatus
+		});
+		ElMessage.success('代理主体状态已更新');
+		await loadAgentRows();
+	} catch (error: any) {
+		ElMessage.error(error.message || '代理主体状态更新失败');
+	}
+}
+
+async function toggleAgentBlacklist(row: TeacherAgentRecord, shouldBlacklist: boolean) {
+	if (!row.id) {
+		return;
+	}
+
+	try {
+		await ElMessageBox.confirm(
+			shouldBlacklist
+				? `确认将代理主体「${row.name}」加入黑名单吗？`
+				: `确认将代理主体「${row.name}」移出黑名单吗？`,
+			'黑名单确认',
+			{ type: 'warning' }
+		);
+	} catch {
+		return;
+	}
+
+	try {
+		if (shouldBlacklist) {
+			await performanceTeacherAgentService.blacklist({ id: row.id });
+		} else {
+			await performanceTeacherAgentService.unblacklist({ id: row.id });
+		}
+		ElMessage.success(shouldBlacklist ? '已拉黑代理主体' : '已解除黑名单');
+		await loadAgentRows();
+	} catch (error: any) {
+		ElMessage.error(error.message || '代理主体黑名单状态更新失败');
+	}
+}
+
+async function openRelationForm(row?: TeacherAgentRelationRecord) {
+	await loadAgentRows();
+	relationEditingRecord.value = row || null;
+	Object.assign(relationForm, createEmptyTeacherAgentRelation(), row || {});
+	relationFormVisible.value = true;
+}
+
+async function submitRelationForm() {
+	if (!relationForm.parentAgentId || !relationForm.childAgentId) {
+		ElMessage.warning('请选择父级代理和子级代理');
+		return;
+	}
+
+	if (relationForm.parentAgentId === relationForm.childAgentId) {
+		ElMessage.warning('代理关系不允许指向自身');
+		return;
+	}
+
+	relationFormLoading.value = true;
+
+	try {
+		const payload = {
+			id: relationEditingRecord.value?.id,
+			parentAgentId: relationForm.parentAgentId,
+			childAgentId: relationForm.childAgentId,
+			effectiveTime: normalizeOptionalText(
+				relationForm.effectiveTime as string | undefined
+			),
+			remark: normalizeOptionalText(relationForm.remark as string | undefined)
+		};
+
+		if (relationEditingRecord.value?.id) {
+			await performanceTeacherAgentRelationService.updateTeacherAgentRelation(
+				payload as Partial<TeacherAgentRelationRecord> & { id: number }
+			);
+		} else {
+			await performanceTeacherAgentRelationService.createTeacherAgentRelation(payload);
+		}
+
+		ElMessage.success('代理关系保存成功');
+		relationFormVisible.value = false;
+		await loadRelationRows();
+	} catch (error: any) {
+		ElMessage.error(error.message || '代理关系保存失败');
+	} finally {
+		relationFormLoading.value = false;
+	}
+}
+
+async function removeRelation(row: TeacherAgentRelationRecord) {
+	if (!row.id) {
+		return;
+	}
+
+	try {
+		await ElMessageBox.confirm(
+			`确认将代理关系「${row.parentAgentName || '-'} -> ${row.childAgentName || '-'}」置为失效吗？`,
+			'关系失效确认',
+			{ type: 'warning' }
+		);
+	} catch {
+		return;
+	}
+
+	try {
+		await performanceTeacherAgentRelationService.removeTeacherAgentRelation({
+			id: row.id
+		});
+		ElMessage.success('代理关系已失效');
+		await loadRelationRows();
+	} catch (error: any) {
+		ElMessage.error(error.message || '代理关系失效失败');
+	}
+}
+
+async function loadConflicts() {
+	if (!showConflictPageButton.value) {
+		conflictRows.value = [];
+		return [];
+	}
+
+	conflictLoading.value = true;
+
+	try {
+		const result = await performanceTeacherAttributionConflictService.fetchPage({
+			page: 1,
+			size: 100
+		});
+		conflictRows.value = result.list || [];
+		return conflictRows.value;
+	} catch (error: any) {
+		ElMessage.error(error.message || '归因冲突列表加载失败');
+		return [];
+	} finally {
+		conflictLoading.value = false;
+	}
+}
+
+async function openConflictCenter() {
+	conflictCenterVisible.value = true;
+	await Promise.all([loadAgentRows(), loadConflicts()]);
+}
+
+async function openConflictDetail(row: TeacherAttributionConflictRecord) {
+	if (!row.id) {
+		return;
+	}
+
+	conflictDetailVisible.value = true;
+
+	try {
+		const detail = await performanceTeacherAttributionConflictService.fetchInfo({
+			id: row.id
+		});
+		conflictDetail.value = detail;
+		Object.assign(conflictResolveForm, {
+			winnerAgentId: detail.currentAgentId || detail.requestedAgentId || undefined,
+			resolutionRemark: detail.resolutionRemark || ''
+		});
+		await loadAgentRows();
+	} catch (error: any) {
+		ElMessage.error(error.message || '归因冲突详情加载失败');
+	}
+}
+
+async function submitConflictResolve(resolution: 'resolved' | 'cancelled') {
+	if (!conflictDetail.value?.id) {
+		return;
+	}
+
+	conflictResolveLoading.value = resolution;
+
+	try {
+		await performanceTeacherAttributionConflictService.resolveConflict({
+			id: conflictDetail.value.id,
+			resolution,
+			agentId:
+				resolution === 'resolved'
+					? conflictResolveForm.winnerAgentId ?? null
+					: undefined,
+			resolutionRemark: normalizeOptionalText(conflictResolveForm.resolutionRemark)
+		});
+		ElMessage.success('归因冲突处理完成');
+		conflictDetailVisible.value = false;
+		await loadConflicts();
+		const currentTeacherId = detailTeacher.value?.id;
+		if (currentTeacherId && currentTeacherId === conflictDetail.value.teacherId) {
+			await loadAttributionDetail(currentTeacherId);
+		}
+	} catch (error: any) {
+		ElMessage.error(error.message || '归因冲突处理失败');
+	} finally {
+		conflictResolveLoading.value = '';
+	}
+}
+
+async function loadAuditRows() {
+	if (!showAuditPageButton.value) {
+		auditRows.value = [];
+		return [];
+	}
+
+	auditLoading.value = true;
+
+	try {
+		const result = await performanceTeacherAgentAuditService.fetchPage({
+			page: 1,
+			size: 100
+		});
+		auditRows.value = result.list || [];
+		return auditRows.value;
+	} catch (error: any) {
+		ElMessage.error(error.message || '代理体系审计加载失败');
+		return [];
+	} finally {
+		auditLoading.value = false;
+	}
+}
+
+async function openAuditCenter() {
+	auditCenterVisible.value = true;
+	await loadAuditRows();
+}
+
+async function loadAttributionDetail(teacherId: number) {
+	attributionError.value = '';
+	attributionHistoryLoading.value = true;
+
+	if (!showAttributionInfoButton.value) {
+		attributionInfo.value = null;
+		attributionHistoryRows.value = [];
+		attributionHistoryLoading.value = false;
+		return null;
+	}
+
+	try {
+		const [info, history] = await Promise.all([
+			performanceTeacherInfoService.fetchAttributionInfo({ id: teacherId }),
+			performanceTeacherInfoService.fetchAttributionHistory({ id: teacherId })
+		]);
+		attributionInfo.value = info;
+		attributionHistoryRows.value = history || [];
+		Object.assign(attributionForm, createEmptyTeacherAttribution(), {
+			teacherId,
+			agentId: info.currentAttribution?.agentId ?? undefined,
+			sourceRemark: ''
+		});
+		return info;
+	} catch (error: any) {
+		attributionInfo.value = null;
+		attributionHistoryRows.value = [];
+		attributionError.value = error.message || '班主任归因信息加载失败';
+		return null;
+	} finally {
+		attributionHistoryLoading.value = false;
+	}
+}
+
+async function submitAttribution(action: 'assign' | 'change' | 'remove') {
+	if (!detailTeacher.value?.id) {
+		return;
+	}
+
+	attributionLoading.value = action;
+
+	try {
+		if (action === 'remove') {
+			await performanceTeacherAttributionService.remove({
+				teacherId: detailTeacher.value.id
+			});
+		} else {
+			const payload = {
+				teacherId: detailTeacher.value.id,
+				agentId: attributionForm.agentId ?? null,
+				sourceRemark: normalizeOptionalText(
+					attributionForm.sourceRemark as string | undefined
+				)
+			};
+
+			if (action === 'assign') {
+				await performanceTeacherAttributionService.assign(payload);
+			} else {
+				await performanceTeacherAttributionService.change(payload);
+			}
+		}
+
+		ElMessage.success('归因操作已提交');
+		await Promise.all([
+			loadAttributionDetail(detailTeacher.value.id),
+			refresh(),
+			conflictCenterVisible.value ? loadConflicts() : Promise.resolve([])
+		]);
+	} catch (error: any) {
+		ElMessage.error(error.message || '归因操作失败');
+	} finally {
+		attributionLoading.value = '';
+	}
 }
 
 function normalizeTeacherRecord(record: TeacherInfoRecord) {

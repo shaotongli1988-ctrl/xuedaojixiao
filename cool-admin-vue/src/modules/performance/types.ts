@@ -25,11 +25,28 @@ export type InterviewStatus = 'scheduled' | 'completed' | 'cancelled';
 export type InterviewType = 'technical' | 'behavioral' | 'manager' | 'hr';
 export type ResumePoolStatus = 'new' | 'screening' | 'interviewing' | 'archived';
 export type ResumePoolSourceType = 'manual' | 'attachment' | 'external' | 'referral';
+export type DocumentCenterStatus = 'draft' | 'review' | 'published' | 'archived';
+export type DocumentCenterCategory =
+	| 'policy'
+	| 'process'
+	| 'template'
+	| 'contract'
+	| 'archive'
+	| 'other';
+export type DocumentCenterFileType = 'pdf' | 'doc' | 'xls' | 'ppt' | 'img' | 'zip' | 'other';
+export type DocumentCenterStorage = 'local' | 'cloud' | 'hybrid';
+export type DocumentCenterConfidentiality = 'public' | 'internal' | 'secret';
+export type KnowledgeBaseStatus = 'draft' | 'published' | 'archived';
 export type MeetingStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
 export type TalentAssetStatus = 'new' | 'tracking' | 'archived';
 export type JobStandardStatus = 'draft' | 'active' | 'inactive';
 export type HiringStatus = 'offered' | 'accepted' | 'rejected' | 'closed';
 export type HiringSourceType = 'manual' | 'resumePool' | 'talentAsset' | 'interview';
+export type RecruitmentSourceResource =
+	| 'jobStandard'
+	| 'recruitPlan'
+	| 'resumePool'
+	| 'interview';
 export type TeacherCooperationStatus =
 	| 'uncontacted'
 	| 'contacted'
@@ -38,7 +55,11 @@ export type TeacherCooperationStatus =
 	| 'terminated';
 export type TeacherClassStatus = 'draft' | 'active' | 'closed';
 export type TeacherTodoBucket = 'today' | 'overdue';
-
+export type TeacherAgentStatus = 'active' | 'inactive';
+export type TeacherAgentBlacklistStatus = 'normal' | 'blacklisted';
+export type TeacherAgentRelationStatus = 'active' | 'inactive';
+export type TeacherAttributionStatus = 'pending' | 'active' | 'removed' | 'conflicted';
+export type TeacherAttributionConflictStatus = 'open' | 'resolved' | 'cancelled';
 
 export interface DashboardCrossSummaryQuery {
 	periodType?: string;
@@ -199,6 +220,11 @@ export interface RecruitPlanRecord {
 	recruiterId?: number | null;
 	recruiterName?: string | null;
 	requirementSummary?: string | null;
+	jobStandardId?: number | null;
+	jobStandardPositionName?: string | null;
+	jobStandardSummary?: RecruitmentSourceSnapshot | null;
+	jobStandardSnapshot?: RecruitmentSourceSnapshot | null;
+	sourceSnapshot?: RecruitmentSourceSnapshot | null;
 	status?: RecruitPlanStatus;
 	createTime?: string;
 	updateTime?: string;
@@ -211,6 +237,28 @@ export interface RecruitPlanPageResult {
 		size: number;
 		total: number;
 	};
+}
+
+export type RecruitPlanImportCellValue = string | number | null | undefined;
+
+export interface RecruitPlanImportRow {
+	[key: string]: RecruitPlanImportCellValue;
+}
+
+export interface RecruitPlanExportRow {
+	id?: number;
+	title: string;
+	targetDepartmentId?: number | null;
+	targetDepartmentName?: string | null;
+	positionName: string;
+	headcount: number;
+	startDate: string;
+	endDate: string;
+	recruiterId?: number | null;
+	recruiterName?: string | null;
+	status?: RecruitPlanStatus;
+	createTime?: string;
+	updateTime?: string;
 }
 
 export interface ContractRecord {
@@ -252,8 +300,19 @@ export interface PurchaseOrderRecord {
 	requesterId: number | undefined;
 	requesterName?: string;
 	orderDate: string;
+	expectedDeliveryDate?: string | null;
 	totalAmount: number;
 	currency?: string;
+	approvedBy?: string | null;
+	approvedAt?: string | null;
+	approvalRemark?: string | null;
+	closedReason?: string | null;
+	receivedQuantity?: number | null;
+	receivedAt?: string | null;
+	items?: PurchaseOrderItemRecord[];
+	inquiryRecords?: PurchaseOrderInquiryRecord[];
+	approvalLogs?: PurchaseOrderApprovalLog[];
+	receiptRecords?: PurchaseOrderReceiptRecord[];
 	remark?: string | null;
 	status?: PurchaseOrderStatus;
 	createTime?: string;
@@ -267,6 +326,74 @@ export interface PurchaseOrderPageResult {
 		size: number;
 		total: number;
 	};
+}
+
+export interface PurchaseOrderItemRecord {
+	id?: number;
+	itemName: string;
+	specification?: string | null;
+	unit?: string | null;
+	quantity: number;
+	unitPrice?: number | null;
+	amount?: number | null;
+	remark?: string | null;
+}
+
+export interface PurchaseOrderInquiryRecord {
+	id?: number;
+	supplierId?: number | null;
+	supplierName?: string | null;
+	quotedAmount?: number | null;
+	inquiryRemark?: string | null;
+	createdBy?: string | null;
+	createdAt?: string | null;
+}
+
+export interface PurchaseOrderApprovalLog {
+	id?: number;
+	action?: 'submitted' | 'approved' | 'rejected' | 'closed' | string;
+	approverId?: number | null;
+	approverName?: string | null;
+	remark?: string | null;
+	createdAt?: string | null;
+}
+
+export interface PurchaseOrderReceiptRecord {
+	id?: number;
+	receivedQuantity?: number | null;
+	receivedAt?: string | null;
+	receiverId?: number | null;
+	receiverName?: string | null;
+	remark?: string | null;
+}
+
+export interface PurchaseReportSummary {
+	totalOrders: number;
+	totalAmount: number;
+	inquiringCount: number;
+	pendingApprovalCount: number;
+	approvedCount: number;
+	receivedCount: number;
+	closedCount: number;
+	cancelledCount: number;
+	supplierCount: number;
+}
+
+export interface PurchaseReportTrendPoint {
+	period: string;
+	orderCount: number;
+	totalAmount: number;
+	approvedCount: number;
+	receivedQuantity: number;
+}
+
+export interface PurchaseReportSupplierStat {
+	supplierId?: number | null;
+	supplierName: string;
+	orderCount: number;
+	totalAmount: number;
+	receivedQuantity: number;
+	lastOrderDate?: string | null;
 }
 
 export interface SupplierRecord {
@@ -424,6 +551,122 @@ export interface CourseEnrollmentPageResult {
 	};
 }
 
+export interface DocumentCenterRecord {
+	id?: number;
+	fileNo: string;
+	fileName: string;
+	category: DocumentCenterCategory;
+	fileType: DocumentCenterFileType;
+	storage: DocumentCenterStorage;
+	confidentiality: DocumentCenterConfidentiality;
+	ownerName: string;
+	department: string;
+	status?: DocumentCenterStatus;
+	version: string;
+	sizeMb?: number | null;
+	downloadCount?: number;
+	createTime?: string;
+	updateTime?: string;
+	expireDate?: string | null;
+	tags?: string[];
+	notes?: string;
+}
+
+export interface DocumentCenterPageResult {
+	list: DocumentCenterRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface DocumentCenterStats {
+	total: number;
+	publishedCount: number;
+	reviewCount: number;
+	archivedCount: number;
+	totalSizeMb: number;
+	totalDownloads: number;
+}
+
+export interface KnowledgeBaseRelatedFileSummary {
+	id: number;
+	fileNo?: string;
+	fileName?: string;
+}
+
+export interface KnowledgeBaseRecord {
+	id?: number;
+	kbNo: string;
+	title: string;
+	category: string;
+	summary: string;
+	ownerName: string;
+	status?: KnowledgeBaseStatus;
+	tags?: string[];
+	relatedFileIds?: number[];
+	relatedTopics?: string[];
+	importance?: number;
+	viewCount?: number;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface KnowledgeBasePageResult {
+	list: KnowledgeBaseRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface KnowledgeBaseStats {
+	total: number;
+	publishedCount: number;
+	draftCount: number;
+	fileLinkedCount: number;
+	avgImportance: number;
+	topicCount: number;
+}
+
+export interface KnowledgeGraphNode {
+	id: string;
+	name: string;
+	category?: string;
+	value?: number;
+}
+
+export interface KnowledgeGraphLink {
+	source: string;
+	target: string;
+	value?: number;
+}
+
+export interface KnowledgeGraphSummary {
+	nodes: KnowledgeGraphNode[];
+	links: KnowledgeGraphLink[];
+	categories?: Array<{ name: string }>;
+}
+
+export interface KnowledgeQaRecord {
+	id?: number;
+	question: string;
+	answer: string;
+	relatedKnowledgeIds?: number[];
+	relatedFileIds?: number[];
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface KnowledgeSearchResult {
+	total: number;
+	knowledge: KnowledgeBaseRecord[];
+	files: DocumentCenterRecord[];
+	qas: KnowledgeQaRecord[];
+}
+
 export interface InterviewRecord {
 	id?: number;
 	candidateName: string;
@@ -434,6 +677,11 @@ export interface InterviewRecord {
 	interviewDate: string;
 	interviewType?: InterviewType | null;
 	score?: number | null;
+	resumePoolId?: number | null;
+	recruitPlanId?: number | null;
+	sourceSnapshot?: RecruitmentSourceSnapshot | null;
+	resumePoolSnapshot?: RecruitmentSourceSnapshot | null;
+	recruitPlanSnapshot?: RecruitmentSourceSnapshot | null;
 	status?: InterviewStatus;
 	createTime?: string;
 	updateTime?: string;
@@ -467,6 +715,13 @@ export interface ResumePoolRecord {
 	sourceType: ResumePoolSourceType;
 	sourceRemark?: string | null;
 	externalLink?: string | null;
+	recruitPlanId?: number | null;
+	recruitPlanTitle?: string | null;
+	jobStandardId?: number | null;
+	jobStandardPositionName?: string | null;
+	sourceSnapshot?: RecruitmentSourceSnapshot | null;
+	recruitPlanSnapshot?: RecruitmentSourceSnapshot | null;
+	jobStandardSnapshot?: RecruitmentSourceSnapshot | null;
 	attachmentIdList?: number[];
 	attachmentSummaryList?: ResumePoolAttachmentSummary[];
 	status?: ResumePoolStatus;
@@ -545,7 +800,14 @@ export interface HiringRecord {
 	targetPosition?: string | null;
 	sourceType?: HiringSourceType | string | null;
 	sourceId?: number | null;
+	interviewId?: number | null;
+	resumePoolId?: number | null;
+	recruitPlanId?: number | null;
 	sourceStatusSnapshot?: string | null;
+	sourceSnapshot?: RecruitmentSourceSnapshot | null;
+	interviewSnapshot?: RecruitmentSourceSnapshot | null;
+	resumePoolSnapshot?: RecruitmentSourceSnapshot | null;
+	recruitPlanSnapshot?: RecruitmentSourceSnapshot | null;
 	hiringDecision?: string | null;
 	status?: HiringStatus;
 	offeredAt?: string | null;
@@ -559,6 +821,147 @@ export interface HiringRecord {
 
 export interface HiringPageResult {
 	list: HiringRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface TeacherAgentRecord {
+	id?: number;
+	name: string;
+	agentType: string;
+	level?: string | null;
+	region?: string | null;
+	cooperationStatus?: string | null;
+	status?: TeacherAgentStatus;
+	blacklistStatus?: TeacherAgentBlacklistStatus;
+	remark?: string | null;
+	ownerEmployeeId?: number | null;
+	ownerDepartmentId?: number | null;
+	createTime?: string | null;
+	updateTime?: string | null;
+}
+
+export interface TeacherAgentPageResult {
+	list: TeacherAgentRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface TeacherAgentRelationRecord {
+	id?: number;
+	parentAgentId: number | undefined;
+	parentAgentName?: string | null;
+	childAgentId: number | undefined;
+	childAgentName?: string | null;
+	status?: TeacherAgentRelationStatus;
+	effectiveTime?: string | null;
+	remark?: string | null;
+	ownerEmployeeId?: number | null;
+	ownerDepartmentId?: number | null;
+	createTime?: string | null;
+	updateTime?: string | null;
+}
+
+export interface TeacherAgentRelationPageResult {
+	list: TeacherAgentRelationRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface TeacherAttributionRecord {
+	id?: number;
+	teacherId?: number | null;
+	teacherName?: string | null;
+	agentId?: number | null;
+	agentName?: string | null;
+	attributionType?: string | null;
+	status?: TeacherAttributionStatus;
+	sourceType?: string | null;
+	sourceRemark?: string | null;
+	effectiveTime?: string | null;
+	operatorId?: number | null;
+	operatorName?: string | null;
+	createTime?: string | null;
+	updateTime?: string | null;
+}
+
+export interface TeacherAttributionPageResult {
+	list: TeacherAttributionRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface TeacherAttributionConflictRecord {
+	id?: number;
+	teacherId?: number | null;
+	teacherName?: string | null;
+	candidateAgentIds?: number[];
+	status?: TeacherAttributionConflictStatus;
+	resolution?: string | null;
+	resolutionRemark?: string | null;
+	resolvedBy?: number | null;
+	resolvedTime?: string | null;
+	currentAgentId?: number | null;
+	requestedAgentId?: number | null;
+	requestedById?: number | null;
+	createTime?: string | null;
+	updateTime?: string | null;
+}
+
+export interface TeacherAttributionConflictDetail extends TeacherAttributionConflictRecord {
+	candidateAgents?: Array<{
+		id: number;
+		name: string;
+	}>;
+	currentAgentName?: string | null;
+	requestedAgentName?: string | null;
+}
+
+export interface TeacherAttributionConflictPageResult {
+	list: TeacherAttributionConflictRecord[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
+
+export interface TeacherAttributionInfo {
+	teacherId: number;
+	teacherName?: string | null;
+	currentAttribution?: TeacherAttributionRecord | null;
+	openConflictCount?: number;
+	openConflicts?: TeacherAttributionConflictRecord[];
+	history?: TeacherAttributionRecord[];
+}
+
+export interface TeacherAgentAuditRecord {
+	id?: number;
+	resourceType?: string | null;
+	resourceId?: number | null;
+	action?: string | null;
+	beforeSnapshot?: Record<string, any> | null;
+	afterSnapshot?: Record<string, any> | null;
+	operatorId?: number | null;
+	operatorName?: string | null;
+	createTime?: string | null;
+	updateTime?: string | null;
+}
+
+export interface TeacherAgentAuditPageResult {
+	list: TeacherAgentAuditRecord[];
 	pagination: {
 		page: number;
 		size: number;
@@ -731,6 +1134,24 @@ export interface JobStandardPageResult {
 	};
 }
 
+export interface RecruitmentSourceSnapshot {
+	sourceResource?: RecruitmentSourceResource | null;
+	jobStandardId?: number | null;
+	jobStandardPositionName?: string | null;
+	jobStandardRequirementSummary?: string | null;
+	recruitPlanId?: number | null;
+	recruitPlanTitle?: string | null;
+	recruitPlanStatus?: RecruitPlanStatus | null;
+	resumePoolId?: number | null;
+	interviewId?: number | null;
+	candidateName?: string | null;
+	targetDepartmentId?: number | null;
+	targetDepartmentName?: string | null;
+	targetPosition?: string | null;
+	interviewStatus?: InterviewStatus | null;
+	sourceStatusSnapshot?: string | null;
+}
+
 export interface PipTrackRecord {
 	id?: number;
 	pipId?: number;
@@ -811,11 +1232,7 @@ export interface IndicatorPageResult {
 	};
 }
 
-export type FeedbackRelationType =
-	| '上级'
-	| '同级'
-	| '下级'
-	| '协作人';
+export type FeedbackRelationType = '上级' | '同级' | '下级' | '协作人';
 
 export interface FeedbackTaskRelationItem {
 	feedbackUserId: number;
@@ -957,12 +1374,7 @@ export interface PromotionPageResult {
 }
 
 export type SuggestionType = 'pip' | 'promotion';
-export type SuggestionStatus =
-	| 'pending'
-	| 'accepted'
-	| 'ignored'
-	| 'rejected'
-	| 'revoked';
+export type SuggestionStatus = 'pending' | 'accepted' | 'ignored' | 'rejected' | 'revoked';
 export type SuggestionRevokeReasonCode =
 	| 'thresholdError'
 	| 'assessmentCorrected'
@@ -1409,6 +1821,11 @@ export function createEmptyRecruitPlan(): RecruitPlanRecord {
 		endDate: '',
 		recruiterId: undefined,
 		requirementSummary: '',
+		jobStandardId: undefined,
+		jobStandardPositionName: '',
+		jobStandardSummary: null,
+		jobStandardSnapshot: null,
+		sourceSnapshot: null,
 		status: 'draft'
 	};
 }
@@ -1437,10 +1854,33 @@ export function createEmptyPurchaseOrder(): PurchaseOrderRecord {
 		departmentId: undefined,
 		requesterId: undefined,
 		orderDate: '',
+		expectedDeliveryDate: '',
 		totalAmount: 0,
 		currency: 'CNY',
+		approvedBy: '',
+		approvedAt: '',
+		approvalRemark: '',
+		closedReason: '',
+		receivedQuantity: 0,
+		receivedAt: '',
+		items: [createEmptyPurchaseOrderItem()],
+		inquiryRecords: [],
+		approvalLogs: [],
+		receiptRecords: [],
 		remark: '',
 		status: 'draft'
+	};
+}
+
+export function createEmptyPurchaseOrderItem(): PurchaseOrderItemRecord {
+	return {
+		itemName: '',
+		specification: '',
+		unit: '',
+		quantity: 1,
+		unitPrice: 0,
+		amount: 0,
+		remark: ''
 	};
 }
 
@@ -1497,6 +1937,51 @@ export function createEmptyCourse(): CourseRecord {
 	};
 }
 
+export function createEmptyDocumentCenter(): DocumentCenterRecord {
+	return {
+		fileNo: '',
+		fileName: '',
+		category: 'policy',
+		fileType: 'pdf',
+		storage: 'local',
+		confidentiality: 'internal',
+		ownerName: '',
+		department: '',
+		status: 'draft',
+		version: 'v1.0.0',
+		sizeMb: 0,
+		downloadCount: 0,
+		expireDate: '',
+		tags: [],
+		notes: ''
+	};
+}
+
+export function createEmptyKnowledgeBase(): KnowledgeBaseRecord {
+	return {
+		kbNo: '',
+		title: '',
+		category: '',
+		summary: '',
+		ownerName: '',
+		status: 'draft',
+		tags: [],
+		relatedFileIds: [],
+		relatedTopics: [],
+		importance: 60,
+		viewCount: 0
+	};
+}
+
+export function createEmptyKnowledgeQa(): KnowledgeQaRecord {
+	return {
+		question: '',
+		answer: '',
+		relatedKnowledgeIds: [],
+		relatedFileIds: []
+	};
+}
+
 export function createEmptyInterview(): InterviewRecord {
 	return {
 		candidateName: '',
@@ -1506,6 +1991,11 @@ export function createEmptyInterview(): InterviewRecord {
 		interviewDate: '',
 		interviewType: 'technical',
 		score: null,
+		resumePoolId: undefined,
+		recruitPlanId: undefined,
+		sourceSnapshot: null,
+		resumePoolSnapshot: null,
+		recruitPlanSnapshot: null,
 		status: 'scheduled'
 	};
 }
@@ -1521,6 +2011,13 @@ export function createEmptyResumePool(): ResumePoolRecord {
 		sourceType: 'manual',
 		sourceRemark: '',
 		externalLink: '',
+		recruitPlanId: undefined,
+		recruitPlanTitle: '',
+		jobStandardId: undefined,
+		jobStandardPositionName: '',
+		sourceSnapshot: null,
+		recruitPlanSnapshot: null,
+		jobStandardSnapshot: null,
 		attachmentIdList: [],
 		attachmentSummaryList: [],
 		status: 'new'
@@ -1564,10 +2061,174 @@ export function createEmptyHiring(): HiringRecord {
 		targetPosition: '',
 		sourceType: 'manual',
 		sourceId: undefined,
+		interviewId: undefined,
+		resumePoolId: undefined,
+		recruitPlanId: undefined,
 		sourceStatusSnapshot: '',
+		sourceSnapshot: null,
+		interviewSnapshot: null,
+		resumePoolSnapshot: null,
+		recruitPlanSnapshot: null,
 		hiringDecision: '',
 		status: 'offered',
 		closeReason: ''
+	};
+}
+
+export function createEmptyTeacherInfo(): TeacherInfoRecord {
+	return {
+		teacherName: '',
+		phone: '',
+		wechat: '',
+		schoolName: '',
+		schoolRegion: '',
+		schoolType: '',
+		grade: '',
+		className: '',
+		subject: '',
+		projectTags: [],
+		intentionLevel: '',
+		communicationStyle: '',
+		cooperationStatus: 'uncontacted',
+		ownerEmployeeId: undefined,
+		nextFollowTime: ''
+	};
+}
+
+export function createEmptyTeacherFollow(): TeacherFollowRecord {
+	return {
+		teacherId: undefined,
+		content: '',
+		nextFollowTime: ''
+	};
+}
+
+export function createEmptyTeacherClass(): TeacherClassRecord {
+	return {
+		teacherId: undefined,
+		className: '',
+		schoolName: '',
+		grade: '',
+		projectTag: '',
+		studentCount: 0,
+		status: 'draft'
+	};
+}
+
+export function createEmptyTeacherAgent(): TeacherAgentRecord {
+	return {
+		name: '',
+		agentType: 'institution',
+		level: '',
+		region: '',
+		cooperationStatus: '',
+		status: 'active',
+		blacklistStatus: 'normal',
+		remark: ''
+	};
+}
+
+export function createEmptyTeacherAgentRelation(): TeacherAgentRelationRecord {
+	return {
+		parentAgentId: undefined,
+		childAgentId: undefined,
+		status: 'active',
+		effectiveTime: '',
+		remark: ''
+	};
+}
+
+export function createEmptyTeacherAttribution(): TeacherAttributionRecord {
+	return {
+		teacherId: undefined,
+		teacherName: '',
+		agentId: undefined,
+		agentName: '',
+		attributionType: 'manual',
+		status: 'pending',
+		sourceType: 'manual',
+		sourceRemark: '',
+		effectiveTime: ''
+	};
+}
+
+export function createEmptyJobStandard(): JobStandardRecord {
+	return {
+		positionName: '',
+		targetDepartmentId: undefined,
+		jobLevel: '',
+		profileSummary: '',
+		requirementSummary: '',
+		skillTagList: [],
+		interviewTemplateSummary: '',
+		status: 'draft'
+	};
+}
+
+export function createEmptyPip(): PipRecord {
+	return {
+		assessmentId: null,
+		employeeId: undefined,
+		ownerId: undefined,
+		title: '',
+		improvementGoal: '',
+		sourceReason: '',
+		startDate: '',
+		endDate: '',
+		status: 'draft',
+		resultSummary: '',
+		trackRecords: []
+	};
+}
+
+export function createEmptyIndicator(): IndicatorRecord {
+	return {
+		name: '',
+		code: '',
+		category: 'assessment',
+		weight: 0,
+		scoreScale: 100,
+		applyScope: 'all',
+		description: '',
+		status: 1
+	};
+}
+
+export function createEmptyFeedbackTask(): FeedbackTaskRecord {
+	return {
+		assessmentId: null,
+		employeeId: undefined,
+		title: '',
+		deadline: '',
+		feedbackUserIds: [],
+		relationTypes: []
+	};
+}
+
+export function createEmptySalary(): SalaryRecord {
+	return {
+		employeeId: undefined,
+		assessmentId: null,
+		periodValue: '',
+		baseSalary: 0,
+		performanceBonus: 0,
+		adjustAmount: 0,
+		finalAmount: 0,
+		effectiveDate: '',
+		changeRecords: []
+	};
+}
+
+export function createEmptyPromotion(currentUserId?: number): PromotionRecord {
+	return {
+		assessmentId: undefined,
+		employeeId: undefined,
+		sponsorId: currentUserId,
+		fromPosition: '',
+		toPosition: '',
+		reason: '',
+		sourceReason: '',
+		reviewRecords: []
 	};
 }
 
@@ -1680,125 +2341,5 @@ export function createEmptyAssetDisposal(): AssetDisposalRecord {
 		estimatedResidualAmount: 0,
 		remark: '',
 		status: 'draft'
-	};
-}
-
-export function createEmptyTeacherInfo(): TeacherInfoRecord {
-	return {
-		teacherName: '',
-		phone: '',
-		wechat: '',
-		schoolName: '',
-		schoolRegion: '',
-		schoolType: '',
-		grade: '',
-		className: '',
-		subject: '',
-		projectTags: [],
-		intentionLevel: '',
-		communicationStyle: '',
-		cooperationStatus: 'uncontacted',
-		ownerEmployeeId: undefined,
-		nextFollowTime: ''
-	};
-}
-
-export function createEmptyTeacherFollow(): TeacherFollowRecord {
-	return {
-		teacherId: undefined,
-		content: '',
-		nextFollowTime: ''
-	};
-}
-
-export function createEmptyTeacherClass(): TeacherClassRecord {
-	return {
-		teacherId: undefined,
-		className: '',
-		schoolName: '',
-		grade: '',
-		projectTag: '',
-		studentCount: 0,
-		status: 'draft'
-	};
-}
-
-export function createEmptyJobStandard(): JobStandardRecord {
-	return {
-		positionName: '',
-		targetDepartmentId: undefined,
-		jobLevel: '',
-		profileSummary: '',
-		requirementSummary: '',
-		skillTagList: [],
-		interviewTemplateSummary: '',
-		status: 'draft'
-	};
-}
-
-export function createEmptyPip(): PipRecord {
-	return {
-		assessmentId: null,
-		employeeId: undefined,
-		ownerId: undefined,
-		title: '',
-		improvementGoal: '',
-		sourceReason: '',
-		startDate: '',
-		endDate: '',
-		status: 'draft',
-		resultSummary: '',
-		trackRecords: []
-	};
-}
-
-export function createEmptyIndicator(): IndicatorRecord {
-	return {
-		name: '',
-		code: '',
-		category: 'assessment',
-		weight: 0,
-		scoreScale: 100,
-		applyScope: 'all',
-		description: '',
-		status: 1
-	};
-}
-
-export function createEmptyFeedbackTask(): FeedbackTaskRecord {
-	return {
-		assessmentId: null,
-		employeeId: undefined,
-		title: '',
-		deadline: '',
-		feedbackUserIds: [],
-		relationTypes: []
-	};
-}
-
-export function createEmptySalary(): SalaryRecord {
-	return {
-		employeeId: undefined,
-		assessmentId: null,
-		periodValue: '',
-		baseSalary: 0,
-		performanceBonus: 0,
-		adjustAmount: 0,
-		finalAmount: 0,
-		effectiveDate: '',
-		changeRecords: []
-	};
-}
-
-export function createEmptyPromotion(currentUserId?: number): PromotionRecord {
-	return {
-		assessmentId: undefined,
-		employeeId: undefined,
-		sponsorId: currentUserId,
-		fromPosition: '',
-		toPosition: '',
-		reason: '',
-		sourceReason: '',
-		reviewRecords: []
 	};
 }

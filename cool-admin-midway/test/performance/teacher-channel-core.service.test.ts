@@ -7,6 +7,28 @@
 import { PerformanceTeacherChannelCoreService } from '../../src/modules/performance/service/teacher-channel-core';
 
 const ADMIN_PERMS = [
+  'performance:teacherAgent:page',
+  'performance:teacherAgent:info',
+  'performance:teacherAgent:add',
+  'performance:teacherAgent:update',
+  'performance:teacherAgent:updateStatus',
+  'performance:teacherAgent:blacklist',
+  'performance:teacherAgent:unblacklist',
+  'performance:teacherAgentRelation:page',
+  'performance:teacherAgentRelation:add',
+  'performance:teacherAgentRelation:update',
+  'performance:teacherAgentRelation:delete',
+  'performance:teacherAttribution:page',
+  'performance:teacherAttribution:info',
+  'performance:teacherAttribution:assign',
+  'performance:teacherAttribution:change',
+  'performance:teacherAttribution:remove',
+  'performance:teacherAttributionConflict:page',
+  'performance:teacherAttributionConflict:info',
+  'performance:teacherAttributionConflict:create',
+  'performance:teacherAttributionConflict:resolve',
+  'performance:teacherAgentAudit:page',
+  'performance:teacherAgentAudit:info',
   'performance:teacherInfo:page',
   'performance:teacherInfo:info',
   'performance:teacherInfo:add',
@@ -26,6 +48,15 @@ const ADMIN_PERMS = [
 ];
 
 const READONLY_PERMS = [
+  'performance:teacherAgent:page',
+  'performance:teacherAgent:info',
+  'performance:teacherAgentRelation:page',
+  'performance:teacherAttribution:page',
+  'performance:teacherAttribution:info',
+  'performance:teacherAttributionConflict:page',
+  'performance:teacherAttributionConflict:info',
+  'performance:teacherAgentAudit:page',
+  'performance:teacherAgentAudit:info',
   'performance:teacherInfo:page',
   'performance:teacherInfo:info',
   'performance:teacherFollow:page',
@@ -81,6 +112,43 @@ function createDepartment(id: number, name: string) {
   };
 }
 
+function createAgent(id: number, overrides: Partial<any> = {}) {
+  return {
+    id,
+    name: `代理-${id}`,
+    agentType: 'institution',
+    level: 'A',
+    region: '上海',
+    cooperationStatus: 'active',
+    status: 'active',
+    blacklistStatus: 'normal',
+    remark: null,
+    ownerEmployeeId: 2,
+    ownerDepartmentId: 11,
+    createTime: '2026-04-19 10:00:00',
+    updateTime: '2026-04-19 10:00:00',
+    ...overrides,
+  };
+}
+
+function createAttribution(id: number, overrides: Partial<any> = {}) {
+  return {
+    id,
+    teacherId: 1,
+    agentId: 1,
+    attributionType: 'agent',
+    status: 'active',
+    sourceType: 'assign',
+    sourceRemark: null,
+    effectiveTime: '2026-04-19 10:00:00',
+    operatorId: 1,
+    operatorName: '管理员',
+    createTime: '2026-04-19 10:00:00',
+    updateTime: '2026-04-19 10:00:00',
+    ...overrides,
+  };
+}
+
 function createService(options?: {
   perms?: string[];
   admin?: Partial<any>;
@@ -93,6 +161,16 @@ function createService(options?: {
   ]);
   const follows = new Map<number, any>();
   const classes = new Map<number, any>();
+  const agents = new Map<number, any>([
+    [1, createAgent(1, { name: '直营代理主体', agentType: 'direct' })],
+    [2, createAgent(2, { name: '平台合作代理' })],
+    [3, createAgent(3, { name: '停用代理', status: 'inactive' })],
+    [4, createAgent(4, { name: '黑名单代理', blacklistStatus: 'blacklisted' })],
+  ]);
+  const relations = new Map<number, any>();
+  const attributions = new Map<number, any>();
+  const conflicts = new Map<number, any>();
+  const audits = new Map<number, any>();
   const users = new Map<number, any>([
     [1, createUser(1, { username: 'admin', name: '管理员', departmentId: 11 })],
     [2, createUser(2, { username: 'manager_rd', name: '部门负责人', departmentId: 11 })],
@@ -108,6 +186,10 @@ function createService(options?: {
   ]);
   let followId = 100;
   let classId = 200;
+  let relationId = 300;
+  let attributionId = 400;
+  let conflictId = 500;
+  let auditId = 600;
 
   const service = new PerformanceTeacherChannelCoreService() as any;
   service.ctx = {
@@ -225,11 +307,129 @@ function createService(options?: {
       .mockImplementation(({ id }: any) => Promise.resolve(classes.get(Number(id)) || null)),
     find: jest.fn().mockResolvedValue(Array.from(classes.values())),
   };
+  service.performanceTeacherAgentEntity = {
+    findOneBy: jest
+      .fn()
+      .mockImplementation(({ id }: any) => Promise.resolve(agents.get(Number(id)) || null)),
+    find: jest.fn().mockImplementation(() => Promise.resolve(Array.from(agents.values()))),
+    save: jest.fn().mockImplementation(async (payload: any) => {
+      const nextId = payload.id ? Number(payload.id) : agents.size + 1;
+      const saved = createAgent(nextId, payload);
+      agents.set(nextId, saved);
+      return saved;
+    }),
+    create: jest.fn().mockImplementation((payload: any) => payload),
+    update: jest.fn().mockImplementation(async ({ id }: any, payload: any) => {
+      const current = agents.get(Number(id));
+      agents.set(Number(id), {
+        ...current,
+        ...payload,
+        id: Number(id),
+      });
+    }),
+  };
+  service.performanceTeacherAgentRelationEntity = {
+    findOneBy: jest
+      .fn()
+      .mockImplementation(({ id }: any) => Promise.resolve(relations.get(Number(id)) || null)),
+    find: jest.fn().mockImplementation(() => Promise.resolve(Array.from(relations.values()))),
+    save: jest.fn().mockImplementation(async (payload: any) => {
+      const saved = {
+        id: ++relationId,
+        createTime: '2026-04-19 12:30:00',
+        updateTime: '2026-04-19 12:30:00',
+        ...payload,
+      };
+      relations.set(saved.id, saved);
+      return saved;
+    }),
+    create: jest.fn().mockImplementation((payload: any) => payload),
+    update: jest.fn().mockImplementation(async ({ id }: any, payload: any) => {
+      const current = relations.get(Number(id));
+      relations.set(Number(id), {
+        ...current,
+        ...payload,
+        id: Number(id),
+      });
+    }),
+  };
+  service.performanceTeacherAttributionEntity = {
+    findOneBy: jest
+      .fn()
+      .mockImplementation(({ id }: any) => Promise.resolve(attributions.get(Number(id)) || null)),
+    find: jest.fn().mockImplementation(() => Promise.resolve(Array.from(attributions.values()))),
+    save: jest.fn().mockImplementation(async (payload: any) => {
+      const saved = {
+        id: ++attributionId,
+        createTime: '2026-04-19 13:00:00',
+        updateTime: '2026-04-19 13:00:00',
+        ...payload,
+      };
+      attributions.set(saved.id, saved);
+      return saved;
+    }),
+    create: jest.fn().mockImplementation((payload: any) => payload),
+    update: jest.fn().mockImplementation(async ({ id }: any, payload: any) => {
+      const current = attributions.get(Number(id));
+      attributions.set(Number(id), {
+        ...current,
+        ...payload,
+        id: Number(id),
+      });
+    }),
+  };
+  service.performanceTeacherAttributionConflictEntity = {
+    findOneBy: jest
+      .fn()
+      .mockImplementation(({ id }: any) => Promise.resolve(conflicts.get(Number(id)) || null)),
+    find: jest.fn().mockImplementation(() => Promise.resolve(Array.from(conflicts.values()))),
+    save: jest.fn().mockImplementation(async (payload: any) => {
+      const saved = {
+        id: ++conflictId,
+        createTime: '2026-04-19 13:30:00',
+        updateTime: '2026-04-19 13:30:00',
+        ...payload,
+      };
+      conflicts.set(saved.id, saved);
+      return saved;
+    }),
+    create: jest.fn().mockImplementation((payload: any) => payload),
+    update: jest.fn().mockImplementation(async ({ id }: any, payload: any) => {
+      const current = conflicts.get(Number(id));
+      conflicts.set(Number(id), {
+        ...current,
+        ...payload,
+        id: Number(id),
+      });
+    }),
+  };
+  service.performanceTeacherAgentAuditEntity = {
+    findOneBy: jest
+      .fn()
+      .mockImplementation(({ id }: any) => Promise.resolve(audits.get(Number(id)) || null)),
+    find: jest.fn().mockImplementation(() => Promise.resolve(Array.from(audits.values()))),
+    save: jest.fn().mockImplementation(async (payload: any) => {
+      const saved = {
+        id: ++auditId,
+        createTime: '2026-04-19 14:00:00',
+        updateTime: '2026-04-19 14:00:00',
+        ...payload,
+      };
+      audits.set(saved.id, saved);
+      return saved;
+    }),
+    create: jest.fn().mockImplementation((payload: any) => payload),
+  };
 
   return {
     service,
     teachers,
     classes,
+    agents,
+    relations,
+    attributions,
+    conflicts,
+    audits,
   };
 }
 
@@ -351,5 +551,104 @@ describe('theme19 teacher channel core service', () => {
         ownerEmployeeId: 6,
       })
     ).rejects.toThrow('无权分配到目标归属部门');
+  });
+
+  test('should support agent main flow, prevent cycles, and keep audit records', async () => {
+    const { service, agents, audits } = createService();
+
+    const added = await service.teacherAgentAdd({
+      name: '新增代理主体',
+      agentType: 'institution',
+      level: 'B',
+      region: '杭州',
+    });
+    expect(added.name).toBe('新增代理主体');
+    expect(added.status).toBe('active');
+
+    const blacklisted = await service.teacherAgentBlacklist({ id: 2 });
+    expect(blacklisted.blacklistStatus).toBe('blacklisted');
+
+    const relationPage = await service.teacherAgentRelationAdd({
+      parentAgentId: 1,
+      childAgentId: 2,
+      effectiveTime: '2026-04-20 10:00:00',
+    });
+    expect(relationPage.list?.[0]?.parentAgentId || relationPage.parentAgentId).toBe(1);
+
+    await expect(
+      service.teacherAgentRelationAdd({
+        parentAgentId: 2,
+        childAgentId: 1,
+      })
+    ).rejects.toThrow('不允许形成循环代理树');
+
+    expect(agents.get(2)?.blacklistStatus).toBe('blacklisted');
+    expect(audits.size).toBeGreaterThan(0);
+  });
+
+  test('should enforce attribution uniqueness, create conflict and resolve it', async () => {
+    const { service, conflicts, audits } = createService();
+
+    const firstAttribution = await service.teacherAttributionAssign({
+      teacherId: 1,
+      agentId: 2,
+      sourceRemark: '首次归因',
+    });
+    expect(firstAttribution.currentAttribution.agentId).toBe(2);
+
+    await expect(
+      service.teacherAttributionAssign({
+        teacherId: 1,
+        agentId: 4,
+      })
+    ).rejects.toThrow('黑名单代理不可新增归因');
+
+    const changed = await service.teacherAttributionChange({
+      teacherId: 1,
+      agentId: 1,
+      sourceRemark: '切换直营',
+    });
+    expect(changed.openConflictCount).toBe(1);
+    expect(conflicts.size).toBe(1);
+
+    const conflictId = Array.from(conflicts.keys())[0];
+    const resolved = await service.teacherAttributionConflictResolve({
+      id: conflictId,
+      resolution: 'resolved',
+      agentId: 1,
+      resolutionRemark: '直营胜出',
+    });
+    expect(resolved.agentId).toBe(1);
+
+    const attributionInfo = await service.teacherInfoAttributionInfo(1);
+    expect(attributionInfo.currentAttribution.agentId).toBe(1);
+    expect(attributionInfo.openConflictCount).toBe(0);
+    expect(audits.size).toBeGreaterThan(1);
+  });
+
+  test('should reject readonly writes and mask attribution info visibility by scope', async () => {
+    const { service } = createService({
+      perms: READONLY_PERMS,
+      admin: {
+        userId: 4,
+        username: 'readonly_teacher',
+        isAdmin: false,
+      },
+      departmentIds: [11],
+    });
+
+    await expect(
+      service.teacherAgentAdd({
+        name: '只读新增代理',
+        agentType: 'institution',
+      })
+    ).rejects.toThrow('无权限新增代理主体');
+
+    await expect(
+      service.teacherAttributionConflictResolve({
+        id: 1,
+        resolution: 'cancelled',
+      })
+    ).rejects.toThrow('无权限处理归因冲突');
   });
 });

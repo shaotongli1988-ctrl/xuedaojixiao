@@ -45,6 +45,11 @@ const stage2MenuRouters = new Set([
   '/performance/contract',
   '/performance/talentAsset',
   '/performance/purchase-order',
+  '/performance/purchase-inquiry',
+  '/performance/purchase-approval',
+  '/performance/purchase-execution',
+  '/performance/purchase-receipt',
+  '/performance/purchase-report',
   '/performance/supplier',
   '/performance/asset/dashboard',
   '/performance/asset/ledger',
@@ -82,6 +87,10 @@ function addDays(date, days) {
   const value = new Date(date);
   value.setDate(value.getDate() + days);
   return value;
+}
+
+function serializeJsonValue(value) {
+  return value === undefined || value === null ? null : JSON.stringify(value);
 }
 
 function loadStage2PerformanceMenus() {
@@ -1131,6 +1140,270 @@ async function replaceTeacherChannelData(seedRows) {
   return inserted;
 }
 
+async function replaceTeacherChannelAgentData({
+  seededTeachers = [],
+  seedAgents = [],
+  seedRelations = [],
+  seedAttributions = [],
+  seedConflicts = [],
+}) {
+  const teacherIdByName = new Map(
+    seededTeachers.map(item => [String(item.teacherName || ''), Number(item.id || 0)])
+  );
+  const teacherIds = Array.from(
+    new Set([...teacherIdByName.values()].filter(item => Number.isInteger(item) && item > 0))
+  );
+  const agentNames = Array.from(
+    new Set(
+      seedAgents.map(item => String(item.name || '').trim()).filter(Boolean)
+    )
+  );
+
+  if (teacherIds.length) {
+    await connection.query(
+      'DELETE FROM performance_teacher_attribution_conflict WHERE teacherId IN (?)',
+      [teacherIds]
+    );
+    await connection.query(
+      'DELETE FROM performance_teacher_attribution WHERE teacherId IN (?)',
+      [teacherIds]
+    );
+  }
+
+  if (agentNames.length) {
+    const [existingAgents] = await connection.query(
+      'SELECT id FROM performance_teacher_agent WHERE name IN (?)',
+      [agentNames]
+    );
+    const agentIds = existingAgents
+      .map(item => Number(item.id || 0))
+      .filter(item => Number.isInteger(item) && item > 0);
+
+    if (agentIds.length) {
+      await connection.query(
+        'DELETE FROM performance_teacher_agent_relation WHERE parentAgentId IN (?) OR childAgentId IN (?)',
+        [agentIds, agentIds]
+      );
+    }
+
+    await connection.query('DELETE FROM performance_teacher_agent WHERE name IN (?)', [agentNames]);
+  }
+
+  const insertedAgents = [];
+  const agentIdByName = new Map();
+  const agentRowByName = new Map();
+
+  for (const row of seedAgents) {
+    const [result] = await connection.query(
+      `INSERT INTO performance_teacher_agent
+        (name, agentType, level, region, cooperationStatus, status, blacklistStatus, remark, ownerEmployeeId, ownerDepartmentId, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.name,
+        row.agentType,
+        row.level ?? null,
+        row.region ?? null,
+        row.cooperationStatus ?? null,
+        row.status ?? 'active',
+        row.blacklistStatus ?? 'normal',
+        row.remark ?? null,
+        row.ownerEmployeeId,
+        row.ownerDepartmentId,
+        now(),
+        now(),
+      ]
+    );
+
+    const inserted = {
+      id: Number(result.insertId || 0),
+      ...row,
+    };
+    insertedAgents.push(inserted);
+    agentIdByName.set(row.name, inserted.id);
+    agentRowByName.set(row.name, inserted);
+  }
+
+  const insertedRelations = [];
+  for (const row of seedRelations) {
+    const parentAgentId = Number(agentIdByName.get(row.parentAgentName) || 0);
+    const childAgentId = Number(agentIdByName.get(row.childAgentName) || 0);
+    const parentAgent = agentRowByName.get(row.parentAgentName);
+
+    if (!parentAgentId || !childAgentId || !parentAgent) {
+      throw new Error(`teacher-channel agent relation seed missing agent: ${row.parentAgentName} / ${row.childAgentName}`);
+    }
+
+    const [result] = await connection.query(
+      `INSERT INTO performance_teacher_agent_relation
+        (parentAgentId, childAgentId, status, effectiveTime, remark, ownerEmployeeId, ownerDepartmentId, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        parentAgentId,
+        childAgentId,
+        row.status ?? 'active',
+        row.effectiveTime ?? null,
+        row.remark ?? null,
+        row.ownerEmployeeId,
+        row.ownerDepartmentId ?? parentAgent.ownerDepartmentId,
+        now(),
+        now(),
+      ]
+    );
+
+    insertedRelations.push({
+      id: Number(result.insertId || 0),
+      parentAgentId,
+      childAgentId,
+      parentAgentName: row.parentAgentName,
+      childAgentName: row.childAgentName,
+      status: row.status ?? 'active',
+      effectiveTime: row.effectiveTime ?? null,
+      remark: row.remark ?? null,
+      ownerEmployeeId: row.ownerEmployeeId,
+      ownerDepartmentId: row.ownerDepartmentId ?? parentAgent.ownerDepartmentId,
+    });
+  }
+
+  const insertedAttributions = [];
+  for (const row of seedAttributions) {
+    const teacherId = Number(teacherIdByName.get(row.teacherName) || 0);
+    const agentId = row.agentName ? Number(agentIdByName.get(row.agentName) || 0) : null;
+
+    if (!teacherId || (row.agentName && !agentId)) {
+      throw new Error(`teacher-channel attribution seed missing target: ${row.teacherName} / ${row.agentName || 'direct'}`);
+    }
+
+    const [result] = await connection.query(
+      `INSERT INTO performance_teacher_attribution
+        (teacherId, agentId, attributionType, status, sourceType, sourceRemark, effectiveTime, operatorId, operatorName, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        teacherId,
+        agentId,
+        row.attributionType ?? (agentId ? 'agent' : 'direct'),
+        row.status ?? 'active',
+        row.sourceType ?? 'assign',
+        row.sourceRemark ?? null,
+        row.effectiveTime ?? null,
+        row.operatorId ?? null,
+        row.operatorName ?? null,
+        now(),
+        now(),
+      ]
+    );
+
+    insertedAttributions.push({
+      id: Number(result.insertId || 0),
+      teacherId,
+      teacherName: row.teacherName,
+      agentId,
+      agentName: row.agentName || null,
+      attributionType: row.attributionType ?? (agentId ? 'agent' : 'direct'),
+      status: row.status ?? 'active',
+      sourceType: row.sourceType ?? 'assign',
+      sourceRemark: row.sourceRemark ?? null,
+      effectiveTime: row.effectiveTime ?? null,
+      operatorId: row.operatorId ?? null,
+      operatorName: row.operatorName ?? null,
+    });
+  }
+
+  const insertedConflicts = [];
+  for (const row of seedConflicts) {
+    const teacherId = Number(teacherIdByName.get(row.teacherName) || 0);
+    const currentAgentId = row.currentAgentName
+      ? Number(agentIdByName.get(row.currentAgentName) || 0)
+      : null;
+    const requestedAgentId = row.requestedAgentName
+      ? Number(agentIdByName.get(row.requestedAgentName) || 0)
+      : null;
+    const candidateAgentIds = Array.from(
+      new Set(
+        (row.candidateAgentNames || [])
+          .map(item => Number(agentIdByName.get(item) || 0))
+          .filter(item => Number.isInteger(item) && item > 0)
+      )
+    );
+
+    if (!teacherId) {
+      throw new Error(`teacher-channel conflict seed missing teacher: ${row.teacherName}`);
+    }
+
+    const [result] = await connection.query(
+      `INSERT INTO performance_teacher_attribution_conflict
+        (teacherId, candidateAgentIds, status, resolution, resolutionRemark, resolvedBy, resolvedTime, currentAgentId, requestedAgentId, requestedById, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        teacherId,
+        JSON.stringify(candidateAgentIds),
+        row.status ?? 'open',
+        row.resolution ?? null,
+        row.resolutionRemark ?? null,
+        row.resolvedBy ?? null,
+        row.resolvedTime ?? null,
+        currentAgentId,
+        requestedAgentId,
+        row.requestedById ?? null,
+        now(),
+        now(),
+      ]
+    );
+
+    insertedConflicts.push({
+      id: Number(result.insertId || 0),
+      teacherId,
+      teacherName: row.teacherName,
+      candidateAgentIds,
+      status: row.status ?? 'open',
+      resolution: row.resolution ?? null,
+      resolutionRemark: row.resolutionRemark ?? null,
+      resolvedBy: row.resolvedBy ?? null,
+      resolvedTime: row.resolvedTime ?? null,
+      currentAgentId,
+      currentAgentName: row.currentAgentName || null,
+      requestedAgentId,
+      requestedAgentName: row.requestedAgentName || null,
+      requestedById: row.requestedById ?? null,
+    });
+  }
+
+  return {
+    insertedAgents,
+    insertedRelations,
+    insertedAttributions,
+    insertedConflicts,
+    agentIdByName,
+  };
+}
+
+async function replaceTeacherChannelAgentAuditData(seedRows) {
+  const seedOperatorName = 'Stage2 Theme19 Seed';
+
+  await connection.query(
+    'DELETE FROM performance_teacher_agent_audit WHERE operatorName = ?',
+    [seedOperatorName]
+  );
+
+  for (const row of seedRows) {
+    await connection.query(
+      `INSERT INTO performance_teacher_agent_audit
+        (resourceType, resourceId, action, beforeSnapshot, afterSnapshot, operatorId, operatorName, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.resourceType,
+        row.resourceId,
+        row.action,
+        row.beforeSnapshot ? JSON.stringify(row.beforeSnapshot) : null,
+        row.afterSnapshot ? JSON.stringify(row.afterSnapshot) : null,
+        row.operatorId,
+        seedOperatorName,
+        now(),
+        now(),
+      ]
+    );
+  }
+}
+
 async function ensureCourseTables() {
   await connection.query(`
     CREATE TABLE IF NOT EXISTS performance_course (
@@ -1648,8 +1921,33 @@ async function replacePurchaseOrders(seedRows) {
   for (const row of seedRows) {
     const [result] = await connection.query(
       `INSERT INTO performance_purchase_order
-        (orderNo, title, supplierId, departmentId, requesterId, orderDate, totalAmount, currency, remark, status, createTime, updateTime, tenantId)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+        (
+          orderNo,
+          title,
+          supplierId,
+          departmentId,
+          requesterId,
+          orderDate,
+          expectedDeliveryDate,
+          approvedBy,
+          approvedAt,
+          approvalRemark,
+          closedReason,
+          receivedQuantity,
+          receivedAt,
+          items,
+          inquiryRecords,
+          approvalLogs,
+          receiptRecords,
+          totalAmount,
+          currency,
+          remark,
+          status,
+          createTime,
+          updateTime,
+          tenantId
+        )
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
       [
         row.orderNo ?? null,
         row.title,
@@ -1657,6 +1955,17 @@ async function replacePurchaseOrders(seedRows) {
         row.departmentId,
         row.requesterId,
         row.orderDate,
+        row.expectedDeliveryDate ?? null,
+        row.approvedBy ?? null,
+        row.approvedAt ?? null,
+        row.approvalRemark ?? null,
+        row.closedReason ?? null,
+        row.receivedQuantity ?? 0,
+        row.receivedAt ?? null,
+        serializeJsonValue(row.items ?? []),
+        serializeJsonValue(row.inquiryRecords ?? []),
+        serializeJsonValue(row.approvalLogs ?? []),
+        serializeJsonValue(row.receiptRecords ?? []),
         row.totalAmount,
         row.currency ?? 'CNY',
         row.remark ?? null,
@@ -2390,6 +2699,141 @@ async function ensureTeacherChannelTables() {
       KEY idx_performance_teacher_class_tenant_id (tenantId)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_teacher_agent (
+      id int NOT NULL AUTO_INCREMENT,
+      name varchar(100) NOT NULL,
+      agentType varchar(20) NOT NULL,
+      level varchar(30) DEFAULT NULL,
+      region varchar(50) DEFAULT NULL,
+      cooperationStatus varchar(30) DEFAULT NULL,
+      status varchar(20) NOT NULL DEFAULT 'active',
+      blacklistStatus varchar(20) NOT NULL DEFAULT 'normal',
+      remark text DEFAULT NULL,
+      ownerEmployeeId int NOT NULL,
+      ownerDepartmentId int NOT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      KEY idx_performance_teacher_agent_name (name),
+      KEY idx_performance_teacher_agent_agent_type (agentType),
+      KEY idx_performance_teacher_agent_status (status),
+      KEY idx_performance_teacher_agent_blacklist_status (blacklistStatus),
+      KEY idx_performance_teacher_agent_owner_employee_id (ownerEmployeeId),
+      KEY idx_performance_teacher_agent_owner_department_id (ownerDepartmentId),
+      KEY idx_performance_teacher_agent_create_time (createTime),
+      KEY idx_performance_teacher_agent_update_time (updateTime),
+      KEY idx_performance_teacher_agent_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_teacher_agent_relation (
+      id int NOT NULL AUTO_INCREMENT,
+      parentAgentId int NOT NULL,
+      childAgentId int NOT NULL,
+      status varchar(20) NOT NULL DEFAULT 'active',
+      effectiveTime varchar(19) DEFAULT NULL,
+      remark text DEFAULT NULL,
+      ownerEmployeeId int NOT NULL,
+      ownerDepartmentId int NOT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      KEY idx_performance_teacher_agent_relation_parent_agent_id (parentAgentId),
+      KEY idx_performance_teacher_agent_relation_child_agent_id (childAgentId),
+      KEY idx_performance_teacher_agent_relation_status (status),
+      KEY idx_performance_teacher_agent_relation_owner_employee_id (ownerEmployeeId),
+      KEY idx_performance_teacher_agent_relation_owner_department_id (ownerDepartmentId),
+      KEY idx_performance_teacher_agent_relation_create_time (createTime),
+      KEY idx_performance_teacher_agent_relation_update_time (updateTime),
+      KEY idx_performance_teacher_agent_relation_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_teacher_attribution (
+      id int NOT NULL AUTO_INCREMENT,
+      teacherId int NOT NULL,
+      agentId int DEFAULT NULL,
+      attributionType varchar(20) NOT NULL,
+      status varchar(20) NOT NULL DEFAULT 'active',
+      sourceType varchar(30) DEFAULT NULL,
+      sourceRemark text DEFAULT NULL,
+      effectiveTime varchar(19) DEFAULT NULL,
+      operatorId int DEFAULT NULL,
+      operatorName varchar(100) DEFAULT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      KEY idx_performance_teacher_attribution_teacher_id (teacherId),
+      KEY idx_performance_teacher_attribution_agent_id (agentId),
+      KEY idx_performance_teacher_attribution_status (status),
+      KEY idx_performance_teacher_attribution_effective_time (effectiveTime),
+      KEY idx_performance_teacher_attribution_operator_id (operatorId),
+      KEY idx_performance_teacher_attribution_create_time (createTime),
+      KEY idx_performance_teacher_attribution_update_time (updateTime),
+      KEY idx_performance_teacher_attribution_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_teacher_attribution_conflict (
+      id int NOT NULL AUTO_INCREMENT,
+      teacherId int NOT NULL,
+      candidateAgentIds json DEFAULT NULL,
+      status varchar(20) NOT NULL DEFAULT 'open',
+      resolution varchar(30) DEFAULT NULL,
+      resolutionRemark text DEFAULT NULL,
+      resolvedBy int DEFAULT NULL,
+      resolvedTime varchar(19) DEFAULT NULL,
+      currentAgentId int DEFAULT NULL,
+      requestedAgentId int DEFAULT NULL,
+      requestedById int DEFAULT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      KEY idx_performance_teacher_attribution_conflict_teacher_id (teacherId),
+      KEY idx_performance_teacher_attribution_conflict_status (status),
+      KEY idx_performance_teacher_attribution_conflict_resolved_by (resolvedBy),
+      KEY idx_performance_teacher_attribution_conflict_resolved_time (resolvedTime),
+      KEY idx_performance_teacher_attribution_conflict_current_agent_id (currentAgentId),
+      KEY idx_performance_teacher_attribution_conflict_requested_agent_id (requestedAgentId),
+      KEY idx_performance_teacher_attribution_conflict_requested_by_id (requestedById),
+      KEY idx_performance_teacher_attribution_conflict_create_time (createTime),
+      KEY idx_performance_teacher_attribution_conflict_update_time (updateTime),
+      KEY idx_performance_teacher_attribution_conflict_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS performance_teacher_agent_audit (
+      id int NOT NULL AUTO_INCREMENT,
+      resourceType varchar(30) NOT NULL,
+      resourceId int NOT NULL,
+      action varchar(30) NOT NULL,
+      beforeSnapshot json DEFAULT NULL,
+      afterSnapshot json DEFAULT NULL,
+      operatorId int NOT NULL,
+      operatorName varchar(100) NOT NULL,
+      createTime varchar(19) NOT NULL,
+      updateTime varchar(19) NOT NULL,
+      tenantId int DEFAULT NULL,
+      PRIMARY KEY (id),
+      KEY idx_performance_teacher_agent_audit_resource_type (resourceType),
+      KEY idx_performance_teacher_agent_audit_resource_id (resourceId),
+      KEY idx_performance_teacher_agent_audit_action (action),
+      KEY idx_performance_teacher_agent_audit_operator_id (operatorId),
+      KEY idx_performance_teacher_agent_audit_create_time (createTime),
+      KEY idx_performance_teacher_agent_audit_update_time (updateTime),
+      KEY idx_performance_teacher_agent_audit_tenant_id (tenantId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
 }
 
 async function ensureContractTable() {
@@ -2565,6 +3009,62 @@ async function ensureProcurementTables() {
       KEY idx_performance_purchase_order_tenant_id (tenantId)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+
+  await ensureTableColumn(
+    'performance_purchase_order',
+    'expectedDeliveryDate',
+    '`expectedDeliveryDate` varchar(10) DEFAULT NULL'
+  );
+  await ensureTableColumn(
+    'performance_purchase_order',
+    'approvedBy',
+    '`approvedBy` int DEFAULT NULL'
+  );
+  await ensureTableColumn(
+    'performance_purchase_order',
+    'approvedAt',
+    '`approvedAt` varchar(19) DEFAULT NULL'
+  );
+  await ensureTableColumn(
+    'performance_purchase_order',
+    'approvalRemark',
+    '`approvalRemark` text DEFAULT NULL'
+  );
+  await ensureTableColumn(
+    'performance_purchase_order',
+    'closedReason',
+    '`closedReason` text DEFAULT NULL'
+  );
+  await ensureTableColumn(
+    'performance_purchase_order',
+    'receivedQuantity',
+    '`receivedQuantity` decimal(12,2) NOT NULL DEFAULT 0'
+  );
+  await ensureTableColumn(
+    'performance_purchase_order',
+    'receivedAt',
+    '`receivedAt` varchar(19) DEFAULT NULL'
+  );
+  await ensureTableColumn(
+    'performance_purchase_order',
+    'items',
+    '`items` json DEFAULT NULL'
+  );
+  await ensureTableColumn(
+    'performance_purchase_order',
+    'inquiryRecords',
+    '`inquiryRecords` json DEFAULT NULL'
+  );
+  await ensureTableColumn(
+    'performance_purchase_order',
+    'approvalLogs',
+    '`approvalLogs` json DEFAULT NULL'
+  );
+  await ensureTableColumn(
+    'performance_purchase_order',
+    'receiptRecords',
+    '`receiptRecords` json DEFAULT NULL'
+  );
 }
 
 async function ensureAssetTables() {
@@ -3154,6 +3654,11 @@ async function main() {
         '/performance/office/knowledge-base',
         '/performance/talentAsset',
         '/performance/purchase-order',
+        '/performance/purchase-inquiry',
+        '/performance/purchase-approval',
+        '/performance/purchase-execution',
+        '/performance/purchase-receipt',
+        '/performance/purchase-report',
         '/performance/supplier',
         '/performance/asset/dashboard',
         '/performance/asset/ledger',
@@ -3268,6 +3773,28 @@ async function main() {
         'performance:teacherClass:update',
         'performance:teacherClass:delete',
         'performance:teacherTodo:page',
+        'performance:teacherAgent:page',
+        'performance:teacherAgent:info',
+        'performance:teacherAgent:add',
+        'performance:teacherAgent:update',
+        'performance:teacherAgent:updateStatus',
+        'performance:teacherAgent:blacklist',
+        'performance:teacherAgent:unblacklist',
+        'performance:teacherAgentRelation:page',
+        'performance:teacherAgentRelation:add',
+        'performance:teacherAgentRelation:update',
+        'performance:teacherAgentRelation:delete',
+        'performance:teacherAttribution:page',
+        'performance:teacherAttribution:info',
+        'performance:teacherAttribution:assign',
+        'performance:teacherAttribution:change',
+        'performance:teacherAttribution:remove',
+        'performance:teacherAttributionConflict:page',
+        'performance:teacherAttributionConflict:info',
+        'performance:teacherAttributionConflict:create',
+        'performance:teacherAttributionConflict:resolve',
+        'performance:teacherAgentAudit:page',
+        'performance:teacherAgentAudit:info',
         'performance:recruitPlan:page',
         'performance:recruitPlan:info',
         'performance:recruitPlan:add',
@@ -3335,6 +3862,15 @@ async function main() {
         'performance:purchaseOrder:add',
         'performance:purchaseOrder:update',
         'performance:purchaseOrder:delete',
+        'performance:purchaseOrder:submitInquiry',
+        'performance:purchaseOrder:submitApproval',
+        'performance:purchaseOrder:approve',
+        'performance:purchaseOrder:reject',
+        'performance:purchaseOrder:receive',
+        'performance:purchaseOrder:close',
+        'performance:purchaseReport:summary',
+        'performance:purchaseReport:trend',
+        'performance:purchaseReport:supplierStats',
         'performance:supplier:page',
         'performance:supplier:info',
         'performance:supplier:add',
@@ -3427,6 +3963,11 @@ async function main() {
         '/performance/hiring',
         '/performance/meeting',
         '/performance/purchase-order',
+        '/performance/purchase-inquiry',
+        '/performance/purchase-approval',
+        '/performance/purchase-execution',
+        '/performance/purchase-receipt',
+        '/performance/purchase-report',
         '/performance/supplier',
         '/performance/talentAsset',
         '/performance/asset/dashboard',
@@ -3514,6 +4055,28 @@ async function main() {
         'performance:teacherClass:update',
         'performance:teacherClass:delete',
         'performance:teacherTodo:page',
+        'performance:teacherAgent:page',
+        'performance:teacherAgent:info',
+        'performance:teacherAgent:add',
+        'performance:teacherAgent:update',
+        'performance:teacherAgent:updateStatus',
+        'performance:teacherAgent:blacklist',
+        'performance:teacherAgent:unblacklist',
+        'performance:teacherAgentRelation:page',
+        'performance:teacherAgentRelation:add',
+        'performance:teacherAgentRelation:update',
+        'performance:teacherAgentRelation:delete',
+        'performance:teacherAttribution:page',
+        'performance:teacherAttribution:info',
+        'performance:teacherAttribution:assign',
+        'performance:teacherAttribution:change',
+        'performance:teacherAttribution:remove',
+        'performance:teacherAttributionConflict:page',
+        'performance:teacherAttributionConflict:info',
+        'performance:teacherAttributionConflict:create',
+        'performance:teacherAttributionConflict:resolve',
+        'performance:teacherAgentAudit:page',
+        'performance:teacherAgentAudit:info',
         'performance:recruitPlan:page',
         'performance:recruitPlan:info',
         'performance:recruitPlan:add',
@@ -3547,6 +4110,15 @@ async function main() {
         'performance:purchaseOrder:info',
         'performance:purchaseOrder:add',
         'performance:purchaseOrder:update',
+        'performance:purchaseOrder:submitInquiry',
+        'performance:purchaseOrder:submitApproval',
+        'performance:purchaseOrder:approve',
+        'performance:purchaseOrder:reject',
+        'performance:purchaseOrder:receive',
+        'performance:purchaseOrder:close',
+        'performance:purchaseReport:summary',
+        'performance:purchaseReport:trend',
+        'performance:purchaseReport:supplierStats',
         'performance:supplier:page',
         'performance:supplier:info',
         'performance:assetDashboard:summary',
@@ -3646,6 +4218,17 @@ async function main() {
         'performance:teacherClass:update',
         'performance:teacherClass:delete',
         'performance:teacherTodo:page',
+        'performance:teacherAgent:page',
+        'performance:teacherAgent:info',
+        'performance:teacherAgentRelation:page',
+        'performance:teacherAttribution:page',
+        'performance:teacherAttribution:info',
+        'performance:teacherAttribution:assign',
+        'performance:teacherAttribution:change',
+        'performance:teacherAttributionConflict:page',
+        'performance:teacherAttributionConflict:info',
+        'performance:teacherAgentAudit:page',
+        'performance:teacherAgentAudit:info',
       ],
     });
     const readonlyMenuIds = await collectMenuIds({
@@ -3663,6 +4246,15 @@ async function main() {
         'performance:teacherClass:page',
         'performance:teacherClass:info',
         'performance:teacherTodo:page',
+        'performance:teacherAgent:page',
+        'performance:teacherAgent:info',
+        'performance:teacherAgentRelation:page',
+        'performance:teacherAttribution:page',
+        'performance:teacherAttribution:info',
+        'performance:teacherAttributionConflict:page',
+        'performance:teacherAttributionConflict:info',
+        'performance:teacherAgentAudit:page',
+        'performance:teacherAgentAudit:info',
       ],
     });
     const feedbackMenuIds = await collectMenuIds({
@@ -4297,7 +4889,7 @@ async function main() {
     const followAfterTomorrow = formatDateTime(addDays(currentDate, 2));
     const cooperationYesterday = formatDateTime(addDays(currentDate, -2));
 
-    await replaceTeacherChannelData([
+    const seededTeacherRows = await replaceTeacherChannelData([
       {
         teacherName: '联调-主题19平台待联系班主任',
         phone: '13812341901',
@@ -4434,6 +5026,156 @@ async function main() {
         ],
       },
     ]);
+
+    const teacherChannelAgentSeed = await replaceTeacherChannelAgentData({
+      seededTeachers: seededTeacherRows,
+      seedAgents: [
+        {
+          name: '联调-主题19平台直营渠道',
+          agentType: 'direct',
+          level: 'L0',
+          region: '上海',
+          cooperationStatus: 'partnered',
+          status: 'active',
+          blacklistStatus: 'normal',
+          remark: '主题19 V0.2 联调-直营渠道样例',
+          ownerEmployeeId: managerUserId,
+          ownerDepartmentId: platformGroupId,
+        },
+        {
+          name: '联调-主题19平台一级代理',
+          agentType: 'institution',
+          level: 'L1',
+          region: '上海',
+          cooperationStatus: 'partnered',
+          status: 'active',
+          blacklistStatus: 'normal',
+          remark: '主题19 V0.2 联调-一级代理样例',
+          ownerEmployeeId: managerUserId,
+          ownerDepartmentId: platformGroupId,
+        },
+        {
+          name: '联调-主题19平台二级代理',
+          agentType: 'individual',
+          level: 'L2',
+          region: '上海',
+          cooperationStatus: 'negotiating',
+          status: 'active',
+          blacklistStatus: 'normal',
+          remark: '主题19 V0.2 联调-二级代理样例',
+          ownerEmployeeId: employeeUserId,
+          ownerDepartmentId: platformGroupId,
+        },
+        {
+          name: '联调-主题19销售代理',
+          agentType: 'institution',
+          level: 'L1',
+          region: '杭州',
+          cooperationStatus: 'partnered',
+          status: 'active',
+          blacklistStatus: 'normal',
+          remark: '主题19 V0.2 联调-跨部门隐藏代理样例',
+          ownerEmployeeId: salesEmployeeUserId,
+          ownerDepartmentId: salesCenterId,
+        },
+      ],
+      seedRelations: [
+        {
+          parentAgentName: '联调-主题19平台一级代理',
+          childAgentName: '联调-主题19平台二级代理',
+          status: 'active',
+          effectiveTime: followYesterday,
+          remark: '主题19 V0.2 联调-平台代理树样例',
+          ownerEmployeeId: managerUserId,
+          ownerDepartmentId: platformGroupId,
+        },
+      ],
+      seedAttributions: [
+        {
+          teacherName: '联调-主题19平台已合作班主任',
+          agentName: '联调-主题19平台一级代理',
+          attributionType: 'agent',
+          status: 'active',
+          sourceType: 'assign',
+          sourceRemark: '主题19 V0.2 联调-已合作班主任归因样例',
+          effectiveTime: followToday,
+          operatorId: managerUserId,
+          operatorName: '研发经理',
+        },
+        {
+          teacherName: '联调-主题19销售隐藏班主任',
+          agentName: '联调-主题19销售代理',
+          attributionType: 'agent',
+          status: 'active',
+          sourceType: 'assign',
+          sourceRemark: '主题19 V0.2 联调-跨部门隐藏归因样例',
+          effectiveTime: followToday,
+          operatorId: salesEmployeeUserId,
+          operatorName: '销售员工',
+        },
+      ],
+      seedConflicts: [
+        {
+          teacherName: '联调-主题19平台逾期待跟进班主任',
+          candidateAgentNames: ['联调-主题19平台一级代理', '联调-主题19平台二级代理'],
+          status: 'open',
+          resolution: null,
+          resolutionRemark: '主题19 V0.2 联调-待处理归因冲突样例',
+          currentAgentName: '联调-主题19平台一级代理',
+          requestedAgentName: '联调-主题19平台二级代理',
+          requestedById: employeeUserId,
+        },
+      ],
+    });
+
+    await replaceTeacherChannelAgentAuditData(
+      [
+        {
+          resourceType: 'teacherAgent',
+          resourceId: teacherChannelAgentSeed.insertedAgents[1]?.id,
+          action: 'seed',
+          operatorId: hrUserId,
+          beforeSnapshot: null,
+          afterSnapshot: {
+            name: '联调-主题19平台一级代理',
+            status: 'active',
+          },
+        },
+        {
+          resourceType: 'teacherAgentRelation',
+          resourceId: teacherChannelAgentSeed.insertedRelations[0]?.id,
+          action: 'seed',
+          operatorId: hrUserId,
+          beforeSnapshot: null,
+          afterSnapshot: {
+            parentAgentName: '联调-主题19平台一级代理',
+            childAgentName: '联调-主题19平台二级代理',
+          },
+        },
+        {
+          resourceType: 'teacherAttribution',
+          resourceId: teacherChannelAgentSeed.insertedAttributions[0]?.id,
+          action: 'seed',
+          operatorId: hrUserId,
+          beforeSnapshot: null,
+          afterSnapshot: {
+            teacherName: '联调-主题19平台已合作班主任',
+            agentName: '联调-主题19平台一级代理',
+          },
+        },
+        {
+          resourceType: 'teacherAttributionConflict',
+          resourceId: teacherChannelAgentSeed.insertedConflicts[0]?.id,
+          action: 'seed',
+          operatorId: hrUserId,
+          beforeSnapshot: null,
+          afterSnapshot: {
+            teacherName: '联调-主题19平台逾期待跟进班主任',
+            status: 'open',
+          },
+        },
+      ].filter(item => Number(item.resourceId || 0) > 0)
+    );
 
     const assessmentIdMap = await replaceAssessments([
       {

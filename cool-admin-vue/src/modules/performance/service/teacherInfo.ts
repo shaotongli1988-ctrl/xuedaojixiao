@@ -4,7 +4,13 @@
  * 不负责跟进、合作标记、班级和看板请求。
  */
 import { BaseService } from '/@/cool';
-import type { TeacherCooperationStatus, TeacherInfoPageResult, TeacherInfoRecord } from '../types';
+import type {
+	TeacherAttributionInfo,
+	TeacherAttributionRecord,
+	TeacherCooperationStatus,
+	TeacherInfoPageResult,
+	TeacherInfoRecord
+} from '../types';
 
 export default class PerformanceTeacherInfoService extends BaseService {
 	permission = {
@@ -50,6 +56,22 @@ export default class PerformanceTeacherInfoService extends BaseService {
 			method: 'POST',
 			data
 		}) as unknown as Promise<TeacherInfoRecord>;
+	}
+
+	fetchAttributionInfo(params: { id: number }) {
+		return this.request({
+			url: '/attributionInfo',
+			method: 'GET',
+			params
+		}) as unknown as Promise<TeacherAttributionInfo>;
+	}
+
+	fetchAttributionHistory(params: { id: number }) {
+		return this.request({
+			url: '/attributionHistory',
+			method: 'GET',
+			params
+		}) as unknown as Promise<TeacherAttributionRecord[]>;
 	}
 }
 

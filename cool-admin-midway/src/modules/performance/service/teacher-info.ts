@@ -30,4 +30,12 @@ export class PerformanceTeacherInfoService {
   updateStatus(payload: any) {
     return this.performanceTeacherChannelCoreService.teacherInfoUpdateStatus(payload);
   }
+
+  attributionInfo(id: number) {
+    return this.performanceTeacherChannelCoreService.teacherInfoAttributionInfo(id);
+  }
+
+  attributionHistory(id: number) {
+    return this.performanceTeacherChannelCoreService.teacherInfoAttributionHistory(id);
+  }
 }

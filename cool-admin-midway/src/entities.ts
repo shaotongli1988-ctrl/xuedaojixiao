@@ -60,18 +60,23 @@ import * as entity57 from './modules/performance/entity/salary';
 import * as entity58 from './modules/performance/entity/suggestion';
 import * as entity59 from './modules/performance/entity/supplier';
 import * as entity60 from './modules/performance/entity/talent-asset';
-import * as entity61 from './modules/performance/entity/teacher-class';
-import * as entity62 from './modules/performance/entity/teacher-follow';
-import * as entity63 from './modules/performance/entity/teacher-info';
-import * as entity64 from './modules/plugin/entity/info';
-import * as entity65 from './modules/recycle/entity/data';
-import * as entity66 from './modules/space/entity/info';
-import * as entity67 from './modules/space/entity/type';
-import * as entity68 from './modules/task/entity/info';
-import * as entity69 from './modules/task/entity/log';
-import * as entity70 from './modules/user/entity/address';
-import * as entity71 from './modules/user/entity/info';
-import * as entity72 from './modules/user/entity/wx';
+import * as entity61 from './modules/performance/entity/teacher-agent-audit';
+import * as entity62 from './modules/performance/entity/teacher-agent-relation';
+import * as entity63 from './modules/performance/entity/teacher-agent';
+import * as entity64 from './modules/performance/entity/teacher-attribution-conflict';
+import * as entity65 from './modules/performance/entity/teacher-attribution';
+import * as entity66 from './modules/performance/entity/teacher-class';
+import * as entity67 from './modules/performance/entity/teacher-follow';
+import * as entity68 from './modules/performance/entity/teacher-info';
+import * as entity69 from './modules/plugin/entity/info';
+import * as entity70 from './modules/recycle/entity/data';
+import * as entity71 from './modules/space/entity/info';
+import * as entity72 from './modules/space/entity/type';
+import * as entity73 from './modules/task/entity/info';
+import * as entity74 from './modules/task/entity/log';
+import * as entity75 from './modules/user/entity/address';
+import * as entity76 from './modules/user/entity/info';
+import * as entity77 from './modules/user/entity/wx';
 export const entities = [
   ...Object.values(entity0),
   ...Object.values(entity1),
@@ -146,4 +151,9 @@ export const entities = [
   ...Object.values(entity70),
   ...Object.values(entity71),
   ...Object.values(entity72),
+  ...Object.values(entity73),
+  ...Object.values(entity74),
+  ...Object.values(entity75),
+  ...Object.values(entity76),
+  ...Object.values(entity77),
 ];

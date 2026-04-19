@@ -39,6 +39,36 @@ const allWritePerms = [
   'performance:teacherClass:update',
   'performance:teacherClass:delete',
 ];
+const agentReadPerms = [
+  'performance:teacherAgent:page',
+  'performance:teacherAgent:info',
+  'performance:teacherAgentRelation:page',
+  'performance:teacherAttribution:page',
+  'performance:teacherAttribution:info',
+  'performance:teacherAgentAudit:page',
+  'performance:teacherAgentAudit:info',
+];
+const agentWritePerms = [
+  'performance:teacherAgent:add',
+  'performance:teacherAgent:update',
+  'performance:teacherAgent:updateStatus',
+  'performance:teacherAgent:blacklist',
+  'performance:teacherAgent:unblacklist',
+  'performance:teacherAgentRelation:add',
+  'performance:teacherAgentRelation:update',
+  'performance:teacherAgentRelation:delete',
+  'performance:teacherAttribution:assign',
+  'performance:teacherAttribution:change',
+  'performance:teacherAttribution:remove',
+];
+const conflictReadPerms = [
+  'performance:teacherAttributionConflict:page',
+  'performance:teacherAttributionConflict:info',
+];
+const conflictWritePerms = [
+  'performance:teacherAttributionConflict:create',
+  'performance:teacherAttributionConflict:resolve',
+];
 
 const expectedUsers = [
   {
@@ -51,6 +81,10 @@ const expectedUsers = [
         'performance:teacherInfo:page',
         'performance:teacherInfo:info',
         ...allWritePerms,
+        ...agentReadPerms,
+        ...agentWritePerms,
+        ...conflictReadPerms,
+        ...conflictWritePerms,
         'performance:teacherFollow:page',
         'performance:teacherClass:page',
         'performance:teacherClass:info',
@@ -81,6 +115,10 @@ const expectedUsers = [
         'performance:teacherClass:update',
         'performance:teacherClass:delete',
         'performance:teacherTodo:page',
+        ...agentReadPerms,
+        ...agentWritePerms,
+        ...conflictReadPerms,
+        ...conflictWritePerms,
       ],
       permsAbsent: [],
     },
@@ -106,8 +144,24 @@ const expectedUsers = [
         'performance:teacherClass:update',
         'performance:teacherClass:delete',
         'performance:teacherTodo:page',
+        ...agentReadPerms,
+        'performance:teacherAttribution:assign',
+        'performance:teacherAttribution:change',
+        ...conflictReadPerms,
       ],
-      permsAbsent: ['performance:teacherInfo:assign'],
+      permsAbsent: [
+        'performance:teacherInfo:assign',
+        'performance:teacherAgent:add',
+        'performance:teacherAgent:update',
+        'performance:teacherAgent:updateStatus',
+        'performance:teacherAgent:blacklist',
+        'performance:teacherAgent:unblacklist',
+        'performance:teacherAgentRelation:add',
+        'performance:teacherAgentRelation:update',
+        'performance:teacherAgentRelation:delete',
+        'performance:teacherAttribution:remove',
+        ...conflictWritePerms,
+      ],
     },
   },
   {
@@ -123,8 +177,10 @@ const expectedUsers = [
         'performance:teacherClass:page',
         'performance:teacherClass:info',
         'performance:teacherTodo:page',
+        ...agentReadPerms,
+        ...conflictReadPerms,
       ],
-      permsAbsent: allWritePerms,
+      permsAbsent: [...allWritePerms, ...agentWritePerms, ...conflictWritePerms],
     },
   },
 ];
@@ -140,6 +196,12 @@ const seededClassNames = {
   active: '联调-主题19平台进行中班级',
   closed: '联调-主题19平台关闭班级',
   hidden: '联调-主题19销售班级',
+};
+const seededAgentNames = {
+  direct: '联调-主题19平台直营渠道',
+  platformPrimary: '联调-主题19平台一级代理',
+  platformSecondary: '联调-主题19平台二级代理',
+  salesHidden: '联调-主题19销售代理',
 };
 
 function md5(value) {
@@ -598,6 +660,35 @@ async function teacherInfoInfo(reporter, options, token, id, scope, expectation 
   return response.body?.data || null;
 }
 
+async function teacherAttributionInfo(reporter, options, token, teacherId, scope, expectation = {}) {
+  const response = await getJson(
+    options,
+    token,
+    `/admin/performance/teacherInfo/attributionInfo?id=${Number(teacherId)}`
+  );
+
+  if (expectation.denied) {
+    const problem = validateDeniedResponse(response, expectation.deniedMessageIncludes || []);
+    if (problem) {
+      reporter.fail(scope, problem);
+      return null;
+    }
+    reporter.pass(scope, `denied as expected: ${formatResponse(response.body)}`);
+    return null;
+  }
+
+  if (response.body?.code !== successCode) {
+    reporter.fail(scope, formatResponse(response.body));
+    return null;
+  }
+
+  reporter.pass(
+    scope,
+    `current=${response.body?.data?.currentAttribution?.agentName || 'direct'} conflicts=${response.body?.data?.openConflictCount || 0}`
+  );
+  return response.body?.data || null;
+}
+
 async function teacherAction(reporter, options, token, endpoint, payload, scope, expectation = {}) {
   const response = await postJson(options, token, endpoint, payload);
 
@@ -729,6 +820,56 @@ async function buildSeedContext(reporter, options, hrToken) {
     return null;
   }
 
+  const agentPage = await teacherAction(
+    reporter,
+    options,
+    hrToken,
+    '/admin/performance/teacherAgent/page',
+    {
+      page: 1,
+      size: 50,
+      keyword: '联调-主题19',
+    },
+    'seed teacherAgent:page'
+  );
+  const agentList = Array.isArray(agentPage?.list) ? agentPage.list : [];
+  const platformPrimaryAgent = agentList.find(item => item.name === seededAgentNames.platformPrimary);
+  const platformSecondaryAgent = agentList.find(item => item.name === seededAgentNames.platformSecondary);
+  const salesHiddenAgent = agentList.find(item => item.name === seededAgentNames.salesHidden);
+
+  try {
+    ensure(platformPrimaryAgent?.id, `missing seeded agent ${seededAgentNames.platformPrimary}`);
+    ensure(platformSecondaryAgent?.id, `missing seeded agent ${seededAgentNames.platformSecondary}`);
+    ensure(salesHiddenAgent?.id, `missing seeded agent ${seededAgentNames.salesHidden}`);
+  } catch (error) {
+    reporter.fail('seed agent context', error.message);
+    return null;
+  }
+
+  const conflictPage = await teacherAction(
+    reporter,
+    options,
+    hrToken,
+    '/admin/performance/teacherAttributionConflict/page',
+    {
+      page: 1,
+      size: 50,
+      status: 'open',
+    },
+    'seed teacherAttributionConflict:page'
+  );
+  const conflictList = Array.isArray(conflictPage?.list) ? conflictPage.list : [];
+  const platformConflict = conflictList.find(
+    item => item.teacherName === seededTeacherNames.platformOverdue
+  );
+
+  try {
+    ensure(platformConflict?.id, `missing seeded conflict ${seededTeacherNames.platformOverdue}`);
+  } catch (error) {
+    reporter.fail('seed conflict context', error.message);
+    return null;
+  }
+
   return {
     teachers: {
       platformWaiting,
@@ -739,6 +880,14 @@ async function buildSeedContext(reporter, options, hrToken) {
     classes: {
       activeClass,
       closedClass,
+    },
+    agents: {
+      platformPrimaryAgent,
+      platformSecondaryAgent,
+      salesHiddenAgent,
+    },
+    conflicts: {
+      platformConflict,
     },
   };
 }
@@ -973,6 +1122,165 @@ async function verifyHrChain(reporter, options, session, context) {
       'hr teacherClass:info seeded closed'
     );
   }
+
+  const primaryAgent = await teacherAction(
+    reporter,
+    options,
+    session.token,
+    '/admin/performance/teacherAgent/add',
+    {
+      name: `smoke-theme19-agent-primary-${suffix}`,
+      agentType: 'institution',
+      level: 'L1',
+      region: '上海',
+      cooperationStatus: 'partnered',
+      remark: 'theme19 smoke primary agent',
+    },
+    'hr teacherAgent:add primary'
+  );
+  const secondaryAgent = await teacherAction(
+    reporter,
+    options,
+    session.token,
+    '/admin/performance/teacherAgent/add',
+    {
+      name: `smoke-theme19-agent-secondary-${suffix}`,
+      agentType: 'individual',
+      level: 'L2',
+      region: '上海',
+      cooperationStatus: 'negotiating',
+      remark: 'theme19 smoke secondary agent',
+    },
+    'hr teacherAgent:add secondary'
+  );
+
+  if (!primaryAgent?.id || !secondaryAgent?.id) {
+    return;
+  }
+
+  await teacherAction(
+    reporter,
+    options,
+    session.token,
+    '/admin/performance/teacherAgentRelation/add',
+    {
+      parentAgentId: primaryAgent.id,
+      childAgentId: secondaryAgent.id,
+      effectiveTime: formatDateTime(new Date()),
+      remark: 'theme19 smoke relation',
+    },
+    'hr teacherAgentRelation:add'
+  );
+
+  const attributionAssigned = await teacherAction(
+    reporter,
+    options,
+    session.token,
+    '/admin/performance/teacherAttribution/assign',
+    {
+      teacherId: created.id,
+      agentId: primaryAgent.id,
+      sourceRemark: 'theme19 smoke initial attribution',
+    },
+    'hr teacherAttribution:assign'
+  );
+  if (Number(attributionAssigned?.currentAttribution?.agentId || 0) === Number(primaryAgent.id)) {
+    reporter.pass('hr attribution current agent', `agentId=${primaryAgent.id}`);
+  } else {
+    reporter.fail(
+      'hr attribution current agent',
+      `expected ${primaryAgent.id} got ${attributionAssigned?.currentAttribution?.agentId || 'unknown'}`
+    );
+  }
+
+  const attributionConflict = await teacherAction(
+    reporter,
+    options,
+    session.token,
+    '/admin/performance/teacherAttribution/change',
+    {
+      teacherId: created.id,
+      agentId: secondaryAgent.id,
+      sourceRemark: 'theme19 smoke conflict attribution',
+    },
+    'hr teacherAttribution:change conflicted'
+  );
+  if (Number(attributionConflict?.openConflictCount || 0) >= 1) {
+    reporter.pass(
+      'hr attribution conflict count',
+      `openConflictCount=${attributionConflict.openConflictCount}`
+    );
+  } else {
+    reporter.fail('hr attribution conflict count', 'expected open conflict after attribution change');
+  }
+
+  const conflictPage = await teacherAction(
+    reporter,
+    options,
+    session.token,
+    '/admin/performance/teacherAttributionConflict/page',
+    {
+      page: 1,
+      size: 50,
+      status: 'open',
+    },
+    'hr teacherAttributionConflict:page'
+  );
+  const createdConflict = (conflictPage?.list || []).find(
+    item => Number(item.teacherId || 0) === Number(created.id)
+  );
+  if (!createdConflict?.id) {
+    reporter.fail('hr conflict locate', `missing conflict for teacher ${created.id}`);
+    return;
+  }
+
+  await teacherAction(
+    reporter,
+    options,
+    session.token,
+    '/admin/performance/teacherAttributionConflict/resolve',
+    {
+      id: createdConflict.id,
+      resolution: 'resolved',
+      agentId: secondaryAgent.id,
+      resolutionRemark: 'theme19 smoke resolved to secondary',
+    },
+    'hr teacherAttributionConflict:resolve'
+  );
+
+  const resolvedAttribution = await teacherAttributionInfo(
+    reporter,
+    options,
+    session.token,
+    created.id,
+    'hr teacherInfo:attributionInfo resolved'
+  );
+  if (Number(resolvedAttribution?.currentAttribution?.agentId || 0) === Number(secondaryAgent.id)) {
+    reporter.pass('hr resolved attribution winner', `agentId=${secondaryAgent.id}`);
+  } else {
+    reporter.fail(
+      'hr resolved attribution winner',
+      `expected ${secondaryAgent.id} got ${resolvedAttribution?.currentAttribution?.agentId || 'unknown'}`
+    );
+  }
+
+  const auditPage = await teacherAction(
+    reporter,
+    options,
+    session.token,
+    '/admin/performance/teacherAgentAudit/page',
+    {
+      page: 1,
+      size: 50,
+    },
+    'hr teacherAgentAudit:page'
+  );
+  const auditRows = Array.isArray(auditPage?.list) ? auditPage.list : [];
+  if (auditRows.some(item => ['teacherAgent', 'teacherAttributionConflict'].includes(item.resourceType))) {
+    reporter.pass('hr audit rows', `rows=${auditRows.length}`);
+  } else {
+    reporter.fail('hr audit rows', 'missing teacherAgent/teacherAttributionConflict audit records');
+  }
 }
 
 async function verifyManagerChain(reporter, options, session, context) {
@@ -1039,6 +1347,30 @@ async function verifyManagerChain(reporter, options, session, context) {
   } else if (assignedInfo) {
     reporter.fail('manager assign owner', `unexpected ownerEmployeeId=${assignedInfo.ownerEmployeeId}`);
   }
+
+  const agentPage = await teacherAction(
+    reporter,
+    options,
+    session.token,
+    '/admin/performance/teacherAgent/page',
+    {
+      page: 1,
+      size: 50,
+      keyword: '联调-主题19',
+    },
+    'manager teacherAgent:page scope'
+  );
+  const agentNames = new Set((agentPage?.list || []).map(item => item.name));
+  if (agentNames.has(seededAgentNames.platformPrimary)) {
+    reporter.pass('manager agent scope visible', seededAgentNames.platformPrimary);
+  } else {
+    reporter.fail('manager agent scope visible', `missing ${seededAgentNames.platformPrimary}`);
+  }
+  if (agentNames.has(seededAgentNames.salesHidden)) {
+    reporter.fail('manager agent scope hidden', `unexpected ${seededAgentNames.salesHidden}`);
+  } else {
+    reporter.pass('manager agent scope hidden', seededAgentNames.salesHidden);
+  }
 }
 
 async function verifyEmployeeChain(reporter, options, session, managerSession, context) {
@@ -1074,6 +1406,23 @@ async function verifyEmployeeChain(reporter, options, session, managerSession, c
       ownerEmployeeId: Number(managerSession.person.id || 0),
     },
     'employee teacherInfo:assign denied',
+    {
+      denied: true,
+      deniedMessageIncludes: ['无权限'],
+    }
+  );
+
+  await teacherAction(
+    reporter,
+    options,
+    session.token,
+    '/admin/performance/teacherAttributionConflict/resolve',
+    {
+      id: context.conflicts.platformConflict.id,
+      resolution: 'cancelled',
+      resolutionRemark: 'employee denied smoke',
+    },
+    'employee teacherAttributionConflict:resolve denied',
     {
       denied: true,
       deniedMessageIncludes: ['无权限'],
@@ -1120,6 +1469,14 @@ async function verifyReadonlyChain(reporter, options, session, context) {
     }
   }
 
+  await teacherAttributionInfo(
+    reporter,
+    options,
+    session.token,
+    context.teachers.platformPartnered.id,
+    'readonly teacherInfo:attributionInfo'
+  );
+
   await teacherAction(
     reporter,
     options,
@@ -1130,6 +1487,21 @@ async function verifyReadonlyChain(reporter, options, session, context) {
       followContent: '只读越权写入',
     },
     'readonly teacherFollow:add denied',
+    {
+      denied: true,
+    }
+  );
+
+  await teacherAction(
+    reporter,
+    options,
+    session.token,
+    '/admin/performance/teacherAgent/add',
+    {
+      name: `readonly-denied-${uniqueSuffix()}`,
+      agentType: 'institution',
+    },
+    'readonly teacherAgent:add denied',
     {
       denied: true,
     }
