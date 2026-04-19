@@ -4,7 +4,7 @@
  * 维护重点：保持各模块都走同一套 page/info/stats/add/update/delete 请求入口，避免前端自行发散接口形状。
  */
 
-import { BaseService } from '/@/cool';
+import { BaseService } from '/@/cool/service/base';
 import { buildOfficeLedgerEndpoint, buildOfficeLedgerPermissions } from './office-ledger-shared.js';
 
 export interface OfficeLedgerServicePermission {

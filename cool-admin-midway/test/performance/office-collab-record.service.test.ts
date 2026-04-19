@@ -321,4 +321,191 @@ describe('performance office collab record service', () => {
       })
     ).rejects.toThrow('同步状态不合法');
   });
+
+  test('should support honor normal flow and reject archived record maintenance', async () => {
+    const { service, repos } = createService([
+      ...buildModulePerms('honor'),
+    ]);
+
+    const honorAdded = await service.addByModule('honor', {
+      title: '年度优秀团队',
+      honorType: 'team',
+      level: 'city',
+      winnerName: '招生运营组',
+      department: '运营中心',
+      issuer: '上海市教委',
+      awardedAt: '2026-04-18',
+      impactScore: 92,
+      status: 'published',
+      notes: '主题22联调荣誉样例',
+    });
+
+    expect(honorAdded).toMatchObject({
+      title: '年度优秀团队',
+      honorType: 'team',
+      level: 'city',
+      status: 'published',
+      impactScore: 92,
+    });
+
+    const honorPage = await service.pageByModule('honor', {
+      page: 1,
+      size: 10,
+      keyword: '年度优秀团队',
+    });
+    expect(honorPage.pagination.total).toBe(1);
+
+    const honorStats = await service.statsByModule('honor', {});
+    expect(honorStats).toEqual({
+      total: 1,
+      publishedCount: 1,
+      thisYearCount: 1,
+      avgImpactScore: 92,
+    });
+
+    const archivedHonor = await service.addByModule('honor', {
+      title: '归档荣誉',
+      honorType: 'individual',
+      level: 'departmental',
+      winnerName: '王老师',
+      department: '教务部',
+      issuer: '校区',
+      awardedAt: '2026-03-01',
+      impactScore: 80,
+      status: 'archived',
+    });
+
+    await expect(
+      service.updateByModule('honor', {
+        id: archivedHonor.id,
+        title: '归档后修改',
+      })
+    ).rejects.toThrow('荣誉管理已归档记录不允许更新');
+
+    await expect(
+      service.deleteByModule('honor', [archivedHonor.id])
+    ).rejects.toThrow('荣誉管理已归档记录不允许删除');
+
+    await service.deleteByModule('honor', [honorAdded.id]);
+    expect(
+      repos.collabRepo.rows.some((item: any) => Number(item.id) === Number(honorAdded.id))
+    ).toBe(false);
+  });
+
+  test('should support design collab and express collab normal flow', async () => {
+    const { service, repos } = createService([
+      ...buildModulePerms('designCollab'),
+      ...buildModulePerms('expressCollab'),
+    ]);
+
+    const designAdded = await service.addByModule('designCollab', {
+      title: '招生海报改版',
+      requesterName: '市场中心',
+      assigneeName: '设计师A',
+      priority: 'high',
+      dueDate: '2026-05-08',
+      progress: 45,
+      workload: 3,
+      status: 'in_progress',
+      relatedMaterialNo: 'PMS-T22-XC-001',
+      notes: '主题22联调设计协同样例',
+    });
+
+    expect(designAdded).toMatchObject({
+      title: '招生海报改版',
+      priority: 'high',
+      progress: 45,
+      status: 'in_progress',
+      workload: 3,
+    });
+
+    const designUpdated = await service.updateByModule('designCollab', {
+      id: designAdded.id,
+      progress: 88,
+      status: 'review',
+    });
+    expect(designUpdated).toMatchObject({
+      id: designAdded.id,
+      progress: 88,
+      status: 'review',
+    });
+
+    const designPage = await service.pageByModule('designCollab', {
+      page: 1,
+      size: 10,
+      keyword: '招生海报改版',
+    });
+    expect(designPage.pagination.total).toBe(1);
+
+    const designStats = await service.statsByModule('designCollab', {});
+    expect(designStats).toEqual({
+      total: 1,
+      doneCount: 0,
+      inProgressCount: 1,
+      overdueCount: 0,
+    });
+
+    const expressAdded = await service.addByModule('expressCollab', {
+      title: '校区资料寄送',
+      orderNo: 'EXP-20260419-001',
+      courierCompany: '顺丰',
+      serviceLevel: 'express',
+      origin: '上海总部',
+      destination: '杭州校区',
+      senderName: '行政A',
+      receiverName: '校区B',
+      etaDate: '2026-04-28',
+      lastUpdate: '2026-04-19 09:30:00',
+      syncStatus: 'pending',
+      lastEvent: '已下单',
+      status: 'in_transit',
+      notes: '主题22联调快递协同样例',
+    });
+
+    expect(expressAdded).toMatchObject({
+      title: '校区资料寄送',
+      courierCompany: '顺丰',
+      serviceLevel: 'express',
+      syncStatus: 'pending',
+      status: 'in_transit',
+    });
+
+    const expressUpdated = await service.updateByModule('expressCollab', {
+      id: expressAdded.id,
+      syncStatus: 'synced',
+      status: 'delivered',
+      lastEvent: '已签收',
+    });
+    expect(expressUpdated).toMatchObject({
+      id: expressAdded.id,
+      syncStatus: 'synced',
+      status: 'delivered',
+      lastEvent: '已签收',
+    });
+
+    const expressPage = await service.pageByModule('expressCollab', {
+      page: 1,
+      size: 10,
+      keyword: '校区资料寄送',
+    });
+    expect(expressPage.pagination.total).toBe(1);
+
+    const expressStats = await service.statsByModule('expressCollab', {});
+    expect(expressStats).toEqual({
+      total: 1,
+      inTransitCount: 0,
+      deliveredCount: 1,
+      exceptionCount: 0,
+      pendingSyncCount: 0,
+    });
+
+    await service.deleteByModule('designCollab', [designAdded.id]);
+    await service.deleteByModule('expressCollab', [expressAdded.id]);
+    expect(
+      repos.collabRepo.rows.some((item: any) => Number(item.id) === Number(designAdded.id))
+    ).toBe(false);
+    expect(
+      repos.collabRepo.rows.some((item: any) => Number(item.id) === Number(expressAdded.id))
+    ).toBe(false);
+  });
 });

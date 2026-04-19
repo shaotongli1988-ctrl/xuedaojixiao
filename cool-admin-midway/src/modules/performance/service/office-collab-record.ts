@@ -333,6 +333,7 @@ export class PerformanceOfficeCollabRecordService extends BaseService {
     }
 
     const current = await this.requireRecord(moduleKey, id);
+    this.assertRecordMutable(moduleKey, current, '更新');
     const normalized = await this.normalizePayload(moduleKey, payload, 'update', current);
     await this.performanceOfficeCollabRecordEntity.update({ id: current.id }, normalized);
     return this.infoByModule(moduleKey, current.id);
@@ -354,6 +355,14 @@ export class PerformanceOfficeCollabRecordService extends BaseService {
     const currentRows = await this.performanceOfficeCollabRecordEntity.find({
       where: { moduleKey },
     } as any);
+    const readonlyRow = currentRows.find(
+      item => validIds.includes(Number(item.id)) && item.status === 'archived'
+    );
+    if (readonlyRow) {
+      throw new CoolCommException(
+        `${MODULE_META[moduleKey].label}已归档记录不允许删除`
+      );
+    }
     const deletableIds = currentRows
       .filter(item => validIds.includes(Number(item.id)))
       .map(item => Number(item.id));
@@ -363,6 +372,18 @@ export class PerformanceOfficeCollabRecordService extends BaseService {
     }
 
     await this.performanceOfficeCollabRecordEntity.delete(deletableIds as any);
+  }
+
+  private assertRecordMutable(
+    moduleKey: OfficeCollabModuleKey,
+    record: PerformanceOfficeCollabEntity,
+    actionLabel: string
+  ) {
+    if (record.status === 'archived') {
+      throw new CoolCommException(
+        `${MODULE_META[moduleKey].label}已归档记录不允许${actionLabel}`
+      );
+    }
   }
 
   private async listByModule(moduleKey: OfficeCollabModuleKey) {

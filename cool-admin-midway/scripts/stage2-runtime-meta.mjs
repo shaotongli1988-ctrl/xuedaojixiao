@@ -25,6 +25,7 @@ export const STAGE2_RUNTIME_META_SCOPES = Object.freeze([
   'theme19-teacher-channel',
   'theme20-asset-management',
   'theme21-office-knowledge',
+  'theme22-office-collab',
 ]);
 
 export function buildStage2SeedMeta(updatedAt = new Date().toISOString()) {

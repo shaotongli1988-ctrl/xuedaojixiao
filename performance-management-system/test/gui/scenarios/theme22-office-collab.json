@@ -1,0 +1,334 @@
+{
+  "meta": {
+    "name": "theme22-office-collab-gui",
+    "description": "Theme22 行政协同记录管理最小 GUI 点测"
+  },
+  "defaults": {
+    "uiBaseUrl": "http://127.0.0.1:9000",
+    "apiBaseUrl": "http://127.0.0.1:8129",
+    "chromeDebugUrl": "http://127.0.0.1:9222",
+    "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/theme22-office-collab-gui",
+    "password": "123456",
+    "viewport": {
+      "width": 1440,
+      "height": 1100,
+      "deviceScaleFactor": 1,
+      "mobile": false
+    }
+  },
+  "scenarios": [
+    {
+      "name": "hr-annual-inspection-mainline",
+      "username": "hr_admin",
+      "route": "/performance/office/annual-inspection",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "年检材料",
+            "联调-主题22-消防设施年检材料",
+            "材料总数"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "年检材料",
+            "新增年检材料",
+            "材料编号",
+            "截止日期"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme22-annual-inspection-hr-list.png"
+        },
+        {
+          "type": "clickText",
+          "text": "详情",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "年检材料详情",
+            "联调-主题22-消防设施年检材料",
+            "提醒天数"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "screenshot",
+          "file": "theme22-annual-inspection-hr-detail.png"
+        }
+      ]
+    },
+    {
+      "name": "hr-honor-mainline",
+      "username": "hr_admin",
+      "route": "/performance/office/honor",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "荣誉管理",
+            "联调-主题22-市级优秀校区荣誉",
+            "荣誉总数"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "荣誉管理",
+            "新增荣誉记录",
+            "荣誉编号",
+            "授予日期"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme22-honor-hr-list.png"
+        },
+        {
+          "type": "clickText",
+          "text": "新增荣誉记录",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "新增荣誉记录",
+            "荣誉编号",
+            "荣誉级别",
+            "授予单位"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "screenshot",
+          "file": "theme22-honor-hr-create-dialog.png"
+        }
+      ]
+    },
+    {
+      "name": "hr-publicity-material-mainline",
+      "username": "hr_admin",
+      "route": "/performance/office/publicity-material",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "宣传资料",
+            "联调-主题22-春招宣传海报",
+            "资料总数"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "宣传资料",
+            "新增宣传资料",
+            "资料编号",
+            "投放渠道"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme22-publicity-material-hr-list.png"
+        },
+        {
+          "type": "clickText",
+          "text": "新增宣传资料",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "新增宣传资料",
+            "资料编号",
+            "关联文件元数据",
+            "设计负责人"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "screenshot",
+          "file": "theme22-publicity-material-hr-create-dialog.png"
+        }
+      ]
+    },
+    {
+      "name": "hr-design-collab-mainline",
+      "username": "hr_admin",
+      "route": "/performance/office/design-collab",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "美工协同",
+            "联调-主题22-招生物料设计协同",
+            "任务总数"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "美工协同",
+            "新增设计协同",
+            "任务编号",
+            "优先级"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme22-design-collab-hr-list.png"
+        },
+        {
+          "type": "clickText",
+          "text": "新增设计协同",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "新增设计协同",
+            "任务编号",
+            "需求方",
+            "任务进度"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "screenshot",
+          "file": "theme22-design-collab-hr-create-dialog.png"
+        }
+      ]
+    },
+    {
+      "name": "hr-express-collab-mainline",
+      "username": "hr_admin",
+      "route": "/performance/office/express-collab",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "快递协同",
+            "PMS-T22-KD-001",
+            "运单总数"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "快递协同",
+            "新增快递协同",
+            "运单号",
+            "同步状态"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme22-express-collab-hr-list.png"
+        },
+        {
+          "type": "clickText",
+          "text": "新增快递协同",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "新增快递协同",
+            "运单号",
+            "订单号",
+            "快递公司"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "screenshot",
+          "file": "theme22-express-collab-hr-create-dialog.png"
+        }
+      ]
+    },
+    {
+      "name": "manager-theme22-no-entry",
+      "username": "manager_rd",
+      "route": "/performance/my-assessment",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "我的考核"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": [
+            "年检材料",
+            "荣誉管理",
+            "宣传资料",
+            "美工协同",
+            "快递协同"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme22-office-manager-no-entry.png"
+        }
+      ]
+    },
+    {
+      "name": "employee-theme22-no-entry",
+      "username": "employee_platform",
+      "route": "/performance/my-assessment",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "我的考核"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": [
+            "年检材料",
+            "荣誉管理",
+            "宣传资料",
+            "美工协同",
+            "快递协同"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme22-office-employee-no-entry.png"
+        }
+      ]
+    }
+  ]
+}

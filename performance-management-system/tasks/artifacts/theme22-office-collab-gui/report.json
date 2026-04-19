@@ -1,0 +1,396 @@
+{
+  "name": "theme22-office-collab-gui",
+  "description": "Theme22 行政协同记录管理最小 GUI 点测",
+  "configPath": "/Users/shaotongli/Documents/xuedao/performance-management-system/test/gui/scenarios/theme22-office-collab.json",
+  "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/theme22-office-collab-gui",
+  "uiBaseUrl": "http://127.0.0.1:9007",
+  "apiBaseUrl": "http://127.0.0.1:8129",
+  "chromeDebugUrl": "http://127.0.0.1:9222",
+  "generatedAt": "2026-04-19T11:05:46.355Z",
+  "scenarios": [
+    {
+      "name": "hr-annual-inspection-mainline",
+      "username": "hr_admin",
+      "route": "/performance/office/annual-inspection",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "年检材料",
+            "联调-主题22-消防设施年检材料",
+            "材料总数"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "年检材料",
+            "新增年检材料",
+            "材料编号",
+            "截止日期"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 3,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme22-office-collab-gui/theme22-annual-inspection-hr-list.png"
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "详情"
+        },
+        {
+          "index": 5,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "年检材料详情",
+            "联调-主题22-消防设施年检材料",
+            "提醒天数"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 6,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme22-office-collab-gui/theme22-annual-inspection-hr-detail.png"
+        }
+      ]
+    },
+    {
+      "name": "hr-honor-mainline",
+      "username": "hr_admin",
+      "route": "/performance/office/honor",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "荣誉管理",
+            "联调-主题22-市级优秀校区荣誉",
+            "荣誉总数"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "荣誉管理",
+            "新增荣誉记录",
+            "荣誉编号",
+            "授予日期"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 3,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme22-office-collab-gui/theme22-honor-hr-list.png"
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "新增荣誉记录"
+        },
+        {
+          "index": 5,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "新增荣誉记录",
+            "荣誉编号",
+            "荣誉级别",
+            "授予单位"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 6,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme22-office-collab-gui/theme22-honor-hr-create-dialog.png"
+        }
+      ]
+    },
+    {
+      "name": "hr-publicity-material-mainline",
+      "username": "hr_admin",
+      "route": "/performance/office/publicity-material",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "宣传资料",
+            "联调-主题22-春招宣传海报",
+            "资料总数"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "宣传资料",
+            "新增宣传资料",
+            "资料编号",
+            "投放渠道"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 3,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme22-office-collab-gui/theme22-publicity-material-hr-list.png"
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "新增宣传资料"
+        },
+        {
+          "index": 5,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "新增宣传资料",
+            "资料编号",
+            "关联文件元数据",
+            "设计负责人"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 6,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme22-office-collab-gui/theme22-publicity-material-hr-create-dialog.png"
+        }
+      ]
+    },
+    {
+      "name": "hr-design-collab-mainline",
+      "username": "hr_admin",
+      "route": "/performance/office/design-collab",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "美工协同",
+            "联调-主题22-招生物料设计协同",
+            "任务总数"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "美工协同",
+            "新增设计协同",
+            "任务编号",
+            "优先级"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 3,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme22-office-collab-gui/theme22-design-collab-hr-list.png"
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "新增设计协同"
+        },
+        {
+          "index": 5,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "新增设计协同",
+            "任务编号",
+            "需求方",
+            "任务进度"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 6,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme22-office-collab-gui/theme22-design-collab-hr-create-dialog.png"
+        }
+      ]
+    },
+    {
+      "name": "hr-express-collab-mainline",
+      "username": "hr_admin",
+      "route": "/performance/office/express-collab",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "快递协同",
+            "PMS-T22-KD-001",
+            "运单总数"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "快递协同",
+            "新增快递协同",
+            "运单号",
+            "同步状态"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 3,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme22-office-collab-gui/theme22-express-collab-hr-list.png"
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "新增快递协同"
+        },
+        {
+          "index": 5,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "新增快递协同",
+            "运单号",
+            "订单号",
+            "快递公司"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 6,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme22-office-collab-gui/theme22-express-collab-hr-create-dialog.png"
+        }
+      ]
+    },
+    {
+      "name": "manager-theme22-no-entry",
+      "username": "manager_rd",
+      "route": "/performance/my-assessment",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": [
+            "年检材料",
+            "荣誉管理",
+            "宣传资料",
+            "美工协同",
+            "快递协同"
+          ]
+        },
+        {
+          "index": 3,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme22-office-collab-gui/theme22-office-manager-no-entry.png"
+        }
+      ]
+    },
+    {
+      "name": "employee-theme22-no-entry",
+      "username": "employee_platform",
+      "route": "/performance/my-assessment",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": [
+            "年检材料",
+            "荣誉管理",
+            "宣传资料",
+            "美工协同",
+            "快递协同"
+          ]
+        },
+        {
+          "index": 3,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme22-office-collab-gui/theme22-office-employee-no-entry.png"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "pass": 7,
+    "fail": 0
+  }
+}
