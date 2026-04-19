@@ -175,7 +175,7 @@ function info(message) {
 
 function runGit(args) {
   try {
-    return execFileSync('git', ['-C', repoRoot, ...args], {
+    return execFileSync('git', ['-C', repoRoot, '-c', 'core.quotePath=false', ...args], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     }).trimEnd();

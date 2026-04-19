@@ -95,7 +95,7 @@ export function parseArgs(argv) {
 }
 
 function runGit(args) {
-	return execFileSync('git', ['-C', repoRoot, ...args], {
+	return execFileSync('git', ['-C', repoRoot, '-c', 'core.quotePath=false', ...args], {
 		encoding: 'utf8',
 		stdio: ['ignore', 'pipe', 'pipe']
 	}).trimEnd();
