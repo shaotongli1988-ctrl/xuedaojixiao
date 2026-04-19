@@ -1,0 +1,195 @@
+{
+  "meta": {
+    "name": "admin-office-ledgers-gui",
+    "description": "行政模块车辆管理与知识产权管理最小 GUI 点测"
+  },
+  "defaults": {
+    "uiBaseUrl": "http://127.0.0.1:9007",
+    "apiBaseUrl": "http://127.0.0.1:8006",
+    "chromeDebugUrl": "http://127.0.0.1:9222",
+    "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/admin-office-ledgers-gui",
+    "password": "123456",
+    "viewport": {
+      "width": 1440,
+      "height": 1100,
+      "deviceScaleFactor": 1,
+      "mobile": false
+    }
+  },
+  "scenarios": [
+    {
+      "name": "hr-vehicle-ledger",
+      "username": "hr_admin",
+      "route": "/performance/office/vehicle",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "screenshot",
+          "file": "admin-office-vehicle-hr-diagnose.png"
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "车辆管理",
+            "新增车辆",
+            "车辆总数"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "车辆管理",
+            "新增车辆",
+            "车辆总数",
+            "车辆编号",
+            "车牌号",
+            "车辆类型",
+            "状态"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "admin-office-vehicle-hr-list.png"
+        },
+        {
+          "type": "clickText",
+          "text": "新增车辆",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "新增车辆",
+            "车辆编号",
+            "车牌号",
+            "登记日期",
+            "使用范围"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "screenshot",
+          "file": "admin-office-vehicle-hr-create-dialog.png"
+        }
+      ]
+    },
+    {
+      "name": "hr-intellectual-property-ledger",
+      "username": "hr_admin",
+      "route": "/performance/office/intellectual-property",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "screenshot",
+          "file": "admin-office-ip-hr-diagnose.png"
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "知识产权管理",
+            "新增知识产权",
+            "产权总数"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "知识产权管理",
+            "新增知识产权",
+            "产权总数",
+            "产权编号",
+            "标题",
+            "类型",
+            "状态"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "admin-office-ip-hr-list.png"
+        },
+        {
+          "type": "clickText",
+          "text": "新增知识产权",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "新增知识产权",
+            "产权编号",
+            "申请人",
+            "申请日期",
+            "风险等级"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "screenshot",
+          "file": "admin-office-ip-hr-create-dialog.png"
+        }
+      ]
+    },
+    {
+      "name": "manager-admin-office-no-entry",
+      "username": "manager_rd",
+      "route": "/performance/my-assessment",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "我的考核"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": [
+            "车辆管理",
+            "知识产权管理"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "admin-office-manager-no-entry.png"
+        }
+      ]
+    },
+    {
+      "name": "employee-admin-office-no-entry",
+      "username": "employee_platform",
+      "route": "/performance/my-assessment",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "我的考核"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": [
+            "车辆管理",
+            "知识产权管理"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "admin-office-employee-no-entry.png"
+        }
+      ]
+    }
+  ]
+}
