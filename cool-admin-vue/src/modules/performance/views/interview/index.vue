@@ -204,6 +204,32 @@
 							{{ statusLabel(detailInterview.status) }}
 						</el-tag>
 					</el-descriptions-item>
+					<el-descriptions-item label="来源简历" :span="2">
+						<div class="interview-page__source-summary">
+							<span>{{ interviewResumeLabel(detailInterview) }}</span>
+							<el-button
+								v-if="detailInterview.resumePoolId"
+								text
+								type="primary"
+								@click="goToResumePool(detailInterview)"
+							>
+								查看简历
+							</el-button>
+						</div>
+					</el-descriptions-item>
+					<el-descriptions-item label="来源招聘计划" :span="2">
+						<div class="interview-page__source-summary">
+							<span>{{ interviewRecruitPlanLabel(detailInterview) }}</span>
+							<el-button
+								v-if="detailInterview.recruitPlanId"
+								text
+								type="primary"
+								@click="goToRecruitPlan(detailInterview)"
+							>
+								查看招聘计划
+							</el-button>
+						</div>
+					</el-descriptions-item>
 					<el-descriptions-item label="创建时间">
 						{{ detailInterview.createTime || '-' }}
 					</el-descriptions-item>
@@ -212,6 +238,19 @@
 					</el-descriptions-item>
 				</el-descriptions>
 			</div>
+
+			<template #footer>
+				<div class="interview-page__dialog-footer">
+					<el-button @click="detailVisible = false">关闭</el-button>
+					<el-button
+						v-if="canCreateHiringFromInterview"
+						type="primary"
+						@click="goCreateHiring(detailInterview)"
+					>
+						新建录用
+					</el-button>
+				</div>
+			</template>
 		</el-dialog>
 
 		<el-dialog
@@ -224,6 +263,13 @@
 				<el-alert
 					:title="editingInterview?.id ? '仅 scheduled 记录可编辑；切换为已完成/已取消后将进入终态。' : '新建保存后默认进入 scheduled 状态。'"
 					:type="editingInterview?.id ? 'warning' : 'info'"
+					:closable="false"
+					show-icon
+				/>
+				<el-alert
+					v-if="interviewSourceSummary(form)"
+					:title="`来源摘要：${interviewSourceSummary(form)}`"
+					type="info"
 					:closable="false"
 					show-icon
 				/>
@@ -356,10 +402,20 @@ defineOptions({
 	name: 'performance-interview'
 });
 
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
 import { service } from '/@/cool';
+import { useRoute, useRouter } from 'vue-router';
+import {
+	loadDepartmentOptions,
+	loadUserOptions
+} from '../../utils/lookup-options.js';
+import {
+	consumeRoutePreset,
+	firstQueryValue,
+	normalizeQueryNumber
+} from '../../utils/route-preset.js';
 import {
 	type InterviewRecord,
 	type InterviewStatus,
@@ -368,6 +424,7 @@ import {
 	createEmptyInterview
 } from '../../types';
 import { performanceInterviewService } from '../../service/interview';
+import { performanceHiringService } from '../../service/hiring';
 
 interface DepartmentOption {
 	id: number;
@@ -384,6 +441,8 @@ const detailVisible = ref(false);
 const editingInterview = ref<InterviewRecord | null>(null);
 const detailInterview = ref<InterviewRecord | null>(null);
 const formRef = ref<FormInstance>();
+const route = useRoute();
+const router = useRouter();
 
 const filters = reactive({
 	candidateName: '',
@@ -431,6 +490,9 @@ const interviewTypeOptions: Array<{ label: string; value: InterviewType }> = [
 const canAccess = computed(() => checkPerm(performanceInterviewService.permission.page));
 const showInfoButton = computed(() => checkPerm(performanceInterviewService.permission.info));
 const showAddButton = computed(() => checkPerm(performanceInterviewService.permission.add));
+const canCreateHiringFromInterview = computed(() =>
+	checkPerm(performanceHiringService.permission.add)
+);
 const departmentIdModel = computed<number | undefined>({
 	get: () => form.departmentId ?? undefined,
 	set: value => {
@@ -453,35 +515,36 @@ const scoreModel = computed<number | undefined>({
 onMounted(async () => {
 	await Promise.all([loadUsers(), loadDepartments()]);
 	await refresh();
+	await consumeRoutePrefill();
 });
 
-async function loadUsers() {
-	try {
-		const result = await service.base.sys.user.page({
-			page: 1,
-			size: 200
-		});
-
-		userOptions.value = (result.list || []).map((item: any) => ({
-			id: Number(item.id),
-			name: item.name,
-			departmentId: item.departmentId,
-			departmentName: item.departmentName
-		}));
-	} catch (error: any) {
-		userOptions.value = [];
-		ElMessage.warning(error.message || '用户选项加载失败');
+watch(
+	() => route.fullPath,
+	() => {
+		void consumeRoutePrefill();
 	}
+);
+
+async function loadUsers() {
+	userOptions.value = await loadUserOptions(
+		() =>
+			service.base.sys.user.page({
+				page: 1,
+				size: 200
+			}),
+		(error: any) => {
+			ElMessage.warning(error.message || '用户选项加载失败');
+		}
+	);
 }
 
 async function loadDepartments() {
-	try {
-		const result = await service.base.sys.department.list();
-		departmentOptions.value = flattenDepartments(result || []);
-	} catch (error: any) {
-		departmentOptions.value = [];
-		ElMessage.warning(error.message || '部门选项加载失败');
-	}
+	departmentOptions.value = await loadDepartmentOptions(
+		() => service.base.sys.department.list(),
+		(error: any) => {
+			ElMessage.warning(error.message || '部门选项加载失败');
+		}
+	);
 }
 
 async function refresh() {
@@ -502,7 +565,7 @@ async function refresh() {
 			endDate: filters.endDate || undefined
 		});
 
-		rows.value = result.list || [];
+		rows.value = (result.list || []).map(item => normalizeInterviewRecord(item));
 		pagination.total = result.pagination?.total || 0;
 	} catch (error: any) {
 		ElMessage.error(error.message || '面试列表加载失败');
@@ -517,9 +580,7 @@ function changePage(page: number) {
 }
 
 function openCreate() {
-	Object.assign(form, createEmptyInterview());
-	editingInterview.value = null;
-	formVisible.value = true;
+	openCreateWithPrefill();
 }
 
 async function openEdit(row: InterviewRecord) {
@@ -554,7 +615,9 @@ async function openDetail(row: InterviewRecord) {
 
 async function loadDetail(id: number, next: (record: InterviewRecord) => void) {
 	try {
-		const record = await performanceInterviewService.fetchInfo({ id });
+		const record = normalizeInterviewRecord(
+			await performanceInterviewService.fetchInfo({ id })
+		);
 		next(record);
 	} catch (error: any) {
 		ElMessage.error(error.message || '面试详情加载失败');
@@ -585,7 +648,10 @@ async function submitForm() {
 			...form,
 			departmentId: form.departmentId || undefined,
 			interviewType: form.interviewType || undefined,
-			score: form.score == null ? undefined : Number(form.score)
+			score: form.score == null ? undefined : Number(form.score),
+			resumePoolId: form.resumePoolId || undefined,
+			recruitPlanId: form.recruitPlanId || undefined,
+			sourceSnapshot: form.sourceSnapshot || undefined
 		};
 
 		if (editingInterview.value?.id) {
@@ -681,19 +747,182 @@ function formatScore(score?: number | null) {
 	return Number(score).toFixed(2);
 }
 
-function flattenDepartments(list: any[], result: DepartmentOption[] = []) {
-	for (const item of list) {
-		result.push({
-			id: Number(item.id),
-			label: item.name
-		});
+async function consumeRoutePrefill() {
+	await consumeRoutePreset({
+		route,
+		router,
+		keys: [
+			'openCreate',
+			'candidate',
+			'candidateName',
+			'departmentId',
+			'targetDepartmentId',
+			'position',
+			'targetPosition',
+			'resumePoolId',
+			'recruitPlanId',
+			'recruitPlanTitle'
+		],
+		parse: query => ({
+			shouldOpenCreate: firstQueryValue(query.openCreate) === '1',
+			candidateName:
+				normalizeQueryText(query.candidate) || normalizeQueryText(query.candidateName),
+			targetPosition:
+				normalizeQueryText(query.position) || normalizeQueryText(query.targetPosition),
+			targetDepartmentId:
+				normalizeQueryNumber(query.departmentId) ||
+				normalizeQueryNumber(query.targetDepartmentId),
+			resumePoolId: normalizeQueryNumber(query.resumePoolId),
+			recruitPlanId: normalizeQueryNumber(query.recruitPlanId),
+			recruitPlanTitle: normalizeQueryText(query.recruitPlanTitle)
+		}),
+		shouldConsume: payload => Boolean(payload.shouldOpenCreate),
+		consume: payload => {
+			if (!showAddButton.value) {
+				return;
+			}
 
-		if (item.children?.length) {
-			flattenDepartments(item.children, result);
+			openCreateWithPrefill({
+				candidateName: payload.candidateName,
+				position: payload.targetPosition,
+				departmentId: payload.targetDepartmentId,
+				resumePoolId: payload.resumePoolId,
+				recruitPlanId: payload.recruitPlanId,
+				recruitPlanTitle: payload.recruitPlanTitle
+			});
 		}
+	});
+}
+
+function openCreateWithPrefill(prefill?: {
+	candidateName?: string;
+	position?: string;
+	departmentId?: number;
+	resumePoolId?: number;
+	recruitPlanId?: number;
+	recruitPlanTitle?: string;
+}) {
+	Object.assign(form, createEmptyInterview(), {
+		candidateName: prefill?.candidateName || '',
+		position: prefill?.position || '',
+		departmentId: prefill?.departmentId,
+		resumePoolId: prefill?.resumePoolId,
+		recruitPlanId: prefill?.recruitPlanId,
+		sourceSnapshot:
+			prefill?.resumePoolId || prefill?.recruitPlanId
+				? {
+						sourceResource: 'resumePool',
+						resumePoolId: prefill?.resumePoolId || null,
+						recruitPlanId: prefill?.recruitPlanId || null,
+						recruitPlanTitle: prefill?.recruitPlanTitle || null,
+						candidateName: prefill?.candidateName || null,
+						targetDepartmentId: prefill?.departmentId || null,
+						targetPosition: prefill?.position || null
+				  }
+				: null
+	});
+	editingInterview.value = null;
+	formVisible.value = true;
+
+	nextTick(() => {
+		formRef.value?.clearValidate();
+	});
+}
+
+function normalizeQueryText(value: unknown) {
+	const text = String(firstQueryValue(value) || '').trim();
+	return text || undefined;
+}
+
+function normalizeInterviewRecord(record: any): InterviewRecord {
+	const sourceSnapshot =
+		record?.sourceSnapshot ||
+		record?.resumePoolSnapshot ||
+		record?.recruitPlanSnapshot ||
+		null;
+
+	return {
+		...record,
+		resumePoolId: normalizeNumberOrUndefined(
+			record?.resumePoolId || sourceSnapshot?.resumePoolId
+		),
+		recruitPlanId: normalizeNumberOrUndefined(
+			record?.recruitPlanId || sourceSnapshot?.recruitPlanId
+		),
+		sourceSnapshot: sourceSnapshot && typeof sourceSnapshot === 'object' ? sourceSnapshot : null
+	};
+}
+
+function interviewResumeLabel(record?: InterviewRecord | null) {
+	if (!record?.resumePoolId) {
+		return '-';
 	}
 
-	return result;
+	return `简历 #${record.resumePoolId}`;
+}
+
+function interviewRecruitPlanLabel(record?: InterviewRecord | null) {
+	if (!record?.recruitPlanId) {
+		return '-';
+	}
+
+	const title = record.sourceSnapshot?.recruitPlanTitle || '招聘计划';
+	return `${title} #${record.recruitPlanId}`;
+}
+
+function interviewSourceSummary(record?: InterviewRecord | null) {
+	return [interviewResumeLabel(record), interviewRecruitPlanLabel(record)]
+		.filter(item => item && item !== '-')
+		.join('；');
+}
+
+async function goToResumePool(record?: InterviewRecord | null) {
+	if (!record?.resumePoolId) {
+		return;
+	}
+
+	await router.push({
+		path: '/performance/resumePool'
+	});
+}
+
+async function goToRecruitPlan(record?: InterviewRecord | null) {
+	if (!record?.recruitPlanId) {
+		return;
+	}
+
+	await router.push({
+		path: '/performance/recruit-plan'
+	});
+}
+
+async function goCreateHiring(record?: InterviewRecord | null) {
+	if (!record?.id) {
+		return;
+	}
+
+	detailVisible.value = false;
+	await router.push({
+		path: '/performance/hiring',
+		query: {
+			openCreate: '1',
+			sourceType: 'interview',
+			sourceId: String(record.id),
+			interviewId: String(record.id),
+			resumePoolId: record.resumePoolId ? String(record.resumePoolId) : undefined,
+			recruitPlanId: record.recruitPlanId ? String(record.recruitPlanId) : undefined,
+			candidate: record.candidateName || undefined,
+			departmentId: record.departmentId ? String(record.departmentId) : undefined,
+			position: record.position || undefined,
+			interviewStatus: record.status || undefined,
+			recruitPlanTitle: record.sourceSnapshot?.recruitPlanTitle || undefined
+		}
+	});
+}
+
+function normalizeNumberOrUndefined(value: unknown) {
+	const parsed = Number(value);
+	return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 </script>
 
@@ -753,6 +982,19 @@ function flattenDepartments(list: any[], result: DepartmentOption[] = []) {
 	&__detail {
 		display: grid;
 		gap: 16px;
+	}
+
+	&__source-summary {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+
+	&__dialog-footer {
+		display: flex;
+		justify-content: flex-end;
+		gap: 12px;
 	}
 }
 </style>

@@ -29,9 +29,52 @@ function createHiringRecord(id: number, overrides: Partial<any> = {}) {
     targetDepartmentId: 11,
     targetPosition: '后端工程师',
     decisionContent: '录用决策正文',
-    sourceType: 'manual',
-    sourceId: null,
-    sourceSnapshot: 'manual-snapshot',
+    sourceType: 'interview',
+    sourceId: 41,
+    sourceSnapshot: {
+      status: 'scheduled',
+    },
+    interviewId: 41,
+    resumePoolId: 21,
+    recruitPlanId: 301,
+    interviewSnapshot: {
+      id: 41,
+      candidateName: `候选人-${id}`,
+      position: '后端工程师',
+      departmentId: 11,
+      interviewDate: '2026-04-18 15:00:00',
+      interviewType: 'technical',
+      interviewerId: 8,
+      interviewerName: '面试官A',
+      score: 88.5,
+      status: 'scheduled',
+      resumePoolId: 21,
+      recruitPlanId: 301,
+    },
+    resumePoolSnapshot: {
+      id: 21,
+      candidateName: `候选人-${id}`,
+      targetDepartmentId: 11,
+      targetDepartmentName: '研发部',
+      targetPosition: '后端工程师',
+      phone: '13800000000',
+      email: 'candidate@example.com',
+      status: 'interviewing',
+      recruitPlanId: 301,
+      jobStandardId: 501,
+    },
+    recruitPlanSnapshot: {
+      id: 301,
+      title: '后端招聘计划',
+      positionName: '后端工程师',
+      targetDepartmentId: 11,
+      targetDepartmentName: '研发部',
+      headcount: 2,
+      startDate: '2026-04-18',
+      endDate: '2026-05-18',
+      status: 'active',
+      jobStandardId: 501,
+    },
     status: 'offered',
     offeredAt: '2026-04-19 10:00:00',
     acceptedAt: null,
@@ -88,6 +131,50 @@ function createHrService() {
   service.baseSysDepartmentEntity = {
     findOneBy: jest.fn().mockResolvedValue({ id: 11, name: '研发部' }),
   };
+  service.baseSysUserEntity = {
+    findOneBy: jest.fn().mockResolvedValue({ id: 8, name: '面试官A' }),
+  };
+  service.performanceInterviewEntity = {
+    findOneBy: jest.fn().mockResolvedValue({
+      id: 41,
+      candidateName: '张三',
+      position: '前端工程师',
+      departmentId: 11,
+      interviewerId: 8,
+      interviewDate: '2026-04-18 15:00:00',
+      interviewType: 'technical',
+      score: 91,
+      status: 'scheduled',
+      resumePoolId: 21,
+      recruitPlanId: 301,
+    }),
+  };
+  service.performanceResumePoolEntity = {
+    findOneBy: jest.fn().mockResolvedValue({
+      id: 21,
+      candidateName: '张三',
+      targetDepartmentId: 11,
+      targetPosition: '前端工程师',
+      phone: '13800000000',
+      email: 'zhangsan@example.com',
+      status: 'interviewing',
+      recruitPlanId: 301,
+      jobStandardId: 501,
+    }),
+  };
+  service.performanceRecruitPlanEntity = {
+    findOneBy: jest.fn().mockResolvedValue({
+      id: 301,
+      title: '前端招聘计划',
+      positionName: '前端工程师',
+      targetDepartmentId: 11,
+      headcount: 2,
+      startDate: '2026-04-18',
+      endDate: '2026-05-18',
+      status: 'active',
+      jobStandardId: 501,
+    }),
+  };
   service.performanceHiringEntity = {
     createQueryBuilder: jest.fn().mockReturnValue(qb),
     findOneBy: jest.fn().mockImplementation((where: any) => {
@@ -125,11 +212,7 @@ describe('performance hiring service', () => {
       targetPosition: '前端工程师',
       hiringDecision: '新字段-拟发放 offer',
       decisionContent: '旧字段-应被覆盖',
-      sourceType: 'manual',
-      sourceStatusSnapshot: '新字段-来源快照',
-      sourceSnapshot: {
-        summary: '旧字段-应被覆盖',
-      },
+      interviewId: 41,
     });
     const accepted = await service.updateStatus({
       id: added.id,
@@ -154,21 +237,37 @@ describe('performance hiring service', () => {
       candidateName: '候选人-1',
       targetDepartmentName: '研发部',
       hiringDecision: '录用决策正文',
-      sourceStatusSnapshot: 'manual-snapshot',
+      sourceStatusSnapshot: 'scheduled',
+      interviewId: 41,
+      resumePoolId: 21,
+      recruitPlanId: 301,
+      interviewSummary: expect.objectContaining({ id: 41 }),
+      resumePoolSummary: expect.objectContaining({ id: 21 }),
+      recruitPlanSummary: expect.objectContaining({ id: 301 }),
       status: 'offered',
     });
     expect(infoResult).toMatchObject({
       id: 1,
       hiringDecision: '录用决策正文',
-      sourceStatusSnapshot: 'manual-snapshot',
+      sourceStatusSnapshot: 'scheduled',
+      interviewId: 41,
+      resumePoolId: 21,
+      recruitPlanId: 301,
     });
     expect(added).toMatchObject({
       candidateName: '张三',
       status: 'offered',
-      sourceType: 'manual',
+      sourceType: 'interview',
+      sourceId: 41,
       hiringDecision: '新字段-拟发放 offer',
       decisionContent: '新字段-拟发放 offer',
-      sourceStatusSnapshot: '新字段-来源快照',
+      sourceStatusSnapshot: 'scheduled',
+      interviewId: 41,
+      resumePoolId: 21,
+      recruitPlanId: 301,
+      interviewSnapshot: expect.objectContaining({ id: 41 }),
+      resumePoolSnapshot: expect.objectContaining({ id: 21 }),
+      recruitPlanSnapshot: expect.objectContaining({ id: 301 }),
     });
     expect(accepted).toMatchObject({
       id: added.id,
