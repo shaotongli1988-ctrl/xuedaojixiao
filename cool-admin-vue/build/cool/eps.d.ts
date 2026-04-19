@@ -4561,6 +4561,8 @@ declare namespace Eps {
 
 	type Request = (options: RequestOptions) => Promise<any>;
 
+	type DictKey = string;
+
 	type Service = {
 		request: Request;
 

@@ -209,7 +209,6 @@ import { checkPerm } from '/$/base/utils/permission';
 import { performanceTeacherClassService } from '../../service/teacherClass';
 import { performanceTeacherInfoService } from '../../service/teacherInfo';
 import type { TeacherClassRecord, TeacherClassStatus, TeacherInfoRecord } from '../../types';
-import { createEmptyTeacherClass } from '../../types';
 import {
 	canDeleteTeacherClass,
 	canEditTeacherClass,
@@ -222,6 +221,18 @@ import {
 	firstQueryValue,
 	normalizeQueryNumber
 } from '../../utils/route-preset.js';
+
+function createEmptyTeacherClassRecord(): TeacherClassRecord {
+	return {
+		teacherId: undefined,
+		className: '',
+		schoolName: '',
+		grade: '',
+		projectTag: '',
+		studentCount: 0,
+		status: 'draft'
+	};
+}
 
 const route = useRoute();
 const router = useRouter();
@@ -247,7 +258,7 @@ const pagination = reactive({
 	total: 0
 });
 
-const form = reactive<TeacherClassRecord>(createEmptyTeacherClass());
+const form = reactive<TeacherClassRecord>(createEmptyTeacherClassRecord());
 
 const rules: FormRules = {
 	teacherId: [{ required: true, message: '请选择班主任', trigger: 'change' }],
@@ -356,7 +367,7 @@ function changePage(page: number) {
 
 function openCreate(presetTeacherId?: number) {
 	editingRecord.value = null;
-	Object.assign(form, createEmptyTeacherClass(), {
+	Object.assign(form, createEmptyTeacherClassRecord(), {
 		teacherId: presetTeacherId || undefined
 	});
 	formVisible.value = true;
@@ -390,7 +401,7 @@ async function openEdit(row: TeacherClassRecord) {
 	try {
 		const detail = await performanceTeacherClassService.fetchInfo({ id });
 		editingRecord.value = detail;
-		Object.assign(form, createEmptyTeacherClass(), detail, {
+		Object.assign(form, createEmptyTeacherClassRecord(), detail, {
 			id: detail.id || detail.classId
 		});
 		formVisible.value = true;
