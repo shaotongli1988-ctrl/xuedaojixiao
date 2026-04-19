@@ -1,0 +1,258 @@
+{
+  "name": "theme21-office-knowledge-gui",
+  "description": "Theme21 文件管理与知识库最小 GUI 点测",
+  "configPath": "/Users/shaotongli/Documents/xuedao/performance-management-system/test/gui/scenarios/theme21-office-knowledge.json",
+  "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/theme21-office-knowledge-gui",
+  "uiBaseUrl": "http://127.0.0.1:9019",
+  "apiBaseUrl": "http://127.0.0.1:8068",
+  "chromeDebugUrl": "http://127.0.0.1:9222",
+  "generatedAt": "2026-04-19T04:39:20.159Z",
+  "scenarios": [
+    {
+      "name": "hr-document-center-mainline",
+      "username": "hr_admin",
+      "route": "/performance/office/document-center",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme21-office-knowledge-gui/theme21-document-center-hr-diagnose.png"
+        },
+        {
+          "index": 2,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "文件管理",
+            "联调-主题21-入职制度清单",
+            "联调-主题21-报销模板"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 3,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "文件管理",
+            "新增文件元数据",
+            "详情",
+            "编辑",
+            "删除"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 4,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme21-office-knowledge-gui/theme21-document-center-hr-list.png"
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "详情"
+        },
+        {
+          "index": 6,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "文件元数据详情",
+            "联调-主题21-入职制度清单",
+            "主题21-HR管理员"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 7,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme21-office-knowledge-gui/theme21-document-center-hr-detail.png"
+        }
+      ]
+    },
+    {
+      "name": "hr-knowledge-base-mainline",
+      "username": "hr_admin",
+      "route": "/performance/office/knowledge-base",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme21-office-knowledge-gui/theme21-knowledge-base-hr-diagnose.png"
+        },
+        {
+          "index": 2,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "知识库",
+            "联调-主题21-入职资料归档规范",
+            "联调-主题21-费用报销知识卡片"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 3,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "知识库",
+            "新增知识条目",
+            "知识图谱",
+            "搜索与百问百答"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 4,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme21-office-knowledge-gui/theme21-knowledge-base-hr-list.png"
+        },
+        {
+          "index": 1,
+          "type": "clickSelector",
+          "status": "passed",
+          "selector": ".el-tabs__item"
+        },
+        {
+          "index": 6,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "图谱摘要",
+            "分类节点",
+            "标签节点"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 7,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme21-office-knowledge-gui/theme21-knowledge-base-hr-graph.png"
+        },
+        {
+          "index": 2,
+          "type": "clickSelector",
+          "status": "passed",
+          "selector": ".el-tabs__item"
+        },
+        {
+          "index": 9,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "知识搜索",
+            "百问百答元数据",
+            "新增问答"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "搜索"
+        },
+        {
+          "index": 11,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "总命中",
+            "联调-主题21-入职资料需要归档到哪里？"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 12,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme21-office-knowledge-gui/theme21-knowledge-base-hr-search-qa.png"
+        }
+      ]
+    },
+    {
+      "name": "manager-office-no-entry",
+      "username": "manager_rd",
+      "route": "/performance/my-assessment",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": [
+            "文件管理",
+            "知识库"
+          ]
+        },
+        {
+          "index": 3,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme21-office-knowledge-gui/theme21-office-manager-no-entry.png"
+        }
+      ]
+    },
+    {
+      "name": "employee-office-no-entry",
+      "username": "employee_platform",
+      "route": "/performance/my-assessment",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": [
+            "文件管理",
+            "知识库"
+          ]
+        },
+        {
+          "index": 3,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme21-office-knowledge-gui/theme21-office-employee-no-entry.png"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "pass": 4,
+    "fail": 0
+  }
+}

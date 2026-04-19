@@ -1,0 +1,187 @@
+{
+  "meta": {
+    "name": "operations-support-loop-gui",
+    "description": "会议/合同/采购闭环最小 GUI 点测"
+  },
+  "defaults": {
+    "uiBaseUrl": "http://127.0.0.1:9007",
+    "apiBaseUrl": "http://127.0.0.1:8006",
+    "chromeDebugUrl": "http://127.0.0.1:9222",
+    "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/operations-support-loop",
+    "password": "123456",
+    "viewport": {
+      "width": 1440,
+      "height": 1100,
+      "deviceScaleFactor": 1,
+      "mobile": false
+    }
+  },
+  "scenarios": [
+    {
+      "name": "hr-operations-support-loop",
+      "username": "hr_admin",
+      "route": "/performance/meeting",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "会议管理",
+            "新建会议"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "operations-loop-hr-meeting.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/contract",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "合同管理",
+            "新建合同"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "operations-loop-hr-contract.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/purchase-order",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "采购订单管理",
+            "新增采购订单"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "operations-loop-hr-purchase-order.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/supplier",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "供应商管理",
+            "新增供应商"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "operations-loop-hr-supplier.png"
+        }
+      ]
+    },
+    {
+      "name": "manager-operations-support-loop",
+      "username": "manager_rd",
+      "route": "/performance/meeting",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "会议管理",
+            "新建会议"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "operations-loop-manager-meeting.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/purchase-order",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "采购订单管理",
+            "经理范围维护"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "operations-loop-manager-purchase-order.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/supplier",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "供应商管理",
+            "经理只读"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "供应商管理",
+            "经理只读"
+          ],
+          "excludes": [
+            "新增供应商"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "operations-loop-manager-supplier.png"
+        }
+      ]
+    },
+    {
+      "name": "employee-operations-no-entry",
+      "username": "employee_platform",
+      "route": "/",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "我的考核"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": [
+            "会议管理",
+            "合同管理",
+            "采购订单管理",
+            "供应商管理"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "operations-loop-employee-no-entry.png"
+        }
+      ]
+    }
+  ]
+}

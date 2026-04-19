@@ -1,0 +1,537 @@
+{
+  "name": "navigation-shell-layout-gui",
+  "description": "导航栏与侧栏改造最小 GUI 点测",
+  "configPath": "/Users/shaotongli/Documents/xuedao/performance-management-system/test/gui/scenarios/navigation-shell-layout.json",
+  "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/navigation-shell-layout",
+  "uiBaseUrl": "http://127.0.0.1:9007",
+  "apiBaseUrl": "http://127.0.0.1:8006",
+  "chromeDebugUrl": "http://127.0.0.1:9222",
+  "generatedAt": "2026-04-18T16:21:47.203Z",
+  "scenarios": [
+    {
+      "name": "hr-navigation-shell",
+      "username": "hr_admin",
+      "route": "/data-center/dashboard",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/navigation-shell-layout/nav-shell-hr-initial.png"
+        },
+        {
+          "index": 2,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "绩效驾驶舱",
+            "当前业务域菜单"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 3,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "绩效中心",
+            "招聘中心",
+            "培训中心",
+            "会议管理",
+            "合同管理",
+            "采购管理"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 4,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/navigation-shell-layout/nav-shell-hr-dashboard.png"
+        },
+        {
+          "index": 5,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/talentAsset"
+        },
+        {
+          "index": 6,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "招聘人才资产",
+            "当前业务域菜单"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 7,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "招聘中心",
+            "新建人才资产"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 8,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/navigation-shell-layout/nav-shell-hr-recruit-talent.png"
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "招聘简历池"
+        },
+        {
+          "index": 10,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "招聘简历池管理"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 11,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "转人才资产",
+            "发起面试"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 12,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/navigation-shell-layout/nav-shell-hr-recruit-resume.png"
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "招聘面试"
+        },
+        {
+          "index": 14,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "招聘面试管理",
+            "新建面试"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 15,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/navigation-shell-layout/nav-shell-hr-recruit-interview.png"
+        },
+        {
+          "index": 16,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/course"
+        },
+        {
+          "index": 17,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "培训课程管理",
+            "当前业务域菜单"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 18,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "培训中心",
+            "新增课程",
+            "HR 管理"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "能力地图"
+        },
+        {
+          "index": 20,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "能力地图",
+            "HR 管理"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 21,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/navigation-shell-layout/nav-shell-hr-training.png"
+        },
+        {
+          "index": 22,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/meeting"
+        },
+        {
+          "index": 23,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "会议管理",
+            "新建会议"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 24,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "会议管理",
+            "详情仅返回参与人数摘要"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 25,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/navigation-shell-layout/nav-shell-hr-meeting.png"
+        },
+        {
+          "index": 26,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/contract"
+        },
+        {
+          "index": 27,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "合同管理",
+            "新建合同"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 28,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "合同管理"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 29,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/navigation-shell-layout/nav-shell-hr-contract.png"
+        },
+        {
+          "index": 30,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/purchase-order"
+        },
+        {
+          "index": 31,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "采购订单管理"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 32,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "采购管理",
+            "新增采购订单"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 33,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/navigation-shell-layout/nav-shell-hr-procurement.png"
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "供应商管理"
+        },
+        {
+          "index": 35,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "供应商管理",
+            "新增供应商"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 36,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/navigation-shell-layout/nav-shell-hr-procurement-supplier.png"
+        }
+      ]
+    },
+    {
+      "name": "manager-navigation-shell",
+      "username": "manager_rd",
+      "route": "/performance/course",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/navigation-shell-layout/nav-shell-manager-initial.png"
+        },
+        {
+          "index": 2,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "培训课程管理",
+            "当前业务域菜单"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 3,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "绩效中心",
+            "招聘中心",
+            "培训中心",
+            "会议管理",
+            "采购管理",
+            "经理只读"
+          ],
+          "excludes": [
+            "合同管理",
+            "新增课程"
+          ]
+        },
+        {
+          "index": 4,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/navigation-shell-layout/nav-shell-manager-course.png"
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "能力地图"
+        },
+        {
+          "index": 6,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "能力地图",
+            "经理只读"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 7,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "经理只读"
+          ],
+          "excludes": [
+            "新增能力模型"
+          ]
+        },
+        {
+          "index": 8,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/navigation-shell-layout/nav-shell-manager-capability.png"
+        },
+        {
+          "index": 9,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/salary"
+        },
+        {
+          "index": 10,
+          "type": "assertBodyText",
+          "status": "passed",
+          "includes": [
+            "404",
+            "找不到您要查找的页面"
+          ],
+          "excludes": [
+            "薪资管理"
+          ]
+        },
+        {
+          "index": 11,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/navigation-shell-layout/nav-shell-manager-salary-404.png"
+        }
+      ]
+    },
+    {
+      "name": "employee-navigation-shell",
+      "username": "employee_platform",
+      "route": "/performance/my-assessment",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/navigation-shell-layout/nav-shell-employee-initial.png"
+        },
+        {
+          "index": 2,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "我的考核",
+            "当前业务域菜单"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 3,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "绩效中心",
+            "培训中心"
+          ],
+          "excludes": [
+            "招聘中心",
+            "会议管理",
+            "合同管理",
+            "采购管理"
+          ]
+        },
+        {
+          "index": 4,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/navigation-shell-layout/nav-shell-employee-assessment.png"
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "目标地图"
+        },
+        {
+          "index": 6,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "目标地图"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 7,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/navigation-shell-layout/nav-shell-employee-goals.png"
+        },
+        {
+          "index": 8,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/course-learning"
+        },
+        {
+          "index": 9,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "培训学习与考试增强",
+            "进入课程学习"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 10,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "员工自助"
+          ],
+          "excludes": [
+            "培训课程管理"
+          ]
+        },
+        {
+          "index": 11,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/navigation-shell-layout/nav-shell-employee-learning.png"
+        },
+        {
+          "index": 12,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/data-center/dashboard"
+        },
+        {
+          "index": 13,
+          "type": "assertBodyText",
+          "status": "passed",
+          "includes": [
+            "404",
+            "找不到您要查找的页面"
+          ],
+          "excludes": [
+            "绩效驾驶舱"
+          ]
+        },
+        {
+          "index": 14,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/navigation-shell-layout/nav-shell-employee-dashboard-404.png"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "pass": 3,
+    "fail": 0
+  }
+}

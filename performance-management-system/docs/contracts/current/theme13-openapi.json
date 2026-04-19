@@ -1,0 +1,485 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Theme 13 Talent Development And Certification Enhancement",
+    "version": "2026-04-18"
+  },
+  "paths": {
+    "/admin/performance/capabilityModel/page": {
+      "post": {
+        "summary": "能力模型分页"
+      }
+    },
+    "/admin/performance/capabilityModel/info": {
+      "get": {
+        "summary": "能力模型详情"
+      }
+    },
+    "/admin/performance/capabilityModel/add": {
+      "post": {
+        "summary": "新增能力模型"
+      }
+    },
+    "/admin/performance/capabilityModel/update": {
+      "post": {
+        "summary": "修改能力模型"
+      }
+    },
+    "/admin/performance/capabilityItem/info": {
+      "get": {
+        "summary": "能力项详情"
+      }
+    },
+    "/admin/performance/capabilityPortrait/info": {
+      "get": {
+        "summary": "能力画像摘要"
+      }
+    },
+    "/admin/performance/certificate/page": {
+      "post": {
+        "summary": "证书分页"
+      }
+    },
+    "/admin/performance/certificate/info": {
+      "get": {
+        "summary": "证书详情"
+      }
+    },
+    "/admin/performance/certificate/add": {
+      "post": {
+        "summary": "新增证书"
+      }
+    },
+    "/admin/performance/certificate/update": {
+      "post": {
+        "summary": "修改证书"
+      }
+    },
+    "/admin/performance/certificate/issue": {
+      "post": {
+        "summary": "发放证书"
+      }
+    },
+    "/admin/performance/certificate/recordPage": {
+      "post": {
+        "summary": "证书发放记录分页"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PagePagination": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "page",
+          "size",
+          "total"
+        ]
+      },
+      "CapabilityModelPageQuery": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "keyword": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "page",
+          "size"
+        ]
+      },
+      "CapabilityModelRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "category": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          },
+          "itemCount": {
+            "type": "integer"
+          },
+          "createTime": {
+            "type": "string"
+          },
+          "updateTime": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "CapabilityModelPageResult": {
+        "type": "object",
+        "properties": {
+          "list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CapabilityModelRecord"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PagePagination"
+          }
+        },
+        "required": [
+          "list",
+          "pagination"
+        ]
+      },
+      "CapabilityModelSaveRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "category": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "CapabilityItemRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "modelId": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "evidenceHint": {
+            "type": "string",
+            "nullable": true
+          },
+          "updateTime": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "CapabilityPortraitRecord": {
+        "type": "object",
+        "properties": {
+          "employeeId": {
+            "type": "integer"
+          },
+          "employeeName": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "departmentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "capabilityTags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "levelSummary": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "certificateCount": {
+            "type": "integer"
+          },
+          "lastCertifiedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "employeeId"
+        ]
+      },
+      "CertificatePageQuery": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "keyword": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "page",
+          "size"
+        ]
+      },
+      "CertificateRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "category": {
+            "type": "string",
+            "nullable": true
+          },
+          "issuer": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "validityMonths": {
+            "type": "integer",
+            "nullable": true
+          },
+          "sourceCourseId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          },
+          "issuedCount": {
+            "type": "integer"
+          },
+          "createTime": {
+            "type": "string"
+          },
+          "updateTime": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "CertificatePageResult": {
+        "type": "object",
+        "properties": {
+          "list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CertificateRecord"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PagePagination"
+          }
+        },
+        "required": [
+          "list",
+          "pagination"
+        ]
+      },
+      "CertificateIssueRequest": {
+        "type": "object",
+        "properties": {
+          "certificateId": {
+            "type": "integer"
+          },
+          "employeeId": {
+            "type": "integer"
+          },
+          "issuedAt": {
+            "type": "string"
+          },
+          "remark": {
+            "type": "string",
+            "nullable": true
+          },
+          "sourceCourseId": {
+            "type": "integer",
+            "nullable": true
+          }
+        },
+        "required": [
+          "certificateId",
+          "employeeId",
+          "issuedAt"
+        ]
+      },
+      "CertificateRecordPageQuery": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "certificateId": {
+            "type": "integer"
+          },
+          "employeeId": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "page",
+          "size"
+        ]
+      },
+      "CertificateLedgerRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "certificateId": {
+            "type": "integer"
+          },
+          "certificateName": {
+            "type": "string"
+          },
+          "employeeId": {
+            "type": "integer"
+          },
+          "employeeName": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "departmentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "issuedAt": {
+            "type": "string"
+          },
+          "issuedBy": {
+            "type": "string"
+          },
+          "sourceCourseId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "issuedAt"
+        ]
+      },
+      "CertificateLedgerPageResult": {
+        "type": "object",
+        "properties": {
+          "list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CertificateLedgerRecord"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PagePagination"
+          }
+        },
+        "required": [
+          "list",
+          "pagination"
+        ]
+      }
+    }
+  }
+}

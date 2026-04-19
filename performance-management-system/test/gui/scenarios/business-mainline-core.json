@@ -1,0 +1,252 @@
+{
+  "meta": {
+    "name": "business-mainline-core-gui",
+    "description": "核心业务主链最小 GUI 点测"
+  },
+  "defaults": {
+    "uiBaseUrl": "http://127.0.0.1:9007",
+    "apiBaseUrl": "http://127.0.0.1:8006",
+    "chromeDebugUrl": "http://127.0.0.1:9222",
+    "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/business-mainline-core",
+    "password": "123456",
+    "viewport": {
+      "width": 1440,
+      "height": 1100,
+      "deviceScaleFactor": 1,
+      "mobile": false
+    }
+  },
+  "scenarios": [
+    {
+      "name": "hr-business-mainline",
+      "username": "hr_admin",
+      "route": "/performance/indicator-library",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "指标库",
+            "新建指标"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "business-mainline-hr-indicator.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/feedback",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "360 环评任务",
+            "发起环评任务"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "business-mainline-hr-feedback.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/pip",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "PIP 追踪",
+            "新建 PIP"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "business-mainline-hr-pip.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/promotion",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "晋升管理",
+            "新建晋升单"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "business-mainline-hr-promotion.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/salary",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "薪资管理",
+            "仅 HR 可见"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "business-mainline-hr-salary.png"
+        }
+      ]
+    },
+    {
+      "name": "manager-business-mainline",
+      "username": "manager_rd",
+      "route": "/performance/pending",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "待我审批"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "business-mainline-manager-pending.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/course",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "培训课程管理",
+            "经理只读"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "business-mainline-manager-course.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/supplier",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "供应商管理",
+            "经理只读"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "business-mainline-manager-supplier.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/salary",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "assertBodyText",
+          "includes": [
+            "404",
+            "找不到您要查找的页面"
+          ],
+          "excludes": [
+            "薪资管理"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "business-mainline-manager-salary-404.png"
+        }
+      ]
+    },
+    {
+      "name": "employee-business-mainline",
+      "username": "employee_platform",
+      "route": "/performance/my-assessment",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "我的考核"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "business-mainline-employee-assessment.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/goals",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "目标地图"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "business-mainline-employee-goals.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/course-learning",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "培训学习与考试增强",
+            "员工自助"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "business-mainline-employee-learning.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/promotion",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "assertBodyText",
+          "includes": [
+            "404",
+            "找不到您要查找的页面"
+          ],
+          "excludes": [
+            "晋升管理"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "business-mainline-employee-promotion-404.png"
+        }
+      ]
+    }
+  ]
+}

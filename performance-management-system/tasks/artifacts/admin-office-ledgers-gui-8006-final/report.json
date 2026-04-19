@@ -1,0 +1,228 @@
+{
+  "name": "admin-office-ledgers-gui",
+  "description": "行政模块车辆管理与知识产权管理最小 GUI 点测",
+  "configPath": "/Users/shaotongli/Documents/xuedao/performance-management-system/test/gui/scenarios/admin-office-ledgers.json",
+  "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/admin-office-ledgers-gui-8006-final",
+  "uiBaseUrl": "http://127.0.0.1:9007",
+  "apiBaseUrl": "http://127.0.0.1:8006",
+  "chromeDebugUrl": "http://127.0.0.1:9222",
+  "generatedAt": "2026-04-19T06:59:08.154Z",
+  "scenarios": [
+    {
+      "name": "hr-vehicle-ledger",
+      "username": "hr_admin",
+      "route": "/performance/office/vehicle",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/admin-office-ledgers-gui-8006-final/admin-office-vehicle-hr-diagnose.png"
+        },
+        {
+          "index": 2,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "车辆管理",
+            "新增车辆",
+            "车辆总数"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 3,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "车辆管理",
+            "新增车辆",
+            "车辆总数",
+            "车辆编号",
+            "车牌号",
+            "车辆类型",
+            "状态"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 4,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/admin-office-ledgers-gui-8006-final/admin-office-vehicle-hr-list.png"
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "新增车辆"
+        },
+        {
+          "index": 6,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "新增车辆",
+            "车辆编号",
+            "车牌号",
+            "登记日期",
+            "使用范围"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 7,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/admin-office-ledgers-gui-8006-final/admin-office-vehicle-hr-create-dialog.png"
+        }
+      ]
+    },
+    {
+      "name": "hr-intellectual-property-ledger",
+      "username": "hr_admin",
+      "route": "/performance/office/intellectual-property",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/admin-office-ledgers-gui-8006-final/admin-office-ip-hr-diagnose.png"
+        },
+        {
+          "index": 2,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "知识产权管理",
+            "新增知识产权",
+            "产权总数"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 3,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "知识产权管理",
+            "新增知识产权",
+            "产权总数",
+            "产权编号",
+            "标题",
+            "类型",
+            "状态"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 4,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/admin-office-ledgers-gui-8006-final/admin-office-ip-hr-list.png"
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "新增知识产权"
+        },
+        {
+          "index": 6,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "新增知识产权",
+            "产权编号",
+            "申请人",
+            "申请日期",
+            "风险等级"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 7,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/admin-office-ledgers-gui-8006-final/admin-office-ip-hr-create-dialog.png"
+        }
+      ]
+    },
+    {
+      "name": "manager-admin-office-no-entry",
+      "username": "manager_rd",
+      "route": "/performance/my-assessment",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": [
+            "车辆管理",
+            "知识产权管理"
+          ]
+        },
+        {
+          "index": 3,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/admin-office-ledgers-gui-8006-final/admin-office-manager-no-entry.png"
+        }
+      ]
+    },
+    {
+      "name": "employee-admin-office-no-entry",
+      "username": "employee_platform",
+      "route": "/performance/my-assessment",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": [
+            "车辆管理",
+            "知识产权管理"
+          ]
+        },
+        {
+          "index": 3,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/admin-office-ledgers-gui-8006-final/admin-office-employee-no-entry.png"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "pass": 4,
+    "fail": 0
+  }
+}
