@@ -102,7 +102,23 @@ function createService(perms: string[], departmentIds: number[] = []) {
       updateTime: '2026-04-19 10:00:00',
     },
   ]);
-  const maintenanceRepo = createMemoryRepo();
+  const maintenanceRepo = createMemoryRepo([
+    {
+      id: 12,
+      assetId: 1,
+      departmentId: 10,
+      maintenanceType: '保养',
+      vendor: '服务商A',
+      cost: 300,
+      startDate: '2026-04-14 09:00:00',
+      completedDate: '2026-04-15 18:00:00',
+      status: 'completed',
+      description: '更换配件',
+      result: '已完成',
+      createTime: '2026-04-14 09:00:00',
+      updateTime: '2026-04-15 18:00:00',
+    },
+  ]);
   const procurementRepo = createMemoryRepo([
     {
       id: 21,
@@ -135,7 +151,20 @@ function createService(perms: string[], departmentIds: number[] = []) {
   ]);
   const transferRepo = createMemoryRepo();
   const inventoryRepo = createMemoryRepo();
-  const depreciationRepo = createMemoryRepo();
+  const depreciationRepo = createMemoryRepo([
+    {
+      id: 41,
+      assetId: 1,
+      periodValue: '2026-04',
+      depreciationAmount: 416.67,
+      accumulatedAmount: 416.67,
+      netBookValue: 4583.33,
+      sourceCost: 5000,
+      recalculatedAt: '2026-04-02 08:00:00',
+      createTime: '2026-04-02 08:00:00',
+      updateTime: '2026-04-02 08:00:00',
+    },
+  ]);
   const disposalRepo = createMemoryRepo([
     {
       id: 31,
@@ -254,5 +283,47 @@ describe('performance asset domain service', () => {
         assignDate: '2026-04-19',
       })
     ).rejects.toThrow('无权操作该资产');
+  });
+
+  test('should summarize asset actions by natural day week month and expose action timeline', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-04-19T12:00:00Z'));
+
+    try {
+      const { service } = createService(['performance:assetDashboard:summary'], [10]);
+
+      const result = await service.assetDashboardSummary({});
+
+      expect(result.actionOverview).toMatchObject({
+        today: {
+          actionCount: 4,
+          assetCount: 1,
+          documentCount: 3,
+        },
+        thisWeek: {
+          actionCount: 5,
+          assetCount: 1,
+          documentCount: 4,
+        },
+        thisMonth: {
+          actionCount: 6,
+          assetCount: 1,
+          documentCount: 5,
+        },
+      });
+      expect(result.actionTimeline[0]).toMatchObject({
+        module: 'assetDisposal',
+        actionLabel: '审批报废',
+        objectNo: 'ASSET-DP-0001',
+        objectName: '办公电脑',
+        operatorName: '资产管理员',
+        departmentName: '平台部',
+        resultStatus: 'approved',
+        occurredAt: '2026-04-19 11:00:00',
+      });
+      expect(result.actionTimeline.some(item => item.module === 'assetDepreciation')).toBe(true);
+      expect(result.recentActivities).toHaveLength(result.actionTimeline.length);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });

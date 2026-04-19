@@ -181,6 +181,60 @@ function nowTime() {
   return new Date().toISOString().slice(0, 19).replace('T', ' ');
 }
 
+function formatDateTimeText(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+    date.getDate()
+  ).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(
+    date.getMinutes()
+  ).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
+}
+
+function normalizeDateTimeText(value: any) {
+  if (!value) {
+    return '';
+  }
+  if (value instanceof Date) {
+    return formatDateTimeText(value);
+  }
+  const text = String(value).trim();
+  if (!text) {
+    return '';
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+    return `${text} 00:00:00`;
+  }
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(text)) {
+    return `${text}:00`;
+  }
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(text)) {
+    return text.slice(0, 19);
+  }
+  const parsed = new Date(text.replace(' ', 'T'));
+  return Number.isFinite(parsed.getTime()) ? formatDateTimeText(parsed) : '';
+}
+
+function startOfTodayValue(now: Date) {
+  const next = new Date(now);
+  next.setHours(0, 0, 0, 0);
+  return formatDateTimeText(next);
+}
+
+function startOfWeekValue(now: Date) {
+  const next = new Date(now);
+  const day = next.getDay();
+  const offset = day === 0 ? 6 : day - 1;
+  next.setDate(next.getDate() - offset);
+  next.setHours(0, 0, 0, 0);
+  return formatDateTimeText(next);
+}
+
+function startOfMonthValue(now: Date) {
+  const next = new Date(now);
+  next.setDate(1);
+  next.setHours(0, 0, 0, 0);
+  return formatDateTimeText(next);
+}
+
 function monthValue(value?: string | null) {
   const raw = String(value || '').trim();
   if (/^\d{4}-\d{2}$/.test(raw)) {
@@ -428,6 +482,28 @@ export class PerformanceAssetDomainService extends BaseService {
     };
   }
 
+  private summarizeActionWindow(
+    actions: Array<{
+      occurredAt?: string | Date | null;
+      assetId?: number | null;
+      documentKey?: string | null;
+    }>,
+    startTime: string
+  ) {
+    const filtered = actions.filter(item => {
+      const timestamp = normalizeDateTimeText(item.occurredAt);
+      return Boolean(timestamp) && timestamp >= startTime;
+    });
+
+    return {
+      actionCount: filtered.length,
+      assetCount: uniqueNumberList(filtered.map(item => item.assetId)).length,
+      documentCount: Array.from(
+        new Set(filtered.map(item => String(item.documentKey || '').trim()).filter(Boolean))
+      ).length,
+    };
+  }
+
   async assetDashboardSummary(query: any) {
     const perms = await this.currentPerms();
     this.assertPerm(perms, 'performance:assetDashboard:summary', '无权限查看资产首页');
@@ -476,57 +552,298 @@ export class PerformanceAssetDomainService extends BaseService {
       }, new Map<string, any>()).values()
     );
 
-    const recentActivities = [
-      ...(await this.performanceAssetAssignmentEntity.find()).map(item => ({
-        id: item.id,
-        module: 'assetAssignment',
-        title: `领用归还 #${item.id}`,
-        status: item.status,
-        occurredAt: item.updateTime,
-      })),
-      ...(await this.performanceAssetMaintenanceEntity.find()).map(item => ({
-        id: item.id,
-        module: 'assetMaintenance',
-        title: `维护保养 #${item.id}`,
-        status: item.status,
-        occurredAt: item.updateTime,
-      })),
-      ...(await this.performanceAssetProcurementEntity.find()).map(item => ({
-        id: item.id,
-        module: 'assetProcurement',
-        title: item.title,
-        status: item.status,
-        occurredAt: item.updateTime,
-      })),
-      ...(await this.performanceAssetTransferEntity.find()).map(item => ({
-        id: item.id,
-        module: 'assetTransfer',
-        title: item.transferNo,
-        status: item.status,
-        occurredAt: item.updateTime,
-      })),
-      ...(await this.performanceAssetInventoryEntity.find()).map(item => ({
-        id: item.id,
-        module: 'assetInventory',
-        title: item.inventoryNo,
-        status: item.status,
-        occurredAt: item.updateTime,
-      })),
-      ...(await this.performanceAssetDisposalEntity.find()).map(item => ({
-        id: item.id,
-        module: 'assetDisposal',
-        title: item.disposalNo,
-        status: item.status,
-        occurredAt: item.updateTime,
-      })),
-    ]
-      .sort((a, b) => String(b.occurredAt || '').localeCompare(String(a.occurredAt || '')))
-      .slice(0, 10);
-
     const today = new Date();
     const deadline = new Date(today.getTime() + 30 * 24 * 3600 * 1000)
       .toISOString()
       .slice(0, 10);
+    const assignmentRows = (await this.performanceAssetAssignmentEntity.find()).filter(item =>
+      assetMapForSummary.has(Number(item.assetId))
+    );
+    const maintenanceRows = (await this.performanceAssetMaintenanceEntity.find()).filter(item =>
+      assetMapForSummary.has(Number(item.assetId))
+    );
+    const procurementRows = await this.scopeRows(
+      await this.performanceAssetProcurementEntity.find(),
+      perms,
+      item => item.ownerDepartmentId
+    );
+    const transferRows = (await this.performanceAssetTransferEntity.find()).filter(item =>
+      assetMapForSummary.has(Number(item.assetId))
+    );
+    const inventoryRows = await this.scopeRows(
+      await this.performanceAssetInventoryEntity.find(),
+      perms,
+      item => item.ownerDepartmentId
+    );
+    const departmentMap = await this.departmentMap(
+      uniqueNumberList([
+        ...assets.map(item => item.ownerDepartmentId),
+        ...disposalRows.map(item => item.ownerDepartmentId),
+        ...assignmentRows.map(item => item.departmentId),
+        ...maintenanceRows.map(item => item.departmentId),
+        ...procurementRows.map(item => item.ownerDepartmentId),
+        ...transferRows.map(item => item.fromDepartmentId),
+        ...inventoryRows.map(item => item.ownerDepartmentId),
+      ])
+    );
+    const userMap = await this.userMap(
+      uniqueNumberList([
+        ...assets.map(item => item.managerId),
+        ...disposalRows.flatMap(item => [item.approvedById, item.executedById]),
+        ...assignmentRows.map(item => item.assigneeId),
+        ...procurementRows.map(item => item.managerId),
+        ...transferRows.map(item => item.toManagerId),
+      ])
+    );
+
+    const assetActions = assets.map(item => {
+      const isNew = String(item.createTime || '') === String(item.updateTime || '');
+      return {
+        id: item.id,
+        module: 'assetInfo',
+        actionLabel: isNew ? '新增资产' : '台账维护',
+        title: item.assetName || item.assetNo || `资产 #${item.id}`,
+        objectNo: item.assetNo,
+        objectName: item.assetName,
+        status: item.status,
+        resultStatus: item.status,
+        assetId: item.id,
+        departmentId: item.ownerDepartmentId,
+        departmentName: departmentMap.get(Number(item.ownerDepartmentId))?.name || '',
+        operatorName: userMap.get(Number(item.managerId || 0))?.name || '',
+        occurredAt: item.updateTime || item.createTime || '',
+        documentKey: null,
+      };
+    });
+    const assignmentActions = assignmentRows.map(item => {
+      const asset = assetMapForSummary.get(Number(item.assetId));
+      const actionLabel =
+        item.status === 'returned' ? '归还资产' : item.status === 'lost' ? '标记丢失' : '领用资产';
+      return {
+        id: item.id,
+        module: 'assetAssignment',
+        actionLabel,
+        title: asset?.assetName || `领用归还 #${item.id}`,
+        objectNo: asset?.assetNo || `ASSIGN-${item.id}`,
+        objectName: asset?.assetName || '资产领用记录',
+        status: item.status,
+        resultStatus: item.status,
+        assetId: item.assetId,
+        departmentId: item.departmentId,
+        departmentName: departmentMap.get(Number(item.departmentId))?.name || '',
+        operatorName: userMap.get(Number(item.assigneeId || 0))?.name || '',
+        occurredAt: item.returnDate || item.assignDate || item.updateTime || item.createTime || '',
+        documentKey: `assetAssignment:${item.id}`,
+      };
+    });
+    const maintenanceActions = maintenanceRows.map(item => {
+      const asset = assetMapForSummary.get(Number(item.assetId));
+      const actionLabel =
+        item.status === 'completed'
+          ? '完成维护'
+          : item.status === 'cancelled'
+            ? '取消维护'
+            : item.status === 'inProgress'
+              ? '开始维护'
+              : '新增维护';
+      return {
+        id: item.id,
+        module: 'assetMaintenance',
+        actionLabel,
+        title: asset?.assetName || `维护保养 #${item.id}`,
+        objectNo: asset?.assetNo || `MAINT-${item.id}`,
+        objectName: asset?.assetName || '资产维护记录',
+        status: item.status,
+        resultStatus: item.status,
+        assetId: item.assetId,
+        departmentId: item.departmentId,
+        departmentName: departmentMap.get(Number(item.departmentId))?.name || '',
+        operatorName: asset?.managerId ? userMap.get(Number(asset.managerId))?.name || '' : '',
+        occurredAt:
+          item.completedDate || item.startDate || item.updateTime || item.createTime || '',
+        documentKey: `assetMaintenance:${item.id}`,
+      };
+    });
+    const procurementActions = procurementRows
+      .filter(item =>
+        query?.category ? item.category === String(query.category).trim() : true
+      )
+      .map(item => {
+      const actionLabel =
+        item.status === 'received'
+          ? '确认入库'
+          : item.status === 'submitted'
+            ? '提交入库'
+            : item.status === 'cancelled'
+              ? '取消入库'
+              : '新增入库单';
+      return {
+        id: item.id,
+        module: 'assetProcurement',
+        actionLabel,
+        title: item.title || item.procurementNo,
+        objectNo: item.procurementNo,
+        objectName: item.title || item.assetName,
+        status: item.status,
+        resultStatus: item.status,
+        assetId:
+          Array.isArray(item.receivedAssetIds) && item.receivedAssetIds.length
+            ? Number(item.receivedAssetIds[0])
+            : null,
+        departmentId: item.ownerDepartmentId,
+        departmentName: departmentMap.get(Number(item.ownerDepartmentId))?.name || '',
+        operatorName: userMap.get(Number(item.managerId || 0))?.name || '',
+        occurredAt:
+          item.receivedAt || item.submittedAt || item.updateTime || item.createTime || '',
+        documentKey: `assetProcurement:${item.id}`,
+      };
+      });
+    const transferActions = transferRows.map(item => {
+      const asset = assetMapForSummary.get(Number(item.assetId));
+      const actionLabel =
+        item.status === 'completed'
+          ? '完成调拨'
+          : item.status === 'submitted' || item.status === 'inTransit'
+            ? '提交调拨'
+            : item.status === 'cancelled'
+              ? '取消调拨'
+              : '新增调拨单';
+      return {
+        id: item.id,
+        module: 'assetTransfer',
+        actionLabel,
+        title: item.transferNo,
+        objectNo: item.transferNo,
+        objectName: asset?.assetName || '资产调拨单',
+        status: item.status,
+        resultStatus: item.status,
+        assetId: item.assetId,
+        departmentId: item.fromDepartmentId,
+        departmentName: departmentMap.get(Number(item.fromDepartmentId))?.name || '',
+        operatorName: userMap.get(Number(item.toManagerId || 0))?.name || '',
+        occurredAt:
+          item.completedAt || item.submittedAt || item.updateTime || item.createTime || '',
+        documentKey: `assetTransfer:${item.id}`,
+      };
+    });
+    const inventoryActions = inventoryRows.map(item => {
+      const asset = assetMapForSummary.get(Number(item.assetId));
+      const actionLabel =
+        item.status === 'closed'
+          ? '关闭盘点'
+          : item.status === 'completed'
+            ? '完成盘点'
+            : item.status === 'counting'
+              ? '开始盘点'
+              : '新增盘点单';
+      return {
+        id: item.id,
+        module: 'assetInventory',
+        actionLabel,
+        title: item.inventoryNo,
+        objectNo: item.inventoryNo,
+        objectName: asset?.assetName || '资产盘点单',
+        status: item.status,
+        resultStatus: item.status,
+        assetId: item.assetId,
+        departmentId: item.ownerDepartmentId,
+        departmentName: departmentMap.get(Number(item.ownerDepartmentId))?.name || '',
+        operatorName: asset?.managerId ? userMap.get(Number(asset.managerId))?.name || '' : '',
+        occurredAt:
+          item.closedAt ||
+          item.completedAt ||
+          item.startedAt ||
+          item.updateTime ||
+          item.createTime ||
+          '',
+        documentKey: `assetInventory:${item.id}`,
+      };
+    });
+    const disposalActions = disposalRows.map(item => {
+      const asset = assetMapForSummary.get(Number(item.assetId));
+      const actionLabel =
+        item.status === 'scrapped'
+          ? '执行报废'
+          : item.status === 'approved'
+            ? '审批报废'
+            : item.status === 'submitted'
+              ? '提交报废'
+              : item.status === 'cancelled'
+                ? '取消报废'
+                : '新增报废单';
+      const operatorId =
+        item.status === 'scrapped'
+          ? item.executedById
+          : item.status === 'approved'
+            ? item.approvedById
+            : asset?.managerId || null;
+      return {
+        id: item.id,
+        module: 'assetDisposal',
+        actionLabel,
+        title: item.disposalNo,
+        objectNo: item.disposalNo,
+        objectName: asset?.assetName || '资产报废单',
+        status: item.status,
+        resultStatus: item.status,
+        assetId: item.assetId,
+        departmentId: item.ownerDepartmentId,
+        departmentName: departmentMap.get(Number(item.ownerDepartmentId))?.name || '',
+        operatorName: userMap.get(Number(operatorId || 0))?.name || '',
+        occurredAt:
+          item.executedAt ||
+          item.approvedAt ||
+          item.submittedAt ||
+          item.updateTime ||
+          item.createTime ||
+          '',
+        documentKey: `assetDisposal:${item.id}`,
+      };
+    });
+    const depreciationActions = depreciationRows
+      .filter(item => item.recalculatedAt)
+      .map(item => {
+        const asset = assetMapForSummary.get(Number(item.assetId));
+        return {
+          id: item.id,
+          module: 'assetDepreciation',
+          actionLabel: '重算折旧',
+          title: asset?.assetName || `折旧快照 #${item.id}`,
+          objectNo: asset?.assetNo || item.periodValue,
+          objectName: asset?.assetName || `${item.periodValue} 折旧`,
+          status: item.periodValue,
+          resultStatus: item.periodValue,
+          assetId: item.assetId,
+          departmentId: asset?.ownerDepartmentId || null,
+          departmentName: departmentMap.get(Number(asset?.ownerDepartmentId || 0))?.name || '',
+          operatorName: asset?.managerId ? userMap.get(Number(asset.managerId))?.name || '' : '',
+          occurredAt: item.recalculatedAt || item.updateTime || item.createTime || '',
+          documentKey: `assetDepreciation:${item.id}`,
+        };
+      });
+
+    const activityTimeline = [
+      ...assetActions,
+      ...assignmentActions,
+      ...maintenanceActions,
+      ...procurementActions,
+      ...transferActions,
+      ...inventoryActions,
+      ...disposalActions,
+      ...depreciationActions,
+    ]
+      .map(item => ({
+        ...item,
+        occurredAt: normalizeDateTimeText(item.occurredAt),
+      }))
+      .filter(item => item.occurredAt)
+      .sort((a, b) => String(b.occurredAt || '').localeCompare(String(a.occurredAt || '')));
+    const recentActivities = activityTimeline.slice(0, 10);
+    const actionOverview = {
+      today: this.summarizeActionWindow(activityTimeline, startOfTodayValue(today)),
+      thisWeek: this.summarizeActionWindow(activityTimeline, startOfWeekValue(today)),
+      thisMonth: this.summarizeActionWindow(activityTimeline, startOfMonthValue(today)),
+    };
 
     return {
       totalAssetCount: assets.length,
@@ -545,6 +862,8 @@ export class PerformanceAssetDomainService extends BaseService {
       ).length,
       statusDistribution,
       categoryDistribution,
+      actionOverview,
+      actionTimeline: recentActivities,
       recentActivities,
       updatedAt: nowTime(),
     };

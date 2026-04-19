@@ -1604,11 +1604,26 @@ export interface AssetDashboardActivityItem {
 		| 'assetProcurement'
 		| 'assetTransfer'
 		| 'assetInventory'
-		| 'assetDisposal';
+		| 'assetDisposal'
+		| 'assetDepreciation';
+	actionLabel?: string;
 	title: string;
+	objectNo?: string;
+	objectName?: string;
+	resultStatus?: string;
+	assetId?: number | null;
+	departmentId?: number | null;
+	departmentName?: string;
+	documentKey?: string | null;
 	status?: string;
 	operatorName?: string;
 	occurredAt?: string;
+}
+
+export interface AssetDashboardActionSummaryItem {
+	actionCount: number;
+	assetCount: number;
+	documentCount: number;
 }
 
 export interface AssetDashboardSummary {
@@ -1626,6 +1641,12 @@ export interface AssetDashboardSummary {
 	expiringWarrantyCount: number;
 	statusDistribution: AssetStatusDistributionItem[];
 	categoryDistribution: AssetCategoryDistributionItem[];
+	actionOverview: {
+		today: AssetDashboardActionSummaryItem;
+		thisWeek: AssetDashboardActionSummaryItem;
+		thisMonth: AssetDashboardActionSummaryItem;
+	};
+	actionTimeline: AssetDashboardActivityItem[];
 	recentActivities: AssetDashboardActivityItem[];
 	updatedAt?: string;
 }

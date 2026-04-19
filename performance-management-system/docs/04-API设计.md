@@ -2601,6 +2601,44 @@
 | 资产报表分页 | `/admin/performance/assetReport/page` | `POST` | `performance:assetReport:page` |
 | 导出资产报表 | `/admin/performance/assetReport/export` | `GET` | `performance:assetReport:export` |
 
+### 资产首页汇总返回补充（2026-04-19）
+
+`/admin/performance/assetDashboard/summary` 在原有资产总量、金额、状态分布、分类分布基础上，补充以下字段：
+
+1. `actionOverview`
+   - `today.actionCount / assetCount / documentCount`
+   - `thisWeek.actionCount / assetCount / documentCount`
+   - `thisMonth.actionCount / assetCount / documentCount`
+2. `actionTimeline`
+   - 返回最近动作流水，首批与 `recentActivities` 保持同一批次数据
+   - 单项字段固定包含：
+     - `module`
+     - `actionLabel`
+     - `objectNo`
+     - `objectName`
+     - `departmentName`
+     - `operatorName`
+     - `resultStatus`
+     - `occurredAt`
+
+动作统计口径固定为：
+
+1. `today`：当天 00:00 到当前
+2. `thisWeek`：自然周，周一开始
+3. `thisMonth`：自然月
+4. 只统计业务动作，不统计查询、筛选、翻页或弹窗打开
+
+首批动作来源固定为：
+
+1. `assetInfo`
+2. `assetAssignment`
+3. `assetMaintenance`
+4. `assetProcurement`
+5. `assetTransfer`
+6. `assetInventory`
+7. `assetDisposal`
+8. `assetDepreciation`
+
 ### 业务规则
 
 1. `assetProcurement/receive` 必须落资产台账主记录，不允许只改变单据状态。

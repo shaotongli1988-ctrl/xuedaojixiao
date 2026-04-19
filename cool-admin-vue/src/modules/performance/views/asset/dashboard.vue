@@ -1,4 +1,4 @@
-<!-- 文件职责：展示主题20资产首页汇总、状态分布和最近动态；不负责台账 CRUD 或子单据编辑；依赖 asset-dashboard service 与共享状态标签映射；维护重点是首页只消费冻结摘要字段，不把子页面表单逻辑混进来。 -->
+<!-- 文件职责：展示主题20资产首页汇总、动作总览、状态分布和最近动态；不负责台账 CRUD 或子单据编辑；依赖 asset-dashboard service 与共享状态标签映射；维护重点是首页只消费冻结摘要字段，不把子页面表单逻辑混进来。 -->
 <template>
 	<div v-if="canAccess" class="asset-dashboard">
 		<el-card shadow="never">
@@ -21,6 +21,20 @@
 				<div class="asset-dashboard__card-value">{{ card.value }}</div>
 			</el-card>
 		</div>
+
+		<el-card shadow="never" v-loading="loading">
+			<template #header>动作总览</template>
+			<div class="asset-dashboard__action-cards">
+				<el-card v-for="card in actionOverviewCards" :key="card.label" shadow="hover">
+					<div class="asset-dashboard__card-label">{{ card.label }}</div>
+					<div class="asset-dashboard__card-value">{{ card.value.actionCount }}</div>
+					<div class="asset-dashboard__action-meta">
+						<span>涉及资产 {{ card.value.assetCount }}</span>
+						<span>涉及单据 {{ card.value.documentCount }}</span>
+					</div>
+				</el-card>
+			</div>
+		</el-card>
 
 		<el-row :gutter="16">
 			<el-col :span="12">
@@ -51,12 +65,21 @@
 		</el-row>
 
 		<el-card shadow="never" v-loading="loading">
-			<template #header>最近动态</template>
-			<el-table :data="summary?.recentActivities || []" border>
-				<el-table-column prop="module" label="模块" min-width="160" />
-				<el-table-column prop="title" label="标题" min-width="220" />
-				<el-table-column prop="status" label="状态" min-width="120" />
+			<template #header>最近动作流水</template>
+			<el-table :data="activityTimeline" border>
 				<el-table-column prop="occurredAt" label="发生时间" min-width="180" />
+				<el-table-column prop="actionLabel" label="动作类型" min-width="140" />
+				<el-table-column prop="objectNo" label="对象编号" min-width="160" />
+				<el-table-column prop="objectName" label="对象名称" min-width="180" />
+				<el-table-column prop="operatorName" label="操作人" min-width="120" />
+				<el-table-column prop="departmentName" label="所属部门" min-width="140" />
+				<el-table-column label="结果状态" min-width="120">
+					<template #default="{ row }">
+						<el-tag effect="plain">
+							{{ statusLabelMap[row.resultStatus || row.status] || row.resultStatus || row.status || '-' }}
+						</el-tag>
+					</template>
+				</el-table-column>
 			</el-table>
 		</el-card>
 	</div>
@@ -85,6 +108,45 @@ const metricCards = computed(() => [
 	{ label: '即将过保', value: summary.value?.expiringWarrantyCount || 0 },
 	{ label: '可用资产', value: summary.value?.availableCount || 0 }
 ]);
+const actionOverviewCards = computed(() => [
+	{
+		label: '本日动作',
+		value: summary.value?.actionOverview?.today || { actionCount: 0, assetCount: 0, documentCount: 0 }
+	},
+	{
+		label: '本周动作',
+		value:
+			summary.value?.actionOverview?.thisWeek || { actionCount: 0, assetCount: 0, documentCount: 0 }
+	},
+	{
+		label: '本月动作',
+		value:
+			summary.value?.actionOverview?.thisMonth || { actionCount: 0, assetCount: 0, documentCount: 0 }
+	}
+]);
+const activityTimeline = computed(() => summary.value?.actionTimeline || summary.value?.recentActivities || []);
+const statusLabelMap: Record<string, string> = {
+	draft: '草稿',
+	submitted: '已提交',
+	received: '已入库',
+	cancelled: '已取消',
+	assigned: '已领用',
+	returned: '已归还',
+	lost: '已丢失',
+	scheduled: '待维护',
+	inProgress: '维护中',
+	completed: '已完成',
+	counting: '盘点中',
+	inTransfer: '调拨中',
+	inTransit: '调拨中',
+	closed: '已关闭',
+	approved: '已审批',
+	scrapped: '已报废',
+	available: '可用',
+	maintenance: '维护中',
+	inventorying: '盘点中',
+	pendingInbound: '待入库'
+};
 
 async function loadSummary() {
 	if (!canAccess.value) {
@@ -127,10 +189,20 @@ if (canAccess.value) {
 
 	&__filters,
 	&__cards,
+	&__action-cards,
 	&__tag-grid {
 		display: flex;
 		gap: 12px;
 		flex-wrap: wrap;
+	}
+
+	&__action-meta {
+		margin-top: 8px;
+		display: flex;
+		gap: 16px;
+		flex-wrap: wrap;
+		color: var(--el-text-color-secondary);
+		font-size: 13px;
 	}
 
 	&__card-label {
@@ -145,4 +217,3 @@ if (canAccess.value) {
 	}
 }
 </style>
-
