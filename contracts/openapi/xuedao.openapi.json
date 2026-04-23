@@ -17567,7 +17567,8 @@
               {
                 "type": "object",
                 "additionalProperties": {
-                  "$ref": "#/components/schemas/GeneratedCoursePageResponse"
+                  "type": "object",
+                  "additionalProperties": true
                 }
               },
               {
@@ -22141,7 +22142,8 @@
               {
                 "type": "object",
                 "additionalProperties": {
-                  "$ref": "#/components/schemas/GeneratedSupplierPageResponse"
+                  "type": "object",
+                  "additionalProperties": true
                 }
               },
               {
@@ -29957,7 +29959,8 @@
           {
             "type": "object",
             "additionalProperties": {
-              "$ref": "#/components/schemas/GeneratedCoursePageResponse"
+              "type": "object",
+              "additionalProperties": true
             }
           },
           {
@@ -42493,7 +42496,8 @@
           {
             "type": "object",
             "additionalProperties": {
-              "$ref": "#/components/schemas/GeneratedSupplierPageResponse"
+              "type": "object",
+              "additionalProperties": true
             }
           },
           {
