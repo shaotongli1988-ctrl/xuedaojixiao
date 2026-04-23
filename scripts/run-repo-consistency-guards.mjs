@@ -14,15 +14,79 @@ import { fileURLToPath } from 'node:url';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 
-const guardScripts = [
-	'check-directory-naming-conflicts.mjs',
-	'check-menu-route-viewpath-drift.mjs',
-	'check-permission-key-alignment.mjs',
-	'check-doc-contract-writeback.mjs'
+const guardEntries = [
+	{
+		script: 'check-xuedao-ssot-manifest.mjs',
+		args: []
+	},
+	{
+		script: 'check-xuedao-ssot-conformance.mjs',
+		args: []
+	},
+	{
+		script: 'sync-repo-openapi-ssot.mjs',
+		args: ['--write']
+	},
+	{
+		script: 'sync-performance-openapi-ssot.mjs',
+		args: ['--write']
+	},
+	{
+		script: 'openapi-contract-sync.mjs',
+		args: ['--write']
+	},
+	{
+		script: 'check-performance-domain-model-ssot.mjs',
+		args: []
+	},
+	{
+		script: 'check-office-ledger-enum-alignment.mjs',
+		args: []
+	},
+	{
+		script: 'check-global-domain-ssot.mjs',
+		args: []
+	},
+	{
+		script: 'check-base-permission-domain-ssot.mjs',
+		args: []
+	},
+	{
+		script: 'sync-eps-openapi-ssot.mjs',
+		args: ['--write']
+	},
+	{
+		script: 'check-directory-naming-conflicts.mjs',
+		args: []
+	},
+	{
+		script: 'check-menu-route-viewpath-drift.mjs',
+		args: []
+	},
+	{
+		script: 'check-permission-key-alignment.mjs',
+		args: []
+	},
+	{
+		script: 'check-doc-contract-writeback.mjs',
+		args: []
+	},
+	{
+		script: 'check-rbac-alignment.mjs',
+		args: ['--phase', 'batch', '--force']
+	},
+	{
+		script: 'check-state-machine-alignment.mjs',
+		args: ['--phase', 'batch', '--force']
+	},
+	{
+		script: 'check-component-reuse.mjs',
+		args: ['--phase', 'batch', '--force']
+	}
 ];
 
-for (const guardScript of guardScripts) {
-	const result = spawnSync(process.execPath, [path.join(scriptDir, guardScript), ...process.argv.slice(2)], {
+for (const guardEntry of guardEntries) {
+	const result = spawnSync(process.execPath, [path.join(scriptDir, guardEntry.script), ...guardEntry.args, ...process.argv.slice(2)], {
 		stdio: 'inherit'
 	});
 

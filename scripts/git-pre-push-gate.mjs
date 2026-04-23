@@ -30,19 +30,35 @@ const alwaysBlockedPrefixes = [
   'cool-uni/test-results/',
 ];
 
+const repoContractModuleRoots = [
+  'cool-admin-midway/src/modules/base/',
+  'cool-admin-midway/src/modules/demo/',
+  'cool-admin-midway/src/modules/dict/',
+  'cool-admin-midway/src/modules/plugin/',
+  'cool-admin-midway/src/modules/recycle/',
+  'cool-admin-midway/src/modules/space/',
+  'cool-admin-midway/src/modules/task/',
+  'cool-admin-midway/src/modules/user/',
+];
+const automationGovernanceDocPath = 'performance-management-system/docs/24-自动化测试策略与脚本规划.md';
+
 const commandGroups = [
   {
     id: 'repo-consistency-guards',
-    description: '仓库一致性守卫（目录命名、菜单路由、权限键、文档回写）',
+    description: '仓库一致性守卫（OpenAPI/EPS 类型、目录命名、菜单路由、权限键、文档回写、状态流、实现层收敛）',
     cwd: '.',
     command: ['node', './scripts/run-repo-consistency-guards.mjs'],
     matches(filePath) {
       return (
+        filePath.startsWith('contracts/') ||
         filePath === 'cool-admin-midway/src/modules/base/menu.json' ||
         filePath === 'cool-admin-vue/src/modules/base/store/menu.ts' ||
+        filePath.startsWith('.github/workflows/') ||
+        repoContractModuleRoots.some(root => filePath.startsWith(root)) ||
         filePath.startsWith('cool-admin-vue/src/modules/performance/') ||
         filePath.startsWith('cool-admin-midway/src/modules/performance/') ||
         filePath.startsWith('scripts/') ||
+        filePath === automationGovernanceDocPath ||
         filePath.startsWith('performance-management-system/test/') ||
         filePath.startsWith('cool-admin-midway/test/') ||
         filePath.startsWith('cool-admin-vue/test/')
@@ -50,27 +66,45 @@ const commandGroups = [
     },
   },
   {
+    id: 'repo-guard-tests',
+    description: '仓库守卫脚本与 CI 门禁回归测试',
+    cwd: '.',
+    command: ['node', '--test', './performance-management-system/test/repo-guard-scripts.test.mjs'],
+    matches(filePath) {
+      return (
+        filePath.startsWith('.github/workflows/') ||
+        filePath.startsWith('scripts/') ||
+        filePath === automationGovernanceDocPath ||
+        filePath.startsWith('performance-management-system/test/')
+      );
+    },
+  },
+  {
+    id: 'midway-build',
+    description: '后端构建校验',
+    cwd: 'cool-admin-midway',
+    command: ['npm', 'run', 'build'],
+    matches(filePath) {
+      return (
+        filePath === 'cool-admin-midway/package.json' ||
+        filePath === 'cool-admin-midway/src/entities.ts' ||
+        filePath.startsWith('cool-admin-midway/src/modules/base/') ||
+        filePath.startsWith('cool-admin-midway/src/modules/performance/') ||
+        filePath.startsWith('cool-admin-midway/test/') ||
+        filePath.startsWith('cool-admin-midway/scripts/')
+      );
+    },
+  },
+  {
     id: 'midway-tests',
-    description: '后端主题 1-9 与跨模块驾驶舱定向回归测试',
+    description: '后端 performance 模块定向回归测试',
     cwd: 'cool-admin-midway',
     command: [
       'npm',
       'run',
       'test',
       '--',
-      'test/performance/assessment.service.test.ts',
-      'test/performance/goal.service.test.ts',
-      'test/performance/dashboard.service.test.ts',
-      'test/performance/feedback.service.test.ts',
-      'test/performance/pip.service.test.ts',
-      'test/performance/promotion.service.test.ts',
-      'test/performance/suggestion.service.test.ts',
-      'test/performance/approval-flow.service.test.ts',
-      'test/performance/approval-flow.contract.test.ts',
-      'test/performance/cross-dashboard-source-adapter.service.test.ts',
-      'test/performance/course.service.test.ts',
-      'test/performance/interview.service.test.ts',
-      'test/performance/meeting.service.test.ts',
+      'test/performance',
     ],
     matches(filePath) {
       return (
@@ -101,6 +135,24 @@ const commandGroups = [
     },
   },
   {
+    id: 'vue-format-check',
+    description: '后台前端变更文件格式检查',
+    cwd: '.',
+    command: ['node', './scripts/check-changed-workspace-quality.mjs', '--workspace', 'cool-admin-vue', '--tool', 'prettier'],
+    matches(filePath) {
+      return filePath.startsWith('cool-admin-vue/') && !filePath.startsWith('cool-admin-vue/build/');
+    },
+  },
+  {
+    id: 'vue-lint-check',
+    description: '后台前端变更文件静态检查',
+    cwd: '.',
+    command: ['node', './scripts/check-changed-workspace-quality.mjs', '--workspace', 'cool-admin-vue', '--tool', 'eslint'],
+    matches(filePath) {
+      return filePath.startsWith('cool-admin-vue/') && !filePath.startsWith('cool-admin-vue/build/');
+    },
+  },
+  {
     id: 'vue-typecheck',
     description: '后台前端类型检查',
     cwd: 'cool-admin-vue',
@@ -119,10 +171,36 @@ const commandGroups = [
     },
   },
   {
+    id: 'uni-format-check',
+    description: 'cool-uni 变更文件格式检查',
+    cwd: '.',
+    command: ['node', './scripts/check-changed-workspace-quality.mjs', '--workspace', 'cool-uni', '--tool', 'prettier'],
+    matches(filePath) {
+      return (
+        filePath.startsWith('cool-uni/') &&
+        !filePath.startsWith('cool-uni/build/') &&
+        !filePath.startsWith('cool-uni/test-results/')
+      );
+    },
+  },
+  {
+    id: 'uni-lint-check',
+    description: 'cool-uni 变更文件静态检查',
+    cwd: '.',
+    command: ['node', './scripts/check-changed-workspace-quality.mjs', '--workspace', 'cool-uni', '--tool', 'eslint'],
+    matches(filePath) {
+      return (
+        filePath.startsWith('cool-uni/') &&
+        !filePath.startsWith('cool-uni/build/') &&
+        !filePath.startsWith('cool-uni/test-results/')
+      );
+    },
+  },
+  {
     id: 'uni-typecheck',
     description: 'cool-uni 最小 TypeScript 校验',
     cwd: 'cool-uni',
-    command: ['corepack', 'pnpm', 'exec', 'tsc', '--noEmit', '-p', 'tsconfig.json'],
+    command: ['corepack', 'pnpm', 'run', 'type-check'],
     matches(filePath) {
       return (
         filePath.startsWith('cool-uni/') &&

@@ -68,6 +68,7 @@ function run() {
 		!changedFiles.some(
 			filePath =>
 				filePath === guardConfig.menuJsonPath ||
+				guardConfig.basePermissionDomainRoots.includes(filePath) ||
 				filePath.startsWith('cool-admin-vue/src/modules/performance/') ||
 				filePath.startsWith('cool-admin-midway/src/modules/performance/')
 		)
@@ -76,7 +77,7 @@ function run() {
 		return;
 	}
 
-	const { permissionKeys: producerPermissions } = getPerformanceMenuSnapshot();
+	const { permissionKeys: producerPermissions, menuRelativePath } = getPerformanceMenuSnapshot();
 	const producerMap = mapPermissionsByResource(producerPermissions);
 	const consumerPermissions = collectPermissionsFromCodebase();
 	const permissionDocText = readText(guardConfig.permissionDocPath);
@@ -99,11 +100,11 @@ function run() {
 		const inDocs = permissionDocText.includes(permission);
 
 		if (!inProducer) {
-			failures.push(`权限键 ${permission} 在源码中被引用，但未在 menu.json 中声明。`);
+			failures.push(`权限键 ${permission} 在源码中被引用，但未在 ${menuRelativePath} 中声明。`);
 		}
 
 		if (!inConsumer) {
-			failures.push(`权限键 ${permission} 已在 menu.json 中声明，但前后端源码中没有明确消费点。`);
+			failures.push(`权限键 ${permission} 已在 ${menuRelativePath} 中声明，但前后端源码中没有明确消费点。`);
 		}
 
 		if (!inDocs) {

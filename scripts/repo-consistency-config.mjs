@@ -5,11 +5,58 @@
  * 维护重点：任何菜单、权限、路由或自动化门槛范围变化后，都必须先更新这份配置。
  */
 
+import { loadXuedaoSsotManifest, resolveSsotManifestPath } from './xuedao-ssot-manifest.mjs';
+
+const nonPerformanceContractRoots = [
+	'cool-admin-midway/src/modules/base/controller/admin/',
+	'cool-admin-midway/src/modules/demo/controller/admin/',
+	'cool-admin-midway/src/modules/dict/controller/admin/',
+	'cool-admin-midway/src/modules/plugin/controller/admin/',
+	'cool-admin-midway/src/modules/recycle/controller/admin/',
+	'cool-admin-midway/src/modules/space/controller/admin/',
+	'cool-admin-midway/src/modules/task/controller/admin/',
+	'cool-admin-midway/src/modules/user/controller/admin/',
+	'cool-admin-vue/build/cool/eps.json',
+	'cool-admin-vue/build/cool/eps.d.ts',
+	'cool-uni/src/build/cool/eps.json',
+	'cool-uni/src/build/cool/eps.d.ts'
+];
+
+const isRepositoryApiContractManagedPath = filePath => {
+	return (
+		filePath.startsWith('contracts/openapi/') ||
+		filePath.startsWith('cool-admin-midway/src/modules/performance/controller/admin/') ||
+		filePath.startsWith('cool-admin-midway/src/modules/performance/service/') ||
+		filePath.startsWith('cool-admin-midway/src/modules/performance/entity/') ||
+		filePath.startsWith('cool-admin-vue/src/modules/performance/service/') ||
+		filePath.startsWith('cool-admin-vue/src/modules/performance/generated/') ||
+		filePath.startsWith('cool-uni/service/performance/') ||
+		filePath.startsWith('cool-uni/generated/') ||
+		filePath.startsWith('cool-uni/types/performance-') ||
+		nonPerformanceContractRoots.some(root => filePath === root || filePath.startsWith(root))
+	);
+};
+
 const docsRoot = 'performance-management-system/docs';
+const basePermissionDomainRoots = [
+	'cool-admin-midway/src/modules/base/domain/permissions/source.json',
+	'cool-admin-midway/src/modules/base/domain/permissions/source.mjs'
+];
+const ssotManifest = loadXuedaoSsotManifest();
 
 export const guardConfig = {
 	namespace: 'performance:',
+	ssotManifestPath: resolveSsotManifestPath(),
+	apiContractSourcePath:
+		ssotManifest.sourceOfTruth?.apiContract?.sourceFile || 'contracts/openapi/xuedao.openapi.json',
+	ssotArtifactRoot: ssotManifest.records?.artifactRoot || 'reports/delivery',
+	ssotChangeRecordTemplate:
+		ssotManifest.records?.changeTemplate || 'contracts/ssot/records/change-record.template.yaml',
+	ssotVerificationRecordTemplate:
+		ssotManifest.records?.verificationTemplate ||
+		'contracts/ssot/records/verification-record.template.yaml',
 	menuJsonPath: 'cool-admin-midway/src/modules/base/menu.json',
+	basePermissionDomainRoots,
 	menuStorePath: 'cool-admin-vue/src/modules/base/store/menu.ts',
 	permissionDocPath: `${docsRoot}/06-权限矩阵.md`,
 	routeDocPath: `${docsRoot}/10-路由与菜单映射.md`,
@@ -28,12 +75,14 @@ export const guardConfig = {
 	routeSensitiveRoots: [
 		'cool-admin-vue/src/modules/performance/views',
 		'cool-admin-vue/src/modules/base/store/menu.ts',
-		'cool-admin-midway/src/modules/base/menu.json'
+		'cool-admin-midway/src/modules/base/menu.json',
+		...basePermissionDomainRoots
 	],
 	repoGuardRoots: [
 		'cool-admin-vue/src/modules/performance',
 		'cool-admin-midway/src/modules/performance',
 		'cool-admin-midway/src/modules/base/menu.json',
+		...basePermissionDomainRoots,
 		'cool-admin-vue/src/modules/base/store/menu.ts',
 		'scripts',
 		'performance-management-system/test',
@@ -56,12 +105,21 @@ export const guardConfig = {
 			}
 		},
 		{
+			id: 'api-openapi-source',
+			requiredDoc: 'contracts/openapi/xuedao.openapi.json',
+			description: '已迁移 API 资源发生变化时，必须同步回写仓库级 OpenAPI 主源。',
+			matches(filePath) {
+				return isRepositoryApiContractManagedPath(filePath);
+			}
+		},
+		{
 			id: 'permission-contract',
 			requiredDoc: `${docsRoot}/06-权限矩阵.md`,
 			description: '菜单、权限键或前端权限显隐面发生变化时，必须回写权限矩阵。',
 			matches(filePath, fileText) {
 				if (
 					filePath === 'cool-admin-midway/src/modules/base/menu.json' ||
+					basePermissionDomainRoots.includes(filePath) ||
 					filePath.startsWith('cool-admin-vue/src/modules/performance/service/')
 				) {
 					return true;
@@ -85,6 +143,7 @@ export const guardConfig = {
 			matches(filePath) {
 				return (
 					filePath === 'cool-admin-midway/src/modules/base/menu.json' ||
+					basePermissionDomainRoots.includes(filePath) ||
 					filePath === 'cool-admin-vue/src/modules/base/store/menu.ts' ||
 					filePath.startsWith('cool-admin-vue/src/modules/performance/views/')
 				);
@@ -95,7 +154,7 @@ export const guardConfig = {
 			requiredDoc: `${docsRoot}/12-数据权限与脱敏规则.md`,
 			description: '敏感资源或脱敏/导出相关能力变化时，必须回写脱敏规则。',
 			matches(filePath, fileText) {
-					if (/(salary|supplier|resumePool|talentAsset)/.test(filePath)) {
+				if (/(salary|supplier|resumePool|talentAsset|hiring)/.test(filePath)) {
 					return true;
 				}
 

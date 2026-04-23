@@ -11,6 +11,10 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { guardConfig } from './repo-consistency-config.mjs';
+import {
+	collectPermissionModel,
+	loadBasePermissionSourceConfig
+} from '../cool-admin-midway/src/modules/base/domain/permissions/source.mjs';
 
 export const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 export const repoRoot = path.resolve(scriptDir, '..');
@@ -265,28 +269,30 @@ export function flattenMenus(menuNodes) {
 }
 
 export function getPerformanceMenuSnapshot() {
-	const flatMenus = flattenMenus(readJson(guardConfig.menuJsonPath));
+	const basePermissionSourceConfig = loadBasePermissionSourceConfig(repoRoot);
+	const menuRelativePath =
+		basePermissionSourceConfig.menuSourcePath || guardConfig.menuJsonPath;
+	const menuTree = readJson(menuRelativePath);
+	const flatMenus = flattenMenus(menuTree);
 	const pageMenus = flatMenus.filter(
 		menu =>
 			menu.type === 1 &&
 			(typeof menu.router === 'string' &&
 				(menu.router.startsWith('/performance/') || menu.router === '/data-center/dashboard'))
 	);
-	const permissionKeys = unique(
-		flatMenus
-			.filter(menu => typeof menu.perms === 'string' && menu.perms.includes(guardConfig.namespace))
-			.flatMap(menu =>
-				menu.perms
-					.split(',')
-					.map(permission => permission.trim())
-					.filter(permission => permission.startsWith(guardConfig.namespace))
-			)
+	const permissionModel = collectPermissionModel(menuTree, {
+		writeActions: basePermissionSourceConfig.writeActions,
+		routePermissionPriority: basePermissionSourceConfig.routePermissionPriority
+	});
+	const permissionKeys = permissionModel.permissionKeys.filter(permission =>
+		permission.startsWith(guardConfig.namespace)
 	);
 
 	return {
 		flatMenus,
 		pageMenus,
-		permissionKeys
+		permissionKeys,
+		menuRelativePath
 	};
 }
 
@@ -341,7 +347,14 @@ export function getRouteDocRows() {
 }
 
 export function collectPermissionLiterals(text) {
-	return unique(text.match(/performance:[A-Za-z0-9]+:[A-Za-z0-9]+/g) || []);
+	return unique(text.match(/performance:[A-Za-z0-9-]+:[A-Za-z0-9-]+/g) || []);
+}
+
+function toKebabCase(value) {
+	return String(value)
+		.replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+		.replace(/_/g, '-')
+		.toLowerCase();
 }
 
 function collectGeneratedPermissionHints(text) {
@@ -380,6 +393,18 @@ function collectGeneratedPermissionHints(text) {
 				continue;
 			}
 			permissions.add(`performance:${moduleKey}:${action}`);
+		}
+	}
+
+	for (const match of text.matchAll(/PERMISSIONS\.performance\.([A-Za-z0-9]+)\.([A-Za-z0-9]+)/g)) {
+		const [, resource, action] = match;
+		if (!resource || !action) {
+			continue;
+		}
+		permissions.add(`performance:${resource}:${action}`);
+		const kebabResource = toKebabCase(resource);
+		if (kebabResource !== resource) {
+			permissions.add(`performance:${kebabResource}:${action}`);
 		}
 	}
 

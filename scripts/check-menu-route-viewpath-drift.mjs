@@ -22,7 +22,11 @@ import { guardConfig } from './repo-consistency-config.mjs';
 const guardName = 'menu-route-viewpath-drift';
 
 function getAffectedMenus(changedFiles, pageMenus) {
-	if (!changedFiles.length || changedFiles.includes(guardConfig.menuJsonPath)) {
+	if (
+		!changedFiles.length ||
+		changedFiles.includes(guardConfig.menuJsonPath) ||
+		changedFiles.some(filePath => guardConfig.basePermissionDomainRoots.includes(filePath))
+	) {
 		return pageMenus;
 	}
 

@@ -1,0 +1,153 @@
+# xuedao repo-level verification record.
+# Captures the executed evidence for repository SSOT manifest runtime binding.
+
+recordVersion: "1.0"
+verificationId: "XUEDAO-VER-20260423-001"
+changeId: "XUEDAO-CHG-20260423-001"
+owner: "codex"
+executedAt: "2026-04-23T18:38:00+08:00"
+overallStatus: "passed"
+
+coverage:
+  riskLevel: "L2"
+  categories:
+    normalPath: "covered"
+    errorPath: "covered"
+    boundary: "covered"
+    permission: "covered"
+    stateFlow: "covered"
+    contract: "covered"
+    releaseReadiness: "covered"
+
+checks:
+  - name: "ssot-manifest-path-check"
+    type: "quality"
+    command: "node ./scripts/check-xuedao-ssot-manifest.mjs"
+    scope: "repo manifest path + machine source registration"
+    status: "passed"
+    artifacts: []
+
+  - name: "ssot-conformance-check"
+    type: "quality"
+    command: "node ./scripts/check-xuedao-ssot-conformance.mjs"
+    scope: "repo ssot conformance"
+    status: "passed"
+    artifacts:
+      - "reports/delivery/xuedao-ssot-conformance.latest.md"
+      - "reports/delivery/xuedao-ssot-conformance.latest.json"
+
+  - name: "ssot-conformance-check-strict-artifacts"
+    type: "quality"
+    command: "node ./scripts/check-xuedao-ssot-conformance.mjs --strict-report-artifacts"
+    scope: "repo ssot conformance + artifact strictness"
+    status: "passed"
+    artifacts:
+      - "reports/delivery/xuedao-ssot-conformance.latest.md"
+      - "reports/delivery/xuedao-ssot-conformance.latest.json"
+      - "reports/delivery/unified-delivery-batch.latest.md"
+      - "reports/delivery/unified-delivery-batch.latest.json"
+
+  - name: "unified-delivery-batch-default-report"
+    type: "quality"
+    command: "node ./scripts/check-unified-delivery.mjs --phase batch --all --skip-rbac-guard --skip-state-machine-guard --skip-component-reuse-guard"
+    scope: "delivery gate stable artifact output"
+    status: "passed"
+    artifacts:
+      - "reports/delivery/unified-delivery-batch.latest.md"
+      - "reports/delivery/unified-delivery-batch.latest.json"
+
+  - name: "repo-guard-script-regression"
+    type: "test"
+    command: "node --test ./performance-management-system/test/repo-guard-scripts.test.mjs"
+    scope: "repo guard script regression, including temp-workspace midway lint compatibility bootstrap and local-registry install path"
+    status: "passed"
+    artifacts: []
+
+  - name: "repo-consistency-guards-targeted"
+    type: "quality"
+    command: "node ./scripts/run-repo-consistency-guards.mjs --file contracts/ssot/xuedao-ssot-manifest.yaml --file contracts/ssot/README.md --file contracts/ssot/records/change-record.template.yaml --file contracts/ssot/records/verification-record.template.yaml --file contracts/ssot/records/change-record.yaml --file contracts/ssot/records/verification-record.yaml --file scripts/xuedao-ssot-manifest.mjs --file scripts/check-xuedao-ssot-manifest.mjs --file scripts/check-xuedao-ssot-conformance.mjs --file scripts/check-unified-delivery.mjs --file scripts/repo-consistency-config.mjs --file performance-management-system/test/repo-guard-scripts.test.mjs --file performance-management-system/docs/24-自动化测试策略与脚本规划.md --file README.md --file contracts/README.md --file reports/delivery/README.md"
+    scope: "targeted repo consistency guards"
+    status: "passed"
+    artifacts: []
+
+  - name: "midway-build"
+    type: "build"
+    command: "cd /Users/shaotongli/Documents/xuedao/cool-admin-midway && npm run build"
+    scope: "backend compile baseline"
+    status: "passed"
+    artifacts: []
+
+  - name: "midway-lint"
+    type: "quality"
+    command: "cd /Users/shaotongli/Documents/xuedao/cool-admin-midway && npm run lint"
+    scope: "backend local lint baseline"
+    status: "passed"
+    artifacts: []
+
+  - name: "midway-local-deps-install"
+    type: "quality"
+    command: "cd /Users/shaotongli/Documents/xuedao/cool-admin-midway && node ./scripts/install-local-deps.mjs mwts"
+    scope: "backend local shared-deps install converges onto lint compatibility bootstrap"
+    status: "passed"
+    artifacts: []
+
+  - name: "midway-local-deps-repair"
+    type: "quality"
+    command: "cd /Users/shaotongli/Documents/xuedao/cool-admin-midway && npm run deps:local:repair"
+    scope: "backend compat-only shared-deps repair converges onto lint compatibility bootstrap"
+    status: "passed"
+    artifacts: []
+
+  - name: "vue-format-check"
+    type: "quality"
+    command: "node ./scripts/check-changed-workspace-quality.mjs --workspace cool-admin-vue --tool prettier"
+    scope: "frontend format baseline"
+    status: "passed"
+    artifacts: []
+
+  - name: "vue-lint-check"
+    type: "quality"
+    command: "node ./scripts/check-changed-workspace-quality.mjs --workspace cool-admin-vue --tool eslint"
+    scope: "frontend lint baseline"
+    status: "passed"
+    artifacts: []
+
+  - name: "uni-format-check"
+    type: "quality"
+    command: "node ./scripts/check-changed-workspace-quality.mjs --workspace cool-uni --tool prettier"
+    scope: "uni format baseline"
+    status: "passed"
+    artifacts: []
+
+  - name: "uni-lint-check"
+    type: "quality"
+    command: "node ./scripts/check-changed-workspace-quality.mjs --workspace cool-uni --tool eslint"
+    scope: "uni lint baseline"
+    status: "passed"
+    artifacts: []
+
+  - name: "uni-type-check"
+    type: "typecheck"
+    command: "cd /Users/shaotongli/Documents/xuedao/cool-uni && corepack pnpm run type-check"
+    scope: "uni type baseline"
+    status: "passed"
+    artifacts: []
+
+skipped:
+  - name: "broader-business-build"
+    reason: "本次改动只涉及仓库级守卫、README 和治理记录，没有修改业务运行时行为。"
+    risk: "未重新执行 cool-admin-midway / cool-admin-vue / cool-uni 的完整业务构建。"
+
+findings:
+  blockers: []
+  followUps: []
+
+residualRisk:
+  - "仓库当前存在大量历史脏工作区，本次验证只覆盖与 SSOT runtime binding 直接相关的文件与守卫入口。"
+  - "本次已把现有可执行的 repo 级 format/lint/typecheck/build 基线纳入门禁，但 Vue / Uni 的 format/lint 当前采取变更文件强阻断模式，尚未消化全仓历史格式债。"
+  - "cool-admin-midway 本地 `npm run lint`、`node ./scripts/install-local-deps.mjs mwts`、`npm run deps:local:repair` 已收敛到同一套 `.shared-deps` 兼容层修补路径，并由临时工作区 + 本地 mock registry 回归测试锁定；后续仍建议以一次真实干净依赖安装替代离线 shim，并复核脚本是否可删除。"
+
+summary:
+  passedChecks: 15
+  failedChecks: 0
+  skippedChecks: 1
