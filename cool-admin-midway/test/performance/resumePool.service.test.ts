@@ -3,6 +3,7 @@
  * 招聘简历池服务最小测试。
  * 这里只验证主题15冻结的主链、范围权限、状态约束、下载边界和主题8/12转换边界，不覆盖真实数据库或控制器联调。
  */
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
 import { PerformanceResumePoolService } from '../../src/modules/performance/service/resumePool';
 
 const HR_PERMS = [
@@ -40,6 +41,19 @@ const createPageQueryBuilder = (rows: any[]) => {
     getCount: jest.fn().mockResolvedValue(rows.length),
     getRawMany: jest.fn().mockResolvedValue(rows),
   };
+};
+
+const attachAccessContext = (service: any) => {
+  const accessService = new PerformanceAccessContextService() as any;
+  accessService.ctx = service.ctx;
+  accessService.baseSysMenuService =
+    service.baseSysMenuService || { getPerms: jest.fn().mockResolvedValue([]) };
+  accessService.baseSysPermsService =
+    service.baseSysPermsService || {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+  service.performanceAccessContextService = accessService;
+  return service;
 };
 
 const createHrService = () => {
@@ -232,6 +246,7 @@ const createHrService = () => {
       .mockResolvedValueOnce({ id: 2 }),
     update: jest.fn().mockResolvedValue(undefined),
   };
+  attachAccessContext(service);
 
   return { service, qb };
 };
@@ -372,6 +387,15 @@ describe('performance resume pool service', () => {
       resumePoolId: 1,
       recruitPlanId: 301,
       jobStandardId: 501,
+      sourceSnapshot: {
+        sourceResource: 'resumePool',
+        resumePoolId: 1,
+        recruitPlanId: 301,
+        recruitPlanTitle: '平台招聘计划',
+        candidateName: '张三',
+        targetDepartmentId: 11,
+        targetPosition: '后端工程师',
+      },
       snapshot: {
         id: 1,
         candidateName: '张三',
@@ -395,6 +419,11 @@ describe('performance resume pool service', () => {
       expect.objectContaining({
         resumePoolId: 1,
         recruitPlanId: 301,
+        sourceSnapshot: expect.objectContaining({
+          sourceResource: 'resumePool',
+          resumePoolId: 1,
+          recruitPlanId: 301,
+        }),
         resumePoolSnapshot: expect.objectContaining({ id: 1 }),
         recruitPlanSnapshot: expect.objectContaining({ id: 301 }),
       })
@@ -466,6 +495,7 @@ describe('performance resume pool service', () => {
         latestInterviewId: null,
       }),
     };
+    attachAccessContext(service);
 
     await service.page({ page: 1, size: 10 });
 
@@ -491,10 +521,27 @@ describe('performance resume pool service', () => {
     service.baseSysMenuService = {
       getPerms: jest.fn().mockResolvedValue([]),
     };
+    attachAccessContext(service);
 
     await expect(service.page({ page: 1, size: 10 })).rejects.toThrow(
       '无权限查看简历列表'
     );
+  });
+
+  test('should reject downloading missing attachment', async () => {
+    const { service } = createHrService();
+
+    await expect(
+      service.downloadAttachment({ id: 1, attachmentId: 99 })
+    ).rejects.toThrow('附件不存在');
+  });
+
+  test('should reject uploading when attachment file record is missing', async () => {
+    const { service } = createHrService();
+
+    await expect(
+      service.uploadAttachment({ id: 1, fileId: 99 })
+    ).rejects.toThrow('附件文件不存在');
   });
 
   test('should reject archived writes and createInterview replay', async () => {
@@ -572,6 +619,7 @@ describe('performance resume pool service', () => {
           status: 'interviewing',
         }),
     };
+    attachAccessContext(service);
 
     await expect(
       service.updateResume({ id: 20, sourceRemark: '更新' })
@@ -634,6 +682,7 @@ describe('performance resume pool service', () => {
           status: 'new',
         }),
     };
+    attachAccessContext(service);
 
     await expect(
       service.updateResume({
@@ -648,6 +697,133 @@ describe('performance resume pool service', () => {
         externalLink: 'https://example.com/resume/31',
       })
     ).rejects.toThrow('仅 external 来源允许填写外部简历链接');
+  });
+
+  test('should reject invalid resume status and source type with shared semantics', async () => {
+    const { service } = createHrService();
+
+    await expect(
+      service.page({ page: 1, size: 10, status: 'invalid-status' })
+    ).rejects.toThrow('简历状态不合法');
+    await expect(
+      service.page({ page: 1, size: 10, sourceType: 'invalid-source' })
+    ).rejects.toThrow('简历来源类型不合法');
+  });
+
+  test('should reject add non-new status with shared semantics', async () => {
+    const { service } = createHrService();
+
+    await expect(
+      service.add({
+        candidateName: '赵六',
+        targetDepartmentId: 11,
+        targetPosition: '测试工程师',
+        phone: '13600000088',
+        email: 'zhaoliu@example.com',
+        resumeText: 'resume',
+        sourceType: 'manual',
+        status: 'screening',
+      })
+    ).rejects.toThrow('新增简历状态只能为 new');
+  });
+
+  test('should reject resume interview when target position is missing', async () => {
+    const service = new PerformanceResumePoolService() as any;
+    service.ctx = {
+      admin: {
+        userId: 1,
+        username: 'hr_admin',
+        roleIds: [1],
+      },
+    };
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue(HR_PERMS),
+    };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+    service.performanceResumePoolEntity = {
+      findOneBy: jest.fn().mockResolvedValue({
+        id: 50,
+        candidateName: '缺岗位候选人',
+        targetDepartmentId: 11,
+        targetPosition: '',
+        phone: '13500000009',
+        email: null,
+        resumeText: 'resume',
+        sourceType: 'manual',
+        sourceRemark: null,
+        externalLink: null,
+        attachmentIdList: [],
+        status: 'new',
+      }),
+    };
+    service.baseSysUserEntity = {
+      findOneBy: jest.fn().mockResolvedValue({ id: 1, name: 'HR负责人' }),
+    };
+    attachAccessContext(service);
+
+    await expect(service.createInterview({ id: 50 })).rejects.toThrow(
+      '目标岗位不能为空，无法发起面试'
+    );
+  });
+
+  test('should reject resume department mismatch and out-of-scope writes', async () => {
+    const { service } = createHrService();
+
+    await expect(
+      service.add({
+        candidateName: '部门错配候选人',
+        targetDepartmentId: 12,
+        targetPosition: '后端工程师',
+        phone: '13600000066',
+        email: 'mismatch@example.com',
+        resumeText: 'resume',
+        sourceType: 'manual',
+        recruitPlanId: 301,
+      })
+    ).rejects.toThrow('招聘计划所属部门与简历目标部门不一致');
+
+    await expect(
+      service.add({
+        candidateName: '职位标准错配候选人',
+        targetDepartmentId: 12,
+        targetPosition: '后端工程师',
+        phone: '13600000067',
+        email: 'jobstandard@example.com',
+        resumeText: 'resume',
+        sourceType: 'manual',
+        jobStandardId: 501,
+      })
+    ).rejects.toThrow('职位标准所属部门与简历目标部门不一致');
+
+    const managerService = new PerformanceResumePoolService() as any;
+    managerService.ctx = {
+      admin: {
+        userId: 9,
+        username: 'manager_rd',
+        roleIds: [2],
+      },
+    };
+    managerService.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue(MANAGER_PERMS),
+    };
+    managerService.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([11]),
+    };
+    attachAccessContext(managerService);
+
+    await expect(
+      managerService.add({
+        candidateName: '越权候选人',
+        targetDepartmentId: 22,
+        targetPosition: '测试工程师',
+        phone: '13600000068',
+        email: 'forbidden@example.com',
+        resumeText: 'resume',
+        sourceType: 'manual',
+      })
+    ).rejects.toThrow('无权操作该简历');
   });
 
   test('should keep convert idempotent when linked talent asset already exists', async () => {
@@ -689,6 +865,7 @@ describe('performance resume pool service', () => {
       create: jest.fn(),
       save: jest.fn(),
     };
+    attachAccessContext(service);
 
     await expect(service.convertToTalentAsset({ id: 40 })).resolves.toEqual({
       talentAssetId: 501,

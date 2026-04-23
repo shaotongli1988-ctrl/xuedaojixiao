@@ -4,11 +4,6 @@
  * 维护重点是部门树范围、状态流转、删除约束和隐私字段白名单必须由服务端兜底。
  */
 import {
-  App,
-  ASYNC_CONTEXT_KEY,
-  ASYNC_CONTEXT_MANAGER_KEY,
-  AsyncContextManager,
-  IMidwayApplication,
   Inject,
   Provide,
   Scope,
@@ -17,22 +12,41 @@ import {
 import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Brackets, In, Repository } from 'typeorm';
-import { BaseSysMenuService } from '../../base/service/sys/menu';
-import { BaseSysPermsService } from '../../base/service/sys/perms';
 import { BaseSysDepartmentEntity } from '../../base/entity/sys/department';
 import { PerformanceTalentAssetEntity } from '../entity/talentAsset';
-import * as jwt from 'jsonwebtoken';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import { TALENT_ASSET_STATUS_VALUES } from './talent-asset-dict';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
 
-type TalentAssetStatus = 'new' | 'tracking' | 'archived';
-
-const TALENT_ASSET_STATUS: TalentAssetStatus[] = ['new', 'tracking', 'archived'];
-
-const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
-  return require('../../base/config').default({
-    app,
-    env: app?.getEnv?.(),
-  }).jwt;
-};
+type TalentAssetStatus = (typeof TALENT_ASSET_STATUS_VALUES)[number];
+const PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resourceNotFound
+  );
+const PERFORMANCE_STATE_ACTION_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateActionNotAllowed
+  );
+const PERFORMANCE_STATE_EDIT_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateEditNotAllowed
+  );
+const PERFORMANCE_STATE_DELETE_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateDeleteNotAllowed
+  );
+const PERFORMANCE_TARGET_DEPARTMENT_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.targetDepartmentRequired
+  );
 
 function normalizePageNumber(value: any, fallback: number) {
   const parsed = Number(value);
@@ -135,67 +149,34 @@ export class PerformanceTalentAssetService extends BaseService {
   baseSysDepartmentEntity: Repository<BaseSysDepartmentEntity>;
 
   @Inject()
-  baseSysMenuService: BaseSysMenuService;
-
-  @Inject()
-  baseSysPermsService: BaseSysPermsService;
-
-  @Inject()
-  ctx;
-
-  @App()
-  app: IMidwayApplication;
+  performanceAccessContextService: PerformanceAccessContextService;
 
   private readonly perms = {
-    page: 'performance:talentAsset:page',
-    info: 'performance:talentAsset:info',
-    add: 'performance:talentAsset:add',
-    update: 'performance:talentAsset:update',
-    delete: 'performance:talentAsset:delete',
+    page: PERMISSIONS.performance.talentAsset.page,
+    info: PERMISSIONS.performance.talentAsset.info,
+    add: PERMISSIONS.performance.talentAsset.add,
+    update: PERMISSIONS.performance.talentAsset.update,
+    delete: PERMISSIONS.performance.talentAsset.delete,
   };
 
-  private get currentCtx() {
-    if (this.ctx?.admin) {
-      return this.ctx;
-    }
-
-    try {
-      const contextManager: AsyncContextManager = this.app
-        .getApplicationContext()
-        .get(ASYNC_CONTEXT_MANAGER_KEY);
-      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as any;
-    } catch (error) {
-      return this.ctx;
-    }
-  }
-
-  private get currentAdmin() {
-    if (this.currentCtx?.admin) {
-      return this.currentCtx.admin;
-    }
-
-    const token =
-      this.currentCtx?.get?.('Authorization') ||
-      this.currentCtx?.headers?.authorization;
-
-    if (!token) {
-      return undefined;
-    }
-
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
-  }
+  private readonly capabilityByPerm: Record<string, PerformanceCapabilityKey> = {
+    [PERMISSIONS.performance.talentAsset.page]: 'talent_asset.read',
+    [PERMISSIONS.performance.talentAsset.info]: 'talent_asset.read',
+    [PERMISSIONS.performance.talentAsset.add]: 'talent_asset.create',
+    [PERMISSIONS.performance.talentAsset.update]: 'talent_asset.update',
+    [PERMISSIONS.performance.talentAsset.delete]: 'talent_asset.delete',
+  };
 
   async page(query: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.page, '无权限查看人才资产列表');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.page, '无权限查看人才资产列表');
 
     const page = normalizePageNumber(query.page, 1);
     const size = normalizePageNumber(query.size, 20);
-    const departmentIds = await this.departmentScopeIds(perms);
+    const departmentIds = await this.departmentScopeIds(
+      access,
+      'talent_asset.read'
+    );
     const qb = this.performanceTalentAssetEntity
       .createQueryBuilder('talentAsset')
       .leftJoin(
@@ -281,20 +262,25 @@ export class PerformanceTalentAssetService extends BaseService {
   }
 
   async info(id: number) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.info, '无权限查看人才资产详情');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.info, '无权限查看人才资产详情');
 
     const talentAsset = await this.requireTalentAsset(id);
-    await this.assertTalentAssetInScope(talentAsset, perms, '无权查看人才资产');
+    await this.assertTalentAssetInScope(
+      talentAsset,
+      access,
+      'talent_asset.read',
+      '无权查看人才资产'
+    );
 
     return this.buildTalentAssetDetail(talentAsset);
   }
 
   async add(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.add, '无权限新增人才资产');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.add, '无权限新增人才资产');
 
-    const normalized = await this.normalizePayload(payload, null, perms, 'add');
+    const normalized = await this.normalizePayload(payload, null, access, 'add');
     const saved = await this.performanceTalentAssetEntity.save(
       this.performanceTalentAssetEntity.create(normalized)
     );
@@ -303,16 +289,21 @@ export class PerformanceTalentAssetService extends BaseService {
   }
 
   async updateTalentAsset(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.update, '无权限修改人才资产');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.update, '无权限修改人才资产');
 
     const talentAsset = await this.requireTalentAsset(Number(payload.id));
-    await this.assertTalentAssetInScope(talentAsset, perms, '无权修改人才资产');
+    await this.assertTalentAssetInScope(
+      talentAsset,
+      access,
+      'talent_asset.update',
+      '无权修改人才资产'
+    );
 
     const normalized = await this.normalizePayload(
       payload,
       talentAsset,
-      perms,
+      access,
       'update'
     );
 
@@ -325,8 +316,8 @@ export class PerformanceTalentAssetService extends BaseService {
   }
 
   async delete(ids: number[]) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.delete, '无权限删除人才资产');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.delete, '无权限删除人才资产');
 
     const validIds = Array.from(
       new Set(
@@ -345,12 +336,12 @@ export class PerformanceTalentAssetService extends BaseService {
     });
 
     if (rows.length !== validIds.length) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     rows.forEach(item => {
       if (item.status !== 'new') {
-        throw new CoolCommException('当前状态不允许删除');
+        throw new CoolCommException(PERFORMANCE_STATE_DELETE_NOT_ALLOWED_MESSAGE);
       }
     });
 
@@ -360,7 +351,7 @@ export class PerformanceTalentAssetService extends BaseService {
   private async normalizePayload(
     payload: any,
     existing: PerformanceTalentAssetEntity | null,
-    perms: string[],
+    access: PerformanceResolvedAccessContext,
     mode: 'add' | 'update'
   ) {
     const candidateName = normalizeRequiredText(
@@ -371,7 +362,7 @@ export class PerformanceTalentAssetService extends BaseService {
     const code = normalizeOptionalCode(payload.code ?? existing?.code);
     const targetDepartmentId = normalizeRequiredPositiveInt(
       payload.targetDepartmentId ?? existing?.targetDepartmentId,
-      '目标部门不能为空'
+      PERFORMANCE_TARGET_DEPARTMENT_REQUIRED_MESSAGE
     );
     const targetPosition = normalizeOptionalText(
       payload.targetPosition ?? existing?.targetPosition,
@@ -400,7 +391,11 @@ export class PerformanceTalentAssetService extends BaseService {
       payload.status
     );
 
-    await this.assertCanManageDepartment(targetDepartmentId, perms);
+    await this.assertCanManageDepartment(
+      targetDepartmentId,
+      access,
+      mode === 'add' ? 'talent_asset.create' : 'talent_asset.update'
+    );
     await this.assertCodeUnique(code, existing?.id);
 
     return {
@@ -431,7 +426,7 @@ export class PerformanceTalentAssetService extends BaseService {
     }
 
     if (currentStatus === 'archived') {
-      throw new CoolCommException('当前状态不允许编辑');
+      throw new CoolCommException(PERFORMANCE_STATE_EDIT_NOT_ALLOWED_MESSAGE);
     }
 
     if (currentStatus === 'new' && ['new', 'tracking', 'archived'].includes(nextStatus)) {
@@ -442,13 +437,13 @@ export class PerformanceTalentAssetService extends BaseService {
       return nextStatus;
     }
 
-    throw new CoolCommException('当前状态不允许执行该操作');
+    throw new CoolCommException(PERFORMANCE_STATE_ACTION_NOT_ALLOWED_MESSAGE);
   }
 
   private normalizeStatus(value: any) {
     const status = String(value || 'new').trim() as TalentAssetStatus;
 
-    if (!TALENT_ASSET_STATUS.includes(status)) {
+    if (!TALENT_ASSET_STATUS_VALUES.includes(status)) {
       throw new CoolCommException('人才资产状态不合法');
     }
 
@@ -456,49 +451,52 @@ export class PerformanceTalentAssetService extends BaseService {
   }
 
   private async currentPerms() {
-    const admin = this.currentAdmin;
+    return this.performanceAccessContextService.resolveAccessContext(undefined, {
+      allowEmptyRoleIds: false,
+      missingAuthMessage: '登录状态已失效',
+    });
+  }
 
-    if (!admin?.roleIds) {
-      throw new CoolCommException('登录状态已失效');
+  private resolveCapabilityKey(perm: string): PerformanceCapabilityKey {
+    const capabilityKey = this.capabilityByPerm[perm];
+    if (!capabilityKey) {
+      throw new CoolCommException(`未映射的人才资产权限: ${perm}`);
     }
-
-    return this.baseSysMenuService.getPerms(admin.roleIds);
+    return capabilityKey;
   }
 
-  private hasPerm(perms: string[], perm: string) {
-    return perms.includes(perm);
-  }
-
-  private assertPerm(perms: string[], perm: string, message: string) {
-    if (!this.hasPerm(perms, perm)) {
+  private assertPerm(
+    access: PerformanceResolvedAccessContext,
+    perm: string,
+    message: string
+  ) {
+    if (
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        this.resolveCapabilityKey(perm)
+      )
+    ) {
       throw new CoolCommException(message);
     }
   }
 
-  private isHr(perms: string[]) {
-    return (
-      this.currentAdmin?.isAdmin === true ||
-      this.currentAdmin?.username === 'admin' ||
-      this.hasPerm(perms, this.perms.delete)
-    );
-  }
-
-  private async departmentScopeIds(perms: string[]) {
-    if (this.isHr(perms)) {
+  private async departmentScopeIds(
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
+  ) {
+    if (
+      this.performanceAccessContextService.hasCapabilityInScopes(
+        access,
+        capabilityKey,
+        ['company']
+      )
+    ) {
       return null;
     }
 
-    const userId = Number(this.currentAdmin?.userId || 0);
-
-    if (!userId) {
-      throw new CoolCommException('登录上下文缺失');
-    }
-
-    const ids = await this.baseSysPermsService.departmentIds(userId);
-
     return Array.from(
       new Set(
-        (Array.isArray(ids) ? ids : [])
+        (Array.isArray(access.departmentIds) ? access.departmentIds : [])
           .map(item => Number(item))
           .filter(item => Number.isInteger(item) && item > 0)
       )
@@ -522,28 +520,37 @@ export class PerformanceTalentAssetService extends BaseService {
 
   private async assertTalentAssetInScope(
     talentAsset: PerformanceTalentAssetEntity,
-    perms: string[],
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey,
     message: string
   ) {
-    if (this.isHr(perms)) {
-      return;
-    }
-
-    const departmentIds = await this.departmentScopeIds(perms);
-
-    if (!departmentIds?.includes(Number(talentAsset.targetDepartmentId || 0))) {
+    if (
+      !this.performanceAccessContextService.matchesScope(
+        access,
+        this.performanceAccessContextService.capabilityScopes(access, capabilityKey),
+        {
+          departmentId: Number(talentAsset.targetDepartmentId || 0),
+        }
+      )
+    ) {
       throw new CoolCommException(message);
     }
   }
 
-  private async assertCanManageDepartment(targetDepartmentId: number, perms: string[]) {
-    if (this.isHr(perms)) {
-      return;
-    }
-
-    const departmentIds = await this.departmentScopeIds(perms);
-
-    if (!departmentIds?.includes(targetDepartmentId)) {
+  private async assertCanManageDepartment(
+    targetDepartmentId: number,
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
+  ) {
+    if (
+      !this.performanceAccessContextService.matchesScope(
+        access,
+        this.performanceAccessContextService.capabilityScopes(access, capabilityKey),
+        {
+          departmentId: targetDepartmentId,
+        }
+      )
+    ) {
       throw new CoolCommException('无权操作该人才资产');
     }
   }
@@ -564,7 +571,7 @@ export class PerformanceTalentAssetService extends BaseService {
     const talentAsset = await this.performanceTalentAssetEntity.findOneBy({ id });
 
     if (!talentAsset) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     return talentAsset;

@@ -5,11 +5,6 @@
  * 维护重点是 HR 全量、经理部门树范围和只读统计口径必须与 `purchaseOrder` 单主资源保持一致。
  */
 import {
-  App,
-  ASYNC_CONTEXT_KEY,
-  ASYNC_CONTEXT_MANAGER_KEY,
-  AsyncContextManager,
-  IMidwayApplication,
   Inject,
   Provide,
   Scope,
@@ -18,11 +13,18 @@ import {
 import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { In, Repository } from 'typeorm';
-import * as jwt from 'jsonwebtoken';
-import { BaseSysMenuService } from '../../base/service/sys/menu';
-import { BaseSysPermsService } from '../../base/service/sys/perms';
 import { PerformancePurchaseOrderEntity } from '../entity/purchase-order';
 import { PerformanceSupplierEntity } from '../entity/supplier';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
 
 type PurchaseOrderStatus =
   | 'draft'
@@ -32,13 +34,14 @@ type PurchaseOrderStatus =
   | 'received'
   | 'closed'
   | 'cancelled';
-
-const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
-  return require('../../base/config').default({
-    app,
-    env: app?.getEnv?.(),
-  }).jwt;
-};
+const PERFORMANCE_DEPARTMENT_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.departmentNotFound
+  );
+const PERFORMANCE_SUPPLIER_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.supplierNotFound
+  );
 
 function normalizeRequiredPositiveInt(value: any, message: string) {
   const parsed = Number(value);
@@ -69,64 +72,32 @@ export class PerformancePurchaseReportService extends BaseService {
   performanceSupplierEntity: Repository<PerformanceSupplierEntity>;
 
   @Inject()
-  baseSysMenuService: BaseSysMenuService;
-
-  @Inject()
-  baseSysPermsService: BaseSysPermsService;
-
-  @Inject()
-  ctx;
-
-  @App()
-  app: IMidwayApplication;
+  performanceAccessContextService: PerformanceAccessContextService;
 
   private readonly perms = {
-    summary: 'performance:purchaseReport:summary',
-    trend: 'performance:purchaseReport:trend',
-    supplierStats: 'performance:purchaseReport:supplierStats',
-    purchaseDelete: 'performance:purchaseOrder:delete',
+    summary: PERMISSIONS.performance.purchaseReport.summary,
+    trend: PERMISSIONS.performance.purchaseReport.trend,
+    supplierStats: PERMISSIONS.performance.purchaseReport.supplierStats,
   };
 
-  private get currentCtx() {
-    if (this.ctx?.admin) {
-      return this.ctx;
-    }
-
-    try {
-      const contextManager: AsyncContextManager = this.app
-        .getApplicationContext()
-        .get(ASYNC_CONTEXT_MANAGER_KEY);
-      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as any;
-    } catch (error) {
-      return this.ctx;
-    }
-  }
-
-  private get currentAdmin() {
-    if (this.currentCtx?.admin) {
-      return this.currentCtx.admin;
-    }
-
-    const token =
-      this.currentCtx?.get?.('Authorization') ||
-      this.currentCtx?.headers?.authorization;
-
-    if (!token) {
-      return undefined;
-    }
-
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
-  }
+  private readonly capabilityByPerm: Record<string, PerformanceCapabilityKey> = {
+    [PERMISSIONS.performance.purchaseReport.summary]:
+      'purchase_report.summary.read',
+    [PERMISSIONS.performance.purchaseReport.trend]:
+      'purchase_report.trend.read',
+    [PERMISSIONS.performance.purchaseReport.supplierStats]:
+      'purchase_report.supplier_stats.read',
+  };
 
   async summary(query: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.summary, '无权限查看采购报表汇总');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.summary, '无权限查看采购报表汇总');
 
-    const orders = await this.loadScopedOrders(query, perms);
+    const orders = await this.loadScopedOrders(
+      query,
+      access,
+      'purchase_report.summary.read'
+    );
     return {
       totalOrders: orders.length,
       totalAmount: this.sumAmount(orders.map(item => item.totalAmount)),
@@ -150,10 +121,14 @@ export class PerformancePurchaseReportService extends BaseService {
   }
 
   async trend(query: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.trend, '无权限查看采购报表趋势');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.trend, '无权限查看采购报表趋势');
 
-    const orders = await this.loadScopedOrders(query, perms);
+    const orders = await this.loadScopedOrders(
+      query,
+      access,
+      'purchase_report.trend.read'
+    );
     const bucket = new Map<string, any>();
 
     orders.forEach(item => {
@@ -193,10 +168,14 @@ export class PerformancePurchaseReportService extends BaseService {
   }
 
   async supplierStats(query: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.supplierStats, '无权限查看供应商采购统计');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.supplierStats, '无权限查看供应商采购统计');
 
-    const orders = await this.loadScopedOrders(query, perms);
+    const orders = await this.loadScopedOrders(
+      query,
+      access,
+      'purchase_report.supplier_stats.read'
+    );
     const supplierIds = Array.from(
       new Set(
         orders
@@ -248,13 +227,20 @@ export class PerformancePurchaseReportService extends BaseService {
     return Array.from(bucket.values()).sort((a, b) => b.totalAmount - a.totalAmount);
   }
 
-  private async loadScopedOrders(query: any, perms: string[]) {
+  private async loadScopedOrders(
+    query: any,
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
+  ) {
     const rows = await this.performancePurchaseOrderEntity.find();
-    const departmentIds = await this.departmentScopeIds(perms);
+    const departmentIds = await this.departmentScopeIds(access, capabilityKey);
     const requestedDepartmentId =
       query.departmentId === undefined || query.departmentId === null || query.departmentId === ''
         ? null
-        : normalizeRequiredPositiveInt(query.departmentId, '部门不存在');
+        : normalizeRequiredPositiveInt(
+            query.departmentId,
+            PERFORMANCE_DEPARTMENT_NOT_FOUND_MESSAGE
+          );
 
     if (
       departmentIds !== null &&
@@ -268,7 +254,10 @@ export class PerformancePurchaseReportService extends BaseService {
     const supplierId =
       query.supplierId === undefined || query.supplierId === null || query.supplierId === ''
         ? null
-        : normalizeRequiredPositiveInt(query.supplierId, '供应商不存在');
+        : normalizeRequiredPositiveInt(
+            query.supplierId,
+            PERFORMANCE_SUPPLIER_NOT_FOUND_MESSAGE
+          );
     const status = String(query.status || '').trim() as PurchaseOrderStatus | '';
     const startDate = normalizeDate(query.startDate, '开始日期不合法');
     const endDate = normalizeDate(query.endDate, '结束日期不合法');
@@ -322,38 +311,50 @@ export class PerformancePurchaseReportService extends BaseService {
   }
 
   private async currentPerms() {
-    const admin = this.currentAdmin;
-    if (!admin?.roleIds) {
-      throw new CoolCommException('登录状态已失效');
-    }
-    return this.baseSysMenuService.getPerms(admin.roleIds);
+    return this.performanceAccessContextService.resolveAccessContext(undefined, {
+      allowEmptyRoleIds: false,
+      missingAuthMessage: '登录状态已失效',
+    });
   }
 
-  private assertPerm(perms: string[], perm: string, message: string) {
-    if (!perms.includes(perm)) {
+  private resolveCapabilityKey(perm: string): PerformanceCapabilityKey {
+    const capabilityKey = this.capabilityByPerm[perm];
+    if (!capabilityKey) {
+      throw new CoolCommException(`未映射的采购报表权限: ${perm}`);
+    }
+    return capabilityKey;
+  }
+
+  private assertPerm(
+    access: PerformanceResolvedAccessContext,
+    perm: string,
+    message: string
+  ) {
+    if (
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        this.resolveCapabilityKey(perm)
+      )
+    ) {
       throw new CoolCommException(message);
     }
   }
 
-  private isHr(perms: string[]) {
-    return (
-      this.currentAdmin?.isAdmin === true ||
-      this.currentAdmin?.username === 'admin' ||
-      perms.includes(this.perms.purchaseDelete)
-    );
-  }
-
-  private async departmentScopeIds(perms: string[]) {
-    if (this.isHr(perms)) {
+  private async departmentScopeIds(
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
+  ) {
+    if (
+      this.performanceAccessContextService.hasCapabilityInScopes(
+        access,
+        capabilityKey,
+        ['company']
+      )
+    ) {
       return null;
     }
 
-    const userId = Number(this.currentAdmin?.userId || 0);
-    if (!userId) {
-      throw new CoolCommException('登录上下文缺失');
-    }
-
-    const ids = await this.baseSysPermsService.departmentIds(userId);
+    const ids = access.departmentIds;
     return Array.from(
       new Set(
         (Array.isArray(ids) ? ids : [])

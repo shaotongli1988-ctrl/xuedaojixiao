@@ -4,6 +4,7 @@
  * 这里只验证 vehicle 的主链、权限拒绝和关键边界校验，不覆盖真实数据库或控制器装饰器联调。
  */
 import { PerformanceVehicleService } from '../../src/modules/performance/service/vehicle';
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value));
@@ -78,6 +79,27 @@ function createMemoryRepo(initialRows: any[] = []) {
   };
 }
 
+function attachAccessContextService(service: any) {
+  if (!service.baseSysMenuService) {
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue([]),
+    };
+  }
+  if (!service.baseSysPermsService) {
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+  }
+  service.performanceAccessContextService = Object.assign(
+    new PerformanceAccessContextService(),
+    {
+      ctx: service.ctx,
+      baseSysMenuService: service.baseSysMenuService,
+      baseSysPermsService: service.baseSysPermsService,
+    }
+  );
+}
+
 describe('performance vehicle service', () => {
   test('should support hr CRUD and stats flow', async () => {
     const service = new PerformanceVehicleService() as any;
@@ -138,6 +160,7 @@ describe('performance vehicle service', () => {
         updateTime: '2026-04-18 09:00:00',
       },
     ]);
+    attachAccessContextService(service);
 
     const added = await service.add({
       vehicleNo: 'VEH-2026-003',
@@ -218,6 +241,7 @@ describe('performance vehicle service', () => {
     service.baseSysMenuService = {
       getPerms: jest.fn().mockResolvedValue([]),
     };
+    attachAccessContextService(service);
 
     await expect(service.page({})).rejects.toThrow('无权限查看车辆列表');
     await expect(service.info(1)).rejects.toThrow('无权限查看车辆详情');
@@ -262,6 +286,7 @@ describe('performance vehicle service', () => {
         updateTime: '2026-04-19 08:00:00',
       },
     ]);
+    attachAccessContextService(service);
 
     await expect(
       service.add({
@@ -353,5 +378,22 @@ describe('performance vehicle service', () => {
         status: 'idle',
       })
     ).rejects.toThrow('年检到期日不能早于登记日期');
+  });
+
+  test('should keep allowEmptyRoleIds compatibility and return permission denial', async () => {
+    const service = new PerformanceVehicleService() as any;
+    service.ctx = {
+      admin: {
+        userId: 7,
+        username: 'legacy_vehicle_user',
+        roleIds: [],
+      },
+    };
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue([]),
+    };
+    attachAccessContextService(service);
+
+    await expect(service.page({})).rejects.toThrow('无权限查看车辆列表');
   });
 });

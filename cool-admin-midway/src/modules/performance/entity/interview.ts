@@ -48,6 +48,14 @@ export class PerformanceInterviewEntity extends BaseEntity {
   recruitPlanId: number | null;
 
   @Column({
+    comment: '来源轻量快照',
+    type: 'json',
+    transformer: transformerJson,
+    nullable: true,
+  })
+  sourceSnapshot: Record<string, any> | null;
+
+  @Column({
     comment: '简历池轻量快照',
     type: 'json',
     transformer: transformerJson,

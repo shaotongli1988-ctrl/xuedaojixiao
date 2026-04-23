@@ -5,11 +5,6 @@
  * 维护重点是四档数据范围、只读脱敏、合作/班级状态机和跨资源归属一致性必须由服务端硬兜底。
  */
 import {
-  App,
-  ASYNC_CONTEXT_KEY,
-  ASYNC_CONTEXT_MANAGER_KEY,
-  AsyncContextManager,
-  IMidwayApplication,
   Inject,
   Provide,
   Scope,
@@ -18,11 +13,10 @@ import {
 import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Brackets, In, Repository } from 'typeorm';
-import * as jwt from 'jsonwebtoken';
 import { BaseSysDepartmentEntity } from '../../base/entity/sys/department';
 import { BaseSysUserEntity } from '../../base/entity/sys/user';
 import { BaseSysMenuService } from '../../base/service/sys/menu';
-import { BaseSysPermsService } from '../../base/service/sys/perms';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import { PerformanceTeacherAgentAuditEntity } from '../entity/teacher-agent-audit';
 import { PerformanceTeacherAgentRelationEntity } from '../entity/teacher-agent-relation';
 import { PerformanceTeacherAgentEntity } from '../entity/teacher-agent';
@@ -31,6 +25,22 @@ import { PerformanceTeacherAttributionEntity } from '../entity/teacher-attributi
 import { PerformanceTeacherClassEntity } from '../entity/teacher-class';
 import { PerformanceTeacherFollowEntity } from '../entity/teacher-follow';
 import { PerformanceTeacherInfoEntity } from '../entity/teacher-info';
+import {
+  resolvePermissionMask,
+} from '../../base/generated/permission-bits.generated';
+import {
+  TEACHER_CHANNEL_CLASS_STATUS_VALUES,
+  TEACHER_CHANNEL_COOPERATION_STATUS_VALUES,
+} from './teacher-channel-dict';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
 
 type TeacherCooperationStatus =
   | 'uncontacted'
@@ -59,21 +69,21 @@ interface TeacherAccessScope {
   canTerminateTeacher: boolean;
 }
 
-const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
-  return require('../../base/config').default({
-    app,
-    env: app?.getEnv?.(),
-  }).jwt;
-};
+interface TeacherAccessProfile {
+  permissionMask: string;
+  scopeType: TeacherScopeType;
+  isReadonly: boolean;
+  scopedDepartmentIds: number[];
+  scopedTeacherIds: number[];
+  scopedClassIds: number[];
+}
 
 const TEACHER_COOPERATION_STATUS: TeacherCooperationStatus[] = [
-  'uncontacted',
-  'contacted',
-  'negotiating',
-  'partnered',
-  'terminated',
+  ...TEACHER_CHANNEL_COOPERATION_STATUS_VALUES,
 ];
-const TEACHER_CLASS_STATUS: TeacherClassStatus[] = ['draft', 'active', 'closed'];
+const TEACHER_CLASS_STATUS: TeacherClassStatus[] = [
+  ...TEACHER_CHANNEL_CLASS_STATUS_VALUES,
+];
 const TEACHER_AGENT_STATUS: TeacherAgentStatus[] = ['active', 'inactive'];
 const TEACHER_AGENT_BLACKLIST_STATUS: TeacherAgentBlacklistStatus[] = [
   'normal',
@@ -94,6 +104,202 @@ const TEACHER_ATTRIBUTION_CONFLICT_STATUS: TeacherAttributionConflictStatus[] = 
   'resolved',
   'cancelled',
 ];
+const PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resourceNotFound
+  );
+const PERFORMANCE_READONLY_WRITE_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.readonlyWriteDenied
+  );
+const PERFORMANCE_TEACHER_CLASS_CLOSED_EDIT_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherClassClosedEditDenied
+  );
+const PERFORMANCE_TEACHER_CLASS_CREATE_PARTNERED_ONLY_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherClassCreatePartneredOnly
+  );
+const PERFORMANCE_TEACHER_CLASS_DELETE_DRAFT_ONLY_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherClassDeleteDraftOnly
+  );
+const PERFORMANCE_TEACHER_CLASS_DRAFT_TRANSITION_ONLY_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherClassDraftTransitionOnly
+  );
+const PERFORMANCE_TEACHER_CLASS_ACTION_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherClassActionNotAllowed
+  );
+const PERFORMANCE_TEACHER_NEGOTIATING_TRANSITION_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherNegotiatingTransitionDenied
+  );
+const PERFORMANCE_TEACHER_TERMINATE_ROLE_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherTerminateRoleDenied
+  );
+const PERFORMANCE_TEACHER_TERMINATE_PARTNERED_ONLY_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherTerminatePartneredOnly
+  );
+const PERFORMANCE_TEACHER_STATUS_ACTION_UNSUPPORTED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherStatusActionUnsupported
+  );
+const PERFORMANCE_TEACHER_COOPERATION_MARK_FOLLOW_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherCooperationMarkFollowRequired
+  );
+const PERFORMANCE_TEACHER_COOPERATION_MARK_STATE_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherCooperationMarkStateDenied
+  );
+const PERFORMANCE_TEACHER_CLASS_CREATE_TERMINATED_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherClassCreateTerminatedDenied
+  );
+const PERFORMANCE_TEACHER_COOPERATION_STATUS_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherCooperationStatusInvalid
+  );
+const PERFORMANCE_TEACHER_CLASS_STATUS_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherClassStatusInvalid
+  );
+const PERFORMANCE_TEACHER_COOPERATION_STATUS_PRESET_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherCooperationStatusPresetDenied
+  );
+const PERFORMANCE_TEACHER_ASSIGN_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherAssignDenied
+  );
+const PERFORMANCE_TEACHER_ASSIGN_TARGET_DEPARTMENT_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherAssignTargetDepartmentDenied
+  );
+const PERFORMANCE_TEACHER_CLASS_CLOSE_ROLE_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherClassCloseRoleDenied
+  );
+const PERFORMANCE_TEACHER_AGENT_STATUS_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherAgentStatusInvalid
+  );
+const PERFORMANCE_TEACHER_AGENT_BLACKLIST_STATUS_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherAgentBlacklistStatusInvalid
+  );
+const PERFORMANCE_TEACHER_AGENT_RELATION_STATUS_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherAgentRelationStatusInvalid
+  );
+const PERFORMANCE_TEACHER_AGENT_AUDIT_VIEW_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherAgentAuditViewDenied
+  );
+const PERFORMANCE_TEACHER_AGENT_RELATION_SELF_LOOP_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherAgentRelationSelfLoopDenied
+  );
+const PERFORMANCE_TEACHER_AGENT_RELATION_TARGET_INACTIVE_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherAgentRelationTargetInactive
+  );
+const PERFORMANCE_TEACHER_AGENT_CYCLE_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherAgentCycleDenied
+  );
+const PERFORMANCE_TEACHER_ATTRIBUTION_STATUS_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherAttributionStatusInvalid
+  );
+const PERFORMANCE_TEACHER_ATTRIBUTION_CONFLICT_RESOLVE_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherAttributionConflictResolveDenied
+  );
+const PERFORMANCE_TEACHER_ATTRIBUTION_CREATE_TERMINATED_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherAttributionCreateTerminatedDenied
+  );
+const PERFORMANCE_TEACHER_ATTRIBUTION_ASSIGN_EXISTING_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherAttributionAssignExistingDenied
+  );
+const PERFORMANCE_TEACHER_ATTRIBUTION_AGENT_INACTIVE_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherAttributionAgentInactive
+  );
+const PERFORMANCE_TEACHER_ATTRIBUTION_AGENT_BLACKLISTED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherAttributionAgentBlacklisted
+  );
+const PERFORMANCE_TEACHER_ATTRIBUTION_CONFLICT_STATUS_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherAttributionConflictStatusInvalid
+  );
+const PERFORMANCE_TEACHER_ATTRIBUTION_CONFLICT_CLOSED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherAttributionConflictClosed
+  );
+const PERFORMANCE_TEACHER_ATTRIBUTION_CONFLICT_RESOLUTION_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherAttributionConflictResolutionInvalid
+  );
+const PERFORMANCE_TEACHER_CURRENT_ATTRIBUTION_MISSING_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.teacherCurrentAttributionMissing
+  );
+
+const TEACHER_PERMISSIONS = {
+  teacherAgentAdd: PERMISSIONS.performance.teacherAgent.add,
+  teacherAgentBlacklist: PERMISSIONS.performance.teacherAgent.blacklist,
+  teacherAgentInfo: PERMISSIONS.performance.teacherAgent.info,
+  teacherAgentPage: PERMISSIONS.performance.teacherAgent.page,
+  teacherAgentUnblacklist: PERMISSIONS.performance.teacherAgent.unblacklist,
+  teacherAgentUpdate: PERMISSIONS.performance.teacherAgent.update,
+  teacherAgentUpdateStatus: PERMISSIONS.performance.teacherAgent.updateStatus,
+  teacherAgentAuditInfo: PERMISSIONS.performance.teacherAgentAudit.info,
+  teacherAgentAuditPage: PERMISSIONS.performance.teacherAgentAudit.page,
+  teacherAgentRelationAdd: PERMISSIONS.performance.teacherAgentRelation.add,
+  teacherAgentRelationDelete: PERMISSIONS.performance.teacherAgentRelation.delete,
+  teacherAgentRelationPage: PERMISSIONS.performance.teacherAgentRelation.page,
+  teacherAgentRelationUpdate: PERMISSIONS.performance.teacherAgentRelation.update,
+  teacherAttributionAssign: PERMISSIONS.performance.teacherAttribution.assign,
+  teacherAttributionChange: PERMISSIONS.performance.teacherAttribution.change,
+  teacherAttributionInfo: PERMISSIONS.performance.teacherAttribution.info,
+  teacherAttributionPage: PERMISSIONS.performance.teacherAttribution.page,
+  teacherAttributionRemove: PERMISSIONS.performance.teacherAttribution.remove,
+  teacherAttributionConflictCreate:
+    PERMISSIONS.performance.teacherAttributionConflict.create,
+  teacherAttributionConflictInfo:
+    PERMISSIONS.performance.teacherAttributionConflict.info,
+  teacherAttributionConflictPage:
+    PERMISSIONS.performance.teacherAttributionConflict.page,
+  teacherAttributionConflictResolve:
+    PERMISSIONS.performance.teacherAttributionConflict.resolve,
+  teacherClassAdd: PERMISSIONS.performance.teacherClass.add,
+  teacherClassDelete: PERMISSIONS.performance.teacherClass.delete,
+  teacherClassInfo: PERMISSIONS.performance.teacherClass.info,
+  teacherClassPage: PERMISSIONS.performance.teacherClass.page,
+  teacherClassUpdate: PERMISSIONS.performance.teacherClass.update,
+  teacherCooperationMark: PERMISSIONS.performance.teacherCooperation.mark,
+  teacherDashboardSummary: PERMISSIONS.performance.teacherDashboard.summary,
+  teacherFollowAdd: PERMISSIONS.performance.teacherFollow.add,
+  teacherFollowPage: PERMISSIONS.performance.teacherFollow.page,
+  teacherInfoAdd: PERMISSIONS.performance.teacherInfo.add,
+  teacherInfoAssign: PERMISSIONS.performance.teacherInfo.assign,
+  teacherInfoAttributionHistory:
+    PERMISSIONS.performance.teacherInfo.attributionHistory,
+  teacherInfoAttributionInfo: PERMISSIONS.performance.teacherInfo.attributionInfo,
+  teacherInfoInfo: PERMISSIONS.performance.teacherInfo.info,
+  teacherInfoPage: PERMISSIONS.performance.teacherInfo.page,
+  teacherInfoUpdate: PERMISSIONS.performance.teacherInfo.update,
+  teacherInfoUpdateStatus: PERMISSIONS.performance.teacherInfo.updateStatus,
+  teacherTodoPage: PERMISSIONS.performance.teacherTodo.page,
+} as const;
 
 function normalizePageNumber(value: any, fallback: number) {
   const parsed = Number(value);
@@ -326,114 +532,81 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
   baseSysMenuService: BaseSysMenuService;
 
   @Inject()
-  baseSysPermsService: BaseSysPermsService;
+  performanceAccessContextService: PerformanceAccessContextService;
 
   @Inject()
   ctx;
 
-  @App()
-  app: IMidwayApplication;
-
-  private readonly perms = {
-    teacherInfoPage: 'performance:teacherInfo:page',
-    teacherInfoInfo: 'performance:teacherInfo:info',
-    teacherInfoAdd: 'performance:teacherInfo:add',
-    teacherInfoUpdate: 'performance:teacherInfo:update',
-    teacherInfoAssign: 'performance:teacherInfo:assign',
-    teacherInfoUpdateStatus: 'performance:teacherInfo:updateStatus',
-    teacherFollowPage: 'performance:teacherFollow:page',
-    teacherFollowAdd: 'performance:teacherFollow:add',
-    teacherCooperationMark: 'performance:teacherCooperation:mark',
-    teacherClassPage: 'performance:teacherClass:page',
-    teacherClassInfo: 'performance:teacherClass:info',
-    teacherClassAdd: 'performance:teacherClass:add',
-    teacherClassUpdate: 'performance:teacherClass:update',
-    teacherClassDelete: 'performance:teacherClass:delete',
-    teacherDashboardSummary: 'performance:teacherDashboard:summary',
-    teacherTodoPage: 'performance:teacherTodo:page',
-    teacherAgentPage: 'performance:teacherAgent:page',
-    teacherAgentInfo: 'performance:teacherAgent:info',
-    teacherAgentAdd: 'performance:teacherAgent:add',
-    teacherAgentUpdate: 'performance:teacherAgent:update',
-    teacherAgentUpdateStatus: 'performance:teacherAgent:updateStatus',
-    teacherAgentBlacklist: 'performance:teacherAgent:blacklist',
-    teacherAgentUnblacklist: 'performance:teacherAgent:unblacklist',
-    teacherAgentRelationPage: 'performance:teacherAgentRelation:page',
-    teacherAgentRelationAdd: 'performance:teacherAgentRelation:add',
-    teacherAgentRelationUpdate: 'performance:teacherAgentRelation:update',
-    teacherAgentRelationDelete: 'performance:teacherAgentRelation:delete',
-    teacherAttributionPage: 'performance:teacherAttribution:page',
-    teacherAttributionInfo: 'performance:teacherAttribution:info',
-    teacherAttributionAssign: 'performance:teacherAttribution:assign',
-    teacherAttributionChange: 'performance:teacherAttribution:change',
-    teacherAttributionRemove: 'performance:teacherAttribution:remove',
-    teacherAttributionConflictPage: 'performance:teacherAttributionConflict:page',
-    teacherAttributionConflictInfo: 'performance:teacherAttributionConflict:info',
-    teacherAttributionConflictCreate: 'performance:teacherAttributionConflict:create',
-    teacherAttributionConflictResolve: 'performance:teacherAttributionConflict:resolve',
-    teacherAgentAuditPage: 'performance:teacherAgentAudit:page',
-    teacherAgentAuditInfo: 'performance:teacherAgentAudit:info',
-  };
-
-  private readonly writePerms = [
-    this.perms.teacherInfoAdd,
-    this.perms.teacherInfoUpdate,
-    this.perms.teacherInfoAssign,
-    this.perms.teacherInfoUpdateStatus,
-    this.perms.teacherFollowAdd,
-    this.perms.teacherCooperationMark,
-    this.perms.teacherClassAdd,
-    this.perms.teacherClassUpdate,
-    this.perms.teacherClassDelete,
-    this.perms.teacherAgentAdd,
-    this.perms.teacherAgentUpdate,
-    this.perms.teacherAgentUpdateStatus,
-    this.perms.teacherAgentBlacklist,
-    this.perms.teacherAgentUnblacklist,
-    this.perms.teacherAgentRelationAdd,
-    this.perms.teacherAgentRelationUpdate,
-    this.perms.teacherAgentRelationDelete,
-    this.perms.teacherAttributionAssign,
-    this.perms.teacherAttributionChange,
-    this.perms.teacherAttributionRemove,
-    this.perms.teacherAttributionConflictCreate,
-    this.perms.teacherAttributionConflictResolve,
-  ];
+  private readonly perms = TEACHER_PERMISSIONS;
 
   private get currentCtx() {
-    if (this.ctx?.admin) {
-      return this.ctx;
-    }
-
-    try {
-      const contextManager: AsyncContextManager = this.app
-        .getApplicationContext()
-        .get(ASYNC_CONTEXT_MANAGER_KEY);
-      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as any;
-    } catch (error) {
-      return this.ctx;
-    }
+    return this.ctx || {};
   }
 
   private get currentAdmin() {
-    if (this.currentCtx?.admin) {
-      return this.currentCtx.admin;
-    }
-
-    const token =
-      this.currentCtx?.get?.('Authorization') ||
-      this.currentCtx?.headers?.authorization;
-
-    if (!token) {
-      return undefined;
-    }
-
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
+    return this.currentCtx.admin || {};
   }
+
+  private readonly capabilityByPerm: Record<string, PerformanceCapabilityKey> = {
+    [PERMISSIONS.performance.teacherAgent.page]: 'teacher_agent.read',
+    [PERMISSIONS.performance.teacherAgent.info]: 'teacher_agent.read',
+    [PERMISSIONS.performance.teacherAgent.add]: 'teacher_agent.create',
+    [PERMISSIONS.performance.teacherAgent.update]: 'teacher_agent.update',
+    [PERMISSIONS.performance.teacherAgent.updateStatus]:
+      'teacher_agent.update_status',
+    [PERMISSIONS.performance.teacherAgent.blacklist]:
+      'teacher_agent.blacklist',
+    [PERMISSIONS.performance.teacherAgent.unblacklist]:
+      'teacher_agent.unblacklist',
+    [PERMISSIONS.performance.teacherAgentAudit.page]: 'teacher_agent_audit.read',
+    [PERMISSIONS.performance.teacherAgentAudit.info]: 'teacher_agent_audit.read',
+    [PERMISSIONS.performance.teacherAgentRelation.page]:
+      'teacher_agent_relation.read',
+    [PERMISSIONS.performance.teacherAgentRelation.add]:
+      'teacher_agent_relation.create',
+    [PERMISSIONS.performance.teacherAgentRelation.update]:
+      'teacher_agent_relation.update',
+    [PERMISSIONS.performance.teacherAgentRelation.delete]:
+      'teacher_agent_relation.delete',
+    [PERMISSIONS.performance.teacherAttribution.page]: 'teacher_attribution.read',
+    [PERMISSIONS.performance.teacherAttribution.info]: 'teacher_attribution.read',
+    [PERMISSIONS.performance.teacherAttribution.assign]:
+      'teacher_attribution.assign',
+    [PERMISSIONS.performance.teacherAttribution.change]:
+      'teacher_attribution.change',
+    [PERMISSIONS.performance.teacherAttribution.remove]:
+      'teacher_attribution.remove',
+    [PERMISSIONS.performance.teacherAttributionConflict.page]:
+      'teacher_attribution_conflict.read',
+    [PERMISSIONS.performance.teacherAttributionConflict.info]:
+      'teacher_attribution_conflict.read',
+    [PERMISSIONS.performance.teacherAttributionConflict.create]:
+      'teacher_attribution_conflict.create',
+    [PERMISSIONS.performance.teacherAttributionConflict.resolve]:
+      'teacher_attribution_conflict.resolve',
+    [PERMISSIONS.performance.teacherClass.page]: 'teacher_class.read',
+    [PERMISSIONS.performance.teacherClass.info]: 'teacher_class.read',
+    [PERMISSIONS.performance.teacherClass.add]: 'teacher_class.create',
+    [PERMISSIONS.performance.teacherClass.update]: 'teacher_class.update',
+    [PERMISSIONS.performance.teacherClass.delete]: 'teacher_class.delete',
+    [PERMISSIONS.performance.teacherCooperation.mark]: 'teacher_cooperation.mark',
+    [PERMISSIONS.performance.teacherDashboard.summary]:
+      'teacher_dashboard.summary',
+    [PERMISSIONS.performance.teacherFollow.page]: 'teacher_follow.read',
+    [PERMISSIONS.performance.teacherFollow.add]: 'teacher_follow.create',
+    [PERMISSIONS.performance.teacherInfo.page]: 'teacher_info.read',
+    [PERMISSIONS.performance.teacherInfo.info]: 'teacher_info.read',
+    [PERMISSIONS.performance.teacherInfo.add]: 'teacher_info.create',
+    [PERMISSIONS.performance.teacherInfo.update]: 'teacher_info.update',
+    [PERMISSIONS.performance.teacherInfo.assign]: 'teacher_info.assign',
+    [PERMISSIONS.performance.teacherInfo.updateStatus]:
+      'teacher_info.update_status',
+    [PERMISSIONS.performance.teacherInfo.attributionHistory]:
+      'teacher_info.attribution_history',
+    [PERMISSIONS.performance.teacherInfo.attributionInfo]:
+      'teacher_info.attribution_info',
+    [PERMISSIONS.performance.teacherTodo.page]: 'teacher_todo.read',
+  };
 
   async teacherInfoPage(query: any) {
     const perms = await this.currentPerms();
@@ -559,10 +732,6 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     this.assertPerm(perms, this.perms.teacherInfoAdd, '无权限新增班主任资源');
 
     const scope = await this.resolveScope(perms);
-    if (scope.isReadonly) {
-      throw new CoolCommException('只读账号无权限新增班主任资源');
-    }
-
     const normalized = this.normalizeTeacherPayload(payload);
     const saved = await this.performanceTeacherInfoEntity.save(
       this.performanceTeacherInfoEntity.create({
@@ -596,11 +765,15 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
 
   async teacherInfoAssign(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.teacherInfoAssign, '无权限分配班主任资源');
+    this.assertPerm(
+      perms,
+      this.perms.teacherInfoAssign,
+      PERFORMANCE_TEACHER_ASSIGN_DENIED_MESSAGE
+    );
 
     const scope = await this.resolveScope(perms);
     if (!scope.canAssign) {
-      throw new CoolCommException('无权限分配班主任资源');
+      throw new CoolCommException(PERFORMANCE_TEACHER_ASSIGN_DENIED_MESSAGE);
     }
 
     const teacher = await this.requireTeacher(
@@ -613,7 +786,9 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     );
 
     if (!this.canAssignTargetDepartment(scope, Number(targetUser.departmentId || 0))) {
-      throw new CoolCommException('无权分配到目标归属部门');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_ASSIGN_TARGET_DEPARTMENT_DENIED_MESSAGE
+      );
     }
 
     await this.performanceTeacherInfoEntity.update(
@@ -655,17 +830,25 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
 
     if (targetStatus === 'negotiating') {
       if (!['contacted', 'negotiating'].includes(currentStatus)) {
-        throw new CoolCommException('当前状态不允许推进到洽谈中');
+        throw new CoolCommException(
+          PERFORMANCE_TEACHER_NEGOTIATING_TRANSITION_DENIED_MESSAGE
+        );
       }
     } else if (targetStatus === 'terminated') {
       if (!scope.canTerminateTeacher) {
-        throw new CoolCommException('仅管理层或部门负责人可终止合作');
+        throw new CoolCommException(
+          PERFORMANCE_TEACHER_TERMINATE_ROLE_DENIED_MESSAGE
+        );
       }
       if (currentStatus !== 'partnered') {
-        throw new CoolCommException('仅已合作班主任可终止合作');
+        throw new CoolCommException(
+          PERFORMANCE_TEACHER_TERMINATE_PARTNERED_ONLY_MESSAGE
+        );
       }
     } else {
-      throw new CoolCommException('当前接口仅支持 negotiating 或 terminated');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_STATUS_ACTION_UNSUPPORTED_MESSAGE
+      );
     }
 
     await this.performanceTeacherInfoEntity.update(
@@ -777,11 +960,15 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     });
 
     if (followCount < 1) {
-      throw new CoolCommException('至少存在一条跟进记录后才允许标记合作');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_COOPERATION_MARK_FOLLOW_REQUIRED_MESSAGE
+      );
     }
 
     if (!['contacted', 'negotiating'].includes(String(teacher.cooperationStatus || '').trim())) {
-      throw new CoolCommException('当前合作状态不允许标记为已合作');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_COOPERATION_MARK_STATE_DENIED_MESSAGE
+      );
     }
 
     await this.performanceTeacherInfoEntity.update(
@@ -879,21 +1066,21 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     this.assertPerm(perms, this.perms.teacherClassAdd, '无权限新增班级');
 
     const scope = await this.resolveScope(perms);
-    if (scope.isReadonly) {
-      throw new CoolCommException('只读账号无权限新增班级');
-    }
-
     const teacher = await this.requireTeacher(
       normalizeRequiredPositiveInt(payload.teacherId, '班主任资源不存在')
     );
     this.assertTeacherWritable(teacher, scope, '无权为该班主任创建班级');
 
     if (teacher.cooperationStatus === 'terminated') {
-      throw new CoolCommException('已终止合作的班主任不可新建班级');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_CLASS_CREATE_TERMINATED_DENIED_MESSAGE
+      );
     }
 
     if (teacher.cooperationStatus !== 'partnered') {
-      throw new CoolCommException('仅已合作班主任可创建班级');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_CLASS_CREATE_PARTNERED_ONLY_MESSAGE
+      );
     }
 
     const normalized = this.normalizeClassPayload(payload, teacher);
@@ -924,7 +1111,9 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     this.assertClassWritable(teacherClass, scope, '无权编辑该班级');
 
     if (teacherClass.status === 'closed') {
-      throw new CoolCommException('已关闭班级不可编辑');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_CLASS_CLOSED_EDIT_DENIED_MESSAGE
+      );
     }
 
     const teacher = await this.requireTeacher(teacherClass.teacherId);
@@ -956,10 +1145,6 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     this.assertPerm(perms, this.perms.teacherClassDelete, '无权限删除班级');
 
     const scope = await this.resolveScope(perms);
-    if (scope.isReadonly) {
-      throw new CoolCommException('只读账号无权限删除班级');
-    }
-
     const validIds = Array.from(
       new Set(
         (ids || [])
@@ -977,14 +1162,16 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     });
 
     if (rows.length !== validIds.length) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     rows.forEach(item => {
       this.assertClassWritable(item, scope, '无权删除该班级');
 
       if (item.status !== 'draft') {
-        throw new CoolCommException('仅草稿班级允许删除');
+        throw new CoolCommException(
+          PERFORMANCE_TEACHER_CLASS_DELETE_DRAFT_ONLY_MESSAGE
+        );
       }
     });
 
@@ -1199,10 +1386,6 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     this.assertPerm(perms, this.perms.teacherAgentAdd, '无权限新增代理主体');
 
     const scope = await this.resolveScope(perms);
-    if (scope.isReadonly) {
-      throw new CoolCommException('只读账号无权限新增代理主体');
-    }
-
     const normalized = this.normalizeAgentPayload(payload);
     const saved = await this.performanceTeacherAgentEntity.save(
       this.performanceTeacherAgentEntity.create({
@@ -1324,10 +1507,6 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     this.assertPerm(perms, this.perms.teacherAgentRelationAdd, '无权限新增代理关系');
 
     const scope = await this.resolveScope(perms);
-    if (scope.isReadonly) {
-      throw new CoolCommException('只读账号无权限新增代理关系');
-    }
-
     const normalized = await this.normalizeAgentRelationPayload(payload);
     const parentAgent = await this.requireActiveAgent(normalized.parentAgentId);
     const childAgent = await this.requireActiveAgent(normalized.childAgentId);
@@ -1481,10 +1660,6 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     this.assertPerm(perms, this.perms.teacherAttributionAssign, '无权限建立归因');
 
     const scope = await this.resolveScope(perms);
-    if (scope.isReadonly) {
-      throw new CoolCommException('只读账号无权限建立归因');
-    }
-
     return this.createOrConflictAttribution(payload, scope, 'assign');
   }
 
@@ -1493,10 +1668,6 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     this.assertPerm(perms, this.perms.teacherAttributionChange, '无权限调整归因');
 
     const scope = await this.resolveScope(perms);
-    if (scope.isReadonly) {
-      throw new CoolCommException('只读账号无权限调整归因');
-    }
-
     return this.createOrConflictAttribution(payload, scope, 'change');
   }
 
@@ -1599,10 +1770,6 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     );
 
     const scope = await this.resolveScope(perms);
-    if (scope.isReadonly) {
-      throw new CoolCommException('只读账号无权限创建归因冲突');
-    }
-
     const teacherId = normalizeRequiredPositiveInt(payload.teacherId, '班主任资源不存在');
     const current = await this.findCurrentActiveAttribution(teacherId);
     const requestedAgentId = normalizeOptionalPositiveInt(payload.agentId, '代理主体不存在');
@@ -1621,12 +1788,14 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     this.assertPerm(
       perms,
       this.perms.teacherAttributionConflictResolve,
-      '无权限处理归因冲突'
+      PERFORMANCE_TEACHER_ATTRIBUTION_CONFLICT_RESOLVE_DENIED_MESSAGE
     );
 
     const scope = await this.resolveScope(perms);
     if (scope.isReadonly || !scope.canAssign) {
-      throw new CoolCommException('无权限处理归因冲突');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_ATTRIBUTION_CONFLICT_RESOLVE_DENIED_MESSAGE
+      );
     }
 
     const conflict = await this.requireOpenAttributionConflict(
@@ -1665,7 +1834,9 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     }
 
     if (resolution !== 'resolved') {
-      throw new CoolCommException('归因冲突处理结果不合法');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_ATTRIBUTION_CONFLICT_RESOLUTION_INVALID_MESSAGE
+      );
     }
 
     const winnerAgentId = normalizeOptionalPositiveInt(payload.agentId, '代理主体不存在');
@@ -1788,7 +1959,9 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     const audit = await this.requireTeacherAgentAudit(id);
 
     if (!this.auditInScope(audit, allowedTeacherIds, scope)) {
-      throw new CoolCommException('无权查看该代理审计');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_AGENT_AUDIT_VIEW_DENIED_MESSAGE
+      );
     }
 
     return this.normalizeAuditRow(audit);
@@ -1796,7 +1969,11 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
 
   async teacherInfoAttributionInfo(id: number) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.teacherInfoInfo, '无权限查看班主任当前归因');
+    this.assertPerm(
+      perms,
+      this.perms.teacherInfoAttributionInfo,
+      '无权限查看班主任当前归因'
+    );
 
     const scope = await this.resolveScope(perms);
     const teacher = await this.requireTeacher(id);
@@ -1806,7 +1983,11 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
 
   async teacherInfoAttributionHistory(id: number) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.teacherInfoInfo, '无权限查看班主任归因历史');
+    this.assertPerm(
+      perms,
+      this.perms.teacherInfoAttributionHistory,
+      '无权限查看班主任归因历史'
+    );
 
     const scope = await this.resolveScope(perms);
     const teacher = await this.requireTeacher(id);
@@ -1825,34 +2006,137 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
   }
 
   private async currentPerms() {
-    const admin = this.currentAdmin;
-
-    if (!admin?.roleIds) {
-      throw new CoolCommException('登录状态已失效');
+    const access = await this.performanceAccessContextService.resolveAccessContext(
+      undefined,
+      {
+        allowEmptyRoleIds: false,
+        missingAuthMessage: '登录状态已失效',
+      }
+    );
+    if (!this.currentCtx.admin) {
+      this.currentCtx.admin = { userId: access.userId };
+    } else if (!this.currentCtx.admin.userId) {
+      this.currentCtx.admin.userId = access.userId;
     }
-
-    return this.baseSysMenuService.getPerms(admin.roleIds);
+    return access;
   }
 
-  private hasPerm(perms: string[], perm: string) {
-    return perms.includes(perm);
+  private currentPermissionMask(access: PerformanceResolvedAccessContext) {
+    const tokenPermissionMask = String(this.currentAdmin?.permissionMask || '').trim();
+    if (tokenPermissionMask) {
+      return tokenPermissionMask;
+    }
+    return resolvePermissionMask(access.perms, {
+      isAdmin: false,
+    });
   }
 
-  private assertPerm(perms: string[], perm: string, message: string) {
-    if (!this.hasPerm(perms, perm)) {
+  private resolveCapabilityKey(perm: string): PerformanceCapabilityKey {
+    const capabilityKey = this.capabilityByPerm[perm];
+    if (!capabilityKey) {
+      throw new CoolCommException(`未映射的班主任渠道权限: ${perm}`);
+    }
+    return capabilityKey;
+  }
+
+  private hasPerm(access: PerformanceResolvedAccessContext, perm: string) {
+    return this.performanceAccessContextService.hasCapability(
+      access,
+      this.resolveCapabilityKey(perm)
+    );
+  }
+
+  private assertPerm(
+    access: PerformanceResolvedAccessContext,
+    perm: string,
+    message: string
+  ) {
+    if (!this.hasPerm(access, perm)) {
       throw new CoolCommException(message);
     }
   }
 
-  private async resolveScope(perms: string[]): Promise<TeacherAccessScope> {
-    const currentUser = await this.requireUser(Number(this.currentAdmin?.userId || 0), '登录状态已失效');
-    const isGlobal =
-      this.currentAdmin?.isAdmin === true ||
-      this.currentAdmin?.username === 'admin';
-    const isReadonly = !this.writePerms.some(perm => this.hasPerm(perms, perm));
-    const canAssign = !isReadonly && (isGlobal || this.hasPerm(perms, this.perms.teacherInfoAssign));
-    const departmentIds = isGlobal ? null : await this.loadDepartmentIds(Number(currentUser.id || 0));
-    const effectiveGlobal = isGlobal || (!!canAssign && (departmentIds?.length || 0) === 0);
+  private async resolveScope(
+    access: PerformanceResolvedAccessContext
+  ): Promise<TeacherAccessScope> {
+    const currentUser = await this.requireUser(
+      Number(access.userId || 0),
+      '登录状态已失效'
+    );
+    const permissionMask = this.currentPermissionMask(access);
+    const readCapabilities: PerformanceCapabilityKey[] = [
+      'teacher_agent.read',
+      'teacher_agent_audit.read',
+      'teacher_agent_relation.read',
+      'teacher_attribution.read',
+      'teacher_attribution_conflict.read',
+      'teacher_class.read',
+      'teacher_dashboard.summary',
+      'teacher_follow.read',
+      'teacher_info.read',
+      'teacher_info.attribution_history',
+      'teacher_info.attribution_info',
+      'teacher_todo.read',
+    ];
+    const writeCapabilities: PerformanceCapabilityKey[] = [
+      'teacher_agent.create',
+      'teacher_agent.update',
+      'teacher_agent.update_status',
+      'teacher_agent.blacklist',
+      'teacher_agent.unblacklist',
+      'teacher_agent_relation.create',
+      'teacher_agent_relation.update',
+      'teacher_agent_relation.delete',
+      'teacher_attribution.assign',
+      'teacher_attribution.change',
+      'teacher_attribution.remove',
+      'teacher_attribution_conflict.create',
+      'teacher_attribution_conflict.resolve',
+      'teacher_class.create',
+      'teacher_class.update',
+      'teacher_class.delete',
+      'teacher_cooperation.mark',
+      'teacher_follow.create',
+      'teacher_info.create',
+      'teacher_info.update',
+      'teacher_info.assign',
+      'teacher_info.update_status',
+    ];
+    const assignCapabilities: PerformanceCapabilityKey[] = [
+      'teacher_info.assign',
+      'teacher_attribution.assign',
+      'teacher_attribution.change',
+      'teacher_attribution.remove',
+      'teacher_attribution_conflict.resolve',
+    ];
+    const isGlobal = this.performanceAccessContextService.hasAnyCapabilityInScopes(
+      access,
+      readCapabilities.concat(writeCapabilities),
+      ['company']
+    );
+    const isReadonly = !this.performanceAccessContextService.hasAnyCapability(
+      access,
+      writeCapabilities
+    );
+    const canAssign = this.performanceAccessContextService.hasAnyCapability(
+      access,
+      assignCapabilities
+    );
+    const departmentIds: number[] | null = isGlobal
+      ? null
+      : this.performanceAccessContextService.hasAnyCapabilityInScopes(
+          access,
+          readCapabilities.concat(writeCapabilities),
+          ['department_tree', 'department']
+        )
+      ? Array.from(
+          new Set(
+            (Array.isArray(access.departmentIds) ? access.departmentIds : [])
+              .map(item => Number(item))
+              .filter(item => Number.isInteger(item) && item > 0)
+          )
+        )
+      : [];
     const scopeType: TeacherScopeType = isGlobal
       ? 'global'
       : canAssign || (isReadonly && (departmentIds?.length || 0) > 0)
@@ -1860,7 +2144,7 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
         : 'self';
 
     return {
-      scopeType: effectiveGlobal ? 'global' : scopeType,
+      scopeType,
       userId: Number(currentUser.id),
       userName: String(currentUser.name || currentUser.nickName || currentUser.username || ''),
       userDepartmentId: normalizeRequiredPositiveInt(
@@ -1875,6 +2159,70 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     };
   }
 
+  async teacherAccessProfile(): Promise<TeacherAccessProfile | null> {
+    const access = await this.currentPerms();
+    const permissionMask = this.currentPermissionMask(access);
+    const domainCapabilities: PerformanceCapabilityKey[] = [
+      'teacher_agent.read',
+      'teacher_agent.create',
+      'teacher_agent.update',
+      'teacher_agent.update_status',
+      'teacher_agent.blacklist',
+      'teacher_agent.unblacklist',
+      'teacher_agent_audit.read',
+      'teacher_agent_relation.read',
+      'teacher_agent_relation.create',
+      'teacher_agent_relation.update',
+      'teacher_agent_relation.delete',
+      'teacher_attribution.read',
+      'teacher_attribution.assign',
+      'teacher_attribution.change',
+      'teacher_attribution.remove',
+      'teacher_attribution_conflict.read',
+      'teacher_attribution_conflict.create',
+      'teacher_attribution_conflict.resolve',
+      'teacher_class.read',
+      'teacher_class.create',
+      'teacher_class.update',
+      'teacher_class.delete',
+      'teacher_cooperation.mark',
+      'teacher_dashboard.summary',
+      'teacher_follow.read',
+      'teacher_follow.create',
+      'teacher_info.read',
+      'teacher_info.create',
+      'teacher_info.update',
+      'teacher_info.assign',
+      'teacher_info.update_status',
+      'teacher_info.attribution_history',
+      'teacher_info.attribution_info',
+      'teacher_todo.read',
+    ];
+    if (
+      !this.performanceAccessContextService.hasAnyCapability(
+        access,
+        domainCapabilities
+      )
+    ) {
+      return null;
+    }
+
+    const scope = await this.resolveScope(access);
+    const [teacherRows, classRows] = await Promise.all([
+      this.listTeachersInScope(scope),
+      this.listClassesInScope(scope),
+    ]);
+
+    return {
+      permissionMask,
+      scopeType: scope.scopeType,
+      isReadonly: scope.isReadonly,
+      scopedDepartmentIds: scope.departmentIds ? [...scope.departmentIds] : [],
+      scopedTeacherIds: teacherRows.map(item => Number(item.id || 0)).filter(item => item > 0),
+      scopedClassIds: classRows.map(item => Number(item.id || 0)).filter(item => item > 0),
+    };
+  }
+
   private canAssignTargetDepartment(scope: TeacherAccessScope, departmentId: number) {
     if (!scope.canAssign) {
       return false;
@@ -1885,21 +2233,6 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     }
 
     return !!scope.departmentIds?.includes(departmentId);
-  }
-
-  private async loadDepartmentIds(userId: number) {
-    if (!userId) {
-      throw new CoolCommException('登录状态已失效');
-    }
-
-    const ids = await this.baseSysPermsService.departmentIds(userId);
-    return Array.from(
-      new Set(
-        (Array.isArray(ids) ? ids : [])
-          .map(item => Number(item))
-          .filter(item => Number.isInteger(item) && item > 0)
-      )
-    );
   }
 
   private applyTeacherScope(qb: any, scope: TeacherAccessScope) {
@@ -1986,7 +2319,7 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     message: string
   ) {
     if (scope.isReadonly) {
-      throw new CoolCommException('只读账号无写权限');
+      throw new CoolCommException(PERFORMANCE_READONLY_WRITE_DENIED_MESSAGE);
     }
 
     this.assertTeacherReadable(teacher, scope, message);
@@ -2008,7 +2341,7 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     message: string
   ) {
     if (scope.isReadonly) {
-      throw new CoolCommException('只读账号无写权限');
+      throw new CoolCommException(PERFORMANCE_READONLY_WRITE_DENIED_MESSAGE);
     }
 
     this.assertClassReadable(teacherClass, scope, message);
@@ -2020,12 +2353,16 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     scope: TeacherAccessScope
   ) {
     if (currentStatus === 'closed') {
-      throw new CoolCommException('已关闭班级不可编辑');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_CLASS_CLOSED_EDIT_DENIED_MESSAGE
+      );
     }
 
     if (currentStatus === 'draft') {
       if (!['draft', 'active'].includes(targetStatus)) {
-        throw new CoolCommException('草稿班级仅允许更新为 draft 或 active');
+        throw new CoolCommException(
+          PERFORMANCE_TEACHER_CLASS_DRAFT_TRANSITION_ONLY_MESSAGE
+        );
       }
       return;
     }
@@ -2037,20 +2374,26 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
 
       if (targetStatus === 'closed') {
         if (!scope.canCloseClass) {
-          throw new CoolCommException('仅管理层或部门负责人可关闭班级');
+          throw new CoolCommException(
+            PERFORMANCE_TEACHER_CLASS_CLOSE_ROLE_DENIED_MESSAGE
+          );
         }
         return;
       }
     }
 
-    throw new CoolCommException('当前班级状态不允许执行该操作');
+    throw new CoolCommException(
+      PERFORMANCE_TEACHER_CLASS_ACTION_NOT_ALLOWED_MESSAGE
+    );
   }
 
   private normalizeTeacherStatus(value: any) {
     const status = String(value || '').trim() as TeacherCooperationStatus;
 
     if (!TEACHER_COOPERATION_STATUS.includes(status)) {
-      throw new CoolCommException('班主任合作状态不合法');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_COOPERATION_STATUS_INVALID_MESSAGE
+      );
     }
 
     return status;
@@ -2060,7 +2403,9 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     const status = String(value || '').trim() as TeacherClassStatus;
 
     if (!TEACHER_CLASS_STATUS.includes(status)) {
-      throw new CoolCommException('班级状态不合法');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_CLASS_STATUS_INVALID_MESSAGE
+      );
     }
 
     return status;
@@ -2070,7 +2415,9 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     const status = String(payload.cooperationStatus || '').trim();
 
     if (status && status !== 'uncontacted') {
-      throw new CoolCommException('新增或编辑班主任资源不可直接指定合作状态');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_COOPERATION_STATUS_PRESET_DENIED_MESSAGE
+      );
     }
 
     return {
@@ -2220,7 +2567,7 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     const teacher = await this.performanceTeacherInfoEntity.findOneBy({ id });
 
     if (!teacher) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     return teacher;
@@ -2230,7 +2577,7 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     const teacherClass = await this.performanceTeacherClassEntity.findOneBy({ id });
 
     if (!teacherClass) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     return teacherClass;
@@ -2366,7 +2713,7 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     const status = String(value || '').trim() as TeacherAgentStatus;
 
     if (!TEACHER_AGENT_STATUS.includes(status)) {
-      throw new CoolCommException('代理主体状态不合法');
+      throw new CoolCommException(PERFORMANCE_TEACHER_AGENT_STATUS_INVALID_MESSAGE);
     }
 
     return status;
@@ -2376,7 +2723,9 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     const status = String(value || '').trim() as TeacherAgentBlacklistStatus;
 
     if (!TEACHER_AGENT_BLACKLIST_STATUS.includes(status)) {
-      throw new CoolCommException('代理主体黑名单状态不合法');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_AGENT_BLACKLIST_STATUS_INVALID_MESSAGE
+      );
     }
 
     return status;
@@ -2386,7 +2735,9 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     const status = String(value || '').trim() as TeacherAgentRelationStatus;
 
     if (!TEACHER_AGENT_RELATION_STATUS.includes(status)) {
-      throw new CoolCommException('代理关系状态不合法');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_AGENT_RELATION_STATUS_INVALID_MESSAGE
+      );
     }
 
     return status;
@@ -2396,7 +2747,9 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     const status = String(value || '').trim() as TeacherAttributionStatus;
 
     if (!TEACHER_ATTRIBUTION_STATUS.includes(status)) {
-      throw new CoolCommException('归因状态不合法');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_ATTRIBUTION_STATUS_INVALID_MESSAGE
+      );
     }
 
     return status;
@@ -2406,7 +2759,9 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     const status = String(value || '').trim() as TeacherAttributionConflictStatus;
 
     if (!TEACHER_ATTRIBUTION_CONFLICT_STATUS.includes(status)) {
-      throw new CoolCommException('归因冲突状态不合法');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_ATTRIBUTION_CONFLICT_STATUS_INVALID_MESSAGE
+      );
     }
 
     return status;
@@ -2454,7 +2809,9 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     );
 
     if (parentAgentId === childAgentId) {
-      throw new CoolCommException('代理关系不允许指向自身');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_AGENT_RELATION_SELF_LOOP_DENIED_MESSAGE
+      );
     }
 
     return {
@@ -2482,7 +2839,9 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     this.assertTeacherWritable(teacher, scope, '无权维护该班主任归因');
 
     if (teacher.cooperationStatus === 'terminated') {
-      throw new CoolCommException('已终止合作班主任不可新建代理归因');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_ATTRIBUTION_CREATE_TERMINATED_DENIED_MESSAGE
+      );
     }
 
     const targetAgentId = normalizeOptionalPositiveInt(payload.agentId, '代理主体不存在');
@@ -2501,7 +2860,9 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     }
 
     if (current && action === 'assign') {
-      throw new CoolCommException('当前班主任已存在有效归因，请使用归因调整或冲突处理');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_ATTRIBUTION_ASSIGN_EXISTING_DENIED_MESSAGE
+      );
     }
 
     if (current) {
@@ -2834,7 +3195,7 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     message: string
   ) {
     if (scope.isReadonly) {
-      throw new CoolCommException('只读账号无写权限');
+      throw new CoolCommException(PERFORMANCE_READONLY_WRITE_DENIED_MESSAGE);
     }
     this.assertAgentReadable(agent, scope, message);
   }
@@ -2845,7 +3206,7 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     message: string
   ) {
     if (scope.isReadonly) {
-      throw new CoolCommException('只读账号无写权限');
+      throw new CoolCommException(PERFORMANCE_READONLY_WRITE_DENIED_MESSAGE);
     }
     if (!this.agentRelationInScope(relation, scope)) {
       throw new CoolCommException(message);
@@ -2883,7 +3244,7 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     const agent = await this.performanceTeacherAgentEntity.findOneBy({ id });
 
     if (!agent) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     return agent;
@@ -2893,7 +3254,9 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     const agent = await this.requireAgent(id);
 
     if (agent.status !== 'active') {
-      throw new CoolCommException('停用代理不能作为新的关系目标');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_AGENT_RELATION_TARGET_INACTIVE_MESSAGE
+      );
     }
 
     return agent;
@@ -2903,11 +3266,15 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     const agent = await this.requireAgent(id);
 
     if (agent.status !== 'active') {
-      throw new CoolCommException('停用代理不可新增归因');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_ATTRIBUTION_AGENT_INACTIVE_MESSAGE
+      );
     }
 
     if (agent.blacklistStatus === 'blacklisted') {
-      throw new CoolCommException('黑名单代理不可新增归因');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_ATTRIBUTION_AGENT_BLACKLISTED_MESSAGE
+      );
     }
 
     return agent;
@@ -2917,7 +3284,7 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     const relation = await this.performanceTeacherAgentRelationEntity.findOneBy({ id });
 
     if (!relation) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     return relation;
@@ -2927,7 +3294,7 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     const attribution = await this.performanceTeacherAttributionEntity.findOneBy({ id });
 
     if (!attribution) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     return attribution;
@@ -2937,7 +3304,7 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     const conflict = await this.performanceTeacherAttributionConflictEntity.findOneBy({ id });
 
     if (!conflict) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     return conflict;
@@ -2947,7 +3314,9 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     const conflict = await this.requireAttributionConflict(id);
 
     if (conflict.status !== 'open') {
-      throw new CoolCommException('当前归因冲突已关闭');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_ATTRIBUTION_CONFLICT_CLOSED_MESSAGE
+      );
     }
 
     return conflict;
@@ -2957,7 +3326,7 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     const audit = await this.performanceTeacherAgentAuditEntity.findOneBy({ id });
 
     if (!audit) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     return audit;
@@ -2972,7 +3341,9 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
     const current = await this.findCurrentActiveAttribution(teacherId);
 
     if (!current) {
-      throw new CoolCommException('当前班主任不存在有效归因');
+      throw new CoolCommException(
+        PERFORMANCE_TEACHER_CURRENT_ATTRIBUTION_MISSING_MESSAGE
+      );
     }
 
     return current;
@@ -3036,7 +3407,7 @@ export class PerformanceTeacherChannelCoreService extends BaseService {
         continue;
       }
       if (current === parentAgentId) {
-        throw new CoolCommException('不允许形成循环代理树');
+        throw new CoolCommException(PERFORMANCE_TEACHER_AGENT_CYCLE_DENIED_MESSAGE);
       }
       visited.add(current);
       (adjacency.get(current) || []).forEach(item => stack.push(Number(item || 0)));

@@ -38,9 +38,11 @@ jest.mock('../../src/modules/performance/entity/feedback-record', () => ({
 }));
 
 import {
+  assertFeedbackRecordSubmittable,
   calculateFeedbackAverageScore,
   PerformanceFeedbackService,
 } from '../../src/modules/performance/service/feedback';
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
 
 const createRecordsQueryBuilder = (rows: any[]) => {
   return {
@@ -63,6 +65,27 @@ const createExportQueryBuilder = (rows: any[], total = rows.length) => {
   };
 };
 
+function attachAccessContextService(service: any) {
+  if (!service.baseSysMenuService) {
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue([]),
+    };
+  }
+  if (!service.baseSysPermsService) {
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+  }
+  service.performanceAccessContextService = Object.assign(
+    new PerformanceAccessContextService(),
+    {
+      ctx: service.ctx,
+      baseSysMenuService: service.baseSysMenuService,
+      baseSysPermsService: service.baseSysPermsService,
+    }
+  );
+}
+
 describe('performance feedback service', () => {
   test('should calculate average score by simple mean', () => {
     expect(
@@ -72,6 +95,15 @@ describe('performance feedback service', () => {
         { status: 'draft', score: 0 },
       ])
     ).toBe(87);
+  });
+
+  test('should reject submitted record when feedback task is already closed', () => {
+    expect(() =>
+      assertFeedbackRecordSubmittable({
+        taskStatus: 'closed',
+        recordStatus: 'draft',
+      })
+    ).toThrow('当前环评任务已关闭');
   });
 
   test('should reject duplicate submission from same feedback user', async () => {
@@ -115,6 +147,7 @@ describe('performance feedback service', () => {
       update,
       count: jest.fn(),
     };
+    attachAccessContextService(service);
 
     await expect(
       service.submit({
@@ -169,6 +202,7 @@ describe('performance feedback service', () => {
       update,
       count: jest.fn(),
     };
+    attachAccessContextService(service);
 
     await expect(
       service.submit({
@@ -178,6 +212,49 @@ describe('performance feedback service', () => {
         content: '超时提交',
       })
     ).rejects.toThrow('截止后不可补交反馈');
+
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  test('should reject submission for user outside task record scope', async () => {
+    const update = jest.fn();
+    const service = new PerformanceFeedbackService() as any;
+    service.ctx = {
+      admin: {
+        userId: 4999,
+        username: 'outsider_user',
+        roleIds: [4],
+        passwordVersion: 1,
+        isRefresh: false,
+      },
+      get: jest.fn(),
+    };
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue(['performance:feedback:submit']),
+    };
+    service.performanceFeedbackTaskEntity = {
+      findOneBy: jest.fn().mockResolvedValue({
+        id: 13,
+        status: 'running',
+        deadline: '2099-12-31 23:59:59',
+      }),
+      update: jest.fn(),
+    };
+    service.performanceFeedbackRecordEntity = {
+      findOneBy: jest.fn().mockResolvedValue(null),
+      update,
+      count: jest.fn(),
+    };
+    attachAccessContextService(service);
+
+    await expect(
+      service.submit({
+        taskId: 13,
+        score: 80,
+        relationType: '协作人',
+        content: '越权提交',
+      })
+    ).rejects.toThrow('无权提交该环评反馈');
 
     expect(update).not.toHaveBeenCalled();
   });
@@ -249,6 +326,7 @@ describe('performance feedback service', () => {
       findOneBy: jest.fn().mockResolvedValue(null),
       createQueryBuilder: jest.fn().mockReturnValue(recordsQb),
     };
+    attachAccessContextService(service);
 
     const result = await service.summary(21);
 
@@ -259,6 +337,74 @@ describe('performance feedback service', () => {
       totalCount: 3,
       records: [],
     });
+  });
+
+  test('should reject summary view for outsider without task scope', async () => {
+    const admin = {
+      userId: 4999,
+      username: 'outsider_user',
+      roleIds: [4],
+      passwordVersion: 1,
+      isRefresh: false,
+    };
+
+    const service = new PerformanceFeedbackService() as any;
+    service.ctx = {
+      admin,
+      get: jest.fn(),
+    };
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue(['performance:feedback:summary']),
+    };
+    service.performanceFeedbackTaskEntity = {
+      findOneBy: jest.fn().mockResolvedValue({
+        id: 22,
+        employeeId: 3001,
+        status: 'running',
+      }),
+    };
+    service.performanceFeedbackRecordEntity = {
+      findOneBy: jest.fn().mockResolvedValue(null),
+    };
+    attachAccessContextService(service);
+
+    await expect(service.summary(22)).rejects.toThrow('无权查看该环评任务');
+  });
+
+  test('should reject summary view while feedback task is still draft', async () => {
+    const admin = {
+      userId: 3001,
+      username: 'employee_platform',
+      roleIds: [3],
+      passwordVersion: 1,
+      isRefresh: false,
+    };
+    const token = jwt.sign(admin, '694f6e56-579e-413e-8da0-63379cb5cd31');
+
+    const service = new PerformanceFeedbackService() as any;
+    service.ctx = {
+      admin,
+      headers: {
+        authorization: token,
+      },
+      get: jest.fn().mockReturnValue(token),
+    };
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue(['performance:feedback:summary']),
+    };
+    service.performanceFeedbackTaskEntity = {
+      findOneBy: jest.fn().mockResolvedValue({
+        id: 23,
+        employeeId: 3001,
+        status: 'draft',
+      }),
+    };
+    service.performanceFeedbackRecordEntity = {
+      findOneBy: jest.fn().mockResolvedValue(null),
+    };
+    attachAccessContextService(service);
+
+    await expect(service.summary(23)).rejects.toThrow('草稿状态不允许查看汇总结果');
   });
 
   test('should reject feedback export without independent export permission and record failed audit', async () => {
@@ -283,6 +429,7 @@ describe('performance feedback service', () => {
       insert,
       create: jest.fn().mockImplementation(input => input),
     };
+    attachAccessContextService(service);
 
     await expect(service.export({ employeeId: 3001 })).rejects.toThrow(
       '无权限导出该数据'
@@ -356,6 +503,7 @@ describe('performance feedback service', () => {
         ],
       ])
     );
+    attachAccessContextService(service);
 
     const result = await service.export({
       employeeId: 3001,

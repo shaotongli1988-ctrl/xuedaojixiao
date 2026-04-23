@@ -4,6 +4,7 @@
  * 这里只覆盖主题11扩容后仍然成立的 HR 全量、经理只读脱敏、员工拒绝和未结束采购单删除拦截。
  */
 import { PerformanceSupplierService } from '../../src/modules/performance/service/supplier';
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
 
 const SUPPLIER_PERMS = [
   'performance:supplier:page',
@@ -14,6 +15,27 @@ const SUPPLIER_PERMS = [
 ];
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
+
+function attachAccessContextService(service: any) {
+  if (!service.baseSysMenuService) {
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue([]),
+    };
+  }
+  if (!service.baseSysPermsService) {
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+  }
+  service.performanceAccessContextService = Object.assign(
+    new PerformanceAccessContextService(),
+    {
+      ctx: service.ctx,
+      baseSysMenuService: service.baseSysMenuService,
+      baseSysPermsService: service.baseSysPermsService,
+    }
+  );
+}
 
 const createPageQueryBuilder = (rows: any[]) => ({
   select: jest.fn().mockReturnThis(),
@@ -78,6 +100,7 @@ describe('performance supplier service', () => {
     service.performancePurchaseOrderEntity = {
       findBy: jest.fn().mockResolvedValue([]),
     };
+    attachAccessContextService(service);
 
     const pageResult = await service.page({ page: 1, size: 10, keyword: '星云' });
     const infoResult = await service.info(7);
@@ -167,6 +190,7 @@ describe('performance supplier service', () => {
     service.performancePurchaseOrderEntity = {
       findBy: jest.fn().mockResolvedValue([]),
     };
+    attachAccessContextService(service);
 
     const pageResult = await service.page({ page: 1, size: 10 });
     const infoResult = await service.info(8);
@@ -202,6 +226,7 @@ describe('performance supplier service', () => {
     employeeService.baseSysMenuService = {
       getPerms: jest.fn().mockResolvedValue([]),
     };
+    attachAccessContextService(employeeService);
 
     await expect(employeeService.page({ page: 1, size: 10 })).rejects.toThrow(
       '无权限查看供应商列表'
@@ -222,6 +247,7 @@ describe('performance supplier service', () => {
         'performance:supplier:delete',
       ]),
     };
+    attachAccessContextService(hrService);
     hrService.performanceSupplierEntity = {
       findOneBy: jest
         .fn()

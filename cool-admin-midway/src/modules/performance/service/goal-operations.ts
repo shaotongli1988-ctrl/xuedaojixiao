@@ -5,11 +5,6 @@
  * 维护重点是公共目标与个人补充目标的可解释拆分必须稳定，且不能破坏现有 goal API 兼容性。
  */
 import {
-  App,
-  ASYNC_CONTEXT_KEY,
-  ASYNC_CONTEXT_MANAGER_KEY,
-  AsyncContextManager,
-  IMidwayApplication,
   Inject,
   Provide,
   Scope,
@@ -19,14 +14,12 @@ import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { BaseSysMenuService } from '../../base/service/sys/menu';
-import { BaseSysPermsService } from '../../base/service/sys/perms';
 import { BaseSysDepartmentEntity } from '../../base/entity/sys/department';
-import { BaseSysRoleEntity } from '../../base/entity/sys/role';
 import { BaseSysUserEntity } from '../../base/entity/sys/user';
 import { PerformanceGoalOpsDepartmentConfigEntity } from '../entity/goal-ops-department-config';
 import { PerformanceGoalOpsPlanEntity } from '../entity/goal-ops-plan';
 import { PerformanceGoalOpsReportEntity } from '../entity/goal-ops-report';
-import * as jwt from 'jsonwebtoken';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import {
   assertGoalOpsPeriod,
   assertGoalOpsSourceType,
@@ -40,13 +33,16 @@ import {
   GoalOpsSourceType,
   normalizeGoalOpsNumber,
 } from './goal-operations-helper';
-
-const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
-  return require('../../base/config').default({
-    app,
-    env: app?.getEnv?.(),
-  }).jwt;
-};
+import { GOAL_REPORT_STATUS_VALUES } from './goal-dict';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
 
 const DEFAULT_CONFIG = {
   assignTime: '09:00',
@@ -55,6 +51,38 @@ const DEFAULT_CONFIG = {
   reportPushMode: 'system_and_group',
   reportPushTarget: null,
 };
+const PERFORMANCE_EMPLOYEE_DEPARTMENT_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.employeeDepartmentNotFound
+  );
+const PERFORMANCE_GOAL_OPS_REPORT_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.goalOpsReportNotFound
+  );
+const PERFORMANCE_GOAL_TITLE_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.goalTitleRequired
+  );
+const PERFORMANCE_TARGET_VALUE_POSITIVE_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.targetValuePositive
+  );
+const PERFORMANCE_GOAL_OPS_REPORT_DATE_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.goalOpsReportDateRequired
+  );
+const PERFORMANCE_GOAL_OPS_AUTO_ZERO_DATE_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.goalOpsAutoZeroDateRequired
+  );
+const PERFORMANCE_GOAL_OPS_QUERY_DATE_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.goalOpsQueryDateRequired
+  );
+const PERFORMANCE_GOAL_OPS_RESULT_SUBMIT_STATE_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.goalOpsResultSubmitStateDenied
+  );
 
 @Provide()
 @Scope(ScopeEnum.Request, { allowDowngrade: true })
@@ -74,64 +102,47 @@ export class PerformanceGoalOperationsService extends BaseService {
   @InjectEntityModel(BaseSysDepartmentEntity)
   baseSysDepartmentEntity: Repository<BaseSysDepartmentEntity>;
 
-  @InjectEntityModel(BaseSysRoleEntity)
-  baseSysRoleEntity: Repository<BaseSysRoleEntity>;
-
   @Inject()
   baseSysMenuService: BaseSysMenuService;
 
   @Inject()
-  baseSysPermsService: BaseSysPermsService;
+  performanceAccessContextService: PerformanceAccessContextService;
 
   @Inject()
   ctx;
 
-  @App()
-  app: IMidwayApplication;
-
   private readonly perms = {
-    page: 'performance:goal:page',
-    info: 'performance:goal:info',
-    add: 'performance:goal:add',
-    update: 'performance:goal:update',
-    delete: 'performance:goal:delete',
-    progressUpdate: 'performance:goal:progressUpdate',
-    opsManage: 'performance:goal:opsManage',
-    export: 'performance:goal:export',
+    page: PERMISSIONS.performance.goal.page,
+    info: PERMISSIONS.performance.goal.info,
+    add: PERMISSIONS.performance.goal.add,
+    update: PERMISSIONS.performance.goal.update,
+    delete: PERMISSIONS.performance.goal.delete,
+    progressUpdate: PERMISSIONS.performance.goal.progressUpdate,
+    opsManage: PERMISSIONS.performance.goal.opsManage,
+    opsGlobalScope: PERMISSIONS.performance.goal.opsGlobalScope,
+    export: PERMISSIONS.performance.goal.export,
   };
 
-  private readonly managerPerms = ['performance:goal:opsManage'];
+  private readonly managerPerms = [PERMISSIONS.performance.goal.opsManage];
 
   private get currentCtx() {
-    if (this.ctx?.admin) {
-      return this.ctx;
-    }
-    try {
-      const contextManager: AsyncContextManager = this.app
-        .getApplicationContext()
-        .get(ASYNC_CONTEXT_MANAGER_KEY);
-      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as any;
-    } catch (error) {
-      return this.ctx;
-    }
+    return this.ctx || {};
   }
 
   private get currentAdmin() {
-    if (this.currentCtx?.admin) {
-      return this.currentCtx.admin;
-    }
-    const token =
-      this.currentCtx?.get?.('Authorization') ||
-      this.currentCtx?.headers?.authorization;
-    if (!token) {
-      return undefined;
-    }
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
+    return this.currentCtx.admin || {};
   }
+
+  private readonly capabilityByPerm: Record<string, PerformanceCapabilityKey> = {
+    [PERMISSIONS.performance.goal.page]: 'goal.ops.read',
+    [PERMISSIONS.performance.goal.info]: 'goal.ops.read',
+    [PERMISSIONS.performance.goal.add]: 'goal.create',
+    [PERMISSIONS.performance.goal.update]: 'goal.ops.personal_write',
+    [PERMISSIONS.performance.goal.progressUpdate]: 'goal.ops.personal_write',
+    [PERMISSIONS.performance.goal.opsManage]: 'goal.ops.manage',
+    [PERMISSIONS.performance.goal.opsGlobalScope]: 'goal.ops.global',
+    [PERMISSIONS.performance.goal.export]: 'goal.export',
+  };
 
   async getDepartmentConfig(query: any) {
     const perms = await this.currentPerms();
@@ -182,9 +193,27 @@ export class PerformanceGoalOperationsService extends BaseService {
     } catch (error) {
       canManageDepartment = false;
     }
+    const activePersonaKey =
+      perms.activePersonaKey ||
+      (isHr
+        ? 'org.hrbp'
+        : canManageDepartment
+        ? 'org.line_manager'
+        : 'org.employee');
+    const roleKind =
+      perms.roleKind && perms.roleKind !== 'unsupported'
+        ? perms.roleKind
+        : isHr
+        ? 'hr'
+        : canManageDepartment
+        ? 'manager'
+        : 'employee';
 
     return {
       departmentId,
+      activePersonaKey,
+      roleKind,
+      scopeKey: isHr ? 'company' : canManageDepartment ? 'department' : 'self',
       isHr,
       canManageDepartment,
       canMaintainPersonalPlan:
@@ -396,6 +425,11 @@ export class PerformanceGoalOperationsService extends BaseService {
       }
 
       this.assertCanSubmitPlan(plan, perms);
+      if (plan.status !== 'assigned') {
+        throw new CoolCommException(
+          PERFORMANCE_GOAL_OPS_RESULT_SUBMIT_STATE_DENIED_MESSAGE
+        );
+      }
 
       const actualValue = normalizeGoalOpsNumber(item.actualValue);
       if (actualValue < 0) {
@@ -434,7 +468,9 @@ export class PerformanceGoalOperationsService extends BaseService {
 
     const planDate = String(payload?.planDate || '').trim();
     if (!planDate) {
-      throw new CoolCommException('补零日期不能为空');
+      throw new CoolCommException(
+        PERFORMANCE_GOAL_OPS_AUTO_ZERO_DATE_REQUIRED_MESSAGE
+      );
     }
 
     const plans = await this.performanceGoalOpsPlanEntity.find({
@@ -473,7 +509,7 @@ export class PerformanceGoalOperationsService extends BaseService {
 
     const planDate = String(query?.planDate || '').trim();
     if (!planDate) {
-      throw new CoolCommException('查询日期不能为空');
+      throw new CoolCommException(PERFORMANCE_GOAL_OPS_QUERY_DATE_REQUIRED_MESSAGE);
     }
 
     const plans = await this.findScopedPlans(
@@ -537,7 +573,7 @@ export class PerformanceGoalOperationsService extends BaseService {
 
     const planDate = String(payload?.planDate || '').trim();
     if (!planDate) {
-      throw new CoolCommException('日报日期不能为空');
+      throw new CoolCommException(PERFORMANCE_GOAL_OPS_REPORT_DATE_REQUIRED_MESSAGE);
     }
 
     await this.finalizeDailyMissing({
@@ -600,7 +636,7 @@ export class PerformanceGoalOperationsService extends BaseService {
     );
     const reportDate = String(query?.reportDate || '').trim();
     if (!reportDate) {
-      throw new CoolCommException('日报日期不能为空');
+      throw new CoolCommException(PERFORMANCE_GOAL_OPS_REPORT_DATE_REQUIRED_MESSAGE);
     }
 
     const report = await this.performanceGoalOpsReportEntity.findOneBy({
@@ -608,7 +644,7 @@ export class PerformanceGoalOperationsService extends BaseService {
       reportDate,
     });
     if (!report) {
-      throw new CoolCommException('日报不存在');
+      throw new CoolCommException(PERFORMANCE_GOAL_OPS_REPORT_NOT_FOUND_MESSAGE);
     }
 
     if (!this.isHr(perms)) {
@@ -639,11 +675,11 @@ export class PerformanceGoalOperationsService extends BaseService {
 
     const reportDate = String(payload?.reportDate || '').trim();
     if (!reportDate) {
-      throw new CoolCommException('日报日期不能为空');
+      throw new CoolCommException(PERFORMANCE_GOAL_OPS_REPORT_DATE_REQUIRED_MESSAGE);
     }
 
     const nextStatus = String(payload?.status || '').trim();
-    if (!['generated', 'sent', 'intercepted', 'delayed'].includes(nextStatus)) {
+    if (!GOAL_REPORT_STATUS_VALUES.some(item => item === nextStatus)) {
       throw new CoolCommException('日报状态不合法');
     }
 
@@ -652,7 +688,7 @@ export class PerformanceGoalOperationsService extends BaseService {
       reportDate,
     });
     if (!report) {
-      throw new CoolCommException('日报不存在');
+      throw new CoolCommException(PERFORMANCE_GOAL_OPS_REPORT_NOT_FOUND_MESSAGE);
     }
 
     await this.performanceGoalOpsReportEntity.update(
@@ -706,14 +742,14 @@ export class PerformanceGoalOperationsService extends BaseService {
 
     const title = String(payload?.title || current?.title || '').trim();
     if (!title) {
-      throw new CoolCommException('目标标题不能为空');
+      throw new CoolCommException(PERFORMANCE_GOAL_TITLE_REQUIRED_MESSAGE);
     }
 
     const targetValue = normalizeGoalOpsNumber(
       payload?.targetValue ?? current?.targetValue
     );
     if (targetValue <= 0) {
-      throw new CoolCommException('目标值必须大于 0');
+      throw new CoolCommException(PERFORMANCE_TARGET_VALUE_POSITIVE_MESSAGE);
     }
 
     const unit =
@@ -756,7 +792,10 @@ export class PerformanceGoalOperationsService extends BaseService {
     };
   }
 
-  private async findScopedPlans(query: any, perms: string[]) {
+  private async findScopedPlans(
+    query: any,
+    perms: PerformanceResolvedAccessContext
+  ) {
     const repositoryQuery: any = {};
 
     if (query?.periodType) {
@@ -838,7 +877,10 @@ export class PerformanceGoalOperationsService extends BaseService {
     return plan;
   }
 
-  private canViewPlan(plan: PerformanceGoalOpsPlanEntity, perms: string[]) {
+  private canViewPlan(
+    plan: PerformanceGoalOpsPlanEntity,
+    perms: PerformanceResolvedAccessContext
+  ) {
     if (this.isHr(perms)) {
       return true;
     }
@@ -852,13 +894,19 @@ export class PerformanceGoalOperationsService extends BaseService {
     return departmentIds.includes(Number(plan.departmentId));
   }
 
-  private assertCanViewPlan(plan: PerformanceGoalOpsPlanEntity, perms: string[]) {
+  private assertCanViewPlan(
+    plan: PerformanceGoalOpsPlanEntity,
+    perms: PerformanceResolvedAccessContext
+  ) {
     if (!this.canViewPlan(plan, perms)) {
       throw new CoolCommException('无权查看该目标计划');
     }
   }
 
-  private assertCanSubmitPlan(plan: PerformanceGoalOpsPlanEntity, perms: string[]) {
+  private assertCanSubmitPlan(
+    plan: PerformanceGoalOpsPlanEntity,
+    perms: PerformanceResolvedAccessContext
+  ) {
     if (this.isHr(perms)) {
       return;
     }
@@ -871,7 +919,10 @@ export class PerformanceGoalOperationsService extends BaseService {
     this.assertCanManageDepartment(Number(plan.departmentId), perms);
   }
 
-  private assertCanMaintainPersonalPlan(employeeId: number, perms: string[]) {
+  private assertCanMaintainPersonalPlan(
+    employeeId: number,
+    perms: PerformanceResolvedAccessContext
+  ) {
     if (this.isHr(perms)) {
       return;
     }
@@ -892,7 +943,7 @@ export class PerformanceGoalOperationsService extends BaseService {
 
     const user = await this.baseSysUserEntity.findOneBy({ id: employeeId });
     if (!user?.departmentId) {
-      throw new CoolCommException('员工所属部门不存在');
+      throw new CoolCommException(PERFORMANCE_EMPLOYEE_DEPARTMENT_NOT_FOUND_MESSAGE);
     }
 
     return Number(user.departmentId);
@@ -965,50 +1016,93 @@ export class PerformanceGoalOperationsService extends BaseService {
   }
 
   private async currentPerms() {
-    return this.baseSysMenuService.getPerms(this.currentAdmin.roleIds);
+    const access = await this.performanceAccessContextService.resolveAccessContext(
+      undefined,
+      {
+        allowEmptyRoleIds: false,
+        missingAuthMessage: '登录状态已失效',
+      }
+    );
+    this.currentCtx.goalDepartmentIds = Array.from(
+      new Set(
+        (Array.isArray(access.departmentIds) ? access.departmentIds : [])
+          .map(item => Number(item))
+          .filter(item => Number.isInteger(item) && item > 0)
+      )
+    );
+    this.currentCtx.goalIsHr = this.performanceAccessContextService.hasCapabilityInScopes(
+      access,
+      'goal.ops.global',
+      ['company']
+    );
+    if (!this.currentCtx.admin) {
+      this.currentCtx.admin = { userId: access.userId };
+    } else if (!this.currentCtx.admin.userId) {
+      this.currentCtx.admin.userId = access.userId;
+    }
+    return access;
   }
 
-  private hasPerm(perms: string[], perm: string) {
-    return perms.includes(perm);
+  private resolveCapabilityKey(perm: string): PerformanceCapabilityKey {
+    const capabilityKey = this.capabilityByPerm[perm];
+    if (!capabilityKey) {
+      throw new CoolCommException(`未映射的目标运营台权限: ${perm}`);
+    }
+    return capabilityKey;
   }
 
-  private hasAnyPerm(perms: string[], expectedPerms: string[]) {
-    return expectedPerms.some(item => this.hasPerm(perms, item));
+  private hasPerm(access: PerformanceResolvedAccessContext, perm: string) {
+    return this.performanceAccessContextService.hasCapability(
+      access,
+      this.resolveCapabilityKey(perm)
+    );
   }
 
-  private assertHasPerm(perms: string[], perm: string, message: string) {
-    if (!this.hasPerm(perms, perm)) {
+  private hasAnyPerm(
+    access: PerformanceResolvedAccessContext,
+    expectedPerms: string[]
+  ) {
+    return expectedPerms.some(item => this.hasPerm(access, item));
+  }
+
+  private assertHasPerm(
+    access: PerformanceResolvedAccessContext,
+    perm: string,
+    message: string
+  ) {
+    if (!this.hasPerm(access, perm)) {
       throw new CoolCommException(message);
     }
   }
 
   private assertHasAnyPerm(
-    perms: string[],
+    access: PerformanceResolvedAccessContext,
     expectedPerms: string[],
     message: string
   ) {
-    if (!this.hasAnyPerm(perms, expectedPerms)) {
+    if (!this.hasAnyPerm(access, expectedPerms)) {
       throw new CoolCommException(message);
     }
   }
 
-  private isHr(perms: string[]) {
-    return this.currentAdmin?.isAdmin === true || this.currentCtx.goalIsHr === true;
+  private isHr(_access: PerformanceResolvedAccessContext) {
+    return this.currentCtx.goalIsHr === true;
   }
 
   private async departmentScopeIds() {
-    const ids = await this.baseSysPermsService.departmentIds(
-      this.currentAdmin.userId
-    );
-    return Array.isArray(ids) ? ids.map(item => Number(item)) : [];
+    return Array.isArray(this.currentCtx.goalDepartmentIds)
+      ? this.currentCtx.goalDepartmentIds.map(item => Number(item))
+      : [];
   }
 
   async initGoalScope() {
-    this.currentCtx.goalDepartmentIds = await this.departmentScopeIds();
-    this.currentCtx.goalIsHr = await this.resolveGoalOpsHrRole();
+    return this.currentPerms();
   }
 
-  private assertCanManageDepartment(departmentId: number, perms: string[]) {
+  private assertCanManageDepartment(
+    departmentId: number,
+    perms: PerformanceResolvedAccessContext
+  ) {
     if (this.isHr(perms)) {
       return;
     }
@@ -1024,21 +1118,7 @@ export class PerformanceGoalOperationsService extends BaseService {
   }
 
   private async resolveGoalOpsHrRole() {
-    if (this.currentAdmin?.isAdmin === true) {
-      return true;
-    }
-
-    const roleIds = Array.isArray(this.currentAdmin?.roleIds)
-      ? this.currentAdmin.roleIds.map(item => Number(item))
-      : [];
-    if (roleIds.length === 0) {
-      return false;
-    }
-
-    const roles = await this.baseSysRoleEntity.findBy({ id: In(roleIds) } as any);
-    return roles.some(role => {
-      const label = String(role?.label || '').trim();
-      return label === 'admin' || label === 'performance_hr';
-    });
+    const access = await this.currentPerms();
+    return this.isHr(access);
   }
 }

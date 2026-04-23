@@ -4,6 +4,28 @@
  * 这里只验证主题21的 HR-only、字段校验和 CRUD 主链，不负责数据库或控制器联调。
  */
 import { PerformanceDocumentCenterService } from '../../src/modules/performance/service/documentCenter';
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
+
+function attachAccessContextService(service: any) {
+  if (!service.baseSysMenuService) {
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue([]),
+    };
+  }
+  if (!service.baseSysPermsService) {
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+  }
+  service.performanceAccessContextService = Object.assign(
+    new PerformanceAccessContextService(),
+    {
+      ctx: service.ctx,
+      baseSysMenuService: service.baseSysMenuService,
+      baseSysPermsService: service.baseSysPermsService,
+    }
+  );
+}
 
 describe('performance document-center service', () => {
   test('should allow hr create update info and delete document metadata', async () => {
@@ -51,6 +73,7 @@ describe('performance document-center service', () => {
       findBy: jest.fn().mockResolvedValue([{ id: 301 }]),
       delete: jest.fn().mockResolvedValue(undefined),
     };
+    attachAccessContextService(service);
 
     await expect(
       service.add({
@@ -119,6 +142,7 @@ describe('performance document-center service', () => {
     service.baseSysMenuService = {
       getPerms: jest.fn().mockResolvedValue([]),
     };
+    attachAccessContextService(service);
 
     await expect(service.page({})).rejects.toThrow('无权限查看文件管理列表');
     await expect(service.info(1)).rejects.toThrow('无权限查看文件详情');
@@ -141,6 +165,7 @@ describe('performance document-center service', () => {
     service.performanceDocumentCenterEntity = {
       findOne: jest.fn().mockResolvedValue({ id: 501, fileNo: 'DOC-EXISTS' }),
     };
+    attachAccessContextService(service);
 
     await expect(
       service.add({
@@ -171,5 +196,22 @@ describe('performance document-center service', () => {
         version: 'V1.0',
       })
     ).rejects.toThrow('文件分类不合法');
+  });
+
+  test('should keep allowEmptyRoleIds compatibility and return permission denial', async () => {
+    const service = new PerformanceDocumentCenterService() as any;
+    service.ctx = {
+      admin: {
+        userId: 12,
+        username: 'legacy_document_user',
+        roleIds: [],
+      },
+    };
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue([]),
+    };
+    attachAccessContextService(service);
+
+    await expect(service.page({})).rejects.toThrow('无权限查看文件管理列表');
   });
 });

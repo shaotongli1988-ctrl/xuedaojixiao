@@ -4,6 +4,7 @@
  * 这里只验证 intellectualProperty 的主链、权限拒绝和关键边界校验，不覆盖真实数据库或控制器装饰器联调。
  */
 import { PerformanceIntellectualPropertyService } from '../../src/modules/performance/service/intellectualProperty';
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value));
@@ -53,6 +54,27 @@ function createMemoryRepo(initialRows: any[] = []) {
       }
     }),
   };
+}
+
+function attachAccessContextService(service: any) {
+  if (!service.baseSysMenuService) {
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue([]),
+    };
+  }
+  if (!service.baseSysPermsService) {
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+  }
+  service.performanceAccessContextService = Object.assign(
+    new PerformanceAccessContextService(),
+    {
+      ctx: service.ctx,
+      baseSysMenuService: service.baseSysMenuService,
+      baseSysPermsService: service.baseSysPermsService,
+    }
+  );
 }
 
 describe('performance intellectual-property service', () => {
@@ -124,6 +146,7 @@ describe('performance intellectual-property service', () => {
         updateTime: '2026-04-18 09:00:00',
       },
     ]);
+    attachAccessContextService(service);
 
     const added = await service.add({
       ipNo: 'IP-2026-003',
@@ -204,6 +227,7 @@ describe('performance intellectual-property service', () => {
     service.baseSysMenuService = {
       getPerms: jest.fn().mockResolvedValue([]),
     };
+    attachAccessContextService(service);
 
     await expect(service.page({})).rejects.toThrow('无权限查看知识产权列表');
     await expect(service.info(1)).rejects.toThrow('无权限查看知识产权详情');
@@ -226,6 +250,7 @@ describe('performance intellectual-property service', () => {
       ]),
     };
     service.performanceIntellectualPropertyEntity = createMemoryRepo();
+    attachAccessContextService(service);
 
     await expect(
       service.add({
@@ -253,5 +278,19 @@ describe('performance intellectual-property service', () => {
         status: 'applying',
       })
     ).rejects.toThrow('授权日期不能早于申请日期');
+
+    await expect(
+      service.add({
+        ipNo: 'IP-2026-102',
+        title: '非法风险等级',
+        ipType: 'patent',
+        ownerDepartment: '法务部',
+        ownerName: '赵老师',
+        applicantName: '赵老师',
+        applyDate: '2026-04-10',
+        status: 'applying',
+        riskLevel: 'critical',
+      })
+    ).rejects.toThrow('风险等级不合法');
   });
 });

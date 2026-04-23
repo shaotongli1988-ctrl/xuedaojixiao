@@ -4,11 +4,6 @@
  * 维护重点是 offered/accepted/rejected/closed 状态机、部门树范围和字段边界必须由服务端硬兜底。
  */
 import {
-  App,
-  ASYNC_CONTEXT_KEY,
-  ASYNC_CONTEXT_MANAGER_KEY,
-  AsyncContextManager,
-  IMidwayApplication,
   Inject,
   Provide,
   Scope,
@@ -18,35 +13,45 @@ import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Brackets, In, Repository } from 'typeorm';
 import { BaseSysDepartmentEntity } from '../../base/entity/sys/department';
-import { BaseSysRoleEntity } from '../../base/entity/sys/role';
 import { BaseSysUserEntity } from '../../base/entity/sys/user';
-import { BaseSysMenuService } from '../../base/service/sys/menu';
-import { BaseSysPermsService } from '../../base/service/sys/perms';
 import { PerformanceHiringEntity } from '../entity/hiring';
 import { PerformanceInterviewEntity } from '../entity/interview';
 import { PerformanceResumePoolEntity } from '../entity/resumePool';
 import { PerformanceRecruitPlanEntity } from '../entity/recruit-plan';
-import * as jwt from 'jsonwebtoken';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import {
+  HIRING_SOURCE_TYPE_VALUES,
+  HIRING_STATUS_VALUES,
+} from './hiring-dict';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
 
-type HiringStatus = 'offered' | 'accepted' | 'rejected' | 'closed';
-type HiringSourceType = 'manual' | 'resumePool' | 'talentAsset' | 'interview';
-
-const HIRING_STATUS: HiringStatus[] = ['offered', 'accepted', 'rejected', 'closed'];
-const HIRING_SOURCE_TYPES: HiringSourceType[] = [
-  'manual',
-  'resumePool',
-  'talentAsset',
-  'interview',
-];
-const HR_ROLE_HINTS = ['hr', 'human', '人力', '人事'];
+type HiringStatus = (typeof HIRING_STATUS_VALUES)[number];
+type HiringSourceType = (typeof HIRING_SOURCE_TYPE_VALUES)[number];
 const SOURCE_STATUS_SNAPSHOT_MAX_LENGTH = 4000;
-
-const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
-  return require('../../base/config').default({
-    app,
-    env: app?.getEnv?.(),
-  }).jwt;
-};
+const PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resourceNotFound
+  );
+const PERFORMANCE_RESUME_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resumeNotFound
+  );
+const PERFORMANCE_RECRUIT_PLAN_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.recruitPlanNotFound
+  );
+const PERFORMANCE_TARGET_DEPARTMENT_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.targetDepartmentRequired
+  );
 
 function normalizePageNumber(value: any, fallback: number) {
   const parsed = Number(value);
@@ -140,75 +145,36 @@ export class PerformanceHiringService extends BaseService {
   @InjectEntityModel(BaseSysDepartmentEntity)
   baseSysDepartmentEntity: Repository<BaseSysDepartmentEntity>;
 
-  @InjectEntityModel(BaseSysRoleEntity)
-  baseSysRoleEntity: Repository<BaseSysRoleEntity>;
-
   @InjectEntityModel(BaseSysUserEntity)
   baseSysUserEntity: Repository<BaseSysUserEntity>;
 
   @Inject()
-  baseSysMenuService: BaseSysMenuService;
-
-  @Inject()
-  baseSysPermsService: BaseSysPermsService;
-
-  @Inject()
-  ctx;
-
-  @App()
-  app: IMidwayApplication;
+  performanceAccessContextService: PerformanceAccessContextService;
 
   private readonly perms = {
-    page: 'performance:hiring:page',
-    info: 'performance:hiring:info',
-    add: 'performance:hiring:add',
-    updateStatus: 'performance:hiring:updateStatus',
-    close: 'performance:hiring:close',
-    hrScope: 'performance:salary:page',
-    hrAll: 'performance:hiring:all',
+    page: PERMISSIONS.performance.hiring.page,
+    info: PERMISSIONS.performance.hiring.info,
+    add: PERMISSIONS.performance.hiring.add,
+    updateStatus: PERMISSIONS.performance.hiring.updateStatus,
+    close: PERMISSIONS.performance.hiring.close,
+    hrAll: PERMISSIONS.performance.hiring.all,
   };
 
-  private get currentCtx() {
-    if (this.ctx?.admin) {
-      return this.ctx;
-    }
-
-    try {
-      const contextManager: AsyncContextManager = this.app
-        .getApplicationContext()
-        .get(ASYNC_CONTEXT_MANAGER_KEY);
-      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as any;
-    } catch (error) {
-      return this.ctx;
-    }
-  }
-
-  private get currentAdmin() {
-    if (this.currentCtx?.admin) {
-      return this.currentCtx.admin;
-    }
-
-    const token =
-      this.currentCtx?.get?.('Authorization') ||
-      this.currentCtx?.headers?.authorization;
-    if (!token) {
-      return undefined;
-    }
-
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
-  }
+  private readonly capabilityByPerm: Record<string, PerformanceCapabilityKey> = {
+    [PERMISSIONS.performance.hiring.page]: 'hiring.read',
+    [PERMISSIONS.performance.hiring.info]: 'hiring.read',
+    [PERMISSIONS.performance.hiring.add]: 'hiring.create',
+    [PERMISSIONS.performance.hiring.updateStatus]: 'hiring.update_status',
+    [PERMISSIONS.performance.hiring.close]: 'hiring.close',
+  };
 
   async page(query: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.page, '无权限查看录用列表');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.page, '无权限查看录用列表');
 
     const page = normalizePageNumber(query.page, 1);
     const size = normalizePageNumber(query.size, 20);
-    const departmentIds = await this.departmentScopeIds(perms);
+    const departmentIds = await this.departmentScopeIds(access, 'hiring.read');
     const qb = this.performanceHiringEntity
       .createQueryBuilder('hiring')
       .leftJoin(
@@ -263,19 +229,24 @@ export class PerformanceHiringService extends BaseService {
   }
 
   async info(id: number) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.info, '无权限查看录用详情');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.info, '无权限查看录用详情');
 
     const hiring = await this.requireHiring(id);
-    await this.assertHiringInScope(hiring, perms, '无权访问该录用单');
+    await this.assertHiringInScope(
+      hiring,
+      access,
+      'hiring.read',
+      '无权访问该录用单'
+    );
     return this.buildHiringDetail(hiring);
   }
 
   async add(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.add, '无权限新增录用单');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.add, '无权限新增录用单');
 
-    const normalized = await this.normalizePayload(payload, perms);
+    const normalized = await this.normalizePayload(payload, access, 'hiring.create');
     const now = formatDateTime(new Date());
     const saved = await this.performanceHiringEntity.save(
       this.performanceHiringEntity.create({
@@ -293,13 +264,18 @@ export class PerformanceHiringService extends BaseService {
   }
 
   async updateStatus(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.updateStatus, '无权限更新录用状态');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.updateStatus, '无权限更新录用状态');
 
     const id = normalizeRequiredPositiveInt(payload.id, '录用单 ID 不合法');
     const targetStatus = this.normalizeUpdatableStatus(payload.status);
     const hiring = await this.requireHiring(id);
-    await this.assertHiringInScope(hiring, perms, '无权操作该录用单');
+    await this.assertHiringInScope(
+      hiring,
+      access,
+      'hiring.update_status',
+      '无权操作该录用单'
+    );
 
     if (hiring.status !== 'offered') {
       throw new CoolCommException('当前状态不允许更新录用状态');
@@ -319,8 +295,8 @@ export class PerformanceHiringService extends BaseService {
   }
 
   async close(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.close, '无权限关闭录用单');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.close, '无权限关闭录用单');
 
     const id = normalizeRequiredPositiveInt(payload.id, '录用单 ID 不合法');
     const closeReason = normalizeRequiredText(
@@ -329,7 +305,12 @@ export class PerformanceHiringService extends BaseService {
       '关闭原因不能为空且长度不能超过 2000'
     );
     const hiring = await this.requireHiring(id);
-    await this.assertHiringInScope(hiring, perms, '无权操作该录用单');
+    await this.assertHiringInScope(
+      hiring,
+      access,
+      'hiring.close',
+      '无权操作该录用单'
+    );
 
     if (hiring.status !== 'offered') {
       throw new CoolCommException('当前状态不允许关闭录用单');
@@ -347,11 +328,15 @@ export class PerformanceHiringService extends BaseService {
     return this.info(hiring.id);
   }
 
-  private async normalizePayload(payload: any, perms: string[]) {
+  private async normalizePayload(
+    payload: any,
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
+  ) {
     const candidateName = normalizeRequiredText(payload.candidateName, 100, '候选人姓名不能为空');
     const targetDepartmentId = normalizeRequiredPositiveInt(
       payload.targetDepartmentId,
-      '目标部门不能为空'
+      PERFORMANCE_TARGET_DEPARTMENT_REQUIRED_MESSAGE
     );
     const targetPosition = normalizeOptionalText(payload.targetPosition, 100);
     const decisionContent = normalizeOptionalText(
@@ -389,7 +374,7 @@ export class PerformanceHiringService extends BaseService {
     const sourceType =
       sourceTypeInput || this.resolveDerivedSourceType(interviewId, resumePoolId);
 
-    await this.assertCanManageDepartment(targetDepartmentId, perms);
+    await this.assertCanManageDepartment(targetDepartmentId, access, capabilityKey);
 
     if (payload.status !== undefined && payload.status !== null && payload.status !== '') {
       const status = this.normalizeStatus(payload.status);
@@ -403,11 +388,11 @@ export class PerformanceHiringService extends BaseService {
     }
 
     if (resumePoolId && !resumeRecord) {
-      throw new CoolCommException('简历不存在');
+      throw new CoolCommException(PERFORMANCE_RESUME_NOT_FOUND_MESSAGE);
     }
 
     if (recruitPlanId && !recruitPlanRecord) {
-      throw new CoolCommException('招聘计划不存在');
+      throw new CoolCommException(PERFORMANCE_RECRUIT_PLAN_NOT_FOUND_MESSAGE);
     }
 
     if (
@@ -530,7 +515,7 @@ export class PerformanceHiringService extends BaseService {
 
   private normalizeStatus(value: any) {
     const status = String(value || '').trim() as HiringStatus;
-    if (!HIRING_STATUS.includes(status)) {
+    if (!HIRING_STATUS_VALUES.includes(status)) {
       throw new CoolCommException('录用状态不合法');
     }
     return status;
@@ -549,7 +534,7 @@ export class PerformanceHiringService extends BaseService {
     if (!sourceType) {
       return null;
     }
-    if (!HIRING_SOURCE_TYPES.includes(sourceType)) {
+    if (!HIRING_SOURCE_TYPE_VALUES.includes(sourceType)) {
       throw new CoolCommException('sourceType 不合法');
     }
     return sourceType;
@@ -714,89 +699,57 @@ export class PerformanceHiringService extends BaseService {
     const hiring = await this.performanceHiringEntity.findOneBy({ id: validId });
 
     if (!hiring) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     return hiring;
   }
 
   private async currentPerms() {
-    const admin = this.currentAdmin;
+    return this.performanceAccessContextService.resolveAccessContext(undefined, {
+      allowEmptyRoleIds: false,
+      missingAuthMessage: '登录状态已失效',
+    });
+  }
 
-    if (!admin?.roleIds) {
-      throw new CoolCommException('登录状态已失效');
+  private resolveCapabilityKey(perm: string): PerformanceCapabilityKey {
+    const capabilityKey = this.capabilityByPerm[perm];
+    if (!capabilityKey) {
+      throw new CoolCommException(`未映射的录用权限: ${perm}`);
     }
-
-    return this.baseSysMenuService.getPerms(admin.roleIds);
+    return capabilityKey;
   }
 
-  private hasPerm(perms: string[], perm: string) {
-    return perms.includes(perm);
-  }
-
-  private assertPerm(perms: string[], perm: string, message: string) {
-    if (!this.hasPerm(perms, perm)) {
+  private assertPerm(
+    access: PerformanceResolvedAccessContext,
+    perm: string,
+    message: string
+  ) {
+    if (
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        this.resolveCapabilityKey(perm)
+      )
+    ) {
       throw new CoolCommException(message);
     }
   }
 
-  private async isHr(perms: string[]) {
-    const cached = this.currentCtx?.hiringIsHr;
-    if (typeof cached === 'boolean') {
-      return cached;
-    }
-
-    let isHr =
-      this.currentAdmin?.isAdmin === true ||
-      this.currentAdmin?.username === 'admin' ||
-      this.hasPerm(perms, this.perms.hrScope) ||
-      this.hasPerm(perms, this.perms.hrAll);
-
-    if (!isHr) {
-      const roleIds = Array.from(
-        new Set(
-          (Array.isArray(this.currentAdmin?.roleIds) ? this.currentAdmin.roleIds : [])
-            .map(item => Number(item))
-            .filter(item => Number.isInteger(item) && item > 0)
-        )
-      );
-
-      if (roleIds.length && this.baseSysRoleEntity?.findBy) {
-        const roles = await this.baseSysRoleEntity.findBy({
-          id: In(roleIds),
-        });
-        isHr = roles.some(role => this.isHrRole(role));
-      }
-    }
-
-    if (this.currentCtx) {
-      this.currentCtx.hiringIsHr = isHr;
-    }
-
-    return isHr;
-  }
-
-  private isHrRole(role: BaseSysRoleEntity) {
-    const raw = `${role?.name || ''} ${role?.label || ''}`.trim();
-    if (!raw) {
-      return false;
-    }
-
-    const normalized = raw.toLowerCase();
-    return HR_ROLE_HINTS.some(keyword => normalized.includes(keyword.toLowerCase()));
-  }
-
-  private async departmentScopeIds(perms: string[]) {
-    if (await this.isHr(perms)) {
+  private async departmentScopeIds(
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
+  ) {
+    if (
+      this.performanceAccessContextService.hasCapabilityInScopes(
+        access,
+        capabilityKey,
+        ['company']
+      )
+    ) {
       return null;
     }
 
-    const userId = Number(this.currentAdmin?.userId || 0);
-    if (!userId) {
-      throw new CoolCommException('登录上下文缺失');
-    }
-
-    const ids = await this.baseSysPermsService.departmentIds(userId);
+    const ids = access.departmentIds;
     return Array.from(
       new Set(
         (Array.isArray(ids) ? ids : [])
@@ -823,28 +776,40 @@ export class PerformanceHiringService extends BaseService {
 
   private async assertHiringInScope(
     hiring: PerformanceHiringEntity,
-    perms: string[],
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey,
     message: string
   ) {
-    if (await this.isHr(perms)) {
-      return;
-    }
-
-    const departmentIds = await this.departmentScopeIds(perms);
     const targetDepartmentId = Number(hiring.targetDepartmentId || 0);
 
-    if (!targetDepartmentId || !departmentIds?.includes(targetDepartmentId)) {
+    if (
+      !targetDepartmentId ||
+      !this.performanceAccessContextService.matchesScope(
+        access,
+        this.performanceAccessContextService.capabilityScopes(access, capabilityKey),
+        {
+          departmentId: targetDepartmentId,
+        }
+      )
+    ) {
       throw new CoolCommException(message);
     }
   }
 
-  private async assertCanManageDepartment(targetDepartmentId: number, perms: string[]) {
-    if (await this.isHr(perms)) {
-      return;
-    }
-
-    const departmentIds = await this.departmentScopeIds(perms);
-    if (!departmentIds?.includes(targetDepartmentId)) {
+  private async assertCanManageDepartment(
+    targetDepartmentId: number,
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
+  ) {
+    if (
+      !this.performanceAccessContextService.matchesScope(
+        access,
+        this.performanceAccessContextService.capabilityScopes(access, capabilityKey),
+        {
+          departmentId: targetDepartmentId,
+        }
+      )
+    ) {
       throw new CoolCommException('无权操作该录用单');
     }
   }
@@ -907,8 +872,6 @@ export class PerformanceHiringService extends BaseService {
       targetDepartmentId: this.normalizeNullableNumber(snapshot.targetDepartmentId),
       targetDepartmentName: snapshot.targetDepartmentName || null,
       targetPosition: snapshot.targetPosition || null,
-      phone: snapshot.phone || '',
-      email: snapshot.email || null,
       status: snapshot.status || null,
       recruitPlanId: this.normalizeNullableNumber(snapshot.recruitPlanId),
       jobStandardId: this.normalizeNullableNumber(snapshot.jobStandardId),
@@ -977,8 +940,6 @@ export class PerformanceHiringService extends BaseService {
       targetDepartmentId: Number(resume.targetDepartmentId || 0),
       targetDepartmentName: department?.name || null,
       targetPosition: resume.targetPosition || null,
-      phone: resume.phone || '',
-      email: resume.email || null,
       status: resume.status || 'new',
       recruitPlanId: this.normalizeNullableNumber(resume.recruitPlanId),
       jobStandardId: this.normalizeNullableNumber(resume.jobStandardId),

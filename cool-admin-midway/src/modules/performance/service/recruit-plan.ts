@@ -4,11 +4,6 @@
  * 维护重点是部门树权限、摘要字段边界、delete/import/export/void/reopen 行为和状态机必须由服务端硬兜底。
  */
 import {
-  App,
-  ASYNC_CONTEXT_KEY,
-  ASYNC_CONTEXT_MANAGER_KEY,
-  AsyncContextManager,
-  IMidwayApplication,
   Inject,
   Provide,
   Scope,
@@ -18,7 +13,6 @@ import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Brackets, Repository } from 'typeorm';
 import { BaseSysMenuService } from '../../base/service/sys/menu';
-import { BaseSysPermsService } from '../../base/service/sys/perms';
 import { BaseSysDepartmentEntity } from '../../base/entity/sys/department';
 import { BaseSysUserEntity } from '../../base/entity/sys/user';
 import { SpaceInfoEntity } from '../../space/entity/info';
@@ -27,25 +21,62 @@ import { PerformanceJobStandardEntity } from '../entity/job-standard';
 import { PerformanceResumePoolEntity } from '../entity/resumePool';
 import { PerformanceInterviewEntity } from '../entity/interview';
 import { PerformanceHiringEntity } from '../entity/hiring';
-import * as jwt from 'jsonwebtoken';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import { RECRUIT_PLAN_STATUS_VALUES } from './recruit-plan-dict';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
 
-type RecruitPlanStatus = 'draft' | 'active' | 'voided' | 'closed';
-
-const RECRUIT_PLAN_STATUS: RecruitPlanStatus[] = [
-  'draft',
-  'active',
-  'voided',
-  'closed',
-];
+type RecruitPlanStatus = (typeof RECRUIT_PLAN_STATUS_VALUES)[number];
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const EXPORT_LIMIT = 5000;
-
-const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
-  return require('../../base/config').default({
-    app,
-    env: app?.getEnv?.(),
-  }).jwt;
-};
+const PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resourceNotFound
+  );
+const PERFORMANCE_TARGET_DEPARTMENT_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.targetDepartmentNotFound
+  );
+const PERFORMANCE_STATE_EDIT_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateEditNotAllowed
+  );
+const PERFORMANCE_STATE_DELETE_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateDeleteNotAllowed
+  );
+const PERFORMANCE_STATE_CLOSE_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateCloseNotAllowed
+  );
+const PERFORMANCE_TARGET_DEPARTMENT_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.targetDepartmentRequired
+  );
+const PERFORMANCE_IMPORT_FILE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.importFileNotFound
+  );
+const PERFORMANCE_IMPORT_FILE_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.importFileRequired
+  );
+const PERFORMANCE_JOB_STANDARD_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.jobStandardNotFound
+  );
+const PERFORMANCE_RECRUITER_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.ownerNotFound,
+    '招聘负责人不存在'
+  );
 
 function normalizePageNumber(value: any, fallback: number) {
   const parsed = Number(value);
@@ -142,69 +173,43 @@ export class PerformanceRecruitPlanService extends BaseService {
   baseSysMenuService: BaseSysMenuService;
 
   @Inject()
-  baseSysPermsService: BaseSysPermsService;
-
-  @Inject()
-  ctx;
-
-  @App()
-  app: IMidwayApplication;
+  performanceAccessContextService: PerformanceAccessContextService;
 
   private readonly perms = {
-    page: 'performance:recruitPlan:page',
-    info: 'performance:recruitPlan:info',
-    add: 'performance:recruitPlan:add',
-    update: 'performance:recruitPlan:update',
-    delete: 'performance:recruitPlan:delete',
-    import: 'performance:recruitPlan:import',
-    export: 'performance:recruitPlan:export',
-    submit: 'performance:recruitPlan:submit',
-    close: 'performance:recruitPlan:close',
-    void: 'performance:recruitPlan:void',
-    reopen: 'performance:recruitPlan:reopen',
+    page: PERMISSIONS.performance.recruitPlan.page,
+    info: PERMISSIONS.performance.recruitPlan.info,
+    add: PERMISSIONS.performance.recruitPlan.add,
+    update: PERMISSIONS.performance.recruitPlan.update,
+    delete: PERMISSIONS.performance.recruitPlan.delete,
+    import: PERMISSIONS.performance.recruitPlan.import,
+    export: PERMISSIONS.performance.recruitPlan.export,
+    submit: PERMISSIONS.performance.recruitPlan.submit,
+    close: PERMISSIONS.performance.recruitPlan.close,
+    void: PERMISSIONS.performance.recruitPlan.void,
+    reopen: PERMISSIONS.performance.recruitPlan.reopen,
   };
 
-  private get currentCtx() {
-    if (this.ctx?.admin) {
-      return this.ctx;
-    }
-
-    try {
-      const contextManager: AsyncContextManager = this.app
-        .getApplicationContext()
-        .get(ASYNC_CONTEXT_MANAGER_KEY);
-      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as any;
-    } catch (error) {
-      return this.ctx;
-    }
-  }
-
-  private get currentAdmin() {
-    if (this.currentCtx?.admin) {
-      return this.currentCtx.admin;
-    }
-
-    const token =
-      this.currentCtx?.get?.('Authorization') ||
-      this.currentCtx?.headers?.authorization;
-    if (!token) {
-      return undefined;
-    }
-
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
-  }
+  private readonly capabilityByPerm: Record<string, PerformanceCapabilityKey> = {
+    [PERMISSIONS.performance.recruitPlan.page]: 'recruit_plan.read',
+    [PERMISSIONS.performance.recruitPlan.info]: 'recruit_plan.read',
+    [PERMISSIONS.performance.recruitPlan.add]: 'recruit_plan.create',
+    [PERMISSIONS.performance.recruitPlan.update]: 'recruit_plan.update',
+    [PERMISSIONS.performance.recruitPlan.delete]: 'recruit_plan.delete',
+    [PERMISSIONS.performance.recruitPlan.import]: 'recruit_plan.import',
+    [PERMISSIONS.performance.recruitPlan.export]: 'recruit_plan.export',
+    [PERMISSIONS.performance.recruitPlan.submit]: 'recruit_plan.submit',
+    [PERMISSIONS.performance.recruitPlan.close]: 'recruit_plan.close',
+    [PERMISSIONS.performance.recruitPlan.void]: 'recruit_plan.void',
+    [PERMISSIONS.performance.recruitPlan.reopen]: 'recruit_plan.reopen',
+  };
 
   async page(query: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.page, '无权限查看招聘计划列表');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.page, '无权限查看招聘计划列表');
 
     const page = normalizePageNumber(query.page, 1);
     const size = normalizePageNumber(query.size, 20);
-    const qb = await this.createScopedQuery(query);
+    const qb = await this.createScopedQuery(query, access, 'recruit_plan.read');
     qb.orderBy('plan.updateTime', 'DESC');
 
     const total = await qb.getCount();
@@ -224,19 +229,25 @@ export class PerformanceRecruitPlanService extends BaseService {
   }
 
   async info(id: number) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.info, '无权限查看招聘计划详情');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.info, '无权限查看招聘计划详情');
 
     const plan = await this.requirePlan(id);
-    await this.assertPlanInScope(plan, '无权查看该招聘计划');
+    await this.assertPlanInScope(plan, access, 'recruit_plan.read', '无权查看该招聘计划');
     return this.buildPlanDetail(plan);
   }
 
   async add(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.add, '无权限新增招聘计划');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.add, '无权限新增招聘计划');
 
-    const normalized = await this.normalizePayload(payload, null, 'add');
+    const normalized = await this.normalizePayload(
+      payload,
+      null,
+      'add',
+      access,
+      'recruit_plan.create'
+    );
     const saved = await this.performanceRecruitPlanEntity.save(
       this.performanceRecruitPlanEntity.create(normalized)
     );
@@ -245,11 +256,16 @@ export class PerformanceRecruitPlanService extends BaseService {
   }
 
   async updatePlan(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.update, '无权限修改招聘计划');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.update, '无权限修改招聘计划');
 
     const plan = await this.requirePlan(Number(payload.id));
-    await this.assertPlanInScope(plan, '无权修改该招聘计划');
+    await this.assertPlanInScope(
+      plan,
+      access,
+      'recruit_plan.update',
+      '无权修改该招聘计划'
+    );
     this.assertEditable(plan.status);
 
     const normalized = await this.normalizePayload(
@@ -258,7 +274,9 @@ export class PerformanceRecruitPlanService extends BaseService {
         ...payload,
       },
       plan,
-      'update'
+      'update',
+      access,
+      'recruit_plan.update'
     );
 
     await this.performanceRecruitPlanEntity.update(
@@ -269,14 +287,19 @@ export class PerformanceRecruitPlanService extends BaseService {
   }
 
   async deletePlan(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.delete, '无权限删除招聘计划');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.delete, '无权限删除招聘计划');
 
     const plan = await this.requirePlan(Number(payload.id));
-    await this.assertPlanInScope(plan, '无权删除该招聘计划');
+    await this.assertPlanInScope(
+      plan,
+      access,
+      'recruit_plan.delete',
+      '无权删除该招聘计划'
+    );
 
     if (plan.status !== 'draft') {
-      throw new CoolCommException('当前状态不允许删除');
+      throw new CoolCommException(PERFORMANCE_STATE_DELETE_NOT_ALLOWED_MESSAGE);
     }
 
     await this.assertPlanNoDownstreamRef(plan);
@@ -289,13 +312,16 @@ export class PerformanceRecruitPlanService extends BaseService {
   }
 
   async importPlans(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.import, '无权限导入招聘计划');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.import, '无权限导入招聘计划');
 
-    const fileId = normalizeRequiredPositiveInt(payload.fileId, '导入文件不能为空');
+    const fileId = normalizeRequiredPositiveInt(
+      payload.fileId,
+      PERFORMANCE_IMPORT_FILE_REQUIRED_MESSAGE
+    );
     const fileInfo = await this.spaceInfoEntity.findOneBy({ id: fileId });
     if (!fileInfo) {
-      throw new CoolCommException('导入文件不存在');
+      throw new CoolCommException(PERFORMANCE_IMPORT_FILE_NOT_FOUND_MESSAGE);
     }
 
     const rows = Array.isArray(payload.rows) ? payload.rows : [];
@@ -311,7 +337,9 @@ export class PerformanceRecruitPlanService extends BaseService {
           status: 'draft',
         },
         null,
-        'add'
+        'add',
+        access,
+        'recruit_plan.import'
       );
 
       await this.performanceRecruitPlanEntity.save(
@@ -328,21 +356,26 @@ export class PerformanceRecruitPlanService extends BaseService {
   }
 
   async exportPlans(query: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.export, '无权限导出招聘计划');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.export, '无权限导出招聘计划');
 
-    const qb = await this.createScopedQuery(query);
+    const qb = await this.createScopedQuery(query, access, 'recruit_plan.export');
     qb.orderBy('plan.updateTime', 'DESC').limit(EXPORT_LIMIT);
     const list = await qb.getRawMany();
     return list.map(item => this.normalizePlanRow(item));
   }
 
   async submitPlan(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.submit, '无权限提交招聘计划');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.submit, '无权限提交招聘计划');
 
     const plan = await this.requirePlan(Number(payload.id));
-    await this.assertPlanInScope(plan, '无权提交该招聘计划');
+    await this.assertPlanInScope(
+      plan,
+      access,
+      'recruit_plan.submit',
+      '无权提交该招聘计划'
+    );
 
     if (plan.status !== 'draft') {
       throw new CoolCommException('当前状态不允许提交');
@@ -356,14 +389,19 @@ export class PerformanceRecruitPlanService extends BaseService {
   }
 
   async closePlan(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.close, '无权限关闭招聘计划');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.close, '无权限关闭招聘计划');
 
     const plan = await this.requirePlan(Number(payload.id));
-    await this.assertPlanInScope(plan, '无权关闭该招聘计划');
+    await this.assertPlanInScope(
+      plan,
+      access,
+      'recruit_plan.close',
+      '无权关闭该招聘计划'
+    );
 
     if (plan.status !== 'active') {
-      throw new CoolCommException('当前状态不允许关闭');
+      throw new CoolCommException(PERFORMANCE_STATE_CLOSE_NOT_ALLOWED_MESSAGE);
     }
 
     await this.performanceRecruitPlanEntity.update(
@@ -374,11 +412,16 @@ export class PerformanceRecruitPlanService extends BaseService {
   }
 
   async voidPlan(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.void, '无权限作废招聘计划');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.void, '无权限作废招聘计划');
 
     const plan = await this.requirePlan(Number(payload.id));
-    await this.assertPlanInScope(plan, '无权作废该招聘计划');
+    await this.assertPlanInScope(
+      plan,
+      access,
+      'recruit_plan.void',
+      '无权作废该招聘计划'
+    );
 
     if (plan.status !== 'active') {
       throw new CoolCommException('当前状态不允许作废');
@@ -392,11 +435,16 @@ export class PerformanceRecruitPlanService extends BaseService {
   }
 
   async reopenPlan(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.reopen, '无权限重新开启招聘计划');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.reopen, '无权限重新开启招聘计划');
 
     const plan = await this.requirePlan(Number(payload.id));
-    await this.assertPlanInScope(plan, '无权重新开启该招聘计划');
+    await this.assertPlanInScope(
+      plan,
+      access,
+      'recruit_plan.reopen',
+      '无权重新开启该招聘计划'
+    );
 
     if (!['closed', 'voided'].includes(String(plan.status))) {
       throw new CoolCommException('当前状态不允许重新开启');
@@ -409,8 +457,12 @@ export class PerformanceRecruitPlanService extends BaseService {
     return this.info(plan.id);
   }
 
-  private async createScopedQuery(query: any) {
-    const departmentIds = await this.departmentScopeIds();
+  private async createScopedQuery(
+    query: any,
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
+  ) {
+    const departmentIds = await this.departmentScopeIds(access, capabilityKey);
     const qb = this.performanceRecruitPlanEntity
       .createQueryBuilder('plan')
       .leftJoin(
@@ -446,7 +498,9 @@ export class PerformanceRecruitPlanService extends BaseService {
   private async normalizePayload(
     payload: any,
     current: PerformanceRecruitPlanEntity | null,
-    mode: 'add' | 'update'
+    mode: 'add' | 'update',
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
   ) {
     const title = normalizeRequiredText(
       payload.title,
@@ -455,7 +509,7 @@ export class PerformanceRecruitPlanService extends BaseService {
     );
     const targetDepartmentId = normalizeRequiredPositiveInt(
       payload.targetDepartmentId,
-      '目标部门不能为空'
+      PERFORMANCE_TARGET_DEPARTMENT_REQUIRED_MESSAGE
     );
     const positionName = normalizeRequiredText(
       payload.positionName,
@@ -482,10 +536,14 @@ export class PerformanceRecruitPlanService extends BaseService {
       throw new CoolCommException('结束日期不能早于开始日期');
     }
 
-    await this.assertCanManageDepartment(targetDepartmentId);
+    await this.assertCanManageDepartment(targetDepartmentId, access, capabilityKey);
     await this.assertDepartmentExists(targetDepartmentId);
     await this.assertRecruiterExists(recruiterId);
-    const jobStandardSnapshot = await this.buildJobStandardSnapshot(jobStandardId);
+    const jobStandardSnapshot = await this.buildJobStandardSnapshot(
+      jobStandardId,
+      access,
+      capabilityKey
+    );
     this.assertPayloadStatus(payload.status, current, mode);
 
     return {
@@ -513,7 +571,7 @@ export class PerformanceRecruitPlanService extends BaseService {
     }
 
     const status = String(rawStatus).trim() as RecruitPlanStatus;
-    if (!RECRUIT_PLAN_STATUS.includes(status)) {
+    if (!RECRUIT_PLAN_STATUS_VALUES.includes(status)) {
       throw new CoolCommException('招聘计划状态不合法');
     }
 
@@ -642,7 +700,7 @@ export class PerformanceRecruitPlanService extends BaseService {
     });
 
     if (!department) {
-      throw new CoolCommException('目标部门不存在');
+      throw new CoolCommException(PERFORMANCE_TARGET_DEPARTMENT_NOT_FOUND_MESSAGE);
     }
   }
 
@@ -653,13 +711,13 @@ export class PerformanceRecruitPlanService extends BaseService {
 
     const recruiter = await this.baseSysUserEntity.findOneBy({ id: recruiterId });
     if (!recruiter) {
-      throw new CoolCommException('招聘负责人不存在');
+      throw new CoolCommException(PERFORMANCE_RECRUITER_NOT_FOUND_MESSAGE);
     }
   }
 
   private assertEditable(status?: string) {
     if (status !== 'draft') {
-      throw new CoolCommException('当前状态不允许编辑');
+      throw new CoolCommException(PERFORMANCE_STATE_EDIT_NOT_ALLOWED_MESSAGE);
     }
   }
 
@@ -685,43 +743,61 @@ export class PerformanceRecruitPlanService extends BaseService {
   private async requirePlan(id: number) {
     const validId = Number(id);
     if (!Number.isInteger(validId) || validId <= 0) {
-      throw new CoolCommException('招聘计划不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     const plan = await this.performanceRecruitPlanEntity.findOneBy({ id: validId });
     if (!plan) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
     return plan;
   }
 
   private async currentPerms() {
-    const admin = this.currentAdmin;
+    return this.performanceAccessContextService.resolveAccessContext(undefined, {
+      allowEmptyRoleIds: false,
+      missingAuthMessage: '登录状态已失效',
+    });
+  }
 
-    if (!admin?.roleIds) {
-      throw new CoolCommException('登录状态已失效');
+  private resolveCapabilityKey(perm: string): PerformanceCapabilityKey {
+    const capabilityKey = this.capabilityByPerm[perm];
+    if (!capabilityKey) {
+      throw new CoolCommException(`未映射的招聘计划权限: ${perm}`);
     }
-
-    return this.baseSysMenuService.getPerms(admin.roleIds);
+    return capabilityKey;
   }
 
-  private hasPerm(perms: string[], perm: string) {
-    return perms.includes(perm);
-  }
-
-  private assertPerm(perms: string[], perm: string, message: string) {
-    if (!this.hasPerm(perms, perm)) {
+  private assertPerm(
+    access: PerformanceResolvedAccessContext,
+    perm: string,
+    message: string
+  ) {
+    if (
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        this.resolveCapabilityKey(perm)
+      )
+    ) {
       throw new CoolCommException(message);
     }
   }
 
-  private async departmentScopeIds() {
-    const userId = Number(this.currentAdmin?.userId || 0);
-    if (!userId) {
-      throw new CoolCommException('登录上下文缺失');
+  private async departmentScopeIds(
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
+  ) {
+    if (
+      this.performanceAccessContextService.hasCapabilityInScopes(
+        access,
+        capabilityKey,
+        ['company']
+      )
+    ) {
+      return null;
     }
 
-    const ids = await this.baseSysPermsService.departmentIds(userId);
+    const ids = access.departmentIds;
     return Array.from(
       new Set(
         (Array.isArray(ids) ? ids : [])
@@ -731,7 +807,11 @@ export class PerformanceRecruitPlanService extends BaseService {
     );
   }
 
-  private applyDepartmentScope(qb: any, departmentIds: number[]) {
+  private applyDepartmentScope(qb: any, departmentIds: number[] | null) {
+    if (departmentIds === null) {
+      return;
+    }
+
     if (!departmentIds.length) {
       qb.andWhere('1 = 0');
       return;
@@ -744,17 +824,37 @@ export class PerformanceRecruitPlanService extends BaseService {
 
   private async assertPlanInScope(
     plan: PerformanceRecruitPlanEntity,
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey,
     message: string
   ) {
-    const departmentIds = await this.departmentScopeIds();
-    if (!departmentIds.includes(Number(plan.targetDepartmentId || 0))) {
+    if (
+      !this.performanceAccessContextService.matchesScope(
+        access,
+        this.performanceAccessContextService.capabilityScopes(access, capabilityKey),
+        {
+          departmentId: Number(plan.targetDepartmentId || 0),
+        }
+      )
+    ) {
       throw new CoolCommException(message);
     }
   }
 
-  private async assertCanManageDepartment(targetDepartmentId: number) {
-    const departmentIds = await this.departmentScopeIds();
-    if (!departmentIds.includes(targetDepartmentId)) {
+  private async assertCanManageDepartment(
+    targetDepartmentId: number,
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
+  ) {
+    if (
+      !this.performanceAccessContextService.matchesScope(
+        access,
+        this.performanceAccessContextService.capabilityScopes(access, capabilityKey),
+        {
+          departmentId: targetDepartmentId,
+        }
+      )
+    ) {
       throw new CoolCommException('无权操作该招聘计划');
     }
   }
@@ -785,7 +885,11 @@ export class PerformanceRecruitPlanService extends BaseService {
     };
   }
 
-  private async buildJobStandardSnapshot(jobStandardId: number | null) {
+  private async buildJobStandardSnapshot(
+    jobStandardId: number | null,
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
+  ) {
     if (!jobStandardId) {
       return null;
     }
@@ -794,11 +898,18 @@ export class PerformanceRecruitPlanService extends BaseService {
       id: jobStandardId,
     });
     if (!record) {
-      throw new CoolCommException('职位标准不存在');
+      throw new CoolCommException(PERFORMANCE_JOB_STANDARD_NOT_FOUND_MESSAGE);
     }
 
-    const departmentIds = await this.departmentScopeIds();
-    if (!departmentIds.includes(Number(record.targetDepartmentId || 0))) {
+    if (
+      !this.performanceAccessContextService.matchesScope(
+        access,
+        this.performanceAccessContextService.capabilityScopes(access, capabilityKey),
+        {
+          departmentId: Number(record.targetDepartmentId || 0),
+        }
+      )
+    ) {
       throw new CoolCommException('无权引用该职位标准');
     }
 

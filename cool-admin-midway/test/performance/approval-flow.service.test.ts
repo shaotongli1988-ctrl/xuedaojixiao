@@ -5,6 +5,7 @@
  */
 import { In } from 'typeorm';
 import {
+  assertApprovalActiveStatus,
   canWithdrawInstance,
   ensureApprovalConfigNodes,
 } from '../../src/modules/performance/service/approval-flow-helper';
@@ -15,11 +16,13 @@ import { PerformanceApprovalInstanceEntity } from '../../src/modules/performance
 import { PerformanceApprovalInstanceNodeEntity } from '../../src/modules/performance/entity/approval-instance-node';
 import { PerformanceApprovalActionLogEntity } from '../../src/modules/performance/entity/approval-action-log';
 import { PerformanceAssessmentEntity } from '../../src/modules/performance/entity/assessment';
+import { PerformanceAssetAssignmentRequestEntity } from '../../src/modules/performance/entity/assetAssignmentRequest';
 import { PerformancePromotionEntity } from '../../src/modules/performance/entity/promotion';
 import { BaseSysUserEntity } from '../../src/modules/base/entity/sys/user';
 import { BaseSysDepartmentEntity } from '../../src/modules/base/entity/sys/department';
 import { BaseSysUserRoleEntity } from '../../src/modules/base/entity/sys/user_role';
 import { BaseSysRoleEntity } from '../../src/modules/base/entity/sys/role';
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
 
 type EntityClass =
   | typeof PerformanceApprovalConfigEntity
@@ -28,6 +31,7 @@ type EntityClass =
   | typeof PerformanceApprovalInstanceNodeEntity
   | typeof PerformanceApprovalActionLogEntity
   | typeof PerformanceAssessmentEntity
+  | typeof PerformanceAssetAssignmentRequestEntity
   | typeof PerformancePromotionEntity
   | typeof BaseSysUserEntity
   | typeof BaseSysDepartmentEntity
@@ -91,6 +95,9 @@ function createMemoryHarness(seed?: Partial<Record<string, any[]>>) {
       seed?.PerformanceApprovalActionLogEntity || []
     ),
     PerformanceAssessmentEntity: clone(seed?.PerformanceAssessmentEntity || []),
+    PerformanceAssetAssignmentRequestEntity: clone(
+      seed?.PerformanceAssetAssignmentRequestEntity || []
+    ),
     PerformancePromotionEntity: clone(seed?.PerformancePromotionEntity || []),
     BaseSysUserEntity: clone(seed?.BaseSysUserEntity || []),
     BaseSysDepartmentEntity: clone(seed?.BaseSysDepartmentEntity || []),
@@ -207,6 +214,7 @@ function createMemoryHarness(seed?: Partial<Record<string, any[]>>) {
       instanceNode: createRepo(PerformanceApprovalInstanceNodeEntity),
       actionLog: createRepo(PerformanceApprovalActionLogEntity),
       assessment: createRepo(PerformanceAssessmentEntity),
+      assetAssignmentRequest: createRepo(PerformanceAssetAssignmentRequestEntity),
       promotion: createRepo(PerformancePromotionEntity),
       user: createRepo(BaseSysUserEntity),
       department: createRepo(BaseSysDepartmentEntity),
@@ -226,6 +234,7 @@ function createService(seed?: Partial<Record<string, any[]>>) {
   service.performanceApprovalInstanceNodeEntity = harness.repos.instanceNode;
   service.performanceApprovalActionLogEntity = harness.repos.actionLog;
   service.performanceAssessmentEntity = harness.repos.assessment;
+  service.performanceAssetAssignmentRequestEntity = harness.repos.assetAssignmentRequest;
   service.performancePromotionEntity = harness.repos.promotion;
   service.baseSysUserEntity = harness.repos.user;
   service.baseSysDepartmentEntity = harness.repos.department;
@@ -247,6 +256,14 @@ function createService(seed?: Partial<Record<string, any[]>>) {
       roleIds: [1],
     },
   };
+  service.performanceAccessContextService = Object.assign(
+    new PerformanceAccessContextService(),
+    {
+      ctx: service.ctx,
+      baseSysMenuService: service.baseSysMenuService,
+      baseSysPermsService: service.baseSysPermsService,
+    }
+  );
 
   return {
     service,
@@ -294,6 +311,12 @@ describe('performance approval flow helper', () => {
         },
       ])
     ).toThrow();
+  });
+
+  test('should reject ended approval instance through domain error catalog message', () => {
+    expect(() => assertApprovalActiveStatus('approved')).toThrow(
+      '当前审批实例已结束'
+    );
   });
 
   test('should allow withdraw only before first node is processed', () => {
@@ -411,6 +434,177 @@ describe('performance approval flow service', () => {
         currentApproverId: null,
       })
     );
+  });
+
+  test('should skip asset-admin and management nodes for L1 asset assignment request', async () => {
+    const { service, stores } = createService({
+      PerformanceApprovalConfigEntity: [
+        {
+          id: 21,
+          objectType: 'assetAssignmentRequest',
+          version: 'v1',
+          enabled: true,
+          notifyMode: 'interface_only',
+        },
+      ],
+      PerformanceApprovalConfigNodeEntity: [
+        {
+          id: 41,
+          configId: 21,
+          nodeOrder: 1,
+          nodeCode: 'department-manager-review',
+          nodeName: '部门负责人审批',
+          resolverType: 'applicant_direct_manager',
+          resolverValue: '',
+          timeoutHours: null,
+          allowTransfer: true,
+        },
+        {
+          id: 42,
+          configId: 21,
+          nodeOrder: 2,
+          nodeCode: 'asset-admin-confirm',
+          nodeName: '资产管理员确认',
+          resolverType: 'specified_user',
+          resolverValue: '18',
+          timeoutHours: null,
+          allowTransfer: true,
+        },
+        {
+          id: 43,
+          configId: 21,
+          nodeOrder: 3,
+          nodeCode: 'management-confirm',
+          nodeName: '管理层确认',
+          resolverType: 'specified_user',
+          resolverValue: '1',
+          timeoutHours: null,
+          allowTransfer: true,
+        },
+      ],
+      PerformanceAssetAssignmentRequestEntity: [
+        {
+          id: 901,
+          requestNo: 'REQ-001',
+          requestLevel: 'L1',
+          approvalTriggeredRules: '[]',
+          applicantId: 2,
+          applicantDepartmentId: 11,
+          status: 'inApproval',
+        },
+      ],
+      BaseSysDepartmentEntity: [{ id: 11, userId: 9 }],
+      BaseSysUserEntity: [
+        { id: 2, name: '员工 A', departmentId: 11, status: 1 },
+        { id: 9, name: '经理 A', departmentId: 11, status: 1 },
+        { id: 18, name: '资产管理员', departmentId: 1, status: 1 },
+        { id: 1, name: '管理层', departmentId: 1, status: 1 },
+      ],
+    });
+
+    const result = await service.launchForObject({
+      objectType: 'assetAssignmentRequest',
+      objectId: 901,
+      applicantId: 2,
+      employeeId: 2,
+      departmentId: 11,
+      tenantId: 1,
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        objectType: 'assetAssignmentRequest',
+        status: 'in_review',
+        currentApproverId: 9,
+      })
+    );
+    expect(stores.PerformanceApprovalInstanceNodeEntity).toEqual([
+      expect.objectContaining({ nodeOrder: 1, status: 'pending', approverId: 9 }),
+      expect.objectContaining({ nodeOrder: 2, status: 'cancelled', approverId: null }),
+      expect.objectContaining({ nodeOrder: 3, status: 'cancelled', approverId: null }),
+    ]);
+  });
+
+  test('should keep asset-admin node and skip management node for non-sensitive L2 request', async () => {
+    const { service, stores } = createService({
+      PerformanceApprovalConfigEntity: [
+        {
+          id: 22,
+          objectType: 'assetAssignmentRequest',
+          version: 'v1',
+          enabled: true,
+          notifyMode: 'interface_only',
+        },
+      ],
+      PerformanceApprovalConfigNodeEntity: [
+        {
+          id: 51,
+          configId: 22,
+          nodeOrder: 1,
+          nodeCode: 'department-manager-review',
+          nodeName: '部门负责人审批',
+          resolverType: 'applicant_direct_manager',
+          resolverValue: '',
+          timeoutHours: null,
+          allowTransfer: true,
+        },
+        {
+          id: 52,
+          configId: 22,
+          nodeOrder: 2,
+          nodeCode: 'asset-admin-confirm',
+          nodeName: '资产管理员确认',
+          resolverType: 'specified_user',
+          resolverValue: '18',
+          timeoutHours: null,
+          allowTransfer: true,
+        },
+        {
+          id: 53,
+          configId: 22,
+          nodeOrder: 3,
+          nodeCode: 'management-confirm',
+          nodeName: '管理层确认',
+          resolverType: 'specified_user',
+          resolverValue: '1',
+          timeoutHours: null,
+          allowTransfer: true,
+        },
+      ],
+      PerformanceAssetAssignmentRequestEntity: [
+        {
+          id: 902,
+          requestNo: 'REQ-002',
+          requestLevel: 'L2',
+          approvalTriggeredRules: '["midAmount"]',
+          applicantId: 2,
+          applicantDepartmentId: 11,
+          status: 'inApproval',
+        },
+      ],
+      BaseSysDepartmentEntity: [{ id: 11, userId: 9 }],
+      BaseSysUserEntity: [
+        { id: 2, name: '员工 A', departmentId: 11, status: 1 },
+        { id: 9, name: '经理 A', departmentId: 11, status: 1 },
+        { id: 18, name: '资产管理员', departmentId: 1, status: 1 },
+        { id: 1, name: '管理层', departmentId: 1, status: 1 },
+      ],
+    });
+
+    await service.launchForObject({
+      objectType: 'assetAssignmentRequest',
+      objectId: 902,
+      applicantId: 2,
+      employeeId: 2,
+      departmentId: 11,
+      tenantId: 1,
+    });
+
+    expect(stores.PerformanceApprovalInstanceNodeEntity).toEqual([
+      expect.objectContaining({ nodeOrder: 1, status: 'pending', approverId: 9 }),
+      expect.objectContaining({ nodeOrder: 2, status: 'pending', approverId: null }),
+      expect.objectContaining({ nodeOrder: 3, status: 'cancelled', approverId: null }),
+    ]);
   });
 
   test('should approve final node and sync assessment source status', async () => {
@@ -580,6 +774,118 @@ describe('performance approval flow service', () => {
     );
   });
 
+  test('should advance asset assignment request to asset-admin node before final approval', async () => {
+    const { service, stores } = createService({
+      PerformanceApprovalInstanceEntity: [
+        {
+          id: 777,
+          objectType: 'assetAssignmentRequest',
+          objectId: 903,
+          sourceStatus: 'inApproval',
+          configId: 22,
+          configVersion: 'v1',
+          applicantId: 2,
+          employeeId: 2,
+          departmentId: 11,
+          status: 'in_review',
+          currentNodeOrder: 1,
+          currentApproverId: 9,
+          launchTime: '2026-04-17 10:00:00',
+        },
+      ],
+      PerformanceApprovalInstanceNodeEntity: [
+        {
+          id: 1001,
+          instanceId: 777,
+          nodeOrder: 1,
+          nodeCode: 'department-manager-review',
+          nodeName: '部门负责人审批',
+          resolverType: 'applicant_direct_manager',
+          resolverValueSnapshot: '',
+          approverId: 9,
+          status: 'pending',
+          actionTime: null,
+          transferFromUserId: null,
+          transferReason: null,
+          comment: null,
+        },
+        {
+          id: 1002,
+          instanceId: 777,
+          nodeOrder: 2,
+          nodeCode: 'asset-admin-confirm',
+          nodeName: '资产管理员确认',
+          resolverType: 'specified_user',
+          resolverValueSnapshot: '18',
+          approverId: null,
+          status: 'pending',
+          actionTime: null,
+          transferFromUserId: null,
+          transferReason: null,
+          comment: null,
+        },
+        {
+          id: 1003,
+          instanceId: 777,
+          nodeOrder: 3,
+          nodeCode: 'management-confirm',
+          nodeName: '管理层确认',
+          resolverType: 'specified_user',
+          resolverValueSnapshot: '1',
+          approverId: null,
+          status: 'cancelled',
+          actionTime: null,
+          transferFromUserId: null,
+          transferReason: null,
+          comment: null,
+        },
+      ],
+      PerformanceAssetAssignmentRequestEntity: [
+        {
+          id: 903,
+          requestNo: 'REQ-003',
+          requestLevel: 'L2',
+          approvalTriggeredRules: '["midAmount"]',
+          applicantId: 2,
+          applicantDepartmentId: 11,
+          approvalStatus: 'in_review',
+          currentApproverId: 9,
+          status: 'inApproval',
+        },
+      ],
+      BaseSysUserEntity: [
+        { id: 9, name: '经理 A', departmentId: 11, status: 1 },
+        { id: 18, name: '资产管理员', departmentId: 1, status: 1 },
+      ],
+    });
+    service.ctx.admin = {
+      userId: 9,
+      username: 'manager_rd',
+      roleIds: [2],
+    };
+    service.baseSysMenuService.getPerms.mockResolvedValue([
+      'performance:approvalFlow:approve',
+      'performance:approvalFlow:info',
+    ]);
+
+    await service.approve({ instanceId: 777, comment: '部门同意' });
+
+    expect(stores.PerformanceApprovalInstanceEntity[0]).toEqual(
+      expect.objectContaining({
+        status: 'in_review',
+        currentNodeOrder: 2,
+        currentApproverId: 18,
+      })
+    );
+    expect(stores.PerformanceAssetAssignmentRequestEntity[0]).toEqual(
+      expect.objectContaining({
+        approvalStatus: 'in_review',
+        currentApproverId: 18,
+        status: 'inApproval',
+      })
+    );
+  });
+
   test('should reject illegal approve from non-current approver', async () => {
     const { service } = createService({
       PerformanceApprovalInstanceEntity: [
@@ -696,6 +1002,105 @@ describe('performance approval flow service', () => {
         submitTime: null,
       })
     );
+  });
+
+  test('should reject withdraw for in-scope user who is not the applicant', async () => {
+    const { service } = createService({
+      PerformanceApprovalInstanceEntity: [
+        {
+          id: 851,
+          objectType: 'assessment',
+          objectId: 451,
+          sourceStatus: 'submitted',
+          configId: 11,
+          configVersion: 'v1',
+          applicantId: 2,
+          employeeId: 2,
+          departmentId: 11,
+          status: 'in_review',
+          currentNodeOrder: 1,
+          currentApproverId: 9,
+          launchTime: '2026-04-17 10:00:00',
+        },
+      ],
+      PerformanceApprovalInstanceNodeEntity: [
+        {
+          id: 1051,
+          instanceId: 851,
+          nodeOrder: 1,
+          nodeCode: 'leader-review',
+          nodeName: '直属经理审批',
+          resolverType: 'specified_user',
+          resolverValueSnapshot: '9',
+          approverId: 9,
+          status: 'pending',
+          actionTime: null,
+        },
+      ],
+    });
+    service.ctx.admin = {
+      userId: 3,
+      username: 'same_dept_viewer',
+      roleIds: [3],
+    };
+    service.baseSysMenuService.getPerms.mockResolvedValue([
+      'performance:approvalFlow:withdraw',
+      'performance:approvalFlow:info',
+    ]);
+    service.baseSysPermsService.departmentIds.mockResolvedValue([11]);
+
+    await expect(
+      service.withdraw({ instanceId: 851, reason: '我不是发起人' })
+    ).rejects.toThrow('仅允许发起人撤回');
+  });
+
+  test('should reject withdraw after current node has been handled', async () => {
+    const { service } = createService({
+      PerformanceApprovalInstanceEntity: [
+        {
+          id: 861,
+          objectType: 'assessment',
+          objectId: 461,
+          sourceStatus: 'submitted',
+          configId: 11,
+          configVersion: 'v1',
+          applicantId: 2,
+          employeeId: 2,
+          departmentId: 11,
+          status: 'in_review',
+          currentNodeOrder: 1,
+          currentApproverId: 9,
+          launchTime: '2026-04-17 10:00:00',
+        },
+      ],
+      PerformanceApprovalInstanceNodeEntity: [
+        {
+          id: 1061,
+          instanceId: 861,
+          nodeOrder: 1,
+          nodeCode: 'leader-review',
+          nodeName: '直属经理审批',
+          resolverType: 'specified_user',
+          resolverValueSnapshot: '9',
+          approverId: 9,
+          status: 'approved',
+          actionTime: '2026-04-17 10:10:00',
+        },
+      ],
+    });
+    service.ctx.admin = {
+      userId: 2,
+      username: 'employee_platform',
+      roleIds: [3],
+    };
+    service.baseSysMenuService.getPerms.mockResolvedValue([
+      'performance:approvalFlow:withdraw',
+      'performance:approvalFlow:info',
+    ]);
+
+    await expect(
+      service.withdraw({ instanceId: 861, reason: '节点已处理后再撤回' })
+    ).rejects.toThrow('当前状态不允许撤回');
   });
 
   test('should move timeout instance into manual_pending', async () => {
@@ -878,6 +1283,95 @@ describe('performance approval flow service', () => {
         terminateReason: '流程异常强制终止',
       })
     );
+  });
+
+  test('should reject terminate for non-hr viewer', async () => {
+    const { service } = createService({
+      PerformanceApprovalInstanceEntity: [
+        {
+          id: 1111,
+          objectType: 'promotion',
+          objectId: 711,
+          sourceStatus: 'reviewing',
+          configId: 12,
+          configVersion: 'v2',
+          applicantId: 9,
+          employeeId: 2,
+          departmentId: 11,
+          status: 'in_review',
+          currentNodeOrder: 1,
+          currentApproverId: 18,
+          launchTime: '2026-04-17 10:00:00',
+        },
+      ],
+      PerformanceApprovalInstanceNodeEntity: [
+        {
+          id: 1311,
+          instanceId: 1111,
+          nodeOrder: 1,
+          nodeCode: 'hr-review',
+          nodeName: 'HR 审批',
+          resolverType: 'specified_user',
+          resolverValueSnapshot: '18',
+          approverId: 18,
+          status: 'pending',
+          actionTime: null,
+        },
+      ],
+    });
+    service.ctx.admin = {
+      userId: 9,
+      username: 'manager_platform',
+      roleIds: [2],
+    };
+    service.baseSysMenuService.getPerms.mockResolvedValue([
+      'performance:approvalFlow:info',
+    ]);
+    service.baseSysPermsService.departmentIds.mockResolvedValue([11]);
+
+    await expect(
+      service.terminate({ instanceId: 1111, reason: '经理无权终止' })
+    ).rejects.toThrow('只有 HR 可以强制终止审批实例');
+  });
+
+  test('should reject terminate when instance is already terminated', async () => {
+    const { service } = createService({
+      PerformanceApprovalInstanceEntity: [
+        {
+          id: 1121,
+          objectType: 'promotion',
+          objectId: 721,
+          sourceStatus: 'reviewing',
+          configId: 12,
+          configVersion: 'v2',
+          applicantId: 9,
+          employeeId: 2,
+          departmentId: 11,
+          status: 'terminated',
+          currentNodeOrder: null,
+          currentApproverId: null,
+          launchTime: '2026-04-17 10:00:00',
+          finishTime: '2026-04-17 11:00:00',
+        },
+      ],
+      PerformancePromotionEntity: [
+        {
+          id: 721,
+          employeeId: 2,
+          sponsorId: 9,
+          status: 'terminated',
+        },
+      ],
+    });
+    service.baseSysMenuService.getPerms.mockResolvedValue([
+      'performance:approvalFlow:terminate',
+      'performance:approvalFlow:info',
+      'performance:approvalFlow:configSave',
+    ]);
+
+    await expect(
+      service.terminate({ instanceId: 1121, reason: '重复终止' })
+    ).rejects.toThrow('当前状态不允许执行该操作');
   });
 
   test('should expose masked instance detail to applicant', async () => {

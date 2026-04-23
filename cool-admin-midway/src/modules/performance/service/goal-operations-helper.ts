@@ -1,4 +1,12 @@
 import { CoolCommException } from '@cool-midway/core';
+import {
+  GOAL_PERIOD_TYPE_VALUES,
+  GOAL_SOURCE_TYPE_VALUES,
+} from './goal-dict';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
 
 /**
  * 目标运营台纯逻辑工具。
@@ -7,6 +15,30 @@ import { CoolCommException } from '@cool-midway/core';
 export type GoalOpsPeriodType = 'day' | 'week' | 'month';
 export type GoalOpsSourceType = 'public' | 'personal';
 export type GoalOpsPlanStatus = 'assigned' | 'submitted' | 'auto_zero';
+const PERFORMANCE_GOAL_OPS_PERIOD_TYPE_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.goalOpsPeriodTypeInvalid
+  );
+const PERFORMANCE_GOAL_OPS_PERIOD_RANGE_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.goalOpsPeriodRangeRequired
+  );
+const PERFORMANCE_GOAL_OPS_PERIOD_RANGE_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.goalOpsPeriodRangeInvalid
+  );
+const PERFORMANCE_GOAL_OPS_DAILY_PLAN_DATE_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.goalOpsDailyPlanDateRequired
+  );
+const PERFORMANCE_GOAL_OPS_PLAN_DATE_OUT_OF_RANGE_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.goalOpsPlanDateOutOfRange
+  );
+const PERFORMANCE_GOAL_OPS_SOURCE_TYPE_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.goalOpsSourceTypeInvalid
+  );
 
 export interface GoalOpsPlanLike {
   id: number;
@@ -62,31 +94,33 @@ export function assertGoalOpsPeriod(
   periodEndDate: string,
   planDate?: string | null
 ) {
-  if (!['day', 'week', 'month'].includes(periodType)) {
-    throw new CoolCommException('周期类型不合法');
+  if (!GOAL_PERIOD_TYPE_VALUES.some(item => item === periodType)) {
+    throw new CoolCommException(PERFORMANCE_GOAL_OPS_PERIOD_TYPE_INVALID_MESSAGE);
   }
 
   if (!periodStartDate || !periodEndDate) {
-    throw new CoolCommException('周期开始和结束日期不能为空');
+    throw new CoolCommException(PERFORMANCE_GOAL_OPS_PERIOD_RANGE_REQUIRED_MESSAGE);
   }
 
   if (periodStartDate > periodEndDate) {
-    throw new CoolCommException('周期开始日期不能晚于结束日期');
+    throw new CoolCommException(PERFORMANCE_GOAL_OPS_PERIOD_RANGE_INVALID_MESSAGE);
   }
 
   if (periodType === 'day') {
     if (!planDate) {
-      throw new CoolCommException('日目标必须指定计划日期');
+      throw new CoolCommException(
+        PERFORMANCE_GOAL_OPS_DAILY_PLAN_DATE_REQUIRED_MESSAGE
+      );
     }
     if (planDate < periodStartDate || planDate > periodEndDate) {
-      throw new CoolCommException('计划日期必须落在周期内');
+      throw new CoolCommException(PERFORMANCE_GOAL_OPS_PLAN_DATE_OUT_OF_RANGE_MESSAGE);
     }
   }
 }
 
 export function assertGoalOpsSourceType(sourceType: GoalOpsSourceType) {
-  if (!['public', 'personal'].includes(sourceType)) {
-    throw new CoolCommException('目标来源不合法');
+  if (!GOAL_SOURCE_TYPE_VALUES.some(item => item === sourceType)) {
+    throw new CoolCommException(PERFORMANCE_GOAL_OPS_SOURCE_TYPE_INVALID_MESSAGE);
   }
 }
 

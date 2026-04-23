@@ -3,7 +3,21 @@
  * 招聘面试服务最小测试。
  * 这里只验证主题8的范围权限、终态编辑限制、删除限制和手工文本录入链路，不负责数据库或控制器联调。
  */
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
 import { PerformanceInterviewService } from '../../src/modules/performance/service/interview';
+
+function attachAccessContext(service: any) {
+  const accessService = new PerformanceAccessContextService() as any;
+  accessService.ctx = service.ctx;
+  accessService.baseSysMenuService =
+    service.baseSysMenuService || { getPerms: jest.fn().mockResolvedValue([]) };
+  accessService.baseSysPermsService =
+    service.baseSysPermsService || {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+  service.performanceAccessContextService = accessService;
+  return service;
+}
 
 describe('performance interview service', () => {
   test('should scope interview page by department for manager', async () => {
@@ -35,8 +49,6 @@ describe('performance interview service', () => {
             targetDepartmentId: 11,
             targetDepartmentName: '研发部',
             targetPosition: '前端工程师',
-            phone: '13800000000',
-            email: 'zhangsan@example.com',
             status: 'interviewing',
             recruitPlanId: 301,
             jobStandardId: 501,
@@ -82,6 +94,7 @@ describe('performance interview service', () => {
     service.performanceInterviewEntity = {
       createQueryBuilder: jest.fn().mockReturnValue(qb),
     };
+    attachAccessContext(service);
 
     const result = await service.page({
       page: 1,
@@ -118,6 +131,7 @@ describe('performance interview service', () => {
           score: 88.5,
           resumePoolId: 21,
           recruitPlanId: 301,
+          sourceSnapshot: null,
           resumePoolSummary: expect.objectContaining({
             id: 21,
             candidateName: '张三',
@@ -176,8 +190,6 @@ describe('performance interview service', () => {
         candidateName: '李四',
         targetDepartmentId: 11,
         targetPosition: '后端工程师',
-        phone: '13800000001',
-        email: 'lisi@example.com',
         status: 'screening',
         recruitPlanId: 301,
         jobStandardId: 501,
@@ -205,6 +217,7 @@ describe('performance interview service', () => {
       resumePoolId: 21,
       recruitPlanId: 301,
     });
+    attachAccessContext(service);
 
     await expect(
       service.add({
@@ -231,9 +244,106 @@ describe('performance interview service', () => {
         interviewerId: 8,
         resumePoolId: 21,
         recruitPlanId: 301,
+        sourceSnapshot: expect.objectContaining({
+          sourceResource: 'resumePool',
+          resumePoolId: 21,
+          recruitPlanId: 301,
+        }),
         resumePoolSnapshot: expect.objectContaining({ id: 21 }),
         recruitPlanSnapshot: expect.objectContaining({ id: 301 }),
         status: 'scheduled',
+      })
+    );
+  });
+
+  test('should persist canonical talentAsset source snapshot when adding interview from talent asset', async () => {
+    const service = new PerformanceInterviewService() as any;
+    service.ctx = {
+      admin: {
+        userId: 1,
+        username: 'hr_admin',
+        roleIds: [1],
+      },
+    };
+    service.baseSysMenuService = {
+      getPerms: jest
+        .fn()
+        .mockResolvedValue([
+          'performance:interview:add',
+          'performance:interview:info',
+          'performance:interview:delete',
+        ]),
+    };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+    service.baseSysUserEntity = {
+      findOneBy: jest.fn().mockImplementation((where: any) => {
+        if (where.id === 8) {
+          return Promise.resolve({ id: 8, name: '面试官A' });
+        }
+        return Promise.resolve(null);
+      }),
+    };
+    service.performanceResumePoolEntity = {
+      findOneBy: jest.fn().mockResolvedValue(null),
+    };
+    service.performanceRecruitPlanEntity = {
+      findOneBy: jest.fn().mockResolvedValue(null),
+    };
+    service.performanceTalentAssetEntity = {
+      findOneBy: jest.fn().mockResolvedValue({
+        id: 88,
+        candidateName: '赵六',
+        targetDepartmentId: 11,
+        targetPosition: '产品经理',
+      }),
+    };
+    service.performanceInterviewEntity = {
+      create: jest.fn().mockImplementation(payload => payload),
+      save: jest.fn().mockResolvedValue({ id: 18 }),
+    };
+    service.info = jest.fn().mockResolvedValue({
+      id: 18,
+      sourceSnapshot: {
+        sourceResource: 'talentAsset',
+        talentAssetId: 88,
+      },
+    });
+    attachAccessContext(service);
+
+    await expect(
+      service.add({
+        candidateName: '赵六',
+        position: '产品经理',
+        departmentId: 11,
+        interviewerId: 8,
+        interviewDate: '2026-04-20 11:00:00',
+        sourceSnapshot: {
+          sourceResource: 'talentAsset',
+          talentAssetId: 88,
+          candidateName: '无效值',
+          targetDepartmentId: 11,
+          targetPosition: '无效岗位',
+        },
+      })
+    ).resolves.toEqual({
+      id: 18,
+      sourceSnapshot: {
+        sourceResource: 'talentAsset',
+        talentAssetId: 88,
+      },
+    });
+
+    expect(service.performanceInterviewEntity.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceSnapshot: {
+          sourceResource: 'talentAsset',
+          talentAssetId: 88,
+          candidateName: '赵六',
+          targetDepartmentId: 11,
+          targetPosition: '产品经理',
+        },
       })
     );
   });
@@ -256,6 +366,7 @@ describe('performance interview service', () => {
     service.baseSysUserEntity = {
       findOneBy: jest.fn().mockResolvedValue({ id: 8, name: '面试官A' }),
     };
+    attachAccessContext(service);
 
     await expect(
       service.add({
@@ -294,6 +405,7 @@ describe('performance interview service', () => {
         status: 'completed',
       }),
     };
+    attachAccessContext(service);
 
     await expect(
       service.updateInterview({
@@ -315,6 +427,7 @@ describe('performance interview service', () => {
     managerService.baseSysMenuService = {
       getPerms: jest.fn().mockResolvedValue(['performance:interview:page']),
     };
+    attachAccessContext(managerService);
 
     await expect(managerService.delete([1])).rejects.toThrow('无权限删除面试');
 
@@ -337,6 +450,7 @@ describe('performance interview service', () => {
         },
       ]),
     };
+    attachAccessContext(hrService);
 
     await expect(hrService.delete([7])).rejects.toThrow('当前状态不允许删除');
   });
@@ -353,6 +467,7 @@ describe('performance interview service', () => {
     service.baseSysMenuService = {
       getPerms: jest.fn().mockResolvedValue([]),
     };
+    attachAccessContext(service);
 
     await expect(service.page({})).rejects.toThrow('无权限查看面试列表');
   });

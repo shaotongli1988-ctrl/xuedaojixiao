@@ -5,11 +5,6 @@
  * 维护重点是 `purchaseOrder` 单主资源状态机、经理部门树权限、终态锁定和轻量流程记录必须始终由服务端兜底。
  */
 import {
-  App,
-  ASYNC_CONTEXT_KEY,
-  ASYNC_CONTEXT_MANAGER_KEY,
-  AsyncContextManager,
-  IMidwayApplication,
   Inject,
   Provide,
   Scope,
@@ -18,13 +13,22 @@ import {
 import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Brackets, In, Repository } from 'typeorm';
-import * as jwt from 'jsonwebtoken';
 import { BaseSysDepartmentEntity } from '../../base/entity/sys/department';
 import { BaseSysUserEntity } from '../../base/entity/sys/user';
 import { BaseSysMenuService } from '../../base/service/sys/menu';
-import { BaseSysPermsService } from '../../base/service/sys/perms';
 import { PerformancePurchaseOrderEntity } from '../entity/purchase-order';
 import { PerformanceSupplierEntity } from '../entity/supplier';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import { PURCHASE_ORDER_STATUS_VALUES } from './purchase-order-dict';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
 
 type PurchaseOrderStatus =
   | 'draft'
@@ -36,21 +40,92 @@ type PurchaseOrderStatus =
   | 'cancelled';
 
 const PURCHASE_ORDER_STATUS: PurchaseOrderStatus[] = [
-  'draft',
-  'inquiring',
-  'pendingApproval',
-  'approved',
-  'received',
-  'closed',
-  'cancelled',
+  ...PURCHASE_ORDER_STATUS_VALUES,
 ];
-
-const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
-  return require('../../base/config').default({
-    app,
-    env: app?.getEnv?.(),
-  }).jwt;
-};
+const PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resourceNotFound
+  );
+const PERFORMANCE_DEPARTMENT_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.departmentNotFound
+  );
+const PERFORMANCE_SUPPLIER_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.supplierNotFound
+  );
+const PERFORMANCE_STATE_EDIT_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateEditNotAllowed
+  );
+const PERFORMANCE_STATE_DELETE_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateDeleteNotAllowed
+  );
+const PERFORMANCE_STATE_CLOSE_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateCloseNotAllowed
+  );
+const PERFORMANCE_PURCHASE_ORDER_OPERATE_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.purchaseOrderOperateDenied
+  );
+const PERFORMANCE_PURCHASE_ORDER_SUBMIT_INQUIRY_STATE_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.purchaseOrderSubmitInquiryStateDenied
+  );
+const PERFORMANCE_PURCHASE_ORDER_SUBMIT_APPROVAL_STATE_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.purchaseOrderSubmitApprovalStateDenied
+  );
+const PERFORMANCE_PURCHASE_ORDER_APPROVE_STATE_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.purchaseOrderApproveStateDenied
+  );
+const PERFORMANCE_PURCHASE_ORDER_REJECT_STATE_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.purchaseOrderRejectStateDenied
+  );
+const PERFORMANCE_PURCHASE_ORDER_RECEIVE_STATE_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.purchaseOrderReceiveStateDenied
+  );
+const PERFORMANCE_PURCHASE_ORDER_STATUS_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.purchaseOrderStatusInvalid
+  );
+const PERFORMANCE_PURCHASE_ORDER_CURRENCY_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.purchaseOrderCurrencyInvalid
+  );
+const PERFORMANCE_PURCHASE_ORDER_TOTAL_AMOUNT_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.purchaseOrderTotalAmountInvalid
+  );
+const PERFORMANCE_PURCHASE_ORDER_ITEMS_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.purchaseOrderItemsInvalid
+  );
+const PERFORMANCE_PURCHASE_ORDER_ORDER_NO_DUPLICATE_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.purchaseOrderOrderNoDuplicate
+  );
+const PERFORMANCE_PURCHASE_ORDER_REQUESTER_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.purchaseOrderRequesterNotFound
+  );
+const PERFORMANCE_PURCHASE_ORDER_STATUS_ACTION_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.purchaseOrderStatusActionRequired
+  );
+const PERFORMANCE_PURCHASE_ORDER_RECEIPT_QUANTITY_EXCEEDED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.purchaseOrderReceiptQuantityExceeded
+  );
+const PERFORMANCE_JSON_FIELD_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.jsonFieldInvalid
+  );
 
 function normalizePageNumber(value: any, fallback: number) {
   const parsed = Number(value);
@@ -100,7 +175,7 @@ function normalizeJsonValue(value: any) {
     try {
       return JSON.parse(value);
     } catch (error) {
-      throw new CoolCommException('JSON 字段格式不合法');
+      throw new CoolCommException(PERFORMANCE_JSON_FIELD_INVALID_MESSAGE);
     }
   }
 
@@ -143,70 +218,51 @@ export class PerformancePurchaseOrderService extends BaseService {
   baseSysMenuService: BaseSysMenuService;
 
   @Inject()
-  baseSysPermsService: BaseSysPermsService;
+  performanceAccessContextService: PerformanceAccessContextService;
 
   @Inject()
   ctx;
 
-  @App()
-  app: IMidwayApplication;
-
   private readonly perms = {
-    page: 'performance:purchaseOrder:page',
-    info: 'performance:purchaseOrder:info',
-    add: 'performance:purchaseOrder:add',
-    update: 'performance:purchaseOrder:update',
-    delete: 'performance:purchaseOrder:delete',
-    submitInquiry: 'performance:purchaseOrder:submitInquiry',
-    submitApproval: 'performance:purchaseOrder:submitApproval',
-    approve: 'performance:purchaseOrder:approve',
-    reject: 'performance:purchaseOrder:reject',
-    receive: 'performance:purchaseOrder:receive',
-    close: 'performance:purchaseOrder:close',
+    page: PERMISSIONS.performance.purchaseOrder.page,
+    info: PERMISSIONS.performance.purchaseOrder.info,
+    add: PERMISSIONS.performance.purchaseOrder.add,
+    update: PERMISSIONS.performance.purchaseOrder.update,
+    delete: PERMISSIONS.performance.purchaseOrder.delete,
+    submitInquiry: PERMISSIONS.performance.purchaseOrder.submitInquiry,
+    submitApproval: PERMISSIONS.performance.purchaseOrder.submitApproval,
+    approve: PERMISSIONS.performance.purchaseOrder.approve,
+    reject: PERMISSIONS.performance.purchaseOrder.reject,
+    receive: PERMISSIONS.performance.purchaseOrder.receive,
+    close: PERMISSIONS.performance.purchaseOrder.close,
   };
 
-  private get currentCtx() {
-    if (this.ctx?.admin) {
-      return this.ctx;
-    }
-
-    try {
-      const contextManager: AsyncContextManager = this.app
-        .getApplicationContext()
-        .get(ASYNC_CONTEXT_MANAGER_KEY);
-      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as any;
-    } catch (error) {
-      return this.ctx;
-    }
-  }
-
-  private get currentAdmin() {
-    if (this.currentCtx?.admin) {
-      return this.currentCtx.admin;
-    }
-
-    const token =
-      this.currentCtx?.get?.('Authorization') ||
-      this.currentCtx?.headers?.authorization;
-
-    if (!token) {
-      return undefined;
-    }
-
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
-  }
+  private readonly capabilityByPerm: Record<string, PerformanceCapabilityKey> = {
+    [PERMISSIONS.performance.purchaseOrder.page]: 'purchase_order.read',
+    [PERMISSIONS.performance.purchaseOrder.info]: 'purchase_order.read',
+    [PERMISSIONS.performance.purchaseOrder.add]: 'purchase_order.create',
+    [PERMISSIONS.performance.purchaseOrder.update]: 'purchase_order.update',
+    [PERMISSIONS.performance.purchaseOrder.delete]: 'purchase_order.delete',
+    [PERMISSIONS.performance.purchaseOrder.submitInquiry]:
+      'purchase_order.submit_inquiry',
+    [PERMISSIONS.performance.purchaseOrder.submitApproval]:
+      'purchase_order.submit_approval',
+    [PERMISSIONS.performance.purchaseOrder.approve]: 'purchase_order.approve',
+    [PERMISSIONS.performance.purchaseOrder.reject]: 'purchase_order.reject',
+    [PERMISSIONS.performance.purchaseOrder.receive]: 'purchase_order.receive',
+    [PERMISSIONS.performance.purchaseOrder.close]: 'purchase_order.close',
+  };
 
   async page(query: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.page, '无权限查看采购订单列表');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.page, '无权限查看采购订单列表');
 
     const page = normalizePageNumber(query.page, 1);
     const size = normalizePageNumber(query.size, 20);
-    const departmentIds = await this.departmentScopeIds(perms);
+    const departmentIds = await this.departmentScopeIds(
+      access,
+      'purchase_order.read'
+    );
     const qb = this.performancePurchaseOrderEntity
       .createQueryBuilder('purchaseOrder')
       .leftJoin(
@@ -270,12 +326,18 @@ export class PerformancePurchaseOrderService extends BaseService {
 
     if (query.supplierId !== undefined && query.supplierId !== null && query.supplierId !== '') {
       qb.andWhere('purchaseOrder.supplierId = :supplierId', {
-        supplierId: normalizeRequiredPositiveInt(query.supplierId, '供应商不存在'),
+        supplierId: normalizeRequiredPositiveInt(
+          query.supplierId,
+          PERFORMANCE_SUPPLIER_NOT_FOUND_MESSAGE
+        ),
       });
     }
 
     if (query.departmentId !== undefined && query.departmentId !== null && query.departmentId !== '') {
-      const departmentId = normalizeRequiredPositiveInt(query.departmentId, '部门不存在');
+      const departmentId = normalizeRequiredPositiveInt(
+        query.departmentId,
+        PERFORMANCE_DEPARTMENT_NOT_FOUND_MESSAGE
+      );
       await this.assertReportDepartmentInScope(departmentId, departmentIds);
       qb.andWhere('purchaseOrder.departmentId = :departmentId', { departmentId });
     }
@@ -314,20 +376,31 @@ export class PerformancePurchaseOrderService extends BaseService {
   }
 
   async info(id: number) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.info, '无权限查看采购订单详情');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.info, '无权限查看采购订单详情');
 
     const purchaseOrder = await this.requirePurchaseOrder(id);
-    await this.assertPurchaseOrderInScope(purchaseOrder, perms, '无权查看该采购订单');
+    await this.assertPurchaseOrderInScope(
+      purchaseOrder,
+      access,
+      'purchase_order.read',
+      '无权查看该采购订单'
+    );
 
     return this.buildPurchaseOrderDetail(purchaseOrder);
   }
 
   async add(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.add, '无权限新增采购订单');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.add, '无权限新增采购订单');
 
-    const normalized = await this.normalizeEditablePayload(payload, null, perms, 'add');
+    const normalized = await this.normalizeEditablePayload(
+      payload,
+      null,
+      access,
+      'purchase_order.create',
+      'add'
+    );
     const saved: any = await this.performancePurchaseOrderEntity.save(
       this.performancePurchaseOrderEntity.create({
         ...normalized,
@@ -348,19 +421,25 @@ export class PerformancePurchaseOrderService extends BaseService {
   }
 
   async updatePurchaseOrder(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.update, '无权限修改采购订单');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.update, '无权限修改采购订单');
 
     const purchaseOrder = await this.requirePurchaseOrder(
-      normalizeRequiredPositiveInt(payload.id, '数据不存在')
+      normalizeRequiredPositiveInt(payload.id, PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE)
     );
-    await this.assertPurchaseOrderInScope(purchaseOrder, perms, '无权操作该采购订单');
+    await this.assertPurchaseOrderInScope(
+      purchaseOrder,
+      access,
+      'purchase_order.update',
+      PERFORMANCE_PURCHASE_ORDER_OPERATE_DENIED_MESSAGE
+    );
     this.assertEditableStatus(purchaseOrder.status as PurchaseOrderStatus);
 
     const normalized = await this.normalizeEditablePayload(
       payload,
       purchaseOrder,
-      perms,
+      access,
+      'purchase_order.update',
       'update'
     );
 
@@ -372,16 +451,23 @@ export class PerformancePurchaseOrderService extends BaseService {
   }
 
   async submitInquiry(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.submitInquiry, '无权限提交询价');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.submitInquiry, '无权限提交询价');
 
     const purchaseOrder = await this.requirePurchaseOrder(
       normalizeRequiredPositiveInt(payload.id, '采购单 ID 不合法')
     );
-    await this.assertPurchaseOrderInScope(purchaseOrder, perms, '无权操作该采购订单');
+    await this.assertPurchaseOrderInScope(
+      purchaseOrder,
+      access,
+      'purchase_order.submit_inquiry',
+      PERFORMANCE_PURCHASE_ORDER_OPERATE_DENIED_MESSAGE
+    );
 
     if (purchaseOrder.status !== 'draft') {
-      throw new CoolCommException('当前状态不允许提交询价');
+      throw new CoolCommException(
+        PERFORMANCE_PURCHASE_ORDER_SUBMIT_INQUIRY_STATE_DENIED_MESSAGE
+      );
     }
 
     const now = formatDateTime(new Date());
@@ -407,16 +493,23 @@ export class PerformancePurchaseOrderService extends BaseService {
   }
 
   async submitApproval(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.submitApproval, '无权限提交采购审批');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.submitApproval, '无权限提交采购审批');
 
     const purchaseOrder = await this.requirePurchaseOrder(
       normalizeRequiredPositiveInt(payload.id, '采购单 ID 不合法')
     );
-    await this.assertPurchaseOrderInScope(purchaseOrder, perms, '无权操作该采购订单');
+    await this.assertPurchaseOrderInScope(
+      purchaseOrder,
+      access,
+      'purchase_order.submit_approval',
+      PERFORMANCE_PURCHASE_ORDER_OPERATE_DENIED_MESSAGE
+    );
 
     if (purchaseOrder.status !== 'inquiring') {
-      throw new CoolCommException('当前状态不允许提交采购审批');
+      throw new CoolCommException(
+        PERFORMANCE_PURCHASE_ORDER_SUBMIT_APPROVAL_STATE_DENIED_MESSAGE
+      );
     }
 
     const now = formatDateTime(new Date());
@@ -444,16 +537,23 @@ export class PerformancePurchaseOrderService extends BaseService {
   }
 
   async approve(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.approve, '无权限审批采购单');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.approve, '无权限审批采购单');
 
     const purchaseOrder = await this.requirePurchaseOrder(
       normalizeRequiredPositiveInt(payload.id, '采购单 ID 不合法')
     );
-    await this.assertPurchaseOrderInScope(purchaseOrder, perms, '无权操作该采购订单');
+    await this.assertPurchaseOrderInScope(
+      purchaseOrder,
+      access,
+      'purchase_order.approve',
+      PERFORMANCE_PURCHASE_ORDER_OPERATE_DENIED_MESSAGE
+    );
 
     if (purchaseOrder.status !== 'pendingApproval') {
-      throw new CoolCommException('当前状态不允许审批');
+      throw new CoolCommException(
+        PERFORMANCE_PURCHASE_ORDER_APPROVE_STATE_DENIED_MESSAGE
+      );
     }
 
     const now = formatDateTime(new Date());
@@ -485,16 +585,23 @@ export class PerformancePurchaseOrderService extends BaseService {
   }
 
   async reject(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.reject, '无权限驳回采购单');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.reject, '无权限驳回采购单');
 
     const purchaseOrder = await this.requirePurchaseOrder(
       normalizeRequiredPositiveInt(payload.id, '采购单 ID 不合法')
     );
-    await this.assertPurchaseOrderInScope(purchaseOrder, perms, '无权操作该采购订单');
+    await this.assertPurchaseOrderInScope(
+      purchaseOrder,
+      access,
+      'purchase_order.reject',
+      PERFORMANCE_PURCHASE_ORDER_OPERATE_DENIED_MESSAGE
+    );
 
     if (purchaseOrder.status !== 'pendingApproval') {
-      throw new CoolCommException('当前状态不允许驳回');
+      throw new CoolCommException(
+        PERFORMANCE_PURCHASE_ORDER_REJECT_STATE_DENIED_MESSAGE
+      );
     }
 
     const now = formatDateTime(new Date());
@@ -526,16 +633,23 @@ export class PerformancePurchaseOrderService extends BaseService {
   }
 
   async receive(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.receive, '无权限收货');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.receive, '无权限收货');
 
     const purchaseOrder = await this.requirePurchaseOrder(
       normalizeRequiredPositiveInt(payload.id, '采购单 ID 不合法')
     );
-    await this.assertPurchaseOrderInScope(purchaseOrder, perms, '无权操作该采购订单');
+    await this.assertPurchaseOrderInScope(
+      purchaseOrder,
+      access,
+      'purchase_order.receive',
+      PERFORMANCE_PURCHASE_ORDER_OPERATE_DENIED_MESSAGE
+    );
 
     if (!['approved', 'received'].includes(purchaseOrder.status)) {
-      throw new CoolCommException('当前状态不允许收货');
+      throw new CoolCommException(
+        PERFORMANCE_PURCHASE_ORDER_RECEIVE_STATE_DENIED_MESSAGE
+      );
     }
 
     const quantity = normalizeRequiredPositiveInt(
@@ -545,7 +659,9 @@ export class PerformancePurchaseOrderService extends BaseService {
     const nextQuantity = Number(purchaseOrder.receivedQuantity || 0) + quantity;
     const totalItemQuantity = this.sumItemQuantity(purchaseOrder.items);
     if (totalItemQuantity > 0 && nextQuantity > totalItemQuantity) {
-      throw new CoolCommException('累计收货数量不能超过明细数量');
+      throw new CoolCommException(
+        PERFORMANCE_PURCHASE_ORDER_RECEIPT_QUANTITY_EXCEEDED_MESSAGE
+      );
     }
 
     const receivedAt =
@@ -577,16 +693,21 @@ export class PerformancePurchaseOrderService extends BaseService {
   }
 
   async close(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.close, '无权限关闭采购单');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.close, '无权限关闭采购单');
 
     const purchaseOrder = await this.requirePurchaseOrder(
       normalizeRequiredPositiveInt(payload.id, '采购单 ID 不合法')
     );
-    await this.assertPurchaseOrderInScope(purchaseOrder, perms, '无权操作该采购订单');
+    await this.assertPurchaseOrderInScope(
+      purchaseOrder,
+      access,
+      'purchase_order.close',
+      PERFORMANCE_PURCHASE_ORDER_OPERATE_DENIED_MESSAGE
+    );
 
     if (!['approved', 'received'].includes(purchaseOrder.status)) {
-      throw new CoolCommException('当前状态不允许关闭');
+      throw new CoolCommException(PERFORMANCE_STATE_CLOSE_NOT_ALLOWED_MESSAGE);
     }
 
     const closedReason = normalizeRequiredText(
@@ -606,8 +727,8 @@ export class PerformancePurchaseOrderService extends BaseService {
   }
 
   async delete(ids: number[]) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.delete, '无权限删除采购订单');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.delete, '无权限删除采购订单');
 
     const validIds = Array.from(
       new Set(
@@ -626,12 +747,25 @@ export class PerformancePurchaseOrderService extends BaseService {
     });
 
     if (rows.length !== validIds.length) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     rows.forEach(item => {
+      const departmentId = Number(item.departmentId || 0);
+      if (
+        !this.performanceAccessContextService.matchesScope(
+          access,
+          this.performanceAccessContextService.capabilityScopes(
+            access,
+            'purchase_order.delete'
+          ),
+          { departmentId }
+        )
+      ) {
+        throw new CoolCommException(PERFORMANCE_PURCHASE_ORDER_OPERATE_DENIED_MESSAGE);
+      }
       if (item.status !== 'draft') {
-        throw new CoolCommException('当前状态不允许删除');
+        throw new CoolCommException(PERFORMANCE_STATE_DELETE_NOT_ALLOWED_MESSAGE);
       }
     });
 
@@ -641,7 +775,8 @@ export class PerformancePurchaseOrderService extends BaseService {
   private async normalizeEditablePayload(
     payload: any,
     existing: PerformancePurchaseOrderEntity | null,
-    perms: string[],
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey,
     mode: 'add' | 'update'
   ) {
     const orderNo = normalizeOptionalText(
@@ -656,15 +791,15 @@ export class PerformancePurchaseOrderService extends BaseService {
     );
     const supplierId = normalizeRequiredPositiveInt(
       payload.supplierId ?? existing?.supplierId,
-      '供应商不存在'
+      PERFORMANCE_SUPPLIER_NOT_FOUND_MESSAGE
     );
     const departmentId = normalizeRequiredPositiveInt(
       payload.departmentId ?? existing?.departmentId,
-      '部门不存在'
+      PERFORMANCE_DEPARTMENT_NOT_FOUND_MESSAGE
     );
     const requesterId = normalizeRequiredPositiveInt(
       payload.requesterId ?? existing?.requesterId,
-      '申请人不存在'
+      PERFORMANCE_PURCHASE_ORDER_REQUESTER_NOT_FOUND_MESSAGE
     );
     const orderDate = normalizeRequiredText(
       payload.orderDate ?? existing?.orderDate,
@@ -691,14 +826,16 @@ export class PerformancePurchaseOrderService extends BaseService {
       const requestedStatus = this.normalizeStatus(payload.status);
       const expectedStatus = mode === 'add' ? 'draft' : existing?.status;
       if (requestedStatus !== expectedStatus) {
-        throw new CoolCommException('请通过流程动作更新采购状态');
+        throw new CoolCommException(
+          PERFORMANCE_PURCHASE_ORDER_STATUS_ACTION_REQUIRED_MESSAGE
+        );
       }
     }
 
     await this.assertSupplierExists(supplierId);
     await this.assertDepartmentExists(departmentId);
     await this.assertRequesterExists(requesterId);
-    await this.assertCanManageDepartment(departmentId, perms);
+    await this.assertCanManageDepartment(departmentId, access, capabilityKey);
     await this.assertOrderNoUnique(orderNo, existing?.id);
 
     return {
@@ -722,7 +859,7 @@ export class PerformancePurchaseOrderService extends BaseService {
   private normalizeStatus(value: any) {
     const status = String(value || 'draft').trim() as PurchaseOrderStatus;
     if (!PURCHASE_ORDER_STATUS.includes(status)) {
-      throw new CoolCommException('采购订单状态不合法');
+      throw new CoolCommException(PERFORMANCE_PURCHASE_ORDER_STATUS_INVALID_MESSAGE);
     }
     return status;
   }
@@ -730,7 +867,7 @@ export class PerformancePurchaseOrderService extends BaseService {
   private normalizeCurrency(value: any) {
     const currency = String(value || 'CNY').trim();
     if (!currency || currency.length > 20) {
-      throw new CoolCommException('币种不合法');
+      throw new CoolCommException(PERFORMANCE_PURCHASE_ORDER_CURRENCY_INVALID_MESSAGE);
     }
     return currency;
   }
@@ -738,7 +875,9 @@ export class PerformancePurchaseOrderService extends BaseService {
   private normalizeAmount(value: any) {
     const amount = Number(value);
     if (!Number.isFinite(amount) || amount < 0) {
-      throw new CoolCommException('订单总金额不合法');
+      throw new CoolCommException(
+        PERFORMANCE_PURCHASE_ORDER_TOTAL_AMOUNT_INVALID_MESSAGE
+      );
     }
     return Number(amount.toFixed(2));
   }
@@ -749,7 +888,7 @@ export class PerformancePurchaseOrderService extends BaseService {
       return [];
     }
     if (!Array.isArray(parsed)) {
-      throw new CoolCommException('采购明细格式不合法');
+      throw new CoolCommException(PERFORMANCE_PURCHASE_ORDER_ITEMS_INVALID_MESSAGE);
     }
 
     return parsed.map((item, index) => {
@@ -814,55 +953,62 @@ export class PerformancePurchaseOrderService extends BaseService {
   }
 
   private async currentPerms() {
-    const admin = this.currentAdmin;
-    if (!admin?.roleIds) {
-      throw new CoolCommException('登录状态已失效');
+    return this.performanceAccessContextService.resolveAccessContext(undefined, {
+      allowEmptyRoleIds: false,
+      missingAuthMessage: '登录状态已失效',
+    });
+  }
+
+  private resolveCapabilityKey(perm: string): PerformanceCapabilityKey {
+    const capabilityKey = this.capabilityByPerm[perm];
+    if (!capabilityKey) {
+      throw new CoolCommException(`未映射的采购订单权限: ${perm}`);
     }
-    return this.baseSysMenuService.getPerms(admin.roleIds);
+    return capabilityKey;
   }
 
-  private hasPerm(perms: string[], perm: string) {
-    return perms.includes(perm);
-  }
-
-  private assertPerm(perms: string[], perm: string, message: string) {
-    if (!this.hasPerm(perms, perm)) {
+  private assertPerm(
+    access: PerformanceResolvedAccessContext,
+    perm: string,
+    message: string
+  ) {
+    if (
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        this.resolveCapabilityKey(perm)
+      )
+    ) {
       throw new CoolCommException(message);
     }
   }
 
-  private isHr(perms: string[]) {
-    return (
-      this.currentAdmin?.isAdmin === true ||
-      this.currentAdmin?.username === 'admin' ||
-      this.hasPerm(perms, this.perms.delete)
-    );
-  }
-
   private currentUserId() {
-    return Number(this.currentAdmin?.userId || 0) || null;
+    return Number(this.ctx?.admin?.userId || 0) || null;
   }
 
   private currentUserName() {
     return String(
-      this.currentAdmin?.name || this.currentAdmin?.nickName || this.currentAdmin?.username || ''
+      this.ctx?.admin?.name ||
+        this.ctx?.admin?.nickName ||
+        this.ctx?.admin?.username ||
+        ''
     );
   }
 
-  private async departmentScopeIds(perms: string[]) {
-    if (this.isHr(perms)) {
+  private async departmentScopeIds(
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
+  ) {
+    if (
+      this.performanceAccessContextService.hasCapabilityInScopes(access, capabilityKey, [
+        'company',
+      ])
+    ) {
       return null;
     }
-
-    const userId = Number(this.currentAdmin?.userId || 0);
-    if (!userId) {
-      throw new CoolCommException('登录上下文缺失');
-    }
-
-    const ids = await this.baseSysPermsService.departmentIds(userId);
     return Array.from(
       new Set(
-        (Array.isArray(ids) ? ids : [])
+        (Array.isArray(access.departmentIds) ? access.departmentIds : [])
           .map(item => Number(item))
           .filter(item => Number.isInteger(item) && item > 0)
       )
@@ -896,54 +1042,65 @@ export class PerformancePurchaseOrderService extends BaseService {
 
   private async assertPurchaseOrderInScope(
     purchaseOrder: PerformancePurchaseOrderEntity,
-    perms: string[],
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey,
     message: string
   ) {
-    if (this.isHr(perms)) {
+    if (
+      this.performanceAccessContextService.matchesScope(
+        access,
+        this.performanceAccessContextService.capabilityScopes(access, capabilityKey),
+        {
+          departmentId: Number(purchaseOrder.departmentId || 0),
+        }
+      )
+    ) {
       return;
     }
-
-    const departmentIds = await this.departmentScopeIds(perms);
-    if (!departmentIds?.includes(Number(purchaseOrder.departmentId || 0))) {
-      throw new CoolCommException(message);
-    }
+    throw new CoolCommException(message);
   }
 
-  private async assertCanManageDepartment(departmentId: number, perms: string[]) {
-    if (this.isHr(perms)) {
+  private async assertCanManageDepartment(
+    departmentId: number,
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
+  ) {
+    if (
+      this.performanceAccessContextService.matchesScope(
+        access,
+        this.performanceAccessContextService.capabilityScopes(access, capabilityKey),
+        { departmentId }
+      )
+    ) {
       return;
     }
-
-    const departmentIds = await this.departmentScopeIds(perms);
-    if (!departmentIds?.includes(departmentId)) {
-      throw new CoolCommException('无权操作该采购订单');
-    }
+    throw new CoolCommException(PERFORMANCE_PURCHASE_ORDER_OPERATE_DENIED_MESSAGE);
   }
 
   private assertEditableStatus(status: PurchaseOrderStatus) {
     if (status !== 'draft') {
-      throw new CoolCommException('当前状态不允许编辑');
+      throw new CoolCommException(PERFORMANCE_STATE_EDIT_NOT_ALLOWED_MESSAGE);
     }
   }
 
   private async assertSupplierExists(supplierId: number) {
     const supplier = await this.performanceSupplierEntity.findOneBy({ id: supplierId });
     if (!supplier) {
-      throw new CoolCommException('供应商不存在');
+      throw new CoolCommException(PERFORMANCE_SUPPLIER_NOT_FOUND_MESSAGE);
     }
   }
 
   private async assertDepartmentExists(departmentId: number) {
     const department = await this.baseSysDepartmentEntity.findOneBy({ id: departmentId });
     if (!department) {
-      throw new CoolCommException('部门不存在');
+      throw new CoolCommException(PERFORMANCE_DEPARTMENT_NOT_FOUND_MESSAGE);
     }
   }
 
   private async assertRequesterExists(requesterId: number) {
     const requester = await this.baseSysUserEntity.findOneBy({ id: requesterId });
     if (!requester) {
-      throw new CoolCommException('申请人不存在');
+      throw new CoolCommException(PERFORMANCE_PURCHASE_ORDER_REQUESTER_NOT_FOUND_MESSAGE);
     }
   }
 
@@ -953,14 +1110,16 @@ export class PerformancePurchaseOrderService extends BaseService {
     }
     const exists = await this.performancePurchaseOrderEntity.findOneBy({ orderNo });
     if (exists && Number(exists.id) !== Number(excludeId || 0)) {
-      throw new CoolCommException('订单编号已存在');
+      throw new CoolCommException(
+        PERFORMANCE_PURCHASE_ORDER_ORDER_NO_DUPLICATE_MESSAGE
+      );
     }
   }
 
   private async requirePurchaseOrder(id: number) {
     const purchaseOrder = await this.performancePurchaseOrderEntity.findOneBy({ id });
     if (!purchaseOrder) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
     return purchaseOrder;
   }

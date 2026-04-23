@@ -4,14 +4,13 @@
  * 维护重点是禁止把主题14扩写为真实 AI 供应商协议或额外状态机。
  */
 import { CoolCommException } from '@cool-midway/core';
+import { COURSE_LEARNING_TASK_STATUS_VALUES } from './course-learning-dict';
 
 export type CourseLearningTaskStatus = 'pending' | 'submitted' | 'evaluated';
 export type CourseExamResultStatus = 'locked' | 'pending' | 'passed' | 'failed';
 
 const TASK_STATUS_SET: CourseLearningTaskStatus[] = [
-  'pending',
-  'submitted',
-  'evaluated',
+  ...COURSE_LEARNING_TASK_STATUS_VALUES,
 ];
 
 export const DEFAULT_COURSE_EXAM_PASS_THRESHOLD = 60;

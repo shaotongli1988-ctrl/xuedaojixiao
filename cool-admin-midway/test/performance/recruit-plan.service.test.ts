@@ -3,6 +3,7 @@
  * 招聘计划服务测试。
  * 这里只验证主题16备案制扩展版的主链、部门树权限、导入导出、删除限制和状态机约束。
  */
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
 import { PerformanceRecruitPlanService } from '../../src/modules/performance/service/recruit-plan';
 
 const HR_PERMS = [
@@ -34,6 +35,19 @@ const createQueryBuilder = (rows: any[]) => {
     getCount: jest.fn().mockResolvedValue(rows.length),
     getRawMany: jest.fn().mockResolvedValue(rows),
   };
+};
+
+const attachAccessContext = (service: any) => {
+  const accessService = new PerformanceAccessContextService() as any;
+  accessService.ctx = service.ctx;
+  accessService.baseSysMenuService =
+    service.baseSysMenuService || { getPerms: jest.fn().mockResolvedValue([]) };
+  accessService.baseSysPermsService =
+    service.baseSysPermsService || {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+  service.performanceAccessContextService = accessService;
+  return service;
 };
 
 const createService = (options?: {
@@ -205,6 +219,7 @@ const createService = (options?: {
   service.performanceHiringEntity = {
     count: jest.fn().mockResolvedValue(options?.downstreamCounts?.hiring || 0),
   };
+  attachAccessContext(service);
 
   return { service, qb, plan, savedPayloads };
 };

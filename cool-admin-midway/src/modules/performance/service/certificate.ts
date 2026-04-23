@@ -5,9 +5,6 @@
  */
 import {
   App,
-  ASYNC_CONTEXT_KEY,
-  ASYNC_CONTEXT_MANAGER_KEY,
-  AsyncContextManager,
   IMidwayApplication,
   Inject,
   Provide,
@@ -17,30 +14,39 @@ import {
 import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Brackets, In, Repository } from 'typeorm';
-import * as jwt from 'jsonwebtoken';
 import { BaseSysDepartmentEntity } from '../../base/entity/sys/department';
 import { BaseSysUserEntity } from '../../base/entity/sys/user';
-import { BaseSysMenuService } from '../../base/service/sys/menu';
-import { BaseSysPermsService } from '../../base/service/sys/perms';
 import { PerformanceCertificateEntity } from '../entity/certificate';
 import { PerformanceCertificateRecordEntity } from '../entity/certificate-record';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import {
   assertCertificateTransition,
   normalizeCertificatePayload,
   normalizeIssuePayload,
 } from './certificate-helper';
-
-const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
-  return require('../../base/config').default({
-    app,
-    env: app?.getEnv?.(),
-  }).jwt;
-};
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  resolvePerformanceCurrentAdmin,
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
 
 const normalizePagination = (value: any, fallback: number) => {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 };
+const PERFORMANCE_EMPLOYEE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.employeeNotFound
+  );
+const PERFORMANCE_CERTIFICATE_ID_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.certificateIdInvalid
+  );
 
 @Provide()
 @Scope(ScopeEnum.Request, { allowDowngrade: true })
@@ -58,10 +64,7 @@ export class PerformanceCertificateService extends BaseService {
   baseSysDepartmentEntity: Repository<BaseSysDepartmentEntity>;
 
   @Inject()
-  baseSysMenuService: BaseSysMenuService;
-
-  @Inject()
-  baseSysPermsService: BaseSysPermsService;
+  performanceAccessContextService: PerformanceAccessContextService;
 
   @Inject()
   ctx;
@@ -70,43 +73,28 @@ export class PerformanceCertificateService extends BaseService {
   app: IMidwayApplication;
 
   private readonly perms = {
-    page: 'performance:certificate:page',
-    info: 'performance:certificate:info',
-    add: 'performance:certificate:add',
-    update: 'performance:certificate:update',
-    issue: 'performance:certificate:issue',
-    recordPage: 'performance:certificate:recordPage',
+    page: PERMISSIONS.performance.certificate.page,
+    info: PERMISSIONS.performance.certificate.info,
+    add: PERMISSIONS.performance.certificate.add,
+    update: PERMISSIONS.performance.certificate.update,
+    issue: PERMISSIONS.performance.certificate.issue,
+    recordPage: PERMISSIONS.performance.certificate.recordPage,
   };
 
-  private get currentCtx() {
-    if (this.ctx?.admin) {
-      return this.ctx;
-    }
-    try {
-      const contextManager: AsyncContextManager = this.app
-        .getApplicationContext()
-        .get(ASYNC_CONTEXT_MANAGER_KEY);
-      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as any;
-    } catch (error) {
-      return this.ctx;
-    }
-  }
+  private readonly capabilityByPerm: Record<string, PerformanceCapabilityKey> = {
+    [PERMISSIONS.performance.certificate.page]: 'certificate.read',
+    [PERMISSIONS.performance.certificate.info]: 'certificate.read',
+    [PERMISSIONS.performance.certificate.add]: 'certificate.create',
+    [PERMISSIONS.performance.certificate.update]: 'certificate.update',
+    [PERMISSIONS.performance.certificate.issue]: 'certificate.issue',
+    [PERMISSIONS.performance.certificate.recordPage]: 'certificate.record.read',
+  };
 
   private get currentAdmin() {
-    if (this.currentCtx?.admin) {
-      return this.currentCtx.admin;
-    }
-    const token =
-      this.currentCtx?.get?.('Authorization') ||
-      this.currentCtx?.headers?.authorization;
-    if (!token) {
-      return undefined;
-    }
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
+    return resolvePerformanceCurrentAdmin({
+      ctx: this.ctx,
+      app: this.app,
+    });
   }
 
   async page(query: any) {
@@ -234,7 +222,7 @@ export class PerformanceCertificateService extends BaseService {
     });
 
     if (!employee) {
-      throw new CoolCommException('员工不存在');
+      throw new CoolCommException(PERFORMANCE_EMPLOYEE_NOT_FOUND_MESSAGE);
     }
 
     const departmentId = Number(employee.departmentId || 0) || null;
@@ -274,12 +262,12 @@ export class PerformanceCertificateService extends BaseService {
   }
 
   async recordPage(query: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.recordPage, '无权限查看证书记录列表');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.recordPage, '无权限查看证书记录列表');
 
     const page = normalizePagination(query.page, 1);
     const size = normalizePagination(query.size, 20);
-    const departmentScopeIds = await this.departmentScopeIds(perms);
+    const departmentScopeIds = await this.departmentScopeIds(access);
     const qb = this.performanceCertificateRecordEntity
       .createQueryBuilder('record')
       .leftJoin(
@@ -359,17 +347,31 @@ export class PerformanceCertificateService extends BaseService {
   }
 
   private async currentPerms() {
-    const admin = this.currentAdmin;
-
-    if (!admin?.roleIds) {
-      throw new CoolCommException('登录状态已失效');
-    }
-
-    return this.baseSysMenuService.getPerms(admin.roleIds);
+    return this.performanceAccessContextService.resolveAccessContext(undefined, {
+      allowEmptyRoleIds: false,
+      missingAuthMessage: '登录状态已失效',
+    });
   }
 
-  private assertPerm(perms: string[], perm: string, message: string) {
-    if (!perms.includes(perm)) {
+  private resolveCapabilityKey(perm: string): PerformanceCapabilityKey {
+    const capabilityKey = this.capabilityByPerm[perm];
+    if (!capabilityKey) {
+      throw new CoolCommException(`未映射的证书权限: ${perm}`);
+    }
+    return capabilityKey;
+  }
+
+  private assertPerm(
+    access: PerformanceResolvedAccessContext,
+    perm: string,
+    message: string
+  ) {
+    if (
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        this.resolveCapabilityKey(perm)
+      )
+    ) {
       throw new CoolCommException(message);
     }
   }
@@ -378,7 +380,7 @@ export class PerformanceCertificateService extends BaseService {
     const certificateId = Number(id || 0);
 
     if (!Number.isInteger(certificateId) || certificateId <= 0) {
-      throw new CoolCommException('证书 ID 不合法');
+      throw new CoolCommException(PERFORMANCE_CERTIFICATE_ID_INVALID_MESSAGE);
     }
 
     const certificate = await this.performanceCertificateEntity.findOneBy({
@@ -480,29 +482,24 @@ export class PerformanceCertificateService extends BaseService {
     };
   }
 
-  private hasHrScope(perms: string[]) {
-    return (
-      perms.includes(this.perms.add) ||
-      perms.includes(this.perms.update) ||
-      perms.includes(this.perms.issue) ||
-      Boolean(this.currentAdmin?.isAdmin) ||
-      this.currentAdmin?.username === 'admin'
-    );
-  }
-
-  private async departmentScopeIds(perms: string[]) {
-    if (this.hasHrScope(perms)) {
+  private async departmentScopeIds(access: PerformanceResolvedAccessContext) {
+    if (
+      this.performanceAccessContextService.hasCapabilityInScopes(
+        access,
+        'certificate.record.read',
+        ['company']
+      )
+    ) {
       return null;
     }
 
-    const userId = Number(this.currentAdmin?.userId || 0);
-
-    if (!userId) {
-      throw new CoolCommException('登录上下文缺失');
-    }
-
-    const ids = await this.baseSysPermsService.departmentIds(userId);
-    return Array.isArray(ids) ? ids.map(item => Number(item)) : [];
+    return Array.from(
+      new Set(
+        (Array.isArray(access.departmentIds) ? access.departmentIds : [])
+          .map(item => Number(item))
+          .filter(item => Number.isInteger(item) && item > 0)
+      )
+    );
   }
 
   private applyDepartmentScope(qb: any, departmentIds: number[] | null) {

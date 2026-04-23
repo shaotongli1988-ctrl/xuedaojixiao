@@ -3,6 +3,7 @@
  * 录用管理服务最小测试。
  * 这里只验证主题18冻结的主链、状态机、部门树范围和员工拒绝，不覆盖真实数据库或控制器联调。
  */
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
 import { PerformanceHiringService } from '../../src/modules/performance/service/hiring';
 
 const HR_PERMS = [
@@ -11,7 +12,7 @@ const HR_PERMS = [
   'performance:hiring:add',
   'performance:hiring:updateStatus',
   'performance:hiring:close',
-  'performance:salary:page',
+  'performance:hiring:all',
 ];
 
 const MANAGER_PERMS = [
@@ -57,8 +58,6 @@ function createHiringRecord(id: number, overrides: Partial<any> = {}) {
       targetDepartmentId: 11,
       targetDepartmentName: '研发部',
       targetPosition: '后端工程师',
-      phone: '13800000000',
-      email: 'candidate@example.com',
       status: 'interviewing',
       recruitPlanId: 301,
       jobStandardId: 501,
@@ -100,6 +99,19 @@ function createPageQueryBuilder(rows: any[]) {
   };
 }
 
+function attachAccessContext(service: any) {
+  const accessService = new PerformanceAccessContextService() as any;
+  accessService.ctx = service.ctx;
+  accessService.baseSysMenuService =
+    service.baseSysMenuService || { getPerms: jest.fn().mockResolvedValue([]) };
+  accessService.baseSysPermsService =
+    service.baseSysPermsService || {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+  service.performanceAccessContextService = accessService;
+  return service;
+}
+
 function createHrService() {
   const records = new Map<number, any>();
   records.set(1, createHiringRecord(1));
@@ -124,9 +136,6 @@ function createHrService() {
   };
   service.baseSysPermsService = {
     departmentIds: jest.fn().mockResolvedValue([]),
-  };
-  service.baseSysRoleEntity = {
-    findBy: jest.fn().mockResolvedValue([]),
   };
   service.baseSysDepartmentEntity = {
     findOneBy: jest.fn().mockResolvedValue({ id: 11, name: '研发部' }),
@@ -196,6 +205,7 @@ function createHrService() {
       });
     }),
   };
+  attachAccessContext(service);
 
   return { service, qb };
 }
@@ -246,6 +256,8 @@ describe('performance hiring service', () => {
       recruitPlanSummary: expect.objectContaining({ id: 301 }),
       status: 'offered',
     });
+    expect(pageResult.list[0].resumePoolSummary).not.toHaveProperty('phone');
+    expect(pageResult.list[0].resumePoolSummary).not.toHaveProperty('email');
     expect(infoResult).toMatchObject({
       id: 1,
       hiringDecision: '录用决策正文',
@@ -254,6 +266,8 @@ describe('performance hiring service', () => {
       resumePoolId: 21,
       recruitPlanId: 301,
     });
+    expect(infoResult.resumePoolSummary).not.toHaveProperty('phone');
+    expect(infoResult.resumePoolSummary).not.toHaveProperty('email');
     expect(added).toMatchObject({
       candidateName: '张三',
       status: 'offered',
@@ -336,6 +350,7 @@ describe('performance hiring service', () => {
     service.performanceHiringEntity = {
       createQueryBuilder: jest.fn().mockReturnValue(qb),
     };
+    attachAccessContext(service);
 
     const pageResult = await service.page({ page: 1, size: 10 });
 
@@ -364,6 +379,7 @@ describe('performance hiring service', () => {
     service.baseSysMenuService = {
       getPerms: jest.fn().mockResolvedValue([]),
     };
+    attachAccessContext(service);
 
     await expect(service.page({ page: 1, size: 10 })).rejects.toThrow('无权限查看录用列表');
   });
@@ -395,6 +411,7 @@ describe('performance hiring service', () => {
       ),
       update: jest.fn(),
     };
+    attachAccessContext(service);
 
     await expect(
       service.updateStatus({

@@ -3,6 +3,7 @@
  * 行政协同共享记录服务最小测试。
  * 这里只验证主题22的正常主链、权限拒绝和关键边界校验，不覆盖真实数据库、控制器装饰器或联调菜单导入。
  */
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
 import { PerformanceOfficeCollabRecordService } from '../../src/modules/performance/service/office-collab-record';
 
 function clone<T>(value: T): T {
@@ -98,6 +99,19 @@ function buildModulePerms(moduleKey: string) {
   ];
 }
 
+function attachAccessContext(service: any) {
+  const accessService = new PerformanceAccessContextService() as any;
+  accessService.ctx = service.ctx;
+  accessService.baseSysMenuService =
+    service.baseSysMenuService || { getPerms: jest.fn().mockResolvedValue([]) };
+  accessService.baseSysPermsService =
+    service.baseSysPermsService || {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+  service.performanceAccessContextService = accessService;
+  return service;
+}
+
 function createService(perms: string[]) {
   const collabRepo = createMemoryRepo([
     {
@@ -161,6 +175,7 @@ function createService(perms: string[]) {
   };
   service.performanceOfficeCollabRecordEntity = collabRepo;
   service.performanceDocumentCenterEntity = documentRepo;
+  attachAccessContext(service);
 
   return {
     service,

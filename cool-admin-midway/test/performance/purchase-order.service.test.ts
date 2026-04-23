@@ -3,6 +3,7 @@
  * 采购订单与采购报表定向测试。
  * 这里只覆盖主题11扩容后的最小闭环：流程动作、非法流转、经理范围、员工拒绝、终态锁定和报表只读。
  */
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
 import { PerformancePurchaseOrderService } from '../../src/modules/performance/service/purchase-order';
 import { PerformancePurchaseReportService } from '../../src/modules/performance/service/purchase-report';
 
@@ -43,6 +44,19 @@ const decodeIn = (value: any) => (value && value._type === 'in' ? value._value :
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
+function attachAccessContext(service: any) {
+  const accessService = new PerformanceAccessContextService() as any;
+  accessService.ctx = service.ctx;
+  accessService.baseSysMenuService =
+    service.baseSysMenuService || { getPerms: jest.fn().mockResolvedValue([]) };
+  accessService.baseSysPermsService =
+    service.baseSysPermsService || {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+  service.performanceAccessContextService = accessService;
+  return service;
+}
+
 const buildOrder = (overrides: Record<string, any> = {}) => ({
   id: 11,
   orderNo: 'PO-011',
@@ -69,6 +83,21 @@ const buildOrder = (overrides: Record<string, any> = {}) => ({
   createTime: '2026-04-19 09:00:00',
   updateTime: '2026-04-19 09:00:00',
   tenantId: null,
+  ...overrides,
+});
+
+const buildAddPayload = (overrides: Record<string, any> = {}) => ({
+  orderNo: 'PO-100',
+  title: '办公设备采购',
+  supplierId: 6,
+  departmentId: 21,
+  requesterId: 8,
+  orderDate: '2026-04-19',
+  expectedDeliveryDate: '2026-04-25',
+  totalAmount: 20000,
+  currency: 'CNY',
+  remark: '季度采购',
+  items: [{ name: '笔记本', quantity: 10, unitPrice: 2000 }],
   ...overrides,
 });
 
@@ -202,6 +231,7 @@ function createPurchaseOrderService(options: {
     { id: 8, name: '张三' },
     { id: 9, name: '李经理' },
   ]);
+  attachAccessContext(service);
 
   return { service, orderRepo };
 }
@@ -227,6 +257,8 @@ function createPurchaseReportService(options: {
     { id: 6, name: '星云供应商' },
     { id: 7, name: '北辰供应商' },
   ]);
+
+  attachAccessContext(service);
 
   return { service };
 }
@@ -329,7 +361,16 @@ describe('performance purchase order service', () => {
       '当前状态不允许审批'
     );
     await service.submitInquiry({ id: 12, inquiryRemark: '进入询价' });
+    await expect(
+      service.submitInquiry({ id: 12, inquiryRemark: '重复提交询价' })
+    ).rejects.toThrow('当前状态不允许提交询价');
+    await expect(
+      service.reject({ id: 12, approvalRemark: '未到审批态驳回' })
+    ).rejects.toThrow('当前状态不允许驳回');
     await service.submitApproval({ id: 12, approvalRemark: '进入审批' });
+    await expect(
+      service.submitApproval({ id: 12, approvalRemark: '重复提交审批' })
+    ).rejects.toThrow('当前状态不允许提交采购审批');
     await service.approve({ id: 12, approvalRemark: '审批通过' });
     await service.close({ id: 12, closedReason: '无需收货关闭' });
 
@@ -375,6 +416,10 @@ describe('performance purchase order service', () => {
     employeeService.baseSysMenuService = {
       getPerms: jest.fn().mockResolvedValue([]),
     };
+    employeeService.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+    attachAccessContext(employeeService);
 
     await expect(
       employeeService.add({
@@ -386,6 +431,69 @@ describe('performance purchase order service', () => {
         totalAmount: 10,
       })
     ).rejects.toThrow('无权限新增采购订单');
+  });
+
+  test('should reject invalid purchase order validation inputs with shared semantics', async () => {
+    const { service } = createPurchaseOrderService({
+      perms: ALL_PURCHASE_ORDER_PERMS,
+      admin: {
+        userId: 1,
+        username: 'hr_admin',
+        roleIds: [1],
+        name: 'HR 管理员',
+      },
+      orders: [buildOrder({ id: 41, orderNo: 'PO-041' })],
+    });
+
+    await expect(
+      service.add(buildAddPayload({ orderNo: 'PO-STATUS', status: 'archived' }))
+    ).rejects.toThrow('采购订单状态不合法');
+    await expect(
+      service.add(buildAddPayload({ orderNo: 'PO-CURRENCY', currency: ' '.repeat(21) }))
+    ).rejects.toThrow('币种不合法');
+    await expect(
+      service.add(buildAddPayload({ orderNo: 'PO-AMOUNT', totalAmount: -1 }))
+    ).rejects.toThrow('订单总金额不合法');
+    await expect(
+      service.add(buildAddPayload({ orderNo: 'PO-ITEMS', items: { name: '笔记本' } }))
+    ).rejects.toThrow('采购明细格式不合法');
+    await expect(
+      service.add(buildAddPayload({ orderNo: 'PO-JSON', items: '{"name":' }))
+    ).rejects.toThrow('JSON 字段格式不合法');
+    await expect(
+      service.add(buildAddPayload({ orderNo: 'PO-041' }))
+    ).rejects.toThrow('订单编号已存在');
+    await expect(
+      service.add(buildAddPayload({ orderNo: 'PO-REQUESTER', requesterId: 999 }))
+    ).rejects.toThrow('申请人不存在');
+    await expect(
+      service.add(buildAddPayload({ orderNo: 'PO-STATUS-ACTION', status: 'approved' }))
+    ).rejects.toThrow('请通过流程动作更新采购状态');
+  });
+
+  test('should reject receive quantity overflow with shared semantics', async () => {
+    const { service } = createPurchaseOrderService({
+      perms: ALL_PURCHASE_ORDER_PERMS,
+      admin: {
+        userId: 1,
+        username: 'hr_admin',
+        roleIds: [1],
+        name: 'HR 管理员',
+      },
+      orders: [
+        buildOrder({
+          id: 42,
+          orderNo: 'PO-042',
+          status: 'approved',
+          receivedQuantity: 1,
+          items: [{ name: '笔记本', quantity: 2, unitPrice: 2000, totalAmount: 4000 }],
+        }),
+      ],
+    });
+
+    await expect(
+      service.receive({ id: 42, quantity: 2, remark: '超量收货' })
+    ).rejects.toThrow('累计收货数量不能超过明细数量');
   });
 });
 

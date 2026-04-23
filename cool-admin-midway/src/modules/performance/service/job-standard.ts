@@ -4,11 +4,6 @@
  * 维护重点是 HR 全量可写、经理部门树范围只读、员工拒绝，以及 draft/active/inactive 状态机必须由服务端硬兜底。
  */
 import {
-  App,
-  ASYNC_CONTEXT_KEY,
-  ASYNC_CONTEXT_MANAGER_KEY,
-  AsyncContextManager,
-  IMidwayApplication,
   Inject,
   Provide,
   Scope,
@@ -19,18 +14,58 @@ import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Brackets, Repository } from 'typeorm';
 import { BaseSysDepartmentEntity } from '../../base/entity/sys/department';
 import { BaseSysMenuService } from '../../base/service/sys/menu';
-import { BaseSysPermsService } from '../../base/service/sys/perms';
 import { PerformanceJobStandardEntity } from '../entity/job-standard';
-import * as jwt from 'jsonwebtoken';
-
-const JOB_STANDARD_STATUS = ['draft', 'active', 'inactive'];
-
-const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
-  return require('../../base/config').default({
-    app,
-    env: app?.getEnv?.(),
-  }).jwt;
-};
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import { JOB_STANDARD_STATUS_VALUES } from './job-standard-dict';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
+const PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resourceNotFound
+  );
+const PERFORMANCE_TARGET_DEPARTMENT_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.targetDepartmentNotFound
+  );
+const PERFORMANCE_TARGET_DEPARTMENT_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.targetDepartmentRequired
+  );
+const PERFORMANCE_JOB_STANDARD_INACTIVE_EDIT_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.jobStandardInactiveEditDenied
+  );
+const PERFORMANCE_JOB_STANDARD_ID_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.jobStandardIdInvalid
+  );
+const PERFORMANCE_JOB_STANDARD_TRANSITION_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.jobStandardTransitionDenied
+  );
+const PERFORMANCE_JOB_STANDARD_POSITION_NAME_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.jobStandardPositionNameRequired
+  );
+const PERFORMANCE_JOB_STANDARD_CREATE_DRAFT_ONLY_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.jobStandardCreateDraftOnly
+  );
+const PERFORMANCE_JOB_STANDARD_STATUS_ACTION_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.jobStandardStatusActionRequired
+  );
+const PERFORMANCE_JOB_STANDARD_STATUS_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.jobStandardStatusInvalid
+  );
 
 @Provide()
 @Scope(ScopeEnum.Request, { allowDowngrade: true })
@@ -45,52 +80,23 @@ export class PerformanceJobStandardService extends BaseService {
   baseSysMenuService: BaseSysMenuService;
 
   @Inject()
-  baseSysPermsService: BaseSysPermsService;
-
-  @Inject()
-  ctx;
-
-  @App()
-  app: IMidwayApplication;
+  performanceAccessContextService: PerformanceAccessContextService;
 
   private readonly perms = {
-    page: 'performance:jobStandard:page',
-    info: 'performance:jobStandard:info',
-    add: 'performance:jobStandard:add',
-    update: 'performance:jobStandard:update',
-    setStatus: 'performance:jobStandard:setStatus',
+    page: PERMISSIONS.performance.jobStandard.page,
+    info: PERMISSIONS.performance.jobStandard.info,
+    add: PERMISSIONS.performance.jobStandard.add,
+    update: PERMISSIONS.performance.jobStandard.update,
+    setStatus: PERMISSIONS.performance.jobStandard.setStatus,
   };
 
-  private get currentCtx() {
-    if (this.ctx?.admin) {
-      return this.ctx;
-    }
-    try {
-      const contextManager: AsyncContextManager = this.app
-        .getApplicationContext()
-        .get(ASYNC_CONTEXT_MANAGER_KEY);
-      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as any;
-    } catch (error) {
-      return this.ctx;
-    }
-  }
-
-  private get currentAdmin() {
-    if (this.currentCtx?.admin) {
-      return this.currentCtx.admin;
-    }
-    const token =
-      this.currentCtx?.get?.('Authorization') ||
-      this.currentCtx?.headers?.authorization;
-    if (!token) {
-      return undefined;
-    }
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
-  }
+  private readonly capabilityByPerm: Record<string, PerformanceCapabilityKey> = {
+    [PERMISSIONS.performance.jobStandard.page]: 'job_standard.read',
+    [PERMISSIONS.performance.jobStandard.info]: 'job_standard.read',
+    [PERMISSIONS.performance.jobStandard.add]: 'job_standard.create',
+    [PERMISSIONS.performance.jobStandard.update]: 'job_standard.update',
+    [PERMISSIONS.performance.jobStandard.setStatus]: 'job_standard.set_status',
+  };
 
   async page(query: any) {
     const perms = await this.currentPerms();
@@ -193,7 +199,9 @@ export class PerformanceJobStandardService extends BaseService {
     await this.assertReadableInScope(record, perms, '无权修改该职位标准');
 
     if (record.status === 'inactive') {
-      throw new CoolCommException('停用中的职位标准不可直接编辑');
+      throw new CoolCommException(
+        PERFORMANCE_JOB_STANDARD_INACTIVE_EDIT_DENIED_MESSAGE
+      );
     }
 
     const normalized = await this.normalizePayload(payload, record, 'update');
@@ -208,7 +216,7 @@ export class PerformanceJobStandardService extends BaseService {
 
     const id = Number(payload.id);
     if (!Number.isInteger(id) || id <= 0) {
-      throw new CoolCommException('职位标准 ID 不合法');
+      throw new CoolCommException(PERFORMANCE_JOB_STANDARD_ID_INVALID_MESSAGE);
     }
 
     const targetStatus = this.normalizeStatus(payload.status);
@@ -216,7 +224,9 @@ export class PerformanceJobStandardService extends BaseService {
     const currentStatus = String(record.status || '').trim();
 
     if (!this.canTransit(currentStatus, targetStatus)) {
-      throw new CoolCommException('当前状态不允许切换到目标状态');
+      throw new CoolCommException(
+        PERFORMANCE_JOB_STANDARD_TRANSITION_DENIED_MESSAGE
+      );
     }
 
     await this.performanceJobStandardEntity.update(
@@ -228,42 +238,53 @@ export class PerformanceJobStandardService extends BaseService {
   }
 
   private async currentPerms() {
-    const admin = this.currentAdmin;
-
-    if (!admin?.roleIds) {
-      throw new CoolCommException('登录状态已失效');
-    }
-
-    return this.baseSysMenuService.getPerms(admin.roleIds);
+    return this.performanceAccessContextService.resolveAccessContext(undefined, {
+      allowEmptyRoleIds: false,
+      missingAuthMessage: '登录状态已失效',
+    });
   }
 
-  private assertPerm(perms: string[], perm: string, message: string) {
-    if (!perms.includes(perm)) {
+  private resolveCapabilityKey(perm: string): PerformanceCapabilityKey {
+    const capabilityKey = this.capabilityByPerm[perm];
+    if (!capabilityKey) {
+      throw new CoolCommException(`未映射的职位标准权限: ${perm}`);
+    }
+    return capabilityKey;
+  }
+
+  private assertPerm(
+    access: PerformanceResolvedAccessContext,
+    perm: string,
+    message: string
+  ) {
+    if (
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        this.resolveCapabilityKey(perm)
+      )
+    ) {
       throw new CoolCommException(message);
     }
   }
 
-  private hasGlobalScope(perms: string[]) {
-    return (
-      this.currentAdmin?.username === 'admin' ||
-      perms.includes(this.perms.add) ||
-      perms.includes(this.perms.update) ||
-      perms.includes(this.perms.setStatus)
-    );
-  }
-
-  private async departmentScopeIds(perms: string[]) {
-    if (this.hasGlobalScope(perms)) {
+  private async departmentScopeIds(access: PerformanceResolvedAccessContext) {
+    if (
+      this.performanceAccessContextService.hasCapabilityInScopes(
+        access,
+        'job_standard.read',
+        ['company']
+      )
+    ) {
       return null;
     }
 
-    const userId = Number(this.currentAdmin?.userId || 0);
-    if (!userId) {
-      throw new CoolCommException('登录上下文缺失');
-    }
-
-    const ids = await this.baseSysPermsService.departmentIds(userId);
-    return Array.isArray(ids) ? ids.map(item => Number(item)) : [];
+    return Array.from(
+      new Set(
+        (Array.isArray(access.departmentIds) ? access.departmentIds : [])
+          .map(item => Number(item))
+          .filter(item => Number.isInteger(item) && item > 0)
+      )
+    );
   }
 
   private applyScope(qb: any, departmentIds: number[] | null) {
@@ -283,17 +304,24 @@ export class PerformanceJobStandardService extends BaseService {
 
   private async assertReadableInScope(
     record: PerformanceJobStandardEntity,
-    perms: string[],
+    access: PerformanceResolvedAccessContext,
     message: string
   ) {
-    if (this.hasGlobalScope(perms)) {
-      return;
-    }
-
-    const departmentIds = await this.departmentScopeIds(perms);
     const targetDepartmentId = Number(record.targetDepartmentId || 0);
 
-    if (!targetDepartmentId || !departmentIds?.includes(targetDepartmentId)) {
+    if (
+      !targetDepartmentId ||
+      !this.performanceAccessContextService.matchesScope(
+        access,
+        this.performanceAccessContextService.capabilityScopes(
+          access,
+          'job_standard.read'
+        ),
+        {
+          departmentId: targetDepartmentId,
+        }
+      )
+    ) {
       throw new CoolCommException(message);
     }
   }
@@ -302,7 +330,7 @@ export class PerformanceJobStandardService extends BaseService {
     const record = await this.performanceJobStandardEntity.findOneBy({ id });
 
     if (!record) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     return record;
@@ -332,18 +360,20 @@ export class PerformanceJobStandardService extends BaseService {
     );
 
     if (!positionName) {
-      throw new CoolCommException('岗位名称不能为空');
+      throw new CoolCommException(
+        PERFORMANCE_JOB_STANDARD_POSITION_NAME_REQUIRED_MESSAGE
+      );
     }
 
     if (!Number.isInteger(targetDepartmentId) || targetDepartmentId <= 0) {
-      throw new CoolCommException('目标部门不能为空');
+      throw new CoolCommException(PERFORMANCE_TARGET_DEPARTMENT_REQUIRED_MESSAGE);
     }
 
     const department = await this.baseSysDepartmentEntity.findOneBy({
       id: targetDepartmentId,
     });
     if (!department) {
-      throw new CoolCommException('目标部门不存在');
+      throw new CoolCommException(PERFORMANCE_TARGET_DEPARTMENT_NOT_FOUND_MESSAGE);
     }
 
     const jobLevel = this.normalizeOptionalText(
@@ -370,7 +400,9 @@ export class PerformanceJobStandardService extends BaseService {
           : this.normalizeStatus(payload.status);
 
       if (inputStatus !== 'draft') {
-        throw new CoolCommException('新增职位标准默认保存为草稿');
+        throw new CoolCommException(
+          PERFORMANCE_JOB_STANDARD_CREATE_DRAFT_ONLY_MESSAGE
+        );
       }
     } else if (
       payload.status !== undefined &&
@@ -378,7 +410,9 @@ export class PerformanceJobStandardService extends BaseService {
       payload.status !== '' &&
       this.normalizeStatus(payload.status) !== existing?.status
     ) {
-      throw new CoolCommException('请使用启停用动作更新状态');
+      throw new CoolCommException(
+        PERFORMANCE_JOB_STANDARD_STATUS_ACTION_REQUIRED_MESSAGE
+      );
     }
 
     return {
@@ -449,8 +483,8 @@ export class PerformanceJobStandardService extends BaseService {
   private normalizeStatus(value: any) {
     const status = String(value || '').trim();
 
-    if (!JOB_STANDARD_STATUS.includes(status)) {
-      throw new CoolCommException('职位标准状态不合法');
+    if (!JOB_STANDARD_STATUS_VALUES.includes(status as any)) {
+      throw new CoolCommException(PERFORMANCE_JOB_STANDARD_STATUS_INVALID_MESSAGE);
     }
 
     return status;

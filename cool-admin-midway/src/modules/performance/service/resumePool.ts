@@ -4,11 +4,6 @@
  * 维护重点是部门树权限、HR 下载类动作限制、状态机约束和主题8/12转换边界必须由服务端硬兜底。
  */
 import {
-  App,
-  ASYNC_CONTEXT_KEY,
-  ASYNC_CONTEXT_MANAGER_KEY,
-  AsyncContextManager,
-  IMidwayApplication,
   Inject,
   Provide,
   Scope,
@@ -18,7 +13,6 @@ import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Brackets, In, Repository } from 'typeorm';
 import { BaseSysMenuService } from '../../base/service/sys/menu';
-import { BaseSysPermsService } from '../../base/service/sys/perms';
 import { BaseSysDepartmentEntity } from '../../base/entity/sys/department';
 import { BaseSysUserEntity } from '../../base/entity/sys/user';
 import { PerformanceResumePoolEntity } from '../entity/resumePool';
@@ -27,31 +21,125 @@ import { PerformanceRecruitPlanEntity } from '../entity/recruit-plan';
 import { PerformanceJobStandardEntity } from '../entity/job-standard';
 import { PerformanceTalentAssetEntity } from '../entity/talentAsset';
 import { SpaceInfoEntity } from '../../space/entity/info';
-import * as jwt from 'jsonwebtoken';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import {
+  RESUME_POOL_SOURCE_TYPE_VALUES,
+  RESUME_POOL_STATUS_VALUES,
+} from './resume-pool-dict';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain';
 
-type ResumeStatus = 'new' | 'screening' | 'interviewing' | 'archived';
-type ResumeSourceType = 'manual' | 'attachment' | 'external' | 'referral';
-
-const RESUME_STATUS: ResumeStatus[] = [
-  'new',
-  'screening',
-  'interviewing',
-  'archived',
-];
-const RESUME_SOURCE_TYPES: ResumeSourceType[] = [
-  'manual',
-  'attachment',
-  'external',
-  'referral',
-];
+type ResumeStatus = (typeof RESUME_POOL_STATUS_VALUES)[number];
+type ResumeSourceType = (typeof RESUME_POOL_SOURCE_TYPE_VALUES)[number];
 const EXPORT_LIMIT = 5000;
-
-const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
-  return require('../../base/config').default({
-    app,
-    env: app?.getEnv?.(),
-  }).jwt;
-};
+const PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resourceNotFound
+  );
+const PERFORMANCE_RECRUIT_PLAN_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.recruitPlanNotFound
+  );
+const PERFORMANCE_STATE_ACTION_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateActionNotAllowed
+  );
+const PERFORMANCE_STATE_EDIT_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateEditNotAllowed
+  );
+const PERFORMANCE_TARGET_DEPARTMENT_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.targetDepartmentRequired
+  );
+const PERFORMANCE_CURRENT_LOGIN_USER_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.employeeNotFound,
+    '当前登录用户不存在'
+  );
+const PERFORMANCE_IMPORT_FILE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.importFileNotFound
+  );
+const PERFORMANCE_IMPORT_FILE_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.importFileRequired
+  );
+const PERFORMANCE_JOB_STANDARD_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.jobStandardNotFound
+  );
+const PERFORMANCE_STATE_INTERVIEW_CREATE_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateInterviewCreateNotAllowed
+  );
+const PERFORMANCE_STATE_INTERVIEW_RECREATE_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateInterviewRecreateNotAllowed
+  );
+const PERFORMANCE_ATTACHMENT_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.attachmentNotFound
+  );
+const PERFORMANCE_RESUME_IMPORT_OVERWRITE_STATE_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resumeImportOverwriteStateDenied
+  );
+const PERFORMANCE_RESUME_UPLOAD_ATTACHMENT_STATE_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resumeUploadAttachmentStateDenied
+  );
+const PERFORMANCE_RESUME_CONVERT_TALENT_ASSET_STATE_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resumeConvertTalentAssetStateDenied
+  );
+const PERFORMANCE_RESUME_ATTACHMENT_FILE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resumeAttachmentFileNotFound
+  );
+const PERFORMANCE_RESUME_STATUS_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resumeStatusInvalid
+  );
+const PERFORMANCE_RESUME_SOURCE_TYPE_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resumeSourceTypeInvalid
+  );
+const PERFORMANCE_RESUME_EXTERNAL_LINK_EXTERNAL_ONLY_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resumeExternalLinkExternalOnly
+  );
+const PERFORMANCE_RESUME_CREATE_NEW_ONLY_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resumeCreateNewOnly
+  );
+const PERFORMANCE_RESUME_INTERVIEW_TRANSITION_ACTION_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resumeInterviewTransitionActionRequired
+  );
+const PERFORMANCE_RESUME_INTERVIEW_POSITION_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resumeInterviewPositionRequired
+  );
+const PERFORMANCE_RESUME_RECRUIT_PLAN_DEPARTMENT_MISMATCH_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resumeRecruitPlanDepartmentMismatch
+  );
+const PERFORMANCE_RESUME_JOB_STANDARD_DEPARTMENT_MISMATCH_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resumeJobStandardDepartmentMismatch
+  );
+const PERFORMANCE_RESUME_OPERATE_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resumeOperateDenied
+  );
 
 function normalizePageNumber(value: any, fallback: number) {
   const parsed = Number(value);
@@ -178,68 +266,45 @@ export class PerformanceResumePoolService extends BaseService {
   baseSysMenuService: BaseSysMenuService;
 
   @Inject()
-  baseSysPermsService: BaseSysPermsService;
-
-  @Inject()
-  ctx;
-
-  @App()
-  app: IMidwayApplication;
+  performanceAccessContextService: PerformanceAccessContextService;
 
   private readonly perms = {
-    page: 'performance:resumePool:page',
-    info: 'performance:resumePool:info',
-    add: 'performance:resumePool:add',
-    update: 'performance:resumePool:update',
-    import: 'performance:resumePool:import',
-    export: 'performance:resumePool:export',
-    uploadAttachment: 'performance:resumePool:uploadAttachment',
-    downloadAttachment: 'performance:resumePool:downloadAttachment',
-    convertToTalentAsset: 'performance:resumePool:convertToTalentAsset',
-    createInterview: 'performance:resumePool:createInterview',
+    page: PERMISSIONS.performance.resumePool.page,
+    info: PERMISSIONS.performance.resumePool.info,
+    add: PERMISSIONS.performance.resumePool.add,
+    update: PERMISSIONS.performance.resumePool.update,
+    import: PERMISSIONS.performance.resumePool.import,
+    export: PERMISSIONS.performance.resumePool.export,
+    uploadAttachment: PERMISSIONS.performance.resumePool.uploadAttachment,
+    downloadAttachment: PERMISSIONS.performance.resumePool.downloadAttachment,
+    convertToTalentAsset: PERMISSIONS.performance.resumePool.convertToTalentAsset,
+    createInterview: PERMISSIONS.performance.resumePool.createInterview,
   };
 
-  private get currentCtx() {
-    if (this.ctx?.admin) {
-      return this.ctx;
-    }
-
-    try {
-      const contextManager: AsyncContextManager = this.app
-        .getApplicationContext()
-        .get(ASYNC_CONTEXT_MANAGER_KEY);
-      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as any;
-    } catch (error) {
-      return this.ctx;
-    }
-  }
-
-  private get currentAdmin() {
-    if (this.currentCtx?.admin) {
-      return this.currentCtx.admin;
-    }
-
-    const token =
-      this.currentCtx?.get?.('Authorization') ||
-      this.currentCtx?.headers?.authorization;
-    if (!token) {
-      return undefined;
-    }
-
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
-  }
+  private readonly capabilityByPerm: Record<string, PerformanceCapabilityKey> = {
+    [PERMISSIONS.performance.resumePool.page]: 'resume_pool.read',
+    [PERMISSIONS.performance.resumePool.info]: 'resume_pool.read',
+    [PERMISSIONS.performance.resumePool.add]: 'resume_pool.create',
+    [PERMISSIONS.performance.resumePool.update]: 'resume_pool.update',
+    [PERMISSIONS.performance.resumePool.import]: 'resume_pool.import',
+    [PERMISSIONS.performance.resumePool.export]: 'resume_pool.export',
+    [PERMISSIONS.performance.resumePool.uploadAttachment]:
+      'resume_pool.upload_attachment',
+    [PERMISSIONS.performance.resumePool.downloadAttachment]:
+      'resume_pool.download_attachment',
+    [PERMISSIONS.performance.resumePool.convertToTalentAsset]:
+      'resume_pool.convert_to_talent_asset',
+    [PERMISSIONS.performance.resumePool.createInterview]:
+      'resume_pool.create_interview',
+  };
 
   async page(query: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.page, '无权限查看简历列表');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.page, '无权限查看简历列表');
 
     const page = normalizePageNumber(query.page, 1);
     const size = normalizePageNumber(query.size, 20);
-    const departmentIds = await this.departmentScopeIds(perms);
+    const departmentIds = await this.departmentScopeIds(access, 'resume_pool.read');
     const qb = this.performanceResumePoolEntity
       .createQueryBuilder('resume')
       .leftJoin(
@@ -296,20 +361,31 @@ export class PerformanceResumePoolService extends BaseService {
   }
 
   async info(id: number) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.info, '无权限查看简历详情');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.info, '无权限查看简历详情');
 
     const resume = await this.requireResume(id);
-    await this.assertResumeInScope(resume, perms, '无权查看该简历');
+    await this.assertResumeInScope(
+      resume,
+      access,
+      'resume_pool.read',
+      '无权查看该简历'
+    );
 
     return this.buildResumeDetail(resume);
   }
 
   async add(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.add, '无权限新增简历');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.add, '无权限新增简历');
 
-    const normalized = await this.normalizePayload(payload, null, perms, 'add');
+    const normalized = await this.normalizePayload(
+      payload,
+      null,
+      access,
+      'resume_pool.create',
+      'add'
+    );
     const saved = await this.performanceResumePoolEntity.save(
       this.performanceResumePoolEntity.create(normalized)
     );
@@ -318,17 +394,28 @@ export class PerformanceResumePoolService extends BaseService {
   }
 
   async updateResume(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.update, '无权限修改简历');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.update, '无权限修改简历');
 
     const resume = await this.requireResume(Number(payload.id));
-    await this.assertResumeInScope(resume, perms, '无权修改该简历');
+    await this.assertResumeInScope(
+      resume,
+      access,
+      'resume_pool.update',
+      '无权修改该简历'
+    );
 
     if (resume.status === 'archived') {
-      throw new CoolCommException('当前状态不允许编辑');
+      throw new CoolCommException(PERFORMANCE_STATE_EDIT_NOT_ALLOWED_MESSAGE);
     }
 
-    const normalized = await this.normalizePayload(payload, resume, perms, 'update');
+    const normalized = await this.normalizePayload(
+      payload,
+      resume,
+      access,
+      'resume_pool.update',
+      'update'
+    );
     await this.performanceResumePoolEntity.update(
       { id: resume.id },
       normalized as any
@@ -338,14 +425,17 @@ export class PerformanceResumePoolService extends BaseService {
   }
 
   async importResume(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.import, '无权限导入简历');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.import, '无权限导入简历');
 
-    const fileId = normalizeRequiredPositiveInt(payload.fileId, '导入文件不能为空');
+    const fileId = normalizeRequiredPositiveInt(
+      payload.fileId,
+      PERFORMANCE_IMPORT_FILE_REQUIRED_MESSAGE
+    );
     const fileInfo = await this.spaceInfoEntity.findOneBy({ id: fileId });
 
     if (!fileInfo) {
-      throw new CoolCommException('导入文件不存在');
+      throw new CoolCommException(PERFORMANCE_IMPORT_FILE_NOT_FOUND_MESSAGE);
     }
 
     const rows = Array.isArray(payload.rows) ? payload.rows : [];
@@ -357,13 +447,26 @@ export class PerformanceResumePoolService extends BaseService {
 
     for (const row of overwriteRows) {
       const resume = await this.requireResume(Number(row.id));
-      await this.assertResumeInScope(resume, perms, '无权导入覆盖该简历');
+      await this.assertResumeInScope(
+        resume,
+        access,
+        'resume_pool.import',
+        '无权导入覆盖该简历'
+      );
 
       if (resume.status === 'archived') {
-        throw new CoolCommException('当前状态不允许导入覆盖');
+        throw new CoolCommException(
+          PERFORMANCE_RESUME_IMPORT_OVERWRITE_STATE_DENIED_MESSAGE
+        );
       }
 
-      const normalized = await this.normalizePayload(row, resume, perms, 'update');
+      const normalized = await this.normalizePayload(
+        row,
+        resume,
+        access,
+        'resume_pool.import',
+        'update'
+      );
       await this.performanceResumePoolEntity.update(
         { id: resume.id },
         normalized as any
@@ -378,7 +481,8 @@ export class PerformanceResumePoolService extends BaseService {
           sourceType: row?.sourceType || 'attachment',
         },
         null,
-        perms,
+        access,
+        'resume_pool.import',
         'add'
       );
 
@@ -397,10 +501,10 @@ export class PerformanceResumePoolService extends BaseService {
   }
 
   async exportResume(query: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.export, '无权限导出简历');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.export, '无权限导出简历');
 
-    const departmentIds = await this.departmentScopeIds(perms);
+    const departmentIds = await this.departmentScopeIds(access, 'resume_pool.export');
     const qb = this.performanceResumePoolEntity
       .createQueryBuilder('resume')
       .leftJoin(
@@ -453,21 +557,30 @@ export class PerformanceResumePoolService extends BaseService {
   }
 
   async uploadAttachment(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.uploadAttachment, '无权限上传附件');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.uploadAttachment, '无权限上传附件');
 
     const id = normalizeRequiredPositiveInt(payload.id, '简历 ID 不能为空');
     const fileId = normalizeRequiredPositiveInt(payload.fileId, '附件文件 ID 不能为空');
     const resume = await this.requireResume(id);
-    await this.assertResumeInScope(resume, perms, '无权上传该简历附件');
+    await this.assertResumeInScope(
+      resume,
+      access,
+      'resume_pool.upload_attachment',
+      '无权上传该简历附件'
+    );
 
     if (resume.status === 'archived') {
-      throw new CoolCommException('当前状态不允许上传附件');
+      throw new CoolCommException(
+        PERFORMANCE_RESUME_UPLOAD_ATTACHMENT_STATE_DENIED_MESSAGE
+      );
     }
 
     const attachment = await this.spaceInfoEntity.findOneBy({ id: fileId });
     if (!attachment) {
-      throw new CoolCommException('附件文件不存在');
+      throw new CoolCommException(
+        PERFORMANCE_RESUME_ATTACHMENT_FILE_NOT_FOUND_MESSAGE
+      );
     }
 
     const attachmentIdList = this.normalizeAttachmentIdList(resume.attachmentIdList);
@@ -484,9 +597,9 @@ export class PerformanceResumePoolService extends BaseService {
   }
 
   async downloadAttachment(payload: any) {
-    const perms = await this.currentPerms();
+    const access = await this.currentPerms();
     this.assertPerm(
-      perms,
+      access,
       this.perms.downloadAttachment,
       '无权限下载简历附件'
     );
@@ -497,16 +610,21 @@ export class PerformanceResumePoolService extends BaseService {
       '附件 ID 不能为空'
     );
     const resume = await this.requireResume(id);
-    await this.assertResumeInScope(resume, perms, '无权下载该简历附件');
+    await this.assertResumeInScope(
+      resume,
+      access,
+      'resume_pool.download_attachment',
+      '无权下载该简历附件'
+    );
 
     const attachmentIdList = this.normalizeAttachmentIdList(resume.attachmentIdList);
     if (!attachmentIdList.includes(attachmentId)) {
-      throw new CoolCommException('附件不存在');
+      throw new CoolCommException(PERFORMANCE_ATTACHMENT_NOT_FOUND_MESSAGE);
     }
 
     const attachment = await this.spaceInfoEntity.findOneBy({ id: attachmentId });
     if (!attachment) {
-      throw new CoolCommException('附件不存在');
+      throw new CoolCommException(PERFORMANCE_ATTACHMENT_NOT_FOUND_MESSAGE);
     }
 
     return {
@@ -521,19 +639,26 @@ export class PerformanceResumePoolService extends BaseService {
   }
 
   async convertToTalentAsset(payload: any) {
-    const perms = await this.currentPerms();
+    const access = await this.currentPerms();
     this.assertPerm(
-      perms,
+      access,
       this.perms.convertToTalentAsset,
       '无权限执行转人才资产'
     );
 
     const id = normalizeRequiredPositiveInt(payload.id, '简历 ID 不能为空');
     const resume = await this.requireResume(id);
-    await this.assertResumeInScope(resume, perms, '无权转换该简历');
+    await this.assertResumeInScope(
+      resume,
+      access,
+      'resume_pool.convert_to_talent_asset',
+      '无权转换该简历'
+    );
 
     if (resume.status === 'archived') {
-      throw new CoolCommException('当前状态不允许转人才资产');
+      throw new CoolCommException(
+        PERFORMANCE_RESUME_CONVERT_TALENT_ASSET_STATE_DENIED_MESSAGE
+      );
     }
 
     const linkedTalentAssetId = this.normalizeNullableNumber(resume.linkedTalentAssetId);
@@ -574,38 +699,57 @@ export class PerformanceResumePoolService extends BaseService {
   }
 
   async createInterview(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.createInterview, '无权限发起面试');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.createInterview, '无权限发起面试');
 
     const id = normalizeRequiredPositiveInt(payload.id, '简历 ID 不能为空');
     const resume = await this.requireResume(id);
-    await this.assertResumeInScope(resume, perms, '无权发起该简历面试');
+    await this.assertResumeInScope(
+      resume,
+      access,
+      'resume_pool.create_interview',
+      '无权发起该简历面试'
+    );
 
     if (resume.status === 'archived') {
-      throw new CoolCommException('当前状态不允许发起面试');
+      throw new CoolCommException(
+        PERFORMANCE_STATE_INTERVIEW_CREATE_NOT_ALLOWED_MESSAGE
+      );
     }
 
     if (resume.status === 'interviewing') {
-      throw new CoolCommException('当前状态不允许再次发起面试');
+      throw new CoolCommException(
+        PERFORMANCE_STATE_INTERVIEW_RECREATE_NOT_ALLOWED_MESSAGE
+      );
     }
 
     if (!['new', 'screening'].includes(resume.status)) {
-      throw new CoolCommException('当前状态不允许发起面试');
+      throw new CoolCommException(
+        PERFORMANCE_STATE_INTERVIEW_CREATE_NOT_ALLOWED_MESSAGE
+      );
     }
 
-    const operatorId = Number(this.currentAdmin?.userId || 0);
+    const operatorId = Number(access.userId || 0);
     if (!Number.isInteger(operatorId) || operatorId <= 0) {
-      throw new CoolCommException('登录上下文缺失');
+      throw new CoolCommException(
+        resolvePerformanceDomainErrorMessage(
+          PERFORMANCE_DOMAIN_ERROR_CODES.authContextMissing
+        )
+      );
     }
 
     const operator = await this.baseSysUserEntity.findOneBy({ id: operatorId });
     if (!operator) {
-      throw new CoolCommException('当前登录用户不存在');
+      throw new CoolCommException(
+        PERFORMANCE_CURRENT_LOGIN_USER_NOT_FOUND_MESSAGE
+      );
     }
 
     const position = String(resume.targetPosition || '').trim();
     if (!position) {
-      throw new CoolCommException('目标岗位不能为空，无法发起面试');
+      throw new CoolCommException(
+        PERFORMANCE_RESUME_INTERVIEW_POSITION_REQUIRED_MESSAGE
+      );
     }
 
     const resumePoolSnapshot = await this.buildResumeReferenceSnapshot(resume);
@@ -617,6 +761,15 @@ export class PerformanceResumePoolService extends BaseService {
       resume.jobStandardId,
       resume.jobStandardSnapshot
     );
+    const sourceSnapshot = {
+      sourceResource: 'resumePool',
+      resumePoolId: Number(resume.id),
+      recruitPlanId: this.normalizeNullableNumber(resume.recruitPlanId),
+      recruitPlanTitle: recruitPlanSnapshot?.title || null,
+      candidateName: resume.candidateName || null,
+      targetDepartmentId: Number(resume.targetDepartmentId || 0),
+      targetPosition: position || null,
+    };
 
     const interview = await this.performanceInterviewEntity.save(
       this.performanceInterviewEntity.create({
@@ -629,6 +782,7 @@ export class PerformanceResumePoolService extends BaseService {
         score: null,
         resumePoolId: Number(resume.id),
         recruitPlanId: this.normalizeNullableNumber(resume.recruitPlanId),
+        sourceSnapshot,
         resumePoolSnapshot,
         recruitPlanSnapshot,
         status: 'scheduled',
@@ -649,6 +803,7 @@ export class PerformanceResumePoolService extends BaseService {
       resumePoolId: Number(resume.id),
       recruitPlanId: this.normalizeNullableNumber(resume.recruitPlanId),
       jobStandardId: this.normalizeNullableNumber(resume.jobStandardId),
+      sourceSnapshot,
       snapshot: resumePoolSnapshot,
       resumePoolSummary: resumePoolSnapshot,
       resumePoolSnapshot,
@@ -662,7 +817,8 @@ export class PerformanceResumePoolService extends BaseService {
   private async normalizePayload(
     payload: any,
     existing: PerformanceResumePoolEntity | null,
-    perms: string[],
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey,
     mode: 'add' | 'update'
   ) {
     const candidateName = normalizeRequiredText(
@@ -672,7 +828,7 @@ export class PerformanceResumePoolService extends BaseService {
     );
     const targetDepartmentId = normalizeRequiredPositiveInt(
       payload.targetDepartmentId ?? existing?.targetDepartmentId,
-      '目标部门不能为空'
+      PERFORMANCE_TARGET_DEPARTMENT_REQUIRED_MESSAGE
     );
     const targetPosition = normalizeOptionalText(
       payload.targetPosition ?? existing?.targetPosition,
@@ -715,7 +871,8 @@ export class PerformanceResumePoolService extends BaseService {
     const recruitPlanSnapshot = await this.buildRecruitPlanSnapshot(
       recruitPlanId,
       targetDepartmentId,
-      perms
+      access,
+      capabilityKey
     );
     const planJobStandardId = this.normalizeNullableNumber(
       recruitPlanSnapshot?.jobStandardId
@@ -727,7 +884,8 @@ export class PerformanceResumePoolService extends BaseService {
     const jobStandardSnapshot = await this.buildJobStandardSnapshot(
       jobStandardId,
       targetDepartmentId,
-      perms
+      access,
+      capabilityKey
     );
     const status = this.resolveNextStatus(
       mode,
@@ -736,10 +894,12 @@ export class PerformanceResumePoolService extends BaseService {
     );
 
     if (sourceType !== 'external' && externalLink) {
-      throw new CoolCommException('仅 external 来源允许填写外部简历链接');
+      throw new CoolCommException(
+        PERFORMANCE_RESUME_EXTERNAL_LINK_EXTERNAL_ONLY_MESSAGE
+      );
     }
 
-    await this.assertCanManageDepartment(targetDepartmentId, perms);
+    await this.assertCanManageDepartment(targetDepartmentId, access, capabilityKey);
 
     return {
       candidateName,
@@ -775,20 +935,22 @@ export class PerformanceResumePoolService extends BaseService {
 
     if (mode === 'add') {
       if (nextStatus !== 'new') {
-        throw new CoolCommException('新增简历状态只能为 new');
+        throw new CoolCommException(PERFORMANCE_RESUME_CREATE_NEW_ONLY_MESSAGE);
       }
       return nextStatus;
     }
 
     if (currentStatus === 'archived') {
-      throw new CoolCommException('当前状态不允许编辑');
+      throw new CoolCommException(PERFORMANCE_STATE_EDIT_NOT_ALLOWED_MESSAGE);
     }
 
     if (
       (currentStatus === 'new' || currentStatus === 'screening') &&
       nextStatus === 'interviewing'
     ) {
-      throw new CoolCommException('请通过发起面试动作进入 interviewing');
+      throw new CoolCommException(
+        PERFORMANCE_RESUME_INTERVIEW_TRANSITION_ACTION_REQUIRED_MESSAGE
+      );
     }
 
     if (currentStatus === 'new' && ['new', 'screening', 'archived'].includes(nextStatus)) {
@@ -806,21 +968,21 @@ export class PerformanceResumePoolService extends BaseService {
       return nextStatus;
     }
 
-    throw new CoolCommException('当前状态不允许执行该操作');
+    throw new CoolCommException(PERFORMANCE_STATE_ACTION_NOT_ALLOWED_MESSAGE);
   }
 
   private normalizeStatus(value: any) {
     const status = String(value || 'new').trim() as ResumeStatus;
-    if (!RESUME_STATUS.includes(status)) {
-      throw new CoolCommException('简历状态不合法');
+    if (!RESUME_POOL_STATUS_VALUES.includes(status)) {
+      throw new CoolCommException(PERFORMANCE_RESUME_STATUS_INVALID_MESSAGE);
     }
     return status;
   }
 
   private normalizeSourceType(value: any) {
     const sourceType = String(value || '').trim() as ResumeSourceType;
-    if (!RESUME_SOURCE_TYPES.includes(sourceType)) {
-      throw new CoolCommException('简历来源类型不合法');
+    if (!RESUME_POOL_SOURCE_TYPE_VALUES.includes(sourceType)) {
+      throw new CoolCommException(PERFORMANCE_RESUME_SOURCE_TYPE_INVALID_MESSAGE);
     }
     return sourceType;
   }
@@ -1082,7 +1244,12 @@ export class PerformanceResumePoolService extends BaseService {
   ) {
     const normalizedRecruitPlanId = this.normalizeNullableNumber(recruitPlanId);
     if (normalizedRecruitPlanId) {
-      return this.buildRecruitPlanSnapshot(normalizedRecruitPlanId, null, null);
+      return this.buildRecruitPlanSnapshot(
+        normalizedRecruitPlanId,
+        null,
+        null,
+        null
+      );
     }
 
     return this.normalizeRecruitPlanSnapshot(recruitPlanSnapshot);
@@ -1091,7 +1258,12 @@ export class PerformanceResumePoolService extends BaseService {
   private async resolveJobStandardSnapshot(jobStandardId: any, jobStandardSnapshot: any) {
     const normalizedJobStandardId = this.normalizeNullableNumber(jobStandardId);
     if (normalizedJobStandardId) {
-      return this.buildJobStandardSnapshot(normalizedJobStandardId, null, null);
+      return this.buildJobStandardSnapshot(
+        normalizedJobStandardId,
+        null,
+        null,
+        null
+      );
     }
 
     return this.normalizeJobStandardSnapshot(jobStandardSnapshot);
@@ -1100,7 +1272,8 @@ export class PerformanceResumePoolService extends BaseService {
   private async buildRecruitPlanSnapshot(
     recruitPlanId: number | null,
     targetDepartmentId: number | null,
-    perms: string[] | null
+    access: PerformanceResolvedAccessContext | null,
+    capabilityKey: PerformanceCapabilityKey | null
   ) {
     if (!recruitPlanId) {
       return null;
@@ -1110,18 +1283,24 @@ export class PerformanceResumePoolService extends BaseService {
       id: recruitPlanId,
     });
     if (!record) {
-      throw new CoolCommException('招聘计划不存在');
+      throw new CoolCommException(PERFORMANCE_RECRUIT_PLAN_NOT_FOUND_MESSAGE);
     }
 
     if (
       targetDepartmentId &&
       Number(record.targetDepartmentId || 0) !== Number(targetDepartmentId)
     ) {
-      throw new CoolCommException('招聘计划所属部门与简历目标部门不一致');
+      throw new CoolCommException(
+        PERFORMANCE_RESUME_RECRUIT_PLAN_DEPARTMENT_MISMATCH_MESSAGE
+      );
     }
 
-    if (perms) {
-      await this.assertCanManageDepartment(Number(record.targetDepartmentId), perms);
+    if (access && capabilityKey) {
+      await this.assertCanManageDepartment(
+        Number(record.targetDepartmentId),
+        access,
+        capabilityKey
+      );
     }
 
     const department = await this.baseSysDepartmentEntity.findOneBy({
@@ -1145,7 +1324,8 @@ export class PerformanceResumePoolService extends BaseService {
   private async buildJobStandardSnapshot(
     jobStandardId: number | null,
     targetDepartmentId: number | null,
-    perms: string[] | null
+    access: PerformanceResolvedAccessContext | null,
+    capabilityKey: PerformanceCapabilityKey | null
   ) {
     if (!jobStandardId) {
       return null;
@@ -1155,18 +1335,24 @@ export class PerformanceResumePoolService extends BaseService {
       id: jobStandardId,
     });
     if (!record) {
-      throw new CoolCommException('职位标准不存在');
+      throw new CoolCommException(PERFORMANCE_JOB_STANDARD_NOT_FOUND_MESSAGE);
     }
 
     if (
       targetDepartmentId &&
       Number(record.targetDepartmentId || 0) !== Number(targetDepartmentId)
     ) {
-      throw new CoolCommException('职位标准所属部门与简历目标部门不一致');
+      throw new CoolCommException(
+        PERFORMANCE_RESUME_JOB_STANDARD_DEPARTMENT_MISMATCH_MESSAGE
+      );
     }
 
-    if (perms) {
-      await this.assertCanManageDepartment(Number(record.targetDepartmentId), perms);
+    if (access && capabilityKey) {
+      await this.assertCanManageDepartment(
+        Number(record.targetDepartmentId),
+        access,
+        capabilityKey
+      );
     }
 
     const department = await this.baseSysDepartmentEntity.findOneBy({
@@ -1209,56 +1395,59 @@ export class PerformanceResumePoolService extends BaseService {
     });
 
     if (!resume) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     return resume;
   }
 
   private async currentPerms() {
-    const admin = this.currentAdmin;
+    return this.performanceAccessContextService.resolveAccessContext(undefined, {
+      allowEmptyRoleIds: false,
+      missingAuthMessage: '登录状态已失效',
+    });
+  }
 
-    if (!admin?.roleIds) {
-      throw new CoolCommException('登录状态已失效');
+  private resolveCapabilityKey(perm: string): PerformanceCapabilityKey {
+    const capabilityKey = this.capabilityByPerm[perm];
+    if (!capabilityKey) {
+      throw new CoolCommException(`未映射的简历池权限: ${perm}`);
     }
-
-    return this.baseSysMenuService.getPerms(admin.roleIds);
+    return capabilityKey;
   }
 
-  private hasPerm(perms: string[], perm: string) {
-    return perms.includes(perm);
-  }
-
-  private assertPerm(perms: string[], perm: string, message: string) {
-    if (!this.hasPerm(perms, perm)) {
+  private assertPerm(
+    access: PerformanceResolvedAccessContext,
+    perm: string,
+    message: string
+  ) {
+    if (
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        this.resolveCapabilityKey(perm)
+      )
+    ) {
       throw new CoolCommException(message);
     }
   }
 
-  private isHr(perms: string[]) {
-    return (
-      this.currentAdmin?.isAdmin === true ||
-      this.currentAdmin?.username === 'admin' ||
-      this.hasPerm(perms, this.perms.export) ||
-      this.hasPerm(perms, this.perms.downloadAttachment)
-    );
-  }
-
-  private async departmentScopeIds(perms: string[]) {
-    if (this.isHr(perms)) {
+  private async departmentScopeIds(
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
+  ) {
+    if (
+      this.performanceAccessContextService.hasCapabilityInScopes(
+        access,
+        capabilityKey,
+        ['company']
+      )
+    ) {
       return null;
     }
 
-    const userId = Number(this.currentAdmin?.userId || 0);
-    if (!userId) {
-      throw new CoolCommException('登录上下文缺失');
-    }
-
-    const ids = await this.baseSysPermsService.departmentIds(userId);
-
     return Array.from(
       new Set(
-        (Array.isArray(ids) ? ids : [])
+        (Array.isArray(access.departmentIds) ? access.departmentIds : [])
           .map(item => Number(item))
           .filter(item => Number.isInteger(item) && item > 0)
       )
@@ -1282,27 +1471,38 @@ export class PerformanceResumePoolService extends BaseService {
 
   private async assertResumeInScope(
     resume: PerformanceResumePoolEntity,
-    perms: string[],
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey,
     message: string
   ) {
-    if (this.isHr(perms)) {
-      return;
-    }
-
-    const departmentIds = await this.departmentScopeIds(perms);
-    if (!departmentIds?.includes(Number(resume.targetDepartmentId || 0))) {
+    if (
+      !this.performanceAccessContextService.matchesScope(
+        access,
+        this.performanceAccessContextService.capabilityScopes(access, capabilityKey),
+        {
+          departmentId: Number(resume.targetDepartmentId || 0),
+        }
+      )
+    ) {
       throw new CoolCommException(message);
     }
   }
 
-  private async assertCanManageDepartment(targetDepartmentId: number, perms: string[]) {
-    if (this.isHr(perms)) {
-      return;
-    }
-
-    const departmentIds = await this.departmentScopeIds(perms);
-    if (!departmentIds?.includes(targetDepartmentId)) {
-      throw new CoolCommException('无权操作该简历');
+  private async assertCanManageDepartment(
+    targetDepartmentId: number,
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
+  ) {
+    if (
+      !this.performanceAccessContextService.matchesScope(
+        access,
+        this.performanceAccessContextService.capabilityScopes(access, capabilityKey),
+        {
+          departmentId: targetDepartmentId,
+        }
+      )
+    ) {
+      throw new CoolCommException(PERFORMANCE_RESUME_OPERATE_DENIED_MESSAGE);
     }
   }
 }

@@ -3,7 +3,21 @@
  * 知识库服务最小测试。
  * 这里只验证主题21的 HR-only、关联校验、搜索/图谱/QA 主链，不负责数据库或控制器联调。
  */
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
 import { PerformanceKnowledgeBaseService } from '../../src/modules/performance/service/knowledgeBase';
+
+function attachAccessContext(service: any) {
+  const accessService = new PerformanceAccessContextService() as any;
+  accessService.ctx = service.ctx;
+  accessService.baseSysMenuService =
+    service.baseSysMenuService || { getPerms: jest.fn().mockResolvedValue([]) };
+  accessService.baseSysPermsService =
+    service.baseSysPermsService || {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+  service.performanceAccessContextService = accessService;
+  return service;
+}
 
 describe('performance knowledge-base service', () => {
   test('should allow hr create update delete search graph and qa add', async () => {
@@ -156,6 +170,7 @@ describe('performance knowledge-base service', () => {
       find: jest.fn().mockResolvedValue([]),
       update: jest.fn().mockResolvedValue(undefined),
     };
+    attachAccessContext(service);
 
     await expect(
       service.add({
@@ -222,6 +237,7 @@ describe('performance knowledge-base service', () => {
     service.baseSysMenuService = {
       getPerms: jest.fn().mockResolvedValue([]),
     };
+    attachAccessContext(service);
 
     await expect(service.page({})).rejects.toThrow('无权限查看知识库列表');
     await expect(service.search('制度')).rejects.toThrow('无权限使用知识搜索');
@@ -250,6 +266,7 @@ describe('performance knowledge-base service', () => {
     service.performanceDocumentCenterEntity = {
       findBy: jest.fn().mockResolvedValue([]),
     };
+    attachAccessContext(service);
 
     await expect(
       service.add({
@@ -273,5 +290,87 @@ describe('performance knowledge-base service', () => {
         relatedFileIds: [999],
       })
     ).rejects.toThrow('存在无效的关联文件');
+  });
+
+  test('should reject invalid knowledge payload and delete guards', async () => {
+    const service = new PerformanceKnowledgeBaseService() as any;
+    service.ctx = {
+      admin: {
+        userId: 1,
+        username: 'hr_admin',
+        roleIds: [1],
+      },
+    };
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue([
+        'performance:knowledgeBase:add',
+        'performance:knowledgeBase:update',
+        'performance:knowledgeBase:delete',
+      ]),
+    };
+    service.performanceKnowledgeBaseEntity = {
+      create: jest.fn().mockImplementation(payload => payload),
+      save: jest.fn(),
+      findOne: jest.fn().mockResolvedValue(null),
+      findOneBy: jest.fn().mockResolvedValue(null),
+      findBy: jest.fn().mockResolvedValue([{ id: 401 }]),
+    };
+    service.performanceDocumentCenterEntity = {
+      findBy: jest.fn().mockResolvedValue([]),
+    };
+    service.performanceKnowledgeQaEntity = {
+      find: jest.fn().mockResolvedValue([]),
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    attachAccessContext(service);
+
+    await expect(
+      service.add({
+        title: '缺编号',
+        category: '制度',
+        summary: '摘要',
+        ownerName: '李老师',
+      })
+    ).rejects.toThrow('知识编号不能为空');
+    await expect(
+      service.add({
+        kbNo: 'KB-001',
+        category: '制度',
+        summary: '摘要',
+        ownerName: '李老师',
+      })
+    ).rejects.toThrow('知识标题不能为空');
+    await expect(
+      service.add({
+        kbNo: 'KB-001',
+        title: '缺分类',
+        summary: '摘要',
+        ownerName: '李老师',
+      })
+    ).rejects.toThrow('知识分类不能为空');
+    await expect(
+      service.add({
+        kbNo: 'KB-001',
+        title: '缺摘要',
+        category: '制度',
+        ownerName: '李老师',
+      })
+    ).rejects.toThrow('知识摘要不能为空');
+    await expect(
+      service.add({
+        kbNo: 'KB-001',
+        title: '非法状态',
+        category: '制度',
+        summary: '摘要',
+        ownerName: '李老师',
+        status: 'closed',
+      })
+    ).rejects.toThrow('知识状态不合法');
+
+    await expect(service.delete([])).rejects.toThrow('请选择需要删除的知识条目');
+    service.performanceKnowledgeBaseEntity.findBy.mockResolvedValueOnce([]);
+    await expect(service.delete([401, 402])).rejects.toThrow('部分知识条目不存在');
+    await expect(service.updateKnowledge({ id: 0 })).rejects.toThrow('知识条目 ID 不合法');
+    await expect(service.updateKnowledge({ id: 401 })).rejects.toThrow('知识条目不存在');
   });
 });

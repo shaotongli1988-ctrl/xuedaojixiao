@@ -4,11 +4,6 @@
  * 维护重点是 page/info/stats/add/update/delete 权限、状态集合和返回边界必须与冻结契约一致。
  */
 import {
-  App,
-  ASYNC_CONTEXT_KEY,
-  ASYNC_CONTEXT_MANAGER_KEY,
-  AsyncContextManager,
-  IMidwayApplication,
   Inject,
   Provide,
   Scope,
@@ -17,37 +12,33 @@ import {
 import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Brackets, In, Repository } from 'typeorm';
-import { BaseSysMenuService } from '../../base/service/sys/menu';
 import { PerformanceDocumentCenterEntity } from '../entity/documentCenter';
-import * as jwt from 'jsonwebtoken';
+import {
+  DOCUMENT_CENTER_CATEGORY_VALUES,
+  DOCUMENT_CENTER_CONFIDENTIALITY_VALUES,
+  DOCUMENT_CENTER_FILE_TYPE_VALUES,
+  DOCUMENT_CENTER_STATUS_VALUES,
+  DOCUMENT_CENTER_STORAGE_VALUES,
+} from './document-center-dict';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
 
-const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
-  return require('../../base/config').default({
-    app,
-    env: app?.getEnv?.(),
-  }).jwt;
-};
-
-const DOCUMENT_CATEGORIES = [
-  'policy',
-  'process',
-  'template',
-  'contract',
-  'archive',
-  'other',
-];
-const DOCUMENT_FILE_TYPES = [
-  'pdf',
-  'doc',
-  'xls',
-  'ppt',
-  'img',
-  'zip',
-  'other',
-];
-const DOCUMENT_STORAGE = ['local', 'cloud', 'hybrid'];
-const DOCUMENT_CONFIDENTIALITY = ['public', 'internal', 'secret'];
-const DOCUMENT_STATUS = ['draft', 'review', 'published', 'archived'];
+const DOCUMENT_CATEGORIES: readonly string[] = [...DOCUMENT_CENTER_CATEGORY_VALUES];
+const DOCUMENT_FILE_TYPES: readonly string[] = [...DOCUMENT_CENTER_FILE_TYPE_VALUES];
+const DOCUMENT_STORAGE: readonly string[] = [...DOCUMENT_CENTER_STORAGE_VALUES];
+const DOCUMENT_CONFIDENTIALITY: readonly string[] = [...DOCUMENT_CENTER_CONFIDENTIALITY_VALUES];
+const DOCUMENT_STATUS: readonly string[] = [...DOCUMENT_CENTER_STATUS_VALUES];
+const PERFORMANCE_OWNER_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.ownerRequired
+  );
 
 function normalizePageNumber(value: any, fallback: number) {
   const parsed = Number(value);
@@ -121,57 +112,15 @@ export class PerformanceDocumentCenterService extends BaseService {
   performanceDocumentCenterEntity: Repository<PerformanceDocumentCenterEntity>;
 
   @Inject()
-  baseSysMenuService: BaseSysMenuService;
+  performanceAccessContextService: PerformanceAccessContextService;
 
-  @Inject()
-  ctx;
-
-  @App()
-  app: IMidwayApplication;
-
-  private readonly perms = {
-    page: 'performance:documentCenter:page',
-    info: 'performance:documentCenter:info',
-    stats: 'performance:documentCenter:stats',
-    add: 'performance:documentCenter:add',
-    update: 'performance:documentCenter:update',
-    delete: 'performance:documentCenter:delete',
+  private readonly accessContextOptions = {
+    allowEmptyRoleIds: true,
+    missingAuthMessage: '登录状态已失效',
   };
 
-  private get currentCtx() {
-    if (this.ctx?.admin) {
-      return this.ctx;
-    }
-    try {
-      const contextManager: AsyncContextManager = this.app
-        .getApplicationContext()
-        .get(ASYNC_CONTEXT_MANAGER_KEY);
-      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as any;
-    } catch (error) {
-      return this.ctx;
-    }
-  }
-
-  private get currentAdmin() {
-    if (this.currentCtx?.admin) {
-      return this.currentCtx.admin;
-    }
-    const token =
-      this.currentCtx?.get?.('Authorization') ||
-      this.currentCtx?.headers?.authorization;
-    if (!token) {
-      return undefined;
-    }
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
-  }
-
   async page(query: any) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.page, '无权限查看文件管理列表');
+    await this.requireAccess('document.read', '无权限查看文件管理列表');
 
     const page = normalizePageNumber(query.page, 1);
     const size = normalizePageNumber(query.size, 20);
@@ -195,15 +144,13 @@ export class PerformanceDocumentCenterService extends BaseService {
   }
 
   async info(id: number) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.info, '无权限查看文件详情');
+    await this.requireAccess('document.read', '无权限查看文件详情');
     const item = await this.requireDocument(id);
     return this.normalizeDocument(item);
   }
 
   async stats(query: any) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.stats, '无权限查看文件统计');
+    await this.requireAccess('document.stats', '无权限查看文件统计');
 
     const baseQb = this.buildQuery(query);
     const [total, publishedCount, reviewCount, archivedCount, raw] =
@@ -239,8 +186,7 @@ export class PerformanceDocumentCenterService extends BaseService {
   }
 
   async add(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.add, '无权限新增文件元数据');
+    await this.requireAccess('document.create', '无权限新增文件元数据');
 
     const normalized = await this.normalizePayload(payload, 'add');
     const saved = await this.performanceDocumentCenterEntity.save(
@@ -250,8 +196,7 @@ export class PerformanceDocumentCenterService extends BaseService {
   }
 
   async updateDocument(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.update, '无权限更新文件元数据');
+    await this.requireAccess('document.update', '无权限更新文件元数据');
 
     const current = await this.requireDocument(Number(payload.id));
     const normalized = await this.normalizePayload(
@@ -268,8 +213,7 @@ export class PerformanceDocumentCenterService extends BaseService {
   }
 
   async delete(ids: number[]) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.delete, '无权限删除文件元数据');
+    await this.requireAccess('document.delete', '无权限删除文件元数据');
 
     const validIds = (ids || [])
       .map(item => Number(item))
@@ -328,18 +272,18 @@ export class PerformanceDocumentCenterService extends BaseService {
     return qb;
   }
 
-  private async currentPerms() {
-    const admin = this.currentAdmin as any;
-    if (!admin?.roleIds?.length) {
-      return [];
-    }
-    return this.baseSysMenuService.getPerms(admin.roleIds);
-  }
-
-  private assertHasPerm(perms: string[], perm: string, message: string) {
-    if (!perms.includes(perm)) {
+  private async requireAccess(
+    capabilityKey: PerformanceCapabilityKey,
+    message: string
+  ): Promise<PerformanceResolvedAccessContext> {
+    const access = await this.performanceAccessContextService.resolveAccessContext(
+      undefined,
+      this.accessContextOptions
+    );
+    if (!this.performanceAccessContextService.hasCapability(access, capabilityKey)) {
       throw new CoolCommException(message);
     }
+    return access;
   }
 
   private async requireDocument(id: number) {
@@ -386,7 +330,7 @@ export class PerformanceDocumentCenterService extends BaseService {
       throw new CoolCommException('保密级别不合法');
     }
     if (!ownerName) {
-      throw new CoolCommException('负责人不能为空');
+      throw new CoolCommException(PERFORMANCE_OWNER_REQUIRED_MESSAGE);
     }
     if (!department) {
       throw new CoolCommException('部门不能为空');

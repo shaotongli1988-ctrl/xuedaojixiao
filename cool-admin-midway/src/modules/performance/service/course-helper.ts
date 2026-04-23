@@ -4,8 +4,53 @@
  * 维护重点是 `published` 的可编辑字段白名单必须固定，避免后续实现静默放宽。
  */
 import { CoolCommException } from '@cool-midway/core';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import { COURSE_STATUS_VALUES } from './course-dict';
 
-export type CourseStatus = 'draft' | 'published' | 'closed';
+export type CourseStatus = (typeof COURSE_STATUS_VALUES)[number];
+const PERFORMANCE_STATE_ACTION_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateActionNotAllowed
+  );
+const PERFORMANCE_STATE_EDIT_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateEditNotAllowed
+  );
+const PERFORMANCE_STATE_DELETE_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateDeleteNotAllowed
+  );
+const PERFORMANCE_COURSE_STATUS_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.courseStatusInvalid
+  );
+const PERFORMANCE_COURSE_TITLE_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.courseTitleRequired
+  );
+const PERFORMANCE_COURSE_ADD_DRAFT_ONLY_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.courseAddDraftOnly
+  );
+const PERFORMANCE_COURSE_PUBLISHED_TITLE_EDIT_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.coursePublishedTitleEditDenied
+  );
+const PERFORMANCE_COURSE_PUBLISHED_CODE_EDIT_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.coursePublishedCodeEditDenied
+  );
+const PERFORMANCE_COURSE_PUBLISHED_CATEGORY_EDIT_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.coursePublishedCategoryEditDenied
+  );
+const PERFORMANCE_COURSE_PUBLISHED_START_DATE_EDIT_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.coursePublishedStartDateEditDenied
+  );
 
 export interface CourseSnapshot {
   title: string;
@@ -17,9 +62,7 @@ export interface CourseSnapshot {
   status: CourseStatus;
 }
 
-export interface NormalizedCoursePayload extends CourseSnapshot {}
-
-const COURSE_STATUS: CourseStatus[] = ['draft', 'published', 'closed'];
+export type NormalizedCoursePayload = CourseSnapshot;
 
 const normalizeText = (value: any) => {
   const normalized = value === undefined || value === null ? '' : String(value);
@@ -33,8 +76,8 @@ export function normalizeCourseStatus(
 ): CourseStatus {
   const status = String(value ?? fallback).trim() as CourseStatus;
 
-  if (!COURSE_STATUS.includes(status)) {
-    throw new CoolCommException('课程状态不合法');
+  if (!COURSE_STATUS_VALUES.includes(status)) {
+    throw new CoolCommException(PERFORMANCE_COURSE_STATUS_INVALID_MESSAGE);
   }
 
   return status;
@@ -47,7 +90,7 @@ export function normalizeCoursePayload(
   const title = normalizeText(payload?.title) ?? fallback?.title ?? null;
 
   if (!title) {
-    throw new CoolCommException('课程标题不能为空');
+    throw new CoolCommException(PERFORMANCE_COURSE_TITLE_REQUIRED_MESSAGE);
   }
 
   return {
@@ -68,7 +111,7 @@ export function normalizeCourseAddPayload(payload: any): NormalizedCoursePayload
   });
 
   if (normalized.status !== 'draft') {
-    throw new CoolCommException('新建课程默认保存为草稿');
+    throw new CoolCommException(PERFORMANCE_COURSE_ADD_DRAFT_ONLY_MESSAGE);
   }
 
   return normalized;
@@ -79,37 +122,45 @@ export function buildCourseUpdatePatch(
   payload: any
 ): Partial<NormalizedCoursePayload> {
   if (current.status === 'closed') {
-    throw new CoolCommException('当前状态不允许编辑');
+    throw new CoolCommException(PERFORMANCE_STATE_EDIT_NOT_ALLOWED_MESSAGE);
   }
 
   const normalized = normalizeCoursePayload(payload, current);
 
   if (current.status === 'draft') {
     if (normalized.status === 'closed') {
-      throw new CoolCommException('当前状态不允许执行该操作');
+      throw new CoolCommException(PERFORMANCE_STATE_ACTION_NOT_ALLOWED_MESSAGE);
     }
 
     return normalized;
   }
 
   if (normalized.title !== current.title) {
-    throw new CoolCommException('已发布课程不允许修改标题');
+    throw new CoolCommException(
+      PERFORMANCE_COURSE_PUBLISHED_TITLE_EDIT_DENIED_MESSAGE
+    );
   }
 
   if ((normalized.code ?? null) !== (current.code ?? null)) {
-    throw new CoolCommException('已发布课程不允许修改编码');
+    throw new CoolCommException(
+      PERFORMANCE_COURSE_PUBLISHED_CODE_EDIT_DENIED_MESSAGE
+    );
   }
 
   if ((normalized.category ?? null) !== (current.category ?? null)) {
-    throw new CoolCommException('已发布课程不允许修改分类');
+    throw new CoolCommException(
+      PERFORMANCE_COURSE_PUBLISHED_CATEGORY_EDIT_DENIED_MESSAGE
+    );
   }
 
   if ((normalized.startDate ?? null) !== (current.startDate ?? null)) {
-    throw new CoolCommException('已发布课程不允许修改开始日期');
+    throw new CoolCommException(
+      PERFORMANCE_COURSE_PUBLISHED_START_DATE_EDIT_DENIED_MESSAGE
+    );
   }
 
   if (!['published', 'closed'].includes(normalized.status)) {
-    throw new CoolCommException('当前状态不允许执行该操作');
+    throw new CoolCommException(PERFORMANCE_STATE_ACTION_NOT_ALLOWED_MESSAGE);
   }
 
   return {
@@ -121,6 +172,6 @@ export function buildCourseUpdatePatch(
 
 export function assertCourseDeletable(status: CourseStatus) {
   if (status !== 'draft') {
-    throw new CoolCommException('当前状态不允许删除');
+    throw new CoolCommException(PERFORMANCE_STATE_DELETE_NOT_ALLOWED_MESSAGE);
   }
 }

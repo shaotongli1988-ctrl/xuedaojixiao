@@ -5,11 +5,6 @@
  * 维护重点是 controller 语义分离但底层权限、校验、关系约束和统计口径必须保持单一事实源。
  */
 import {
-  App,
-  ASYNC_CONTEXT_KEY,
-  ASYNC_CONTEXT_MANAGER_KEY,
-  AsyncContextManager,
-  IMidwayApplication,
   Inject,
   Provide,
   Scope,
@@ -19,9 +14,18 @@ import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Repository } from 'typeorm';
 import { BaseSysMenuService } from '../../base/service/sys/menu';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import { PerformanceDocumentCenterEntity } from '../entity/documentCenter';
 import { PerformanceOfficeCollabEntity } from '../entity/officeCollab';
-import * as jwt from 'jsonwebtoken';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
 
 export type OfficeCollabModuleKey =
   | 'annualInspection'
@@ -31,13 +35,6 @@ export type OfficeCollabModuleKey =
   | 'expressCollab';
 
 type PermissionAction = 'page' | 'info' | 'stats' | 'add' | 'update' | 'delete';
-
-const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
-  return require('../../base/config').default({
-    app,
-    env: app?.getEnv?.(),
-  }).jwt;
-};
 
 const MODULE_META: Record<
   OfficeCollabModuleKey,
@@ -82,6 +79,10 @@ const PUBLICITY_CHANNELS = ['website', 'wechat', 'weibo', 'offline', 'all'];
 const DESIGN_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
 const EXPRESS_SERVICE_LEVELS = ['standard', 'express', 'same_day'];
 const EXPRESS_SYNC_STATUS = ['synced', 'pending', 'failed'];
+const PERFORMANCE_ID_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.idRequired
+  );
 
 function normalizePageNumber(value: any, fallback: number) {
   const parsed = Number(value);
@@ -221,46 +222,58 @@ export class PerformanceOfficeCollabRecordService extends BaseService {
   baseSysMenuService: BaseSysMenuService;
 
   @Inject()
-  ctx;
+  performanceAccessContextService: PerformanceAccessContextService;
 
-  @App()
-  app: IMidwayApplication;
-
-  private get currentCtx() {
-    if (this.ctx?.admin) {
-      return this.ctx;
-    }
-    try {
-      const contextManager: AsyncContextManager = this.app
-        .getApplicationContext()
-        .get(ASYNC_CONTEXT_MANAGER_KEY);
-      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as any;
-    } catch (error) {
-      return this.ctx;
-    }
-  }
-
-  private get currentAdmin() {
-    if (this.currentCtx?.admin) {
-      return this.currentCtx.admin;
-    }
-    const token =
-      this.currentCtx?.get?.('Authorization') ||
-      this.currentCtx?.headers?.authorization;
-    if (!token) {
-      return undefined;
-    }
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
-  }
+  private readonly capabilityByPerm: Record<string, PerformanceCapabilityKey> = {
+    [PERMISSIONS.performance.annualInspection.page]: 'office.annual_inspection.read',
+    [PERMISSIONS.performance.annualInspection.info]: 'office.annual_inspection.read',
+    [PERMISSIONS.performance.annualInspection.stats]:
+      'office.annual_inspection.stats',
+    [PERMISSIONS.performance.annualInspection.add]:
+      'office.annual_inspection.create',
+    [PERMISSIONS.performance.annualInspection.update]:
+      'office.annual_inspection.update',
+    [PERMISSIONS.performance.annualInspection.delete]:
+      'office.annual_inspection.delete',
+    [PERMISSIONS.performance.honor.page]: 'office.honor.read',
+    [PERMISSIONS.performance.honor.info]: 'office.honor.read',
+    [PERMISSIONS.performance.honor.stats]: 'office.honor.stats',
+    [PERMISSIONS.performance.honor.add]: 'office.honor.create',
+    [PERMISSIONS.performance.honor.update]: 'office.honor.update',
+    [PERMISSIONS.performance.honor.delete]: 'office.honor.delete',
+    [PERMISSIONS.performance.publicityMaterial.page]:
+      'office.publicity_material.read',
+    [PERMISSIONS.performance.publicityMaterial.info]:
+      'office.publicity_material.read',
+    [PERMISSIONS.performance.publicityMaterial.stats]:
+      'office.publicity_material.stats',
+    [PERMISSIONS.performance.publicityMaterial.add]:
+      'office.publicity_material.create',
+    [PERMISSIONS.performance.publicityMaterial.update]:
+      'office.publicity_material.update',
+    [PERMISSIONS.performance.publicityMaterial.delete]:
+      'office.publicity_material.delete',
+    [PERMISSIONS.performance.designCollab.page]: 'office.design_collab.read',
+    [PERMISSIONS.performance.designCollab.info]: 'office.design_collab.read',
+    [PERMISSIONS.performance.designCollab.stats]: 'office.design_collab.stats',
+    [PERMISSIONS.performance.designCollab.add]: 'office.design_collab.create',
+    [PERMISSIONS.performance.designCollab.update]: 'office.design_collab.update',
+    [PERMISSIONS.performance.designCollab.delete]: 'office.design_collab.delete',
+    [PERMISSIONS.performance.expressCollab.page]: 'office.express_collab.read',
+    [PERMISSIONS.performance.expressCollab.info]: 'office.express_collab.read',
+    [PERMISSIONS.performance.expressCollab.stats]:
+      'office.express_collab.stats',
+    [PERMISSIONS.performance.expressCollab.add]: 'office.express_collab.create',
+    [PERMISSIONS.performance.expressCollab.update]:
+      'office.express_collab.update',
+    [PERMISSIONS.performance.expressCollab.delete]:
+      'office.express_collab.delete',
+  };
 
   async pageByModule(moduleKey: OfficeCollabModuleKey, query: any) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(
-      perms,
+    const access = await this.currentPerms();
+    this.assertPerm(
+      access,
       this.getPerm(moduleKey, 'page'),
       `无权限查看${MODULE_META[moduleKey].label}列表`
     );
@@ -282,9 +295,9 @@ export class PerformanceOfficeCollabRecordService extends BaseService {
   }
 
   async infoByModule(moduleKey: OfficeCollabModuleKey, id: number) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(
-      perms,
+    const access = await this.currentPerms();
+    this.assertPerm(
+      access,
       this.getPerm(moduleKey, 'info'),
       `无权限查看${MODULE_META[moduleKey].label}详情`
     );
@@ -293,9 +306,9 @@ export class PerformanceOfficeCollabRecordService extends BaseService {
   }
 
   async statsByModule(moduleKey: OfficeCollabModuleKey, query: any) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(
-      perms,
+    const access = await this.currentPerms();
+    this.assertPerm(
+      access,
       this.getPerm(moduleKey, 'stats'),
       `无权限查看${MODULE_META[moduleKey].label}统计`
     );
@@ -305,9 +318,9 @@ export class PerformanceOfficeCollabRecordService extends BaseService {
   }
 
   async addByModule(moduleKey: OfficeCollabModuleKey, payload: any) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(
-      perms,
+    const access = await this.currentPerms();
+    this.assertPerm(
+      access,
       this.getPerm(moduleKey, 'add'),
       `无权限新增${MODULE_META[moduleKey].label}`
     );
@@ -320,16 +333,16 @@ export class PerformanceOfficeCollabRecordService extends BaseService {
   }
 
   async updateByModule(moduleKey: OfficeCollabModuleKey, payload: any) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(
-      perms,
+    const access = await this.currentPerms();
+    this.assertPerm(
+      access,
       this.getPerm(moduleKey, 'update'),
       `无权限更新${MODULE_META[moduleKey].label}`
     );
 
     const id = Number(pickValue(payload, ['id']));
     if (!Number.isInteger(id) || id <= 0) {
-      throw new CoolCommException('ID不能为空');
+      throw new CoolCommException(PERFORMANCE_ID_REQUIRED_MESSAGE);
     }
 
     const current = await this.requireRecord(moduleKey, id);
@@ -340,9 +353,9 @@ export class PerformanceOfficeCollabRecordService extends BaseService {
   }
 
   async deleteByModule(moduleKey: OfficeCollabModuleKey, ids: number[]) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(
-      perms,
+    const access = await this.currentPerms();
+    this.assertPerm(
+      access,
       this.getPerm(moduleKey, 'delete'),
       `无权限删除${MODULE_META[moduleKey].label}`
     );
@@ -1143,19 +1156,35 @@ export class PerformanceOfficeCollabRecordService extends BaseService {
   }
 
   private async currentPerms() {
-    const roleIds = this.currentAdmin?.roleIds || [];
-    if (!Array.isArray(roleIds) || roleIds.length === 0) {
-      return [];
-    }
-    return this.baseSysMenuService.getPerms(roleIds);
+    return this.performanceAccessContextService.resolveAccessContext(undefined, {
+      allowEmptyRoleIds: true,
+      missingAuthMessage: '登录状态已失效',
+    });
   }
 
   private getPerm(moduleKey: OfficeCollabModuleKey, action: PermissionAction) {
     return `performance:${moduleKey}:${action}`;
   }
 
-  private assertHasPerm(perms: string[], perm: string, message: string) {
-    if (!Array.isArray(perms) || !perms.includes(perm)) {
+  private resolveCapabilityKey(perm: string): PerformanceCapabilityKey {
+    const capabilityKey = this.capabilityByPerm[perm];
+    if (!capabilityKey) {
+      throw new CoolCommException(`未映射的行政协同权限: ${perm}`);
+    }
+    return capabilityKey;
+  }
+
+  private assertPerm(
+    access: PerformanceResolvedAccessContext,
+    perm: string,
+    message: string
+  ) {
+    if (
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        this.resolveCapabilityKey(perm)
+      )
+    ) {
       throw new CoolCommException(message);
     }
   }

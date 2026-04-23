@@ -3,7 +3,21 @@
  * 资产管理领域服务最小测试。
  * 这里只验证主题20核心状态回写、采购入库落台账和部门范围约束，不覆盖控制器装饰器、真实数据库或前端联调。
  */
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
 import { PerformanceAssetDomainService } from '../../src/modules/performance/service/asset-domain';
+
+function attachAccessContext(service: any) {
+  const accessService = new PerformanceAccessContextService() as any;
+  accessService.ctx = service.ctx;
+  accessService.baseSysMenuService =
+    service.baseSysMenuService || { getPerms: jest.fn().mockResolvedValue([]) };
+  accessService.baseSysPermsService =
+    service.baseSysPermsService || {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+  service.performanceAccessContextService = accessService;
+  return service;
+}
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value));
@@ -17,9 +31,14 @@ function createMemoryRepo(initialRows: any[] = []) {
   const rows = initialRows.map(item => clone(item));
   let currentId = rows.reduce((max, item) => Math.max(max, Number(item.id || 0)), 0);
 
-  return {
+  let repo: any;
+  repo = {
     rows,
     find: jest.fn(async () => rows.map(item => clone(item))),
+    findOne: jest.fn(async (options: any) => {
+      const found = rows.find(item => matchWhere(item, options?.where));
+      return found ? clone(found) : null;
+    }),
     findOneBy: jest.fn(async (where: any) => {
       const found = rows.find(item => matchWhere(item, where));
       return found ? clone(found) : null;
@@ -67,7 +86,15 @@ function createMemoryRepo(initialRows: any[] = []) {
         rows.splice(index, 1);
       }
     }),
+    manager: {
+      transaction: jest.fn(async (handler: any) =>
+        handler({
+          getRepository: () => repo,
+        })
+      ),
+    },
   };
+  return repo;
 }
 
 function createService(perms: string[], departmentIds: number[] = []) {
@@ -183,6 +210,40 @@ function createService(perms: string[], departmentIds: number[] = []) {
       updateTime: '2026-04-19 10:00:00',
     },
   ]);
+  const requestRepo = createMemoryRepo([
+    {
+      id: 51,
+      requestNo: 'REQ-001',
+      requestLevel: 'L2',
+      requestType: 'standard',
+      applicantId: 2,
+      applicantDepartmentId: 10,
+      assetCategory: '笔记本',
+      assetModelRequest: 'X1',
+      quantity: 1,
+      unitPriceEstimate: 5000,
+      usageReason: '日常办公',
+      expectedUseStartDate: '2026-04-20',
+      targetDepartmentId: null,
+      exceptionReason: null,
+      originalAssetId: null,
+      originalAssignmentId: null,
+      approvalInstanceId: null,
+      approvalStatus: null,
+      currentApproverId: null,
+      approvalTriggeredRules: '["highAmount","sensitiveAsset"]',
+      assignedAssetId: null,
+      assignmentRecordId: null,
+      assignedBy: null,
+      assignedAt: null,
+      status: 'draft',
+      submitTime: null,
+      withdrawTime: null,
+      cancelReason: null,
+      createTime: '2026-04-19 10:00:00',
+      updateTime: '2026-04-19 10:00:00',
+    },
+  ]);
 
   const service = new PerformanceAssetDomainService() as any;
   service.ctx = {
@@ -206,13 +267,40 @@ function createService(perms: string[], departmentIds: number[] = []) {
   service.performanceAssetInventoryEntity = inventoryRepo;
   service.performanceAssetDepreciationEntity = depreciationRepo;
   service.performanceAssetDisposalEntity = disposalRepo;
+  service.performanceAssetAssignmentRequestEntity = requestRepo;
   service.performanceSupplierEntity = createMemoryRepo();
   service.performancePurchaseOrderEntity = createMemoryRepo();
   service.baseSysUserEntity = createMemoryRepo([
-    { id: 1, name: '资产管理员' },
-    { id: 2, name: '张三' },
+    { id: 1, name: '资产管理员', departmentId: 10, status: 1 },
+    { id: 2, name: '张三', departmentId: 10, status: 1 },
   ]);
   service.baseSysDepartmentEntity = createMemoryRepo([{ id: 10, name: '平台部' }]);
+  service.performanceApprovalFlowService = {
+    launchForObject: jest.fn().mockResolvedValue({
+      id: 801,
+      status: 'in_review',
+      currentApproverId: 9,
+    }),
+    withdraw: jest.fn().mockResolvedValue(undefined),
+    terminate: jest.fn().mockResolvedValue(undefined),
+  };
+  requestRepo.manager.transaction.mockImplementation(async (handler: any) =>
+    handler({
+      getRepository: (entity: any) => {
+        if (entity?.name === 'PerformanceAssetAssignmentRequestEntity') {
+          return requestRepo;
+        }
+        if (entity?.name === 'PerformanceAssetInfoEntity') {
+          return assetInfoRepo;
+        }
+        if (entity?.name === 'PerformanceAssetAssignmentEntity') {
+          return assignmentRepo;
+        }
+        return requestRepo;
+      },
+    })
+  );
+  attachAccessContext(service);
 
   return {
     service,
@@ -221,6 +309,7 @@ function createService(perms: string[], departmentIds: number[] = []) {
       assignmentRepo,
       procurementRepo,
       disposalRepo,
+      requestRepo,
     },
   };
 }
@@ -273,7 +362,10 @@ describe('performance asset domain service', () => {
   });
 
   test('should reject assignment add outside manager scope', async () => {
-    const { service } = createService(['performance:assetAssignment:add'], [20]);
+    const { service, repos } = createService(['performance:assetAssignment:add'], [10]);
+    repos.assetInfoRepo.rows[0].purchaseCost = 500;
+    repos.assetInfoRepo.rows[0].category = '鼠标';
+    repos.assetInfoRepo.rows[0].ownerDepartmentId = 20;
 
     await expect(
       service.assetAssignmentAdd({
@@ -283,6 +375,105 @@ describe('performance asset domain service', () => {
         assignDate: '2026-04-19',
       })
     ).rejects.toThrow('无权操作该资产');
+  });
+
+  test('should reject direct assignment for non-L0 asset and require request flow', async () => {
+    const { service } = createService(['performance:assetAssignment:add'], [10]);
+
+    await expect(
+      service.assetAssignmentAdd({
+        assetId: 1,
+        assigneeId: 2,
+        departmentId: 10,
+        assignDate: '2026-04-19',
+      })
+    ).rejects.toThrow('当前领用场景需先走领用申请审批流程');
+  });
+
+  test('should submit assignment request atomically into approval flow', async () => {
+    const { service, repos } = createService(
+      [
+        'performance:assetAssignmentRequest:submit',
+        'performance:assetAssignmentRequest:info',
+      ],
+      [10]
+    );
+    service.ctx.admin = {
+      userId: 2,
+      username: 'employee_platform',
+      roleIds: [3],
+    };
+
+    const result = await service.assetAssignmentRequestSubmit({ id: 51 });
+
+    expect(result).toMatchObject({
+      id: 51,
+      status: 'inApproval',
+      approvalInstanceId: 801,
+      approvalStatus: 'in_review',
+      currentApproverId: 9,
+    });
+    expect(service.performanceApprovalFlowService.launchForObject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        objectType: 'assetAssignmentRequest',
+        objectId: 51,
+        applicantId: 2,
+      }),
+      expect.any(Object)
+    );
+    expect(repos.requestRepo.rows[0]).toMatchObject({
+      status: 'inApproval',
+      approvalInstanceId: 801,
+      approvalStatus: 'in_review',
+      currentApproverId: 9,
+    });
+  });
+
+  test('should assign approved request and create formal assignment record', async () => {
+    const { service, repos } = createService(
+      [
+        'performance:assetAssignmentRequest:assign',
+        'performance:assetAssignmentRequest:info',
+      ],
+      [10]
+    );
+    repos.requestRepo.rows[0].status = 'approvedPendingAssignment';
+    repos.requestRepo.rows[0].approvalStatus = 'approved';
+
+    const result = await service.assetAssignmentRequestAssign({
+      id: 51,
+      assetId: 1,
+      assignDate: '2026-04-20',
+    });
+
+    expect(result).toMatchObject({
+      id: 51,
+      status: 'issued',
+      assignedAssetId: 1,
+    });
+    expect(repos.assignmentRepo.rows).toHaveLength(2);
+    expect(repos.assignmentRepo.rows[1]).toMatchObject({
+      assetId: 1,
+      assigneeId: 2,
+      status: 'assigned',
+    });
+    expect(repos.assetInfoRepo.rows[0].status).toBe('assigned');
+  });
+
+  test('should reject duplicated asset number on add', async () => {
+    const { service } = createService(
+      ['performance:assetInfo:add', 'performance:assetInfo:info'],
+      [10]
+    );
+
+    await expect(
+      service.assetInfoAdd({
+        assetNo: 'AST-000001',
+        assetName: '重复编号资产',
+        departmentId: 10,
+        purchaseCost: 1000,
+      })
+    ).rejects.toThrow('资产编号已存在');
   });
 
   test('should summarize asset actions by natural day week month and expose action timeline', async () => {

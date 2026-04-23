@@ -7,8 +7,23 @@ import {
   assertCapabilityModelTransition,
   normalizeCapabilityArray,
   normalizeCapabilityModelPayload,
+  normalizeCapabilityModelStatus,
 } from '../../src/modules/performance/service/capability-helper';
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
 import { PerformanceCapabilityService } from '../../src/modules/performance/service/capability';
+
+function attachAccessContext(service: any) {
+  const accessService = new PerformanceAccessContextService() as any;
+  accessService.ctx = service.ctx;
+  accessService.baseSysMenuService =
+    service.baseSysMenuService || { getPerms: jest.fn().mockResolvedValue([]) };
+  accessService.baseSysPermsService =
+    service.baseSysPermsService || {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+  service.performanceAccessContextService = accessService;
+  return service;
+}
 
 describe('performance capability helper', () => {
   test('should normalize draft model payload by default', () => {
@@ -40,6 +55,15 @@ describe('performance capability helper', () => {
       assertCapabilityModelTransition('active', 'draft', 'update')
     ).toThrow('当前状态不允许流转到目标状态');
   });
+
+  test('should reject invalid model status and non-draft add status', () => {
+    expect(() => normalizeCapabilityModelStatus('enabled')).toThrow(
+      '能力模型状态不合法'
+    );
+    expect(() =>
+      assertCapabilityModelTransition(undefined, 'active', 'add')
+    ).toThrow('新增能力模型状态只能为 draft');
+  });
 });
 
 describe('performance capability service', () => {
@@ -54,6 +78,7 @@ describe('performance capability service', () => {
     service.baseSysMenuService = {
       getPerms: jest.fn().mockResolvedValue([]),
     };
+    attachAccessContext(service);
 
     await expect(service.modelPage({ page: 1, size: 10 })).rejects.toThrow(
       '无权限查看能力模型列表'
@@ -76,6 +101,7 @@ describe('performance capability service', () => {
     service.performanceCapabilityModelEntity = {
       findOneBy: jest.fn().mockResolvedValue({ id: 9, code: 'CAP-001' }),
     };
+    attachAccessContext(service);
 
     await expect(
       service.addModel({
@@ -114,6 +140,7 @@ describe('performance capability service', () => {
     service.baseSysUserEntity = {
       findOneBy: jest.fn().mockResolvedValue({ id: 101, name: '张三', departmentId: 22 }),
     };
+    attachAccessContext(service);
 
     await expect(service.portraitInfo(101)).rejects.toThrow(
       '无权限查看能力画像摘要'
@@ -156,6 +183,7 @@ describe('performance capability service', () => {
         { issuedAt: '2026-04-19 08:00:00', status: 'issued' },
       ]),
     };
+    attachAccessContext(service);
 
     await expect(service.portraitInfo(101)).resolves.toEqual({
       employeeId: 101,

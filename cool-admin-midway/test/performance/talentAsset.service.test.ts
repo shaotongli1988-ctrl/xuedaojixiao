@@ -3,6 +3,7 @@
  * 招聘人才资产服务最小测试。
  * 这里只验证主题12冻结的后端主链、范围权限、状态流转、删除限制、编码唯一性和敏感字段边界，不覆盖真实数据库联调。
  */
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
 import { PerformanceTalentAssetService } from '../../src/modules/performance/service/talentAsset';
 
 const TALENT_PERMS = [
@@ -25,6 +26,19 @@ const createPageQueryBuilder = (rows: any[]) => {
     getRawMany: jest.fn().mockResolvedValue(rows),
   };
 };
+
+function attachAccessContext(service: any) {
+  const accessService = new PerformanceAccessContextService() as any;
+  accessService.ctx = service.ctx;
+  accessService.baseSysMenuService =
+    service.baseSysMenuService || { getPerms: jest.fn().mockResolvedValue([]) };
+  accessService.baseSysPermsService =
+    service.baseSysPermsService || {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+  service.performanceAccessContextService = accessService;
+  return service;
+}
 
 describe('performance talent asset service', () => {
   test('should support hr crud normal path', async () => {
@@ -95,6 +109,7 @@ describe('performance talent asset service', () => {
       findBy: jest.fn().mockResolvedValue([{ id: 1, status: 'new' }]),
       delete: jest.fn().mockResolvedValue(undefined),
     };
+    attachAccessContext(service);
 
     const pageResult = await service.page({ page: 1, size: 10 });
     const infoResult = await service.info(1);
@@ -164,6 +179,7 @@ describe('performance talent asset service', () => {
     service.performanceTalentAssetEntity = {
       createQueryBuilder: jest.fn().mockReturnValue(qb),
     };
+    attachAccessContext(service);
 
     await service.page({ page: 1, size: 10 });
 
@@ -221,6 +237,7 @@ describe('performance talent asset service', () => {
       }),
       update: jest.fn().mockResolvedValue(undefined),
     };
+    attachAccessContext(allowedService);
 
     const updated = await allowedService.updateTalentAsset({
       id: 1,
@@ -258,6 +275,7 @@ describe('performance talent asset service', () => {
       create: jest.fn(),
       save: jest.fn(),
     };
+    attachAccessContext(deniedService);
 
     await expect(
       deniedService.add({
@@ -341,6 +359,7 @@ describe('performance talent asset service', () => {
       }),
       update: jest.fn().mockResolvedValue(undefined),
     };
+    attachAccessContext(service);
 
     const legal = await service.updateTalentAsset({
       id: 10,
@@ -382,6 +401,7 @@ describe('performance talent asset service', () => {
     managerService.baseSysMenuService = {
       getPerms: jest.fn().mockResolvedValue(['performance:talentAsset:page']),
     };
+    attachAccessContext(managerService);
 
     await expect(managerService.delete([1])).rejects.toThrow('无权限删除人才资产');
 
@@ -399,6 +419,7 @@ describe('performance talent asset service', () => {
     hrService.performanceTalentAssetEntity = {
       findBy: jest.fn().mockResolvedValue([{ id: 2, status: 'tracking' }]),
     };
+    attachAccessContext(hrService);
 
     await expect(hrService.delete([2])).rejects.toThrow('当前状态不允许删除');
   });
@@ -429,6 +450,7 @@ describe('performance talent asset service', () => {
       create: jest.fn(),
       save: jest.fn(),
     };
+    attachAccessContext(duplicatedService);
 
     await expect(
       duplicatedService.add({
@@ -473,6 +495,7 @@ describe('performance talent asset service', () => {
       create: jest.fn().mockImplementation((payload: any) => payload),
       save: jest.fn().mockResolvedValue({ id: 5 }),
     };
+    attachAccessContext(nullableService);
 
     await expect(
       nullableService.add({
@@ -532,6 +555,7 @@ describe('performance talent asset service', () => {
       create: jest.fn().mockImplementation((payload: any) => payload),
       save: jest.fn().mockResolvedValue({ id: 9 }),
     };
+    attachAccessContext(service);
 
     const result = await service.add({
       candidateName: '敏感字段候选人',

@@ -4,11 +4,6 @@
  * 维护重点是 HR-only 权限、固定类型/状态枚举和到期统计口径必须由服务端单点收敛。
  */
 import {
-  App,
-  ASYNC_CONTEXT_KEY,
-  ASYNC_CONTEXT_MANAGER_KEY,
-  AsyncContextManager,
-  IMidwayApplication,
   Inject,
   Provide,
   Scope,
@@ -19,7 +14,16 @@ import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Repository } from 'typeorm';
 import { BaseSysMenuService } from '../../base/service/sys/menu';
 import { PerformanceIntellectualPropertyEntity } from '../entity/intellectualProperty';
-import * as jwt from 'jsonwebtoken';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
 
 const INTELLECTUAL_PROPERTY_TYPES = [
   'patent',
@@ -34,14 +38,11 @@ const INTELLECTUAL_PROPERTY_STATUS = [
   'expired',
   'invalidated',
 ];
-let intellectualPropertyTableReadyPromise: Promise<void> | null = null;
-
-const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
-  return require('../../base/config').default({
-    app,
-    env: app?.getEnv?.(),
-  }).jwt;
-};
+const INTELLECTUAL_PROPERTY_RISK_LEVELS = ['low', 'medium', 'high'];
+const PERFORMANCE_ID_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.idRequired
+  );
 
 function normalizePageNumber(value: any, fallback: number) {
   const parsed = Number(value);
@@ -119,53 +120,27 @@ export class PerformanceIntellectualPropertyService extends BaseService {
   baseSysMenuService: BaseSysMenuService;
 
   @Inject()
-  ctx;
-
-  @App()
-  app: IMidwayApplication;
+  performanceAccessContextService: PerformanceAccessContextService;
 
   private readonly perms = {
-    page: 'performance:intellectualProperty:page',
-    info: 'performance:intellectualProperty:info',
-    stats: 'performance:intellectualProperty:stats',
-    add: 'performance:intellectualProperty:add',
-    update: 'performance:intellectualProperty:update',
-    delete: 'performance:intellectualProperty:delete',
+    page: PERMISSIONS.performance.intellectualProperty.page,
+    info: PERMISSIONS.performance.intellectualProperty.info,
+    stats: PERMISSIONS.performance.intellectualProperty.stats,
+    add: PERMISSIONS.performance.intellectualProperty.add,
+    update: PERMISSIONS.performance.intellectualProperty.update,
+    delete: PERMISSIONS.performance.intellectualProperty.delete,
   };
 
-  private get currentCtx() {
-    if (this.ctx?.admin) {
-      return this.ctx;
-    }
-    try {
-      const contextManager: AsyncContextManager = this.app
-        .getApplicationContext()
-        .get(ASYNC_CONTEXT_MANAGER_KEY);
-      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as any;
-    } catch (error) {
-      return this.ctx;
-    }
-  }
-
-  private get currentAdmin() {
-    if (this.currentCtx?.admin) {
-      return this.currentCtx.admin;
-    }
-    const token =
-      this.currentCtx?.get?.('Authorization') ||
-      this.currentCtx?.headers?.authorization;
-    if (!token) {
-      return undefined;
-    }
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
-  }
+  private readonly capabilityByPerm: Record<string, PerformanceCapabilityKey> = {
+    [PERMISSIONS.performance.intellectualProperty.page]: 'intellectual_property.read',
+    [PERMISSIONS.performance.intellectualProperty.info]: 'intellectual_property.read',
+    [PERMISSIONS.performance.intellectualProperty.stats]: 'intellectual_property.stats',
+    [PERMISSIONS.performance.intellectualProperty.add]: 'intellectual_property.create',
+    [PERMISSIONS.performance.intellectualProperty.update]: 'intellectual_property.update',
+    [PERMISSIONS.performance.intellectualProperty.delete]: 'intellectual_property.delete',
+  };
 
   async page(query: any) {
-    await this.ensureTableReady();
     const perms = await this.currentPerms();
     this.assertHasPerm(perms, this.perms.page, '无权限查看知识产权列表');
 
@@ -184,7 +159,6 @@ export class PerformanceIntellectualPropertyService extends BaseService {
   }
 
   async info(id: number) {
-    await this.ensureTableReady();
     const perms = await this.currentPerms();
     this.assertHasPerm(perms, this.perms.info, '无权限查看知识产权详情');
     const record = await this.requireRecord(Number(id));
@@ -192,7 +166,6 @@ export class PerformanceIntellectualPropertyService extends BaseService {
   }
 
   async stats(query: any) {
-    await this.ensureTableReady();
     const perms = await this.currentPerms();
     this.assertHasPerm(perms, this.perms.stats, '无权限查看知识产权统计');
 
@@ -221,7 +194,6 @@ export class PerformanceIntellectualPropertyService extends BaseService {
   }
 
   async add(payload: any) {
-    await this.ensureTableReady();
     const perms = await this.currentPerms();
     this.assertHasPerm(perms, this.perms.add, '无权限新增知识产权');
 
@@ -233,13 +205,12 @@ export class PerformanceIntellectualPropertyService extends BaseService {
   }
 
   async updateProperty(payload: any) {
-    await this.ensureTableReady();
     const perms = await this.currentPerms();
     this.assertHasPerm(perms, this.perms.update, '无权限更新知识产权');
 
     const id = Number(payload?.id);
     if (!Number.isInteger(id) || id <= 0) {
-      throw new CoolCommException('ID不能为空');
+      throw new CoolCommException(PERFORMANCE_ID_REQUIRED_MESSAGE);
     }
 
     const current = await this.requireRecord(id);
@@ -256,7 +227,6 @@ export class PerformanceIntellectualPropertyService extends BaseService {
   }
 
   async delete(ids: number[]) {
-    await this.ensureTableReady();
     const perms = await this.currentPerms();
     this.assertHasPerm(perms, this.perms.delete, '无权限删除知识产权');
 
@@ -278,7 +248,6 @@ export class PerformanceIntellectualPropertyService extends BaseService {
   }
 
   private async listByQuery(query: any) {
-    await this.ensureTableReady();
     const rows = await this.performanceIntellectualPropertyEntity.find();
     const keyword = normalizeText(query?.keyword, 100).toLowerCase();
     const status = normalizeText(query?.status, 32);
@@ -341,9 +310,17 @@ export class PerformanceIntellectualPropertyService extends BaseService {
       '状态',
       32
     );
+    const riskLevel = normalizeOptionalText(payload?.riskLevel, 32);
 
     this.assertEnum(ipType, INTELLECTUAL_PROPERTY_TYPES, '知识产权类型不合法');
     this.assertEnum(status, INTELLECTUAL_PROPERTY_STATUS, '知识产权状态不合法');
+    if (riskLevel) {
+      this.assertEnum(
+        riskLevel,
+        INTELLECTUAL_PROPERTY_RISK_LEVELS,
+        '风险等级不合法'
+      );
+    }
 
     if (grantDate && grantDate < applyDate) {
       throw new CoolCommException('授权日期不能早于申请日期');
@@ -367,7 +344,7 @@ export class PerformanceIntellectualPropertyService extends BaseService {
       status,
       registryNo: normalizeOptionalText(payload?.registryNo, 100),
       usageScope: normalizeOptionalText(payload?.usageScope, 1000),
-      riskLevel: normalizeOptionalText(payload?.riskLevel, 32),
+      riskLevel,
       notes: normalizeOptionalText(payload?.notes, 2000),
     };
   }
@@ -395,7 +372,6 @@ export class PerformanceIntellectualPropertyService extends BaseService {
   }
 
   private async requireRecord(id: number) {
-    await this.ensureTableReady();
     const record = await this.performanceIntellectualPropertyEntity.findOneBy({ id });
     if (!record) {
       throw new CoolCommException('知识产权记录不存在');
@@ -404,7 +380,6 @@ export class PerformanceIntellectualPropertyService extends BaseService {
   }
 
   private async assertIpNoUnique(ipNo: string, currentId?: number) {
-    await this.ensureTableReady();
     const existing = await this.performanceIntellectualPropertyEntity.findOneBy({ ipNo });
     if (existing && Number(existing.id) !== Number(currentId || 0)) {
       throw new CoolCommException('知识产权编号已存在');
@@ -418,62 +393,32 @@ export class PerformanceIntellectualPropertyService extends BaseService {
   }
 
   private async currentPerms() {
-    const roleIds = this.currentAdmin?.roleIds || [];
-    if (!Array.isArray(roleIds) || roleIds.length === 0) {
-      return [];
-    }
-    return this.baseSysMenuService.getPerms(roleIds);
+    return this.performanceAccessContextService.resolveAccessContext(undefined, {
+      allowEmptyRoleIds: true,
+      missingAuthMessage: '登录状态已失效',
+    });
   }
 
-  private assertHasPerm(perms: string[], perm: string, message: string) {
-    if (!Array.isArray(perms) || !perms.includes(perm)) {
+  private resolveCapabilityKey(perm: string): PerformanceCapabilityKey {
+    const capabilityKey = this.capabilityByPerm[perm];
+    if (!capabilityKey) {
+      throw new CoolCommException(`未映射的知识产权权限: ${perm}`);
+    }
+    return capabilityKey;
+  }
+
+  private assertHasPerm(
+    access: PerformanceResolvedAccessContext,
+    perm: string,
+    message: string
+  ) {
+    if (
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        this.resolveCapabilityKey(perm)
+      )
+    ) {
       throw new CoolCommException(message);
     }
-  }
-
-  /**
-   * current latest 关闭了 TypeORM auto-sync，新增台账表需要在首次访问时兜底建表，
-   * 否则运行态会在首屏 page/stats 请求阶段直接报缺表。
-   */
-  private async ensureTableReady() {
-    if (!intellectualPropertyTableReadyPromise) {
-      intellectualPropertyTableReadyPromise = this.performanceIntellectualPropertyEntity
-        .query(`
-          CREATE TABLE IF NOT EXISTS performance_intellectual_property (
-            id int NOT NULL AUTO_INCREMENT,
-            ipNo varchar(64) NOT NULL,
-            title varchar(200) NOT NULL,
-            ipType varchar(32) NOT NULL,
-            ownerDepartment varchar(100) NOT NULL,
-            ownerName varchar(100) NOT NULL,
-            applicantName varchar(100) NOT NULL,
-            applyDate varchar(10) NOT NULL,
-            grantDate varchar(10) DEFAULT NULL,
-            expiryDate varchar(10) DEFAULT NULL,
-            status varchar(32) NOT NULL DEFAULT 'drafting',
-            registryNo varchar(100) DEFAULT NULL,
-            usageScope text DEFAULT NULL,
-            riskLevel varchar(32) DEFAULT NULL,
-            notes text DEFAULT NULL,
-            createTime varchar(19) NOT NULL,
-            updateTime varchar(19) NOT NULL,
-            tenantId int DEFAULT NULL,
-            PRIMARY KEY (id),
-            UNIQUE KEY uk_performance_intellectual_property_no (ipNo),
-            KEY idx_performance_intellectual_property_title (title),
-            KEY idx_performance_intellectual_property_type (ipType),
-            KEY idx_performance_intellectual_property_status (status),
-            KEY idx_performance_intellectual_property_create_time (createTime),
-            KEY idx_performance_intellectual_property_update_time (updateTime),
-            KEY idx_performance_intellectual_property_tenant (tenantId)
-          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        `)
-        .then(() => undefined)
-        .catch(error => {
-          intellectualPropertyTableReadyPromise = null;
-          throw error;
-        });
-    }
-    await intellectualPropertyTableReadyPromise;
   }
 }

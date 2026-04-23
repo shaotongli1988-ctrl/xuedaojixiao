@@ -4,11 +4,6 @@
  * 维护重点是 relatedFileIds 与 QA 关联必须引用正式表，且 graph/search/qaList/qaAdd 权限不能漂移。
  */
 import {
-  App,
-  ASYNC_CONTEXT_KEY,
-  ASYNC_CONTEXT_MANAGER_KEY,
-  AsyncContextManager,
-  IMidwayApplication,
   Inject,
   Provide,
   Scope,
@@ -21,16 +16,79 @@ import { BaseSysMenuService } from '../../base/service/sys/menu';
 import { PerformanceDocumentCenterEntity } from '../entity/documentCenter';
 import { PerformanceKnowledgeBaseEntity } from '../entity/knowledgeBase';
 import { PerformanceKnowledgeQaEntity } from '../entity/knowledgeQa';
-import * as jwt from 'jsonwebtoken';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import { KNOWLEDGE_BASE_STATUS_VALUES } from './knowledge-base-dict';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
 
-const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
-  return require('../../base/config').default({
-    app,
-    env: app?.getEnv?.(),
-  }).jwt;
-};
-
-const KNOWLEDGE_STATUS = ['draft', 'published', 'archived'];
+const KNOWLEDGE_STATUS: readonly string[] = [...KNOWLEDGE_BASE_STATUS_VALUES];
+const PERFORMANCE_OWNER_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.ownerRequired
+  );
+const PERFORMANCE_INVALID_RELATED_FILES_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.invalidRelatedFiles
+  );
+const PERFORMANCE_INVALID_RELATED_KNOWLEDGE_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.invalidRelatedKnowledge
+  );
+const PERFORMANCE_QA_QUESTION_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.qaQuestionRequired
+  );
+const PERFORMANCE_QA_ANSWER_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.qaAnswerRequired
+  );
+const PERFORMANCE_KNOWLEDGE_DELETE_SELECTION_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.knowledgeDeleteSelectionRequired
+  );
+const PERFORMANCE_KNOWLEDGE_DELETE_PARTIAL_MISSING_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.knowledgeDeletePartialMissing
+  );
+const PERFORMANCE_KNOWLEDGE_ID_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.knowledgeIdInvalid
+  );
+const PERFORMANCE_KNOWLEDGE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.knowledgeNotFound
+  );
+const PERFORMANCE_KNOWLEDGE_KB_NO_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.knowledgeKbNoRequired
+  );
+const PERFORMANCE_KNOWLEDGE_TITLE_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.knowledgeTitleRequired
+  );
+const PERFORMANCE_KNOWLEDGE_CATEGORY_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.knowledgeCategoryRequired
+  );
+const PERFORMANCE_KNOWLEDGE_SUMMARY_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.knowledgeSummaryRequired
+  );
+const PERFORMANCE_KNOWLEDGE_STATUS_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.knowledgeStatusInvalid
+  );
+const PERFORMANCE_KNOWLEDGE_KB_NO_DUPLICATE_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.knowledgeKbNoDuplicate
+  );
 
 function normalizePageNumber(value: any, fallback: number) {
   const parsed = Number(value);
@@ -131,57 +189,35 @@ export class PerformanceKnowledgeBaseService extends BaseService {
   baseSysMenuService: BaseSysMenuService;
 
   @Inject()
-  ctx;
-
-  @App()
-  app: IMidwayApplication;
+  performanceAccessContextService: PerformanceAccessContextService;
 
   private readonly perms = {
-    page: 'performance:knowledgeBase:page',
-    stats: 'performance:knowledgeBase:stats',
-    add: 'performance:knowledgeBase:add',
-    update: 'performance:knowledgeBase:update',
-    delete: 'performance:knowledgeBase:delete',
-    graph: 'performance:knowledgeBase:graph',
-    search: 'performance:knowledgeBase:search',
-    qaList: 'performance:knowledgeBase:qaList',
-    qaAdd: 'performance:knowledgeBase:qaAdd',
+    page: PERMISSIONS.performance.knowledgeBase.page,
+    stats: PERMISSIONS.performance.knowledgeBase.stats,
+    add: PERMISSIONS.performance.knowledgeBase.add,
+    update: PERMISSIONS.performance.knowledgeBase.update,
+    delete: PERMISSIONS.performance.knowledgeBase.delete,
+    graph: PERMISSIONS.performance.knowledgeBase.graph,
+    search: PERMISSIONS.performance.knowledgeBase.search,
+    qaList: PERMISSIONS.performance.knowledgeBase.qaList,
+    qaAdd: PERMISSIONS.performance.knowledgeBase.qaAdd,
   };
 
-  private get currentCtx() {
-    if (this.ctx?.admin) {
-      return this.ctx;
-    }
-    try {
-      const contextManager: AsyncContextManager = this.app
-        .getApplicationContext()
-        .get(ASYNC_CONTEXT_MANAGER_KEY);
-      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as any;
-    } catch (error) {
-      return this.ctx;
-    }
-  }
-
-  private get currentAdmin() {
-    if (this.currentCtx?.admin) {
-      return this.currentCtx.admin;
-    }
-    const token =
-      this.currentCtx?.get?.('Authorization') ||
-      this.currentCtx?.headers?.authorization;
-    if (!token) {
-      return undefined;
-    }
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
-  }
+  private readonly capabilityByPerm: Record<string, PerformanceCapabilityKey> = {
+    [PERMISSIONS.performance.knowledgeBase.page]: 'knowledge_base.read',
+    [PERMISSIONS.performance.knowledgeBase.stats]: 'knowledge_base.stats',
+    [PERMISSIONS.performance.knowledgeBase.add]: 'knowledge_base.create',
+    [PERMISSIONS.performance.knowledgeBase.update]: 'knowledge_base.update',
+    [PERMISSIONS.performance.knowledgeBase.delete]: 'knowledge_base.delete',
+    [PERMISSIONS.performance.knowledgeBase.graph]: 'knowledge_base.graph',
+    [PERMISSIONS.performance.knowledgeBase.search]: 'knowledge_base.search',
+    [PERMISSIONS.performance.knowledgeBase.qaList]: 'knowledge_base.qa_read',
+    [PERMISSIONS.performance.knowledgeBase.qaAdd]: 'knowledge_base.qa_create',
+  };
 
   async page(query: any) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.page, '无权限查看知识库列表');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.page, '无权限查看知识库列表');
 
     const page = normalizePageNumber(query.page, 1);
     const size = normalizePageNumber(query.size, 20);
@@ -205,8 +241,8 @@ export class PerformanceKnowledgeBaseService extends BaseService {
   }
 
   async stats(query: any) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.stats, '无权限查看知识统计');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.stats, '无权限查看知识统计');
 
     const baseQb = this.buildKnowledgeQuery(query);
     const list = await baseQb.clone().getMany();
@@ -239,8 +275,8 @@ export class PerformanceKnowledgeBaseService extends BaseService {
   }
 
   async add(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.add, '无权限新增知识条目');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.add, '无权限新增知识条目');
 
     const normalized = await this.normalizeKnowledgePayload(payload, 'add');
     const saved = await this.performanceKnowledgeBaseEntity.save(
@@ -251,8 +287,8 @@ export class PerformanceKnowledgeBaseService extends BaseService {
   }
 
   async updateKnowledge(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.update, '无权限更新知识条目');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.update, '无权限更新知识条目');
 
     const current = await this.requireKnowledge(Number(payload.id));
     const normalized = await this.normalizeKnowledgePayload(
@@ -270,22 +306,26 @@ export class PerformanceKnowledgeBaseService extends BaseService {
   }
 
   async delete(ids: number[]) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.delete, '无权限删除知识条目');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.delete, '无权限删除知识条目');
 
     const validIds = (ids || [])
       .map(item => Number(item))
       .filter(item => Number.isInteger(item) && item > 0);
 
     if (!validIds.length) {
-      throw new CoolCommException('请选择需要删除的知识条目');
+      throw new CoolCommException(
+        PERFORMANCE_KNOWLEDGE_DELETE_SELECTION_REQUIRED_MESSAGE
+      );
     }
 
     const list = await this.performanceKnowledgeBaseEntity.findBy({
       id: In(validIds),
     });
     if (list.length !== validIds.length) {
-      throw new CoolCommException('部分知识条目不存在');
+      throw new CoolCommException(
+        PERFORMANCE_KNOWLEDGE_DELETE_PARTIAL_MISSING_MESSAGE
+      );
     }
 
     await this.performanceKnowledgeBaseEntity.delete(validIds);
@@ -293,8 +333,8 @@ export class PerformanceKnowledgeBaseService extends BaseService {
   }
 
   async graph() {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.graph, '无权限查看知识图谱');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.graph, '无权限查看知识图谱');
 
     const [knowledgeRows, documentRows] = await Promise.all([
       this.performanceKnowledgeBaseEntity.find(),
@@ -361,8 +401,8 @@ export class PerformanceKnowledgeBaseService extends BaseService {
   }
 
   async search(keyword: string) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.search, '无权限使用知识搜索');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.search, '无权限使用知识搜索');
 
     const trimmedKeyword = String(keyword || '').trim();
     if (!trimmedKeyword) {
@@ -454,8 +494,8 @@ export class PerformanceKnowledgeBaseService extends BaseService {
   }
 
   async qaList(keyword?: string) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.qaList, '无权限查看百问百答');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.qaList, '无权限查看百问百答');
 
     const trimmedKeyword = String(keyword || '').trim();
     const qb = this.performanceKnowledgeQaEntity.createQueryBuilder('qa');
@@ -474,8 +514,8 @@ export class PerformanceKnowledgeBaseService extends BaseService {
   }
 
   async qaAdd(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.qaAdd, '无权限新增百问百答');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.qaAdd, '无权限新增百问百答');
 
     const normalized = await this.normalizeQaPayload(payload);
     const saved = await this.performanceKnowledgeQaEntity.save(
@@ -519,26 +559,42 @@ export class PerformanceKnowledgeBaseService extends BaseService {
   }
 
   private async currentPerms() {
-    const admin = this.currentAdmin as any;
-    if (!admin?.roleIds?.length) {
-      return [];
-    }
-    return this.baseSysMenuService.getPerms(admin.roleIds);
+    return this.performanceAccessContextService.resolveAccessContext(undefined, {
+      allowEmptyRoleIds: true,
+      missingAuthMessage: '登录状态已失效',
+    });
   }
 
-  private assertHasPerm(perms: string[], perm: string, message: string) {
-    if (!perms.includes(perm)) {
+  private resolveCapabilityKey(perm: string): PerformanceCapabilityKey {
+    const capabilityKey = this.capabilityByPerm[perm];
+    if (!capabilityKey) {
+      throw new CoolCommException(`未映射的知识库权限: ${perm}`);
+    }
+    return capabilityKey;
+  }
+
+  private assertPerm(
+    access: PerformanceResolvedAccessContext,
+    perm: string,
+    message: string
+  ) {
+    if (
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        this.resolveCapabilityKey(perm)
+      )
+    ) {
       throw new CoolCommException(message);
     }
   }
 
   private async requireKnowledge(id: number) {
     if (!Number.isInteger(id) || id <= 0) {
-      throw new CoolCommException('知识条目 ID 不合法');
+      throw new CoolCommException(PERFORMANCE_KNOWLEDGE_ID_INVALID_MESSAGE);
     }
     const item = await this.performanceKnowledgeBaseEntity.findOneBy({ id });
     if (!item) {
-      throw new CoolCommException('知识条目不存在');
+      throw new CoolCommException(PERFORMANCE_KNOWLEDGE_NOT_FOUND_MESSAGE);
     }
     return item;
   }
@@ -563,29 +619,29 @@ export class PerformanceKnowledgeBaseService extends BaseService {
     );
 
     if (!kbNo) {
-      throw new CoolCommException('知识编号不能为空');
+      throw new CoolCommException(PERFORMANCE_KNOWLEDGE_KB_NO_REQUIRED_MESSAGE);
     }
     if (!title) {
-      throw new CoolCommException('知识标题不能为空');
+      throw new CoolCommException(PERFORMANCE_KNOWLEDGE_TITLE_REQUIRED_MESSAGE);
     }
     if (!category) {
-      throw new CoolCommException('知识分类不能为空');
+      throw new CoolCommException(PERFORMANCE_KNOWLEDGE_CATEGORY_REQUIRED_MESSAGE);
     }
     if (!summary) {
-      throw new CoolCommException('知识摘要不能为空');
+      throw new CoolCommException(PERFORMANCE_KNOWLEDGE_SUMMARY_REQUIRED_MESSAGE);
     }
     if (!ownerName) {
-      throw new CoolCommException('负责人不能为空');
+      throw new CoolCommException(PERFORMANCE_OWNER_REQUIRED_MESSAGE);
     }
     if (!KNOWLEDGE_STATUS.includes(status)) {
-      throw new CoolCommException('知识状态不合法');
+      throw new CoolCommException(PERFORMANCE_KNOWLEDGE_STATUS_INVALID_MESSAGE);
     }
 
     const duplicate = await this.performanceKnowledgeBaseEntity.findOne({
       where: { kbNo },
     });
     if (duplicate && duplicate.id !== currentId) {
-      throw new CoolCommException('知识编号已存在');
+      throw new CoolCommException(PERFORMANCE_KNOWLEDGE_KB_NO_DUPLICATE_MESSAGE);
     }
 
     if (relatedFileIds.length) {
@@ -593,7 +649,7 @@ export class PerformanceKnowledgeBaseService extends BaseService {
         id: In(relatedFileIds),
       });
       if (relatedFiles.length !== relatedFileIds.length) {
-        throw new CoolCommException('存在无效的关联文件');
+        throw new CoolCommException(PERFORMANCE_INVALID_RELATED_FILES_MESSAGE);
       }
     }
 
@@ -623,10 +679,10 @@ export class PerformanceKnowledgeBaseService extends BaseService {
     );
 
     if (!question) {
-      throw new CoolCommException('问题不能为空');
+      throw new CoolCommException(PERFORMANCE_QA_QUESTION_REQUIRED_MESSAGE);
     }
     if (!answer) {
-      throw new CoolCommException('答案不能为空');
+      throw new CoolCommException(PERFORMANCE_QA_ANSWER_REQUIRED_MESSAGE);
     }
 
     if (relatedKnowledgeIds.length) {
@@ -634,7 +690,7 @@ export class PerformanceKnowledgeBaseService extends BaseService {
         id: In(relatedKnowledgeIds),
       });
       if (rows.length !== relatedKnowledgeIds.length) {
-        throw new CoolCommException('存在无效的关联知识条目');
+        throw new CoolCommException(PERFORMANCE_INVALID_RELATED_KNOWLEDGE_MESSAGE);
       }
     }
 
@@ -643,7 +699,7 @@ export class PerformanceKnowledgeBaseService extends BaseService {
         id: In(relatedFileIds),
       });
       if (rows.length !== relatedFileIds.length) {
-        throw new CoolCommException('存在无效的关联文件');
+        throw new CoolCommException(PERFORMANCE_INVALID_RELATED_FILES_MESSAGE);
       }
     }
 
