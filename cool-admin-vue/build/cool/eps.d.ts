@@ -181,6 +181,11 @@ declare namespace Eps {
 		list: any[];
 	}
 
+	interface PerformanceAssetAssignmentRequestPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
 	interface PerformanceAssetDepreciationPageResponse {
 		pagination: PagePagination;
 		list: any[];
@@ -311,6 +316,31 @@ declare namespace Eps {
 		list: any[];
 	}
 
+	interface PerformanceMaterialCatalogPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceMaterialInboundPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceMaterialIssuePageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceMaterialStockPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceMaterialStockLogPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
 	interface PerformanceMeetingPageResponse {
 		pagination: PagePagination;
 		list: any[];
@@ -412,6 +442,11 @@ declare namespace Eps {
 	}
 
 	interface PerformanceVehiclePageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
+	interface PerformanceWorkPlanPageResponse {
 		pagination: PagePagination;
 		list: any[];
 	}
@@ -1447,6 +1482,78 @@ declare namespace Eps {
 		request: Request;
 	}
 
+	interface PerformanceAssetAssignmentRequest {
+		/**
+		 * withdraw
+		 */
+		withdraw(data?: any): Promise<any>;
+
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * submit
+		 */
+		submit(data?: any): Promise<any>;
+
+		/**
+		 * assign
+		 */
+		assign(data?: any): Promise<any>;
+
+		/**
+		 * cancel
+		 */
+		cancel(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceAssetAssignmentRequestPageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			withdraw: string;
+			update: string;
+			submit: string;
+			assign: string;
+			cancel: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			withdraw: boolean;
+			update: boolean;
+			submit: boolean;
+			assign: boolean;
+			cancel: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
 	interface PerformanceAssetDashboard {
 		/**
 		 * summary
@@ -2475,9 +2582,74 @@ declare namespace Eps {
 
 	interface PerformanceGoal {
 		/**
+		 * opsDepartmentConfigSave
+		 */
+		opsDepartmentConfigSave(data?: any): Promise<any>;
+
+		/**
+		 * opsReportStatusUpdate
+		 */
+		opsReportStatusUpdate(data?: any): Promise<any>;
+
+		/**
+		 * opsDepartmentConfig
+		 */
+		opsDepartmentConfig(data?: any): Promise<any>;
+
+		/**
+		 * opsReportGenerate
+		 */
+		opsReportGenerate(data?: any): Promise<any>;
+
+		/**
+		 * opsAccessProfile
+		 */
+		opsAccessProfile(data?: any): Promise<any>;
+
+		/**
+		 * opsDailyFinalize
+		 */
+		opsDailyFinalize(data?: any): Promise<any>;
+
+		/**
 		 * progressUpdate
 		 */
 		progressUpdate(data?: any): Promise<any>;
+
+		/**
+		 * opsDailySubmit
+		 */
+		opsDailySubmit(data?: any): Promise<any>;
+
+		/**
+		 * opsPlanDelete
+		 */
+		opsPlanDelete(data?: any): Promise<any>;
+
+		/**
+		 * opsReportInfo
+		 */
+		opsReportInfo(data?: any): Promise<any>;
+
+		/**
+		 * opsPlanPage
+		 */
+		opsPlanPage(data?: any): Promise<any>;
+
+		/**
+		 * opsPlanInfo
+		 */
+		opsPlanInfo(data?: any): Promise<any>;
+
+		/**
+		 * opsPlanSave
+		 */
+		opsPlanSave(data?: any): Promise<any>;
+
+		/**
+		 * opsOverview
+		 */
+		opsOverview(data?: any): Promise<any>;
 
 		/**
 		 * update
@@ -2513,7 +2685,20 @@ declare namespace Eps {
 		 * 权限标识
 		 */
 		permission: {
+			opsDepartmentConfigSave: string;
+			opsReportStatusUpdate: string;
+			opsDepartmentConfig: string;
+			opsReportGenerate: string;
+			opsAccessProfile: string;
+			opsDailyFinalize: string;
 			progressUpdate: string;
+			opsDailySubmit: string;
+			opsPlanDelete: string;
+			opsReportInfo: string;
+			opsPlanPage: string;
+			opsPlanInfo: string;
+			opsPlanSave: string;
+			opsOverview: string;
 			update: string;
 			delete: string;
 			export: string;
@@ -2526,7 +2711,20 @@ declare namespace Eps {
 		 * 权限状态
 		 */
 		_permission: {
+			opsDepartmentConfigSave: boolean;
+			opsReportStatusUpdate: boolean;
+			opsDepartmentConfig: boolean;
+			opsReportGenerate: boolean;
+			opsAccessProfile: boolean;
+			opsDailyFinalize: boolean;
 			progressUpdate: boolean;
+			opsDailySubmit: boolean;
+			opsPlanDelete: boolean;
+			opsReportInfo: boolean;
+			opsPlanPage: boolean;
+			opsPlanInfo: boolean;
+			opsPlanSave: boolean;
+			opsOverview: boolean;
 			update: boolean;
 			delete: boolean;
 			export: boolean;
@@ -2915,6 +3113,242 @@ declare namespace Eps {
 			page: boolean;
 			add: boolean;
 		};
+
+		request: Request;
+	}
+
+	interface PerformanceMaterialCatalog {
+		/**
+		 * updateStatus
+		 */
+		updateStatus(data?: any): Promise<any>;
+
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * delete
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceMaterialCatalogPageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			updateStatus: string;
+			update: string;
+			delete: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			updateStatus: boolean;
+			update: boolean;
+			delete: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceMaterialInbound {
+		/**
+		 * receive
+		 */
+		receive(data?: any): Promise<any>;
+
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * submit
+		 */
+		submit(data?: any): Promise<any>;
+
+		/**
+		 * cancel
+		 */
+		cancel(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceMaterialInboundPageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			receive: string;
+			update: string;
+			submit: string;
+			cancel: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			receive: boolean;
+			update: boolean;
+			submit: boolean;
+			cancel: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceMaterialIssue {
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * submit
+		 */
+		submit(data?: any): Promise<any>;
+
+		/**
+		 * cancel
+		 */
+		cancel(data?: any): Promise<any>;
+
+		/**
+		 * issue
+		 */
+		issue(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceMaterialIssuePageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			update: string;
+			submit: string;
+			cancel: string;
+			issue: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			update: boolean;
+			submit: boolean;
+			cancel: boolean;
+			issue: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface PerformanceMaterialStock {
+		/**
+		 * summary
+		 */
+		summary(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceMaterialStockPageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { summary: string; page: string; info: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: { summary: boolean; page: boolean; info: boolean };
+
+		request: Request;
+	}
+
+	interface PerformanceMaterialStockLog {
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceMaterialStockLogPageResponse>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { page: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: { page: boolean };
 
 		request: Request;
 	}
@@ -4144,6 +4578,92 @@ declare namespace Eps {
 		request: Request;
 	}
 
+	interface PerformanceWorkPlan {
+		/**
+		 * callback
+		 */
+		callback(data?: any): Promise<any>;
+
+		/**
+		 * syncDingtalkApproval
+		 */
+		syncDingtalkApproval(data?: any): Promise<any>;
+
+		/**
+		 * complete
+		 */
+		complete(data?: any): Promise<any>;
+
+		/**
+		 * update
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * delete
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * cancel
+		 */
+		cancel(data?: any): Promise<any>;
+
+		/**
+		 * start
+		 */
+		start(data?: any): Promise<any>;
+
+		/**
+		 * page
+		 */
+		page(data?: any): Promise<PerformanceWorkPlanPageResponse>;
+
+		/**
+		 * info
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * add
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			callback: string;
+			syncDingtalkApproval: string;
+			complete: string;
+			update: string;
+			delete: string;
+			cancel: string;
+			start: string;
+			page: string;
+			info: string;
+			add: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			callback: boolean;
+			syncDingtalkApproval: boolean;
+			complete: boolean;
+			update: boolean;
+			delete: boolean;
+			cancel: boolean;
+			start: boolean;
+			page: boolean;
+			info: boolean;
+			add: boolean;
+		};
+
+		request: Request;
+	}
+
 	interface PluginInfo {
 		/**
 		 * install
@@ -4561,8 +5081,6 @@ declare namespace Eps {
 
 	type Request = (options: RequestOptions) => Promise<any>;
 
-	type DictKey = string;
-
 	type Service = {
 		request: Request;
 
@@ -4586,6 +5104,7 @@ declare namespace Eps {
 			approvalFlow: PerformanceApprovalFlow;
 			assessment: PerformanceAssessment;
 			assetAssignment: PerformanceAssetAssignment;
+			assetAssignmentRequest: PerformanceAssetAssignmentRequest;
 			assetDashboard: PerformanceAssetDashboard;
 			assetDepreciation: PerformanceAssetDepreciation;
 			assetDisposal: PerformanceAssetDisposal;
@@ -4617,6 +5136,11 @@ declare namespace Eps {
 			interview: PerformanceInterview;
 			jobStandard: PerformanceJobStandard;
 			knowledgeBase: PerformanceKnowledgeBase;
+			materialCatalog: PerformanceMaterialCatalog;
+			materialInbound: PerformanceMaterialInbound;
+			materialIssue: PerformanceMaterialIssue;
+			materialStock: PerformanceMaterialStock;
+			materialStockLog: PerformanceMaterialStockLog;
 			meeting: PerformanceMeeting;
 			pip: PerformancePip;
 			promotion: PerformancePromotion;
@@ -4641,6 +5165,7 @@ declare namespace Eps {
 			teacherInfo: PerformanceTeacherInfo;
 			teacherTodo: PerformanceTeacherTodo;
 			vehicle: PerformanceVehicle;
+			workPlan: PerformanceWorkPlan;
 		};
 		plugin: { info: PluginInfo };
 		recycle: { data: RecycleData };

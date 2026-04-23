@@ -1,3 +1,4 @@
+<!-- 文件职责：承载后台主壳的多页签过程栏与全局快捷操作；不负责路由注册或业务状态；维护重点是页签视觉要跟随全局语义 token，并保持 light/dark 下的交互一致性。 -->
 <template>
 	<div class="app-process">
 		<ul class="app-process__op">
@@ -67,7 +68,7 @@ function toRefresh() {
 
 // 回首页
 function toHome() {
-	router.push('/');
+	router.push('/performance/workbench');
 }
 
 // 返回上一页
@@ -182,15 +183,19 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .app-process {
-	--process-close-hover-bg: rgba(0, 0, 0, 0.1);
-	--process-active-text: #fff;
+	--process-bg: var(--app-shell-process-bg);
+	--process-border: var(--app-shell-border);
+	--process-text: var(--app-text-secondary);
+	--process-hover-bg: var(--app-control-hover-bg);
+	--process-close-hover-bg: var(--app-control-hover-bg);
+	--process-active-text: var(--app-text-on-primary);
 
 	display: flex;
 	align-items: center;
 	position: relative;
 	padding: 5px 10px;
 	user-select: none;
-	background-color: var(--el-bg-color);
+	background: var(--process-bg);
 	margin-bottom: 10px;
 	overflow: hidden;
 
@@ -231,10 +236,10 @@ onMounted(() => {
 		height: 26px;
 		padding: 0 8px;
 		cursor: pointer;
-		color: var(--el-text-color-regular);
-		border-radius: var(--el-border-radius-base);
+		color: var(--process-text);
+		border-radius: var(--app-radius-sm);
 		margin-right: 5px;
-		border: 1px solid var(--el-fill-color-dark);
+		border: 1px solid var(--process-border);
 
 		.close {
 			width: 0;
@@ -259,12 +264,12 @@ onMounted(() => {
 		}
 
 		&:hover:not(.active) {
-			background-color: var(--el-fill-color-light);
+			background-color: var(--process-hover-bg);
 		}
 
 		&.active {
-			background-color: var(--el-color-primary);
-			border-color: var(--el-color-primary);
+			background-color: var(--app-accent-brand);
+			border-color: var(--app-accent-brand);
 			color: var(--process-active-text);
 		}
 
@@ -277,12 +282,6 @@ onMounted(() => {
 				opacity: 1;
 			}
 		}
-	}
-}
-
-:global(html.dark) {
-	.app-process {
-		--process-close-hover-bg: rgba(255, 255, 255, 0.08);
 	}
 }
 </style>

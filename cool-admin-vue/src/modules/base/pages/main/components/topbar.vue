@@ -144,12 +144,16 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .app-topbar {
+	--topbar-bg: var(--app-shell-topbar-bg);
+	--topbar-border: var(--app-shell-border);
+	--topbar-hover-bg: var(--app-control-hover-bg);
+
 	display: flex;
 	align-items: center;
 	height: 46px;
 	padding: 0 10px;
-	background-color: var(--el-bg-color);
-	border-bottom: 1px solid var(--el-border-color-extra-light);
+	background: var(--topbar-bg);
+	border-bottom: 1px solid var(--topbar-border);
 	box-sizing: border-box;
 	transition: height 0.2s ease-in-out;
 
@@ -163,7 +167,7 @@ onMounted(() => {
 	&__route {
 		margin-left: 12px;
 		padding-left: 12px;
-		border-left: 1px solid var(--el-border-color-extra-light);
+		border-left: 1px solid var(--topbar-border);
 		min-width: 0;
 		overflow: hidden;
 	}
@@ -203,13 +207,13 @@ onMounted(() => {
 		border-radius: 6px;
 
 		&:hover {
-			background-color: var(--el-fill-color-light);
+			background-color: var(--topbar-hover-bg);
 		}
 	}
 
 	:deep(.cl-comm__icon) {
 		&:hover {
-			border-color: var(--el-color-primary);
+			border-color: var(--app-accent-brand);
 			background-color: transparent;
 		}
 	}
@@ -234,7 +238,7 @@ onMounted(() => {
 		align-items: center;
 		padding: 10px 10px;
 		width: 200px;
-		border-bottom: 1px solid var(--el-color-info-light-9);
+		border-bottom: 1px solid var(--app-shell-border);
 
 		.det {
 			margin-left: 10px;

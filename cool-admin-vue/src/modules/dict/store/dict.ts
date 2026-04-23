@@ -6,6 +6,14 @@ import { isDev } from '/@/config';
 import { assign, isArray, orderBy } from 'lodash-es';
 import { deepFind, isEmpty } from '../utils';
 
+function resolveItems(group: any): any[] {
+	if (isArray(group)) {
+		return group;
+	}
+
+	return isArray(group?.items) ? group.items : [];
+}
+
 const useDictStore = defineStore('dict', () => {
 	// 对象数据
 	const data = reactive<Dict.Data>({});
@@ -21,16 +29,33 @@ const useDictStore = defineStore('dict', () => {
 		return arr.filter(e => e !== undefined).map(v => deepFind(v, get(name).value));
 	}
 
+	// 单项
+	function getItem(name: Dict.Key, value: any) {
+		return deepFind(value, get(name).value);
+	}
+
+	// 标签
+	function getLabel(name: Dict.Key, value: any) {
+		return getItem(name, value)?.label || String(value ?? '');
+	}
+
+	// 元数据
+	function getMeta(name: Dict.Key, value: any) {
+		return getItem(name, value) || null;
+	}
+
 	// 刷新
 	async function refresh(types?: Dict.Key[]) {
 		return service.dict.info
 			.data({
 				types: types?.filter(e => !isEmpty(e))
 			})
-			.then((res: Dict.Data) => {
+			.then((res: any) => {
 				const d = {};
 
-				for (const [i, arr] of Object.entries(res)) {
+				for (const [i, group] of Object.entries(res || {})) {
+					const arr = resolveItems(group);
+
 					arr.forEach(e => {
 						e.label = e.name;
 
@@ -58,6 +83,9 @@ const useDictStore = defineStore('dict', () => {
 		data,
 		get,
 		find,
+		getItem,
+		getLabel,
+		getMeta,
 		refresh
 	};
 });

@@ -1,3 +1,4 @@
+<!-- 文件职责：承载后台主壳左侧导航、分组摘要与菜单搜索；不负责菜单树数据生产或业务权限判定；维护重点是导航视觉必须跟随全局语义 token，而不是继续维护一套壳层私有配色。 -->
 <template>
 	<div
 		class="app-slider"
@@ -56,23 +57,23 @@ const currentGroupName = computed(() => menu.currentGroup?.meta?.label || '');
 <style lang="scss">
 .app-slider {
 	$slider-menu-height: 50px;
-	--slider-bg-color: #2c3147;
-	--slider-text-color: #e5eaf3;
-	--slider-title-color: #fff;
-	--slider-section-bg: rgba(255, 255, 255, 0.06);
-	--slider-section-border: rgba(255, 255, 255, 0.08);
-	--slider-section-tip-color: rgba(229, 234, 243, 0.68);
-	--slider-search-bg: rgba(200, 200, 200, 0.1);
-	--slider-badge-bg: rgba(255, 255, 255, 0.2);
-	--slider-badge-text: #fff;
-	--slider-item-hover-bg: rgba(0, 0, 0, 0.25);
-	--slider-item-hover-color: #fff;
+	--slider-bg-color: var(--app-nav-surface);
+	--slider-text-color: var(--app-nav-text);
+	--slider-title-color: var(--app-nav-title);
+	--slider-section-bg: var(--app-nav-section-bg);
+	--slider-section-border: var(--app-nav-section-border);
+	--slider-section-tip-color: var(--app-nav-section-tip);
+	--slider-search-bg: var(--app-nav-search-bg);
+	--slider-badge-bg: var(--app-nav-badge-bg);
+	--slider-badge-text: var(--app-nav-badge-text);
+	--slider-item-hover-bg: var(--app-nav-hover-bg);
+	--slider-item-hover-color: var(--app-nav-hover-text);
 
 	height: 100%;
 	display: flex;
 	flex-direction: column;
 	background-color: var(--slider-bg-color);
-	border-right: 1px solid var(--el-border-color-extra-light);
+	border-right: 1px solid var(--app-shell-border);
 
 	&__logo {
 		display: flex;
@@ -236,20 +237,6 @@ const currentGroupName = computed(() => menu.currentGroup?.meta?.label || '');
 				}
 			}
 		}
-	}
-}
-
-html.dark {
-	.app-slider {
-		--slider-title-color: var(--el-text-color-primary);
-		--slider-section-bg: rgba(255, 255, 255, 0.04);
-		--slider-section-border: rgba(148, 163, 184, 0.16);
-		--slider-section-tip-color: var(--el-text-color-secondary);
-		--slider-search-bg: rgba(255, 255, 255, 0.06);
-		--slider-badge-bg: rgba(255, 255, 255, 0.16);
-		--slider-badge-text: var(--el-text-color-primary);
-		--slider-item-hover-bg: rgba(255, 255, 255, 0.08);
-		--slider-item-hover-color: var(--el-text-color-primary);
 	}
 }
 </style>

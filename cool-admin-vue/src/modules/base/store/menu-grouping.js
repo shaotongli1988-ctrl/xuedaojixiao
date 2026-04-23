@@ -1,12 +1,14 @@
 /**
  * 负责绩效技术挂载组的运行态导航归组与图标归一化。
  * 不负责后端 menu.json 生产，不改写权限语义或页面内部业务逻辑。
- * 维护重点：一级域数量、目标&计划归属，以及旧路由的兼容可达性不能回退。
+ * 菜单权限可见性由 menu.ts 先通过 hasPermission/checkPermission 等上游守卫折叠到 isShow。
+ * 维护重点：当前一级域结构、目标&计划归属，以及旧路由的兼容可达性不能回退。
  */
 
 import { orderBy } from 'lodash-es';
 
 export const PERFORMANCE_ROOT_PATH = '/performance';
+export const SYSTEM_ROOT_PATH = '/sys';
 
 const performanceDomainGroups = [
 	{
@@ -14,6 +16,7 @@ const performanceDomainGroups = [
 		label: '绩效中心',
 		icon: 'icon-home',
 		paths: [
+			'/performance/workbench',
 			'/data-center/dashboard',
 			'/performance/my-assessment',
 			'/performance/initiated',
@@ -25,12 +28,6 @@ const performanceDomainGroups = [
 			'/performance/promotion',
 			'/performance/salary'
 		]
-	},
-	{
-		key: 'workbench',
-		label: '工作台',
-		icon: 'icon-workbench',
-		paths: ['/performance/workbench']
 	},
 	{
 		key: 'talent',
@@ -55,6 +52,12 @@ const performanceDomainGroups = [
 		label: '目标&计划',
 		icon: 'icon-data-board',
 		children: [
+			{
+				type: 'page',
+				sourcePath: '/performance/work-plan',
+				label: '工作计划',
+				icon: 'icon-calendar'
+			},
 			{
 				type: 'page',
 				sourcePath: '/performance/goals',
@@ -132,6 +135,8 @@ const performanceDomainGroups = [
 				label: '资产作业',
 				icon: 'icon-task',
 				paths: [
+					'/performance/asset/request',
+					'/performance/asset/request-pending',
 					'/performance/asset/assignment',
 					'/performance/asset/maintenance',
 					'/performance/asset/transfer',
@@ -166,6 +171,15 @@ const performanceDomainGroups = [
 ];
 
 const DEFAULT_MENU_ICON = 'icon-menu';
+const SYSTEM_GROUP_LABEL = '系统管理';
+const MERGED_SYSTEM_GROUP_LABELS = new Set([
+	'系统管理',
+	'框架教程',
+	'通用',
+	'数据管理',
+	'用户管理',
+	'扩展管理'
+]);
 
 const MENU_ICON_ALIASES = {
 	'icon-calendar': 'icon-time',
@@ -213,22 +227,139 @@ function createSyntheticGroup(template, id, name, path, icon, orderNum, children
 	};
 }
 
-export function buildMenuGroups(groups, options = {}) {
-	const performanceGroup = groups.find(e => e.type == 0 && e.path === PERFORMANCE_ROOT_PATH);
+function getMenuLabel(item) {
+	return item?.meta?.label || item?.name || '';
+}
 
-	if (!options.isGroupEnabled || !performanceGroup?.children?.length) {
-		return groups;
+function buildSystemGroup(groups, options = {}) {
+	if (!options.isGroupEnabled) {
+		return null;
+	}
+
+	const candidates = groups.filter(item => {
+		if (!item || item.isShow === false || item.isShow === 0) {
+			return false;
+		}
+
+		if (item.path === PERFORMANCE_ROOT_PATH || item.path === '/') {
+			return false;
+		}
+
+		return MERGED_SYSTEM_GROUP_LABELS.has(getMenuLabel(item));
+	});
+
+	if (candidates.length === 0) {
+		return null;
+	}
+
+	const template =
+		candidates.find(item => getMenuLabel(item) === SYSTEM_GROUP_LABEL) || candidates[0];
+	const baseOrder = Math.max(
+		0,
+		...candidates.map(item => Number(item.orderNum || 0))
+	);
+	const syntheticIdBase = Number(template.id || 0) * 1000 || 990000;
+	let nextSyntheticId = syntheticIdBase;
+
+	const children = candidates
+		.filter(item => item.type === 0)
+		.map(item => ({
+			...item,
+			id: ++nextSyntheticId,
+			icon: normalizeMenuIcon(item.icon, 'icon-set'),
+			meta: {
+				...item.meta,
+				label: item.meta?.label || item.name
+			}
+		}));
+
+	candidates
+		.filter(item => item.type === 1)
+		.forEach(item => {
+			children.push({
+				...item,
+				id: ++nextSyntheticId,
+				icon: normalizeMenuIcon(item.icon, 'icon-set'),
+				meta: {
+					...item.meta,
+					label: item.meta?.label || item.name
+				}
+			});
+		});
+
+	if (children.length === 0) {
+		return null;
+	}
+
+	return createSyntheticGroup(
+		template,
+		++nextSyntheticId,
+		SYSTEM_GROUP_LABEL,
+		template.path || SYSTEM_ROOT_PATH,
+		'icon-set',
+		baseOrder + 1,
+		children
+	);
+}
+
+function collectDescendantPages(items, result = []) {
+	for (const item of items || []) {
+		if (item?.isShow === false || item?.isShow === 0) {
+			continue;
+		}
+
+		if (item?.type === 1) {
+			result.push(item);
+		}
+
+		if (Array.isArray(item?.children) && item.children.length > 0) {
+			collectDescendantPages(item.children, result);
+		}
+	}
+
+	return result;
+}
+
+function collectUniquePagesByPath(groups) {
+	const pageMap = new Map();
+
+	groups.forEach(group => {
+		collectDescendantPages(group?.children || []).forEach(page => {
+			if (!page?.path || pageMap.has(page.path)) {
+				return;
+			}
+
+			pageMap.set(page.path, page);
+		});
+	});
+
+	return orderBy(Array.from(pageMap.values()), 'orderNum');
+}
+
+export function buildMenuGroups(groups, options = {}) {
+	const performanceGroups = groups.filter(
+		e => e.type == 0 && e.path === PERFORMANCE_ROOT_PATH
+	);
+	const performanceGroup = performanceGroups[0];
+	const systemGroup = buildSystemGroup(groups, options);
+
+	if (!options.isGroupEnabled || performanceGroups.length === 0) {
+		return systemGroup
+			? groups
+					.filter(item => !systemGroup.children.some(child => child.path === item.path))
+					.filter(item => item.path !== '/')
+					.concat(systemGroup)
+			: groups;
 	}
 
 	const baseOrder = Number(performanceGroup.orderNum || 0);
 	const syntheticBaseId = Number(performanceGroup.id || 0) * 1000 || 900000;
-	const performanceChildren = orderBy(
-		(performanceGroup.children || []).filter(child => child.type === 1),
-		'orderNum'
-	);
+	const performanceRootIds = new Set(performanceGroups.map(item => item.id));
+	const performanceChildren = collectUniquePagesByPath(performanceGroups);
 	const childByPath = new Map(performanceChildren.map(child => [child.path, child]));
 	const usedPaths = new Set();
 	let nextSyntheticId = syntheticBaseId;
+	let hasInjectedDomainGroups = false;
 
 	const domainGroups = performanceDomainGroups
 		.map((domain, index) => {
@@ -358,11 +489,29 @@ export function buildMenuGroups(groups, options = {}) {
 		}
 	}
 
-	return groups.flatMap(item => {
-		if (item.id === performanceGroup.id) {
+	const mainGroups = groups.flatMap(item => {
+		if (performanceRootIds.has(item.id)) {
+			if (hasInjectedDomainGroups) {
+				return [];
+			}
+
+			hasInjectedDomainGroups = true;
 			return domainGroups;
+		}
+
+		if (
+			systemGroup &&
+			systemGroup.children.some(child => child.path === item.path)
+		) {
+			return [];
+		}
+
+		if (item.path === '/') {
+			return [];
 		}
 
 		return [item];
 	});
+
+	return systemGroup ? mainGroups.concat(systemGroup) : mainGroups;
 }
