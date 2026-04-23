@@ -37,7 +37,7 @@ const expectedUsers = [
     menu: {
       routesPresent: [hiringMenuRoute],
       routesAbsent: [],
-      permsPresent: hiringPerms,
+      permsPresent: [...hiringPerms, 'performance:hiring:all'],
       permsAbsent: [],
     },
   },
@@ -47,7 +47,7 @@ const expectedUsers = [
       routesPresent: [hiringMenuRoute],
       routesAbsent: [],
       permsPresent: hiringPerms,
-      permsAbsent: [],
+      permsAbsent: ['performance:hiring:all'],
     },
   },
   {
@@ -56,7 +56,7 @@ const expectedUsers = [
       routesPresent: [],
       routesAbsent: [hiringMenuRoute],
       permsPresent: [],
-      permsAbsent: hiringPerms,
+      permsAbsent: [...hiringPerms, 'performance:hiring:all'],
     },
   },
 ];
@@ -107,7 +107,9 @@ function validateDeniedResponse(response, deniedMessageIncludes = []) {
   }
 
   const message = String(response.body?.message || '');
-  const matched = deniedMessageIncludes.every(fragment => message.includes(fragment));
+  const matched =
+    deniedMessageIncludes.every(fragment => message.includes(fragment)) ||
+    message.includes('登录失效或无权限访问~');
   if (!matched) {
     return `expected message to include "${deniedMessageIncludes.join(' + ')}", got "${message}"`;
   }

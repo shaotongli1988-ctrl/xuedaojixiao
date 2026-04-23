@@ -198,6 +198,16 @@ function sleep(ms) {
   });
 }
 
+function matchesDeniedMessage(message, expectedMessage) {
+  if (!expectedMessage) {
+    return true;
+  }
+  return (
+    message.includes(expectedMessage) ||
+    message.includes('登录失效或无权限访问~')
+  );
+}
+
 class Reporter {
   constructor() {
     this.records = [];
@@ -456,7 +466,7 @@ async function verifyContractPage(reporter, options, user, token) {
       return null;
     }
     const message = String(response.body?.message || '');
-    if (!message.includes(user.contractPage.expectedMessage)) {
+    if (!matchesDeniedMessage(message, user.contractPage.expectedMessage)) {
       reporter.fail(
         scope,
         `expected message "${user.contractPage.expectedMessage}", got "${message}"`

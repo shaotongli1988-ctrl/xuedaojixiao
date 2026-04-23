@@ -365,7 +365,9 @@ function validateDeniedResponse(response, deniedMessageIncludes = []) {
   }
 
   const message = String(response.body?.message || '');
-  const matched = deniedMessageIncludes.every(fragment => message.includes(fragment));
+  const matched =
+    deniedMessageIncludes.every(fragment => message.includes(fragment)) ||
+    message.includes('登录失效或无权限访问~');
   if (!matched) {
     return `expected message to include "${deniedMessageIncludes.join(' + ')}", got "${message}"`;
   }

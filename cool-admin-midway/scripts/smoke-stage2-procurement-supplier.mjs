@@ -396,11 +396,17 @@ function readMenuArtifacts() {
     projectRoot,
     '../cool-admin-vue/src/modules/base/store/menu.ts'
   );
+  const vueMenuGroupingPath = path.resolve(
+    projectRoot,
+    '../cool-admin-vue/src/modules/base/store/menu-grouping.js'
+  );
   return {
     menuJsonPath,
     vueMenuStorePath,
+    vueMenuGroupingPath,
     menuTree: JSON.parse(fs.readFileSync(menuJsonPath, 'utf8')),
     vueMenuStoreContent: fs.readFileSync(vueMenuStorePath, 'utf8'),
+    vueMenuGroupingContent: fs.readFileSync(vueMenuGroupingPath, 'utf8'),
   };
 }
 
@@ -445,18 +451,43 @@ function assertStaticMenuRegistration(reporter) {
 }
 
 function assertProcurementGroupPathsRegistration(reporter) {
-  const { vueMenuStorePath, vueMenuStoreContent } = readMenuArtifacts();
-  const missing = theme11Routes.filter(route => !vueMenuStoreContent.includes(route));
+  const {
+    vueMenuStorePath,
+    vueMenuStoreContent,
+    vueMenuGroupingPath,
+    vueMenuGroupingContent,
+  } = readMenuArtifacts();
+  const groupingMissing = theme11Routes.filter(
+    route => !vueMenuGroupingContent.includes(route)
+  );
+
+  if (groupingMissing.length) {
+    reporter.fail(
+      'menu-grouping procurement paths',
+      `${vueMenuGroupingPath} missing ${groupingMissing.join(', ')}`
+    );
+    return;
+  }
+
+  if (!vueMenuStoreContent.includes("buildMenuGroups") || !vueMenuStoreContent.includes('./menu-grouping.js')) {
+    reporter.fail(
+      'menu.ts grouping bridge',
+      `${vueMenuStorePath} is not delegating navigation grouping to menu-grouping.js`
+    );
+    return;
+  }
+
+  const missing = theme11Routes.filter(route => !vueMenuGroupingContent.includes(route));
   if (missing.length) {
     reporter.fail(
-      'menu.ts procurement paths',
-      `${vueMenuStorePath} missing ${missing.join(', ')}`
+      'menu-grouping procurement paths',
+      `${vueMenuGroupingPath} missing ${missing.join(', ')}`
     );
     return;
   }
   reporter.pass(
-    'menu.ts procurement paths',
-    `${vueMenuStorePath} contains Theme11 procurement group paths`
+    'menu navigation procurement paths',
+    `${vueMenuGroupingPath} contains Theme11 procurement group paths and ${vueMenuStorePath} delegates to grouping`
   );
 }
 

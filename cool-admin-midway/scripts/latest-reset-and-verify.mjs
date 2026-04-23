@@ -261,8 +261,8 @@ async function main() {
   logStep(`target port=${options.port} baseUrl=${options.baseUrl}`);
   logStep('ensuring local database');
   await spawnCommand(process.execPath, ['./scripts/local-db.mjs', 'start']);
-  logStep('ensuring local performance schema');
-  await spawnCommand(process.execPath, ['./scripts/ensure-local-performance-schema.mjs']);
+  logStep('ensuring local schema');
+  await spawnCommand(process.execPath, ['./scripts/ensure-local-schema.mjs']);
 
   if (!options.skipBuild) {
     logStep('running npm run build');

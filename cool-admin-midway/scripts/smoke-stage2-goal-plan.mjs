@@ -32,6 +32,7 @@ const goalPermissionKeys = [
 	'performance:goal:delete',
 	'performance:goal:progressUpdate',
 	'performance:goal:opsManage',
+	'performance:goal:opsGlobalScope',
 	'performance:goal:export'
 ];
 
@@ -50,8 +51,10 @@ const users = [
 		menu: {
 			routesPresent: [goalRoute],
 			routesAbsent: [],
-			permsPresent: [...goalPermissionKeys],
-			permsAbsent: ['performance:salary:page']
+			permsPresent: goalPermissionKeys.filter(
+				item => item !== 'performance:goal:opsGlobalScope'
+			),
+			permsAbsent: ['performance:goal:opsGlobalScope', 'performance:salary:page']
 		}
 	},
 	{
@@ -68,6 +71,7 @@ const users = [
 			permsAbsent: [
 				'performance:goal:add',
 				'performance:goal:opsManage',
+				'performance:goal:opsGlobalScope',
 				'performance:goal:delete',
 				'performance:goal:export'
 			]
@@ -609,6 +613,38 @@ async function verifyGoalPlanWorkflow(reporter, options, sessions, runtimeMeta) 
 	);
 	expectDenied(reporter, 'employee_platform opsDepartmentConfigSave', deniedConfigResponse);
 
+	const baselineOverviewResponse = await postJson(
+		options,
+		sessions.manager_rd.token,
+		'/admin/performance/goal/opsOverview',
+		{
+			planDate,
+			departmentId
+		}
+	);
+	const baselineOverview = expectSuccess(
+		reporter,
+		'manager_rd opsOverview baseline',
+		baselineOverviewResponse,
+		data => `rows=${data.rows?.length || 0}`
+	);
+	if (!baselineOverview) {
+		return;
+	}
+
+	const baselineEmployeeOverviewRow = (baselineOverview.rows || []).find(
+		item => Number(item.employeeId) === Number(employeeId)
+	) || {};
+	const baselinePublicActualValue = Number(
+		baselineEmployeeOverviewRow.publicActualValue || 0
+	);
+	const baselinePersonalActualValue = Number(
+		baselineEmployeeOverviewRow.personalActualValue || 0
+	);
+	const baselineDepartmentTotalActualValue = Number(
+		baselineOverview.departmentSummary?.totalActualValue || 0
+	);
+
 	const publicPlanResponse = await postJson(
 		options,
 		sessions.manager_rd.token,
@@ -905,14 +941,18 @@ async function verifyGoalPlanWorkflow(reporter, options, sessions, runtimeMeta) 
 	const employeeRow = (managerOverview.rows || []).find(item => Number(item.employeeId) === Number(employeeId));
 	if (
 		!employeeRow ||
-		Number(employeeRow.publicActualValue) !== 8 ||
-		Number(employeeRow.personalActualValue) !== 3 ||
-		Number(employeeRow.totalActualValue) !== 11
+		Number(employeeRow.publicActualValue) !== baselinePublicActualValue + 8 ||
+		Number(employeeRow.personalActualValue) !== baselinePersonalActualValue + 3 ||
+		Number(employeeRow.totalActualValue) !==
+			baselinePublicActualValue + baselinePersonalActualValue + 11
 	) {
 		reporter.fail('manager_rd opsOverview split assert', JSON.stringify(employeeRow || null));
 		return;
 	}
-	reporter.pass('manager_rd opsOverview split assert', 'public/personal contribution split matched 8/3');
+	reporter.pass(
+		'manager_rd opsOverview split assert',
+		'public/personal contribution increment matched +8/+3'
+	);
 
 	const employeeOverviewResponse = await postJson(
 		options,
@@ -935,8 +975,8 @@ async function verifyGoalPlanWorkflow(reporter, options, sessions, runtimeMeta) 
 	);
 	if (
 		!employeeOverviewRow ||
-		Number(employeeOverviewRow.publicActualValue) !== 8 ||
-		Number(employeeOverviewRow.personalActualValue) !== 3
+		Number(employeeOverviewRow.publicActualValue) !== baselinePublicActualValue + 8 ||
+		Number(employeeOverviewRow.personalActualValue) !== baselinePersonalActualValue + 3
 	) {
 		reporter.fail('employee_platform opsOverview scope', formatResponse(employeeOverview.rows || []));
 		return;
@@ -986,7 +1026,8 @@ async function verifyGoalPlanWorkflow(reporter, options, sessions, runtimeMeta) 
 	}
 
 	if (
-		Number(generatedReport.summary.departmentSummary.totalActualValue) !== 11 ||
+		Number(generatedReport.summary.departmentSummary.totalActualValue) !==
+			baselineDepartmentTotalActualValue + 11 ||
 		!Array.isArray(generatedReport.summary.autoZeroEmployees) ||
 		generatedReport.summary.autoZeroEmployees.length < 1
 	) {
@@ -1093,12 +1134,15 @@ async function verifyAccessProfiles(reporter, options, sessions) {
 		'manager_rd opsAccessProfile',
 		managerResponse,
 		data =>
-			`canManageDepartment=${data.canManageDepartment} manageable=${(data.manageableDepartmentIds || []).join(',')}`
+			`persona=${data.activePersonaKey || 'empty'} roleKind=${data.roleKind || 'empty'} scope=${data.scopeKey || 'empty'} manageable=${(data.manageableDepartmentIds || []).join(',')}`
 	);
 	if (
 		!managerProfile ||
 		managerProfile.canManageDepartment !== true ||
-		managerProfile.isHr !== false
+		managerProfile.isHr !== false ||
+		managerProfile.activePersonaKey !== 'org.line_manager' ||
+		managerProfile.roleKind !== 'manager' ||
+		managerProfile.scopeKey !== 'department'
 	) {
 		reporter.fail(
 			'manager_rd opsAccessProfile assert',
@@ -1108,7 +1152,7 @@ async function verifyAccessProfiles(reporter, options, sessions) {
 	}
 	reporter.pass(
 		'manager_rd opsAccessProfile assert',
-		'manager keeps department ops access while remaining non-HR'
+		'manager keeps department ops access with manager persona fact'
 	);
 
 	const employeeDepartmentId = resolveDepartmentId(sessions.employee_platform);
@@ -1125,12 +1169,15 @@ async function verifyAccessProfiles(reporter, options, sessions) {
 		'employee_platform opsAccessProfile',
 		employeeResponse,
 		data =>
-			`canManageDepartment=${data.canManageDepartment} canMaintainPersonalPlan=${data.canMaintainPersonalPlan}`
+			`persona=${data.activePersonaKey || 'empty'} roleKind=${data.roleKind || 'empty'} scope=${data.scopeKey || 'empty'} canMaintainPersonalPlan=${data.canMaintainPersonalPlan}`
 	);
 	if (
 		!employeeProfile ||
 		employeeProfile.canManageDepartment !== false ||
-		employeeProfile.canMaintainPersonalPlan !== true
+		employeeProfile.canMaintainPersonalPlan !== true ||
+		employeeProfile.activePersonaKey !== 'org.employee' ||
+		employeeProfile.roleKind !== 'employee' ||
+		employeeProfile.scopeKey !== 'self'
 	) {
 		reporter.fail(
 			'employee_platform opsAccessProfile assert',
@@ -1140,7 +1187,7 @@ async function verifyAccessProfiles(reporter, options, sessions) {
 	}
 	reporter.pass(
 		'employee_platform opsAccessProfile assert',
-		'employee keeps personal maintenance access without department ops access'
+		'employee keeps personal maintenance access with self persona fact'
 	);
 }
 

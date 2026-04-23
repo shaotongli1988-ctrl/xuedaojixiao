@@ -4,7 +4,8 @@ import { SwaggerBuilder } from '../builder';
 import { BaseController } from '@cool-midway/core';
 
 /**
- * 欢迎界面
+ * 运行时 Swagger 调试入口。
+ * 这里只提供开发态派生视图，不承担仓库级 API 契约事实源职责。
  */
 @Controller('/swagger')
 export class SwaggerIndexController extends BaseController {
@@ -17,7 +18,7 @@ export class SwaggerIndexController extends BaseController {
   @Config('cool.eps')
   epsConfig: boolean;
 
-  @Get('/', { summary: 'swagger界面' })
+  @Get('/', { summary: '调试 Swagger 界面（非事实源）' })
   public async index() {
     if (!this.epsConfig) {
       return this.fail('Eps未开启');
@@ -25,7 +26,7 @@ export class SwaggerIndexController extends BaseController {
     await this.ctx.render('swagger', {});
   }
 
-  @Get('/json', { summary: '获得Swagger JSON数据' })
+  @Get('/json', { summary: '获得调试 Swagger JSON（非事实源）' })
   public async json() {
     if (!this.epsConfig) {
       return this.fail('Eps未开启');
