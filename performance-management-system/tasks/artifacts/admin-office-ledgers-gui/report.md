@@ -2,9 +2,9 @@
 
 - Name: admin-office-ledgers-gui
 - Description: 行政模块车辆管理与知识产权管理最小 GUI 点测
-- Generated At: 2026-04-19T11:07:06.527Z
+- Generated At: 2026-04-20T02:06:32.619Z
 - UI Base URL: http://127.0.0.1:9007
-- API Base URL: http://127.0.0.1:8129
+- API Base URL: http://127.0.0.1:8006
 - Chrome Debug URL: http://127.0.0.1:9222
 - PASS: 4
 - FAIL: 0

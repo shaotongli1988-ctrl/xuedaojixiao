@@ -1,0 +1,751 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Theme 18 Hiring Contract Snapshot",
+    "version": "0.1.0",
+    "description": "Frozen contract evidence for theme 18 hiring APIs."
+  },
+  "tags": [
+    {
+      "name": "performance.hiring",
+      "description": "Theme 18 hiring management APIs."
+    }
+  ],
+  "paths": {
+    "/admin/performance/hiring/add": {
+      "post": {
+        "tags": [
+          "performance.hiring"
+        ],
+        "summary": "新增录用",
+        "operationId": "performanceHiringAdd",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HiringSaveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "新增录用结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_HiringRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/hiring/close": {
+      "post": {
+        "tags": [
+          "performance.hiring"
+        ],
+        "summary": "关闭录用",
+        "operationId": "performanceHiringClose",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HiringCloseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "关闭录用结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_HiringRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/hiring/info": {
+      "get": {
+        "tags": [
+          "performance.hiring"
+        ],
+        "summary": "录用详情",
+        "operationId": "performanceHiringInfo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "录用详情结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_HiringRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/hiring/page": {
+      "post": {
+        "tags": [
+          "performance.hiring"
+        ],
+        "summary": "录用分页",
+        "operationId": "performanceHiringPage",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HiringPageQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "录用分页结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_HiringPageResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/hiring/updateStatus": {
+      "post": {
+        "tags": [
+          "performance.hiring"
+        ],
+        "summary": "更新录用状态",
+        "operationId": "performanceHiringUpdateStatus",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HiringStatusUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新录用状态结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_HiringRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PagePagination": {
+        "type": "object",
+        "required": [
+          "page",
+          "size",
+          "total"
+        ],
+        "properties": {
+          "page": {
+            "type": "integer",
+            "description": "页码"
+          },
+          "size": {
+            "type": "integer",
+            "description": "页大小"
+          },
+          "total": {
+            "type": "integer",
+            "description": "总数"
+          }
+        }
+      },
+      "ApiResponse_HiringPageResult": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/HiringPageResult"
+          }
+        }
+      },
+      "HiringPageResult": {
+        "type": "object",
+        "required": [
+          "list",
+          "pagination"
+        ],
+        "properties": {
+          "list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HiringRecord"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PagePagination"
+          }
+        }
+      },
+      "HiringRecord": {
+        "type": "object",
+        "required": [
+          "candidateName",
+          "targetDepartmentId",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "candidateName": {
+            "type": "string"
+          },
+          "targetDepartmentId": {
+            "type": "integer"
+          },
+          "targetDepartmentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetPosition": {
+            "type": "string",
+            "nullable": true
+          },
+          "sourceType": {
+            "$ref": "#/components/schemas/HiringSourceType",
+            "nullable": true
+          },
+          "sourceId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "sourceStatusSnapshot": {
+            "type": "string",
+            "nullable": true
+          },
+          "sourceSnapshot": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/HiringSourceSnapshot"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "nullable": true
+          },
+          "interviewId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "resumePoolId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "recruitPlanId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "interviewSummary": {
+            "$ref": "#/components/schemas/HiringInterviewSummary",
+            "nullable": true
+          },
+          "interviewSnapshot": {
+            "$ref": "#/components/schemas/HiringInterviewSummary",
+            "nullable": true
+          },
+          "resumePoolSummary": {
+            "$ref": "#/components/schemas/HiringResumePoolSummary",
+            "nullable": true
+          },
+          "resumePoolSnapshot": {
+            "$ref": "#/components/schemas/HiringResumePoolSummary",
+            "nullable": true
+          },
+          "recruitPlanSummary": {
+            "$ref": "#/components/schemas/HiringRecruitPlanSummary",
+            "nullable": true
+          },
+          "recruitPlanSnapshot": {
+            "$ref": "#/components/schemas/HiringRecruitPlanSummary",
+            "nullable": true
+          },
+          "hiringDecision": {
+            "type": "string",
+            "nullable": true
+          },
+          "decisionContent": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/HiringStatus"
+          },
+          "offeredAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "acceptedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "rejectedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "closedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "closeReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "createTime": {
+            "type": "string"
+          },
+          "updateTime": {
+            "type": "string"
+          }
+        }
+      },
+      "HiringSourceType": {
+        "type": "string",
+        "enum": [
+          "manual",
+          "resumePool",
+          "talentAsset",
+          "interview"
+        ]
+      },
+      "HiringSourceSnapshot": {
+        "type": "object",
+        "properties": {
+          "sourceResource": {
+            "$ref": "#/components/schemas/HiringSourceType",
+            "nullable": true
+          },
+          "interviewId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "resumePoolId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "recruitPlanId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "recruitPlanTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "candidateName": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetDepartmentId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "targetDepartmentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetPosition": {
+            "type": "string",
+            "nullable": true
+          },
+          "interviewStatus": {
+            "$ref": "#/components/schemas/InterviewStatus",
+            "nullable": true
+          },
+          "sourceStatusSnapshot": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "InterviewStatus": {
+        "type": "string",
+        "enum": [
+          "scheduled",
+          "completed",
+          "cancelled"
+        ]
+      },
+      "HiringInterviewSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "candidateName",
+          "position"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "candidateName": {
+            "type": "string"
+          },
+          "position": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "interviewDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "interviewType": {
+            "$ref": "#/components/schemas/InterviewType",
+            "nullable": true
+          },
+          "interviewerId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "interviewerName": {
+            "type": "string",
+            "nullable": true
+          },
+          "score": {
+            "type": "number",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/InterviewStatus",
+            "nullable": true
+          },
+          "resumePoolId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "recruitPlanId": {
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "InterviewType": {
+        "type": "string",
+        "enum": [
+          "technical",
+          "behavioral",
+          "manager",
+          "hr"
+        ]
+      },
+      "HiringResumePoolSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "candidateName",
+          "targetDepartmentId"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "candidateName": {
+            "type": "string"
+          },
+          "targetDepartmentId": {
+            "type": "integer"
+          },
+          "targetDepartmentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetPosition": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/ResumePoolStatus",
+            "nullable": true
+          },
+          "recruitPlanId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "jobStandardId": {
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "ResumePoolStatus": {
+        "type": "string",
+        "enum": [
+          "new",
+          "screening",
+          "interviewing",
+          "archived"
+        ]
+      },
+      "HiringRecruitPlanSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "targetDepartmentId"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "positionName": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetDepartmentId": {
+            "type": "integer"
+          },
+          "targetDepartmentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "headcount": {
+            "type": "integer",
+            "nullable": true
+          },
+          "startDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "endDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/RecruitPlanStatus",
+            "nullable": true
+          },
+          "jobStandardId": {
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "RecruitPlanStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "active",
+          "voided",
+          "closed"
+        ]
+      },
+      "HiringStatus": {
+        "type": "string",
+        "enum": [
+          "offered",
+          "accepted",
+          "rejected",
+          "closed"
+        ]
+      },
+      "ApiResponse_HiringRecord": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/HiringRecord"
+          }
+        }
+      },
+      "HiringUpdateStatus": {
+        "type": "string",
+        "enum": [
+          "accepted",
+          "rejected"
+        ]
+      },
+      "HiringPageQuery": {
+        "type": "object",
+        "required": [
+          "page",
+          "size"
+        ],
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "keyword": {
+            "type": "string"
+          },
+          "targetDepartmentId": {
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/HiringStatus"
+          },
+          "sourceType": {
+            "$ref": "#/components/schemas/HiringSourceType"
+          }
+        }
+      },
+      "HiringSaveRequest": {
+        "type": "object",
+        "required": [
+          "candidateName",
+          "targetDepartmentId"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "candidateName": {
+            "type": "string"
+          },
+          "targetDepartmentId": {
+            "type": "integer"
+          },
+          "targetPosition": {
+            "type": "string",
+            "nullable": true
+          },
+          "sourceType": {
+            "$ref": "#/components/schemas/HiringSourceType",
+            "nullable": true
+          },
+          "sourceId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "sourceStatusSnapshot": {
+            "type": "string",
+            "nullable": true
+          },
+          "sourceSnapshot": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/HiringSourceSnapshot"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "nullable": true
+          },
+          "interviewId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "resumePoolId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "recruitPlanId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "hiringDecision": {
+            "type": "string",
+            "nullable": true
+          },
+          "decisionContent": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/HiringStatus"
+          }
+        }
+      },
+      "HiringStatusUpdateRequest": {
+        "type": "object",
+        "required": [
+          "id",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/HiringUpdateStatus"
+          }
+        }
+      },
+      "HiringCloseRequest": {
+        "type": "object",
+        "required": [
+          "id",
+          "closeReason"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "closeReason": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

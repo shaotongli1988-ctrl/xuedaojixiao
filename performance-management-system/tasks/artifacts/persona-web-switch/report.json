@@ -1,0 +1,69 @@
+{
+  "name": "persona-web-switch",
+  "description": "Web 工作台切换绩效运营视角",
+  "configPath": "/tmp/persona-web-switch.json",
+  "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/persona-web-switch",
+  "uiBaseUrl": "http://127.0.0.1:9011",
+  "apiBaseUrl": "http://127.0.0.1:8001",
+  "chromeDebugUrl": "http://127.0.0.1:9222",
+  "generatedAt": "2026-04-23T01:14:16.633Z",
+  "scenarios": [
+    {
+      "name": "hr-admin-switch-performance-operator",
+      "username": "hr_admin",
+      "route": "/performance/workbench",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "角色工作台",
+            "HRBP 视角"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/persona-web-switch/01-before-switch.png"
+        },
+        {
+          "index": 0,
+          "type": "clickSelector",
+          "status": "passed",
+          "selector": ".performance-workbench .el-select .el-select__wrapper"
+        },
+        {
+          "index": 1,
+          "type": "clickSelector",
+          "status": "passed",
+          "selector": ".el-select-dropdown__item"
+        },
+        {
+          "index": 5,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/persona-web-switch/02-after-switch.png"
+        },
+        {
+          "index": 6,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "绩效运营视角"
+          ],
+          "excludes": [
+            "HRBP 视角"
+          ]
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "pass": 1,
+    "fail": 0
+  }
+}

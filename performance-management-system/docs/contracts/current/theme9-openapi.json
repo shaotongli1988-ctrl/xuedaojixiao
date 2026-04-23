@@ -1,0 +1,236 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Theme 9 Meeting Management",
+    "version": "2026-04-21"
+  },
+  "paths": {
+    "/admin/performance/meeting/page": {
+      "post": {
+        "summary": "会议分页"
+      }
+    },
+    "/admin/performance/meeting/info": {
+      "get": {
+        "summary": "会议详情"
+      }
+    },
+    "/admin/performance/meeting/add": {
+      "post": {
+        "summary": "新增会议"
+      }
+    },
+    "/admin/performance/meeting/update": {
+      "post": {
+        "summary": "修改会议"
+      }
+    },
+    "/admin/performance/meeting/delete": {
+      "post": {
+        "summary": "删除会议"
+      }
+    },
+    "/admin/performance/meeting/checkIn": {
+      "post": {
+        "summary": "会议签到"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PagePagination": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "page",
+          "size",
+          "total"
+        ]
+      },
+      "MeetingStatus": {
+        "type": "string",
+        "enum": [
+          "scheduled",
+          "in_progress",
+          "completed",
+          "cancelled"
+        ]
+      },
+      "MeetingPageQuery": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "keyword": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MeetingStatus"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "page",
+          "size"
+        ]
+      },
+      "MeetingRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string",
+            "nullable": true
+          },
+          "organizerId": {
+            "type": "integer"
+          },
+          "organizerName": {
+            "type": "string"
+          },
+          "participantCount": {
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MeetingStatus"
+          },
+          "createTime": {
+            "type": "string"
+          },
+          "updateTime": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "startDate",
+          "endDate",
+          "organizerId",
+          "status"
+        ]
+      },
+      "MeetingSaveRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string",
+            "nullable": true
+          },
+          "organizerId": {
+            "type": "integer"
+          },
+          "participantIds": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "status": {
+            "$ref": "#/components/schemas/MeetingStatus"
+          }
+        },
+        "required": [
+          "title",
+          "startDate",
+          "endDate",
+          "organizerId"
+        ]
+      },
+      "MeetingPageResult": {
+        "type": "object",
+        "properties": {
+          "list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeetingRecord"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PagePagination"
+          }
+        },
+        "required": [
+          "list",
+          "pagination"
+        ]
+      },
+      "MeetingCheckInRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,474 @@
+[
+  {
+    "route": "/performance/workbench",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/workbench",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/work-plan",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/work-plan",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/my-assessment",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/my-assessment",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/initiated",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/initiated",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/pending",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/pending",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/indicator-library",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/indicator-library",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/feedback",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/feedback",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/goals",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/goals",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/suggestion",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/suggestion",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/pip",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/performance/purchase-order",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n采购&资产\n当前业务域菜单\n采购工作台\n采购管理\n询价管理\n采购审批\n订单管理\n收货管理\n采购报表\n供应商\n采购转资产\n资产台账\n资产"
+  },
+  {
+    "route": "/performance/promotion",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/promotion",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/salary",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/salary",
+    "title": "COOL-ADMIN",
+    "errorCount": 2,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/course",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/performance/material/stock",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/capability",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/capability",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/certificate",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/certificate",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/course-learning",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/course-learning",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/recruitment-center",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/recruitment-center",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/recruit-plan",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/recruit-plan",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/job-standard",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/job-standard",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/resumePool",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/resumePool",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/interview",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/interview",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/hiring",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/hiring",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/meeting",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/meeting",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/office/annual-inspection",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/office/annual-inspection",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/office/honor",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/office/honor",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/office/publicity-material",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/office/publicity-material",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/office/design-collab",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/office/design-collab",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/office/express-collab",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/office/express-collab",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/office/document-center",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/office/document-center",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/office/knowledge-base",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/office/knowledge-base",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/office/vehicle",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/office/vehicle",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/office/intellectual-property",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/office/intellectual-property",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/contract",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/contract",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/talentAsset",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/talentAsset",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/purchase-order",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/purchase-order",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/purchase-inquiry",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/purchase-inquiry",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/purchase-approval",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/purchase-approval",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/purchase-execution",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/purchase-execution",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/purchase-receipt",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/purchase-receipt",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/purchase-report",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/purchase-report",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/supplier",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/supplier",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/asset/dashboard",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/asset/dashboard",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/asset/ledger",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/asset/ledger",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/asset/assignment",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/asset/assignment",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/asset/maintenance",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/asset/maintenance",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/asset/report",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/asset/report",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/asset/procurement",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/asset/procurement",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/asset/transfer",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/asset/transfer",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/asset/inventory",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/asset/inventory",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/asset/depreciation",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/asset/depreciation",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/asset/disposal",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/asset/disposal",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/material/catalog",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/material/catalog",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/material/stock",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/material/stock",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/material/inbound",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/material/inbound",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/material/issue",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/material/issue",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/teacher-channel/dashboard",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/teacher-channel/dashboard",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/teacher-channel/teacher",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/teacher-channel/teacher",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/teacher-channel/todo",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/teacher-channel/todo",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  },
+  {
+    "route": "/performance/teacher-channel/class",
+    "status": "ok",
+    "finalUrl": "http://127.0.0.1:9025/#/performance/teacher-channel/class",
+    "title": "COOL-ADMIN",
+    "errorCount": 0,
+    "sample": "COOL-ADMIN\n正在加载资源...\n初次加载资源可能需要较多时间，请耐心等待\nCOOL-ADMIN\n绩效中心\n当前业务域菜单\n绩效驾驶舱\n我的考核\n已发起考核\n待我审批\n指标库\n360 环评\n建议管理\nPIP 追踪\n晋升管理\n薪资管理"
+  }
+]

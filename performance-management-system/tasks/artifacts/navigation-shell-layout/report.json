@@ -3,10 +3,10 @@
   "description": "导航栏与侧栏改造最小 GUI 点测",
   "configPath": "/Users/shaotongli/Documents/xuedao/performance-management-system/test/gui/scenarios/navigation-shell-layout.json",
   "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/navigation-shell-layout",
-  "uiBaseUrl": "http://127.0.0.1:9007",
+  "uiBaseUrl": "http://127.0.0.1:9025",
   "apiBaseUrl": "http://127.0.0.1:19136",
   "chromeDebugUrl": "http://127.0.0.1:9222",
-  "generatedAt": "2026-04-19T12:46:08.882Z",
+  "generatedAt": "2026-04-19T13:38:01.536Z",
   "scenarios": [
     {
       "name": "hr-navigation-shell",

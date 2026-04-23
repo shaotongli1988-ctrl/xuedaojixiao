@@ -1,9 +1,22 @@
 # Module Summary
 
-- 当前合同摘要仅覆盖主题13：
-  - `capabilityModel`
-  - `capabilityItem`
-  - `capabilityPortrait`
-  - `certificate`
-- 当前批次不引入新资源，不修改课程主链、面试主链、人才资产主链。
-- 当前批次的 API 门禁应基于主题13局部合同源执行，不以仓库全量历史接口快照作为主题13是否通过的判断依据。
+- 仓库级 API 主源当前覆盖模块：
+  - 已完成强 SSOT：`performance`
+  - 已完成仓库主源收口：`base`、`demo`、`dict`、`plugin`、`recycle`、`space`、`task`、`user`
+- 当前边界：
+  - `performance`：后端 controller/service/types -> 仓库级 OpenAPI -> Vue/Uni 生成类型，链路完整。
+  - 非 `performance` 模块：当前为 `EPS snapshot -> 仓库级 OpenAPI -> eps.ssot.d.ts` 收口，前端仍保持动态 EPS 调用方式，但方法签名和请求/响应类型已收敛到主源。
+- 当前目录下的局部 contract evidence 已覆盖：
+  - 主题1：`assessment`
+  - 主题23：`goal`
+  - 主题4：`indicator`
+  - 主题8：`interview`
+  - 主题9：`meeting`
+  - 主题12：`talentAsset`
+  - 主题15：`resumePool`
+  - 主题16：`recruitPlan`
+  - 主题17：`jobStandard`
+  - 主题18：`hiring`
+  - 主题13：`capabilityModel`、`capabilityItem`、`capabilityPortrait`、`certificate`
+- 各主题快照只对各自冻结范围负责，不替代仓库级 OpenAPI 主源，也不承担仓库全量历史接口快照清理。
+- 仓库级 OpenAPI 主源现已覆盖当前后台模块 API；本目录继续只维护主题冻结快照与局部对齐证据。

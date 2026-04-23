@@ -2,9 +2,9 @@
 
 - Name: theme22-office-collab-gui
 - Description: Theme22 行政协同记录管理最小 GUI 点测
-- Generated At: 2026-04-19T11:05:46.355Z
+- Generated At: 2026-04-20T02:04:38.764Z
 - UI Base URL: http://127.0.0.1:9007
-- API Base URL: http://127.0.0.1:8129
+- API Base URL: http://127.0.0.1:8006
 - Chrome Debug URL: http://127.0.0.1:9222
 - PASS: 7
 - FAIL: 0

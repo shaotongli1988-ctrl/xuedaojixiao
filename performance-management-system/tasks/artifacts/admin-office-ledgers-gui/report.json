@@ -4,9 +4,9 @@
   "configPath": "/Users/shaotongli/Documents/xuedao/performance-management-system/test/gui/scenarios/admin-office-ledgers.json",
   "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/admin-office-ledgers-gui",
   "uiBaseUrl": "http://127.0.0.1:9007",
-  "apiBaseUrl": "http://127.0.0.1:8129",
+  "apiBaseUrl": "http://127.0.0.1:8006",
   "chromeDebugUrl": "http://127.0.0.1:9222",
-  "generatedAt": "2026-04-19T11:07:06.527Z",
+  "generatedAt": "2026-04-20T02:06:32.619Z",
   "scenarios": [
     {
       "name": "hr-vehicle-ledger",

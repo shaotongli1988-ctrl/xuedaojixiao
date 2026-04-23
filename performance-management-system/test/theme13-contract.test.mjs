@@ -12,6 +12,7 @@ const root = "/Users/shaotongli/Documents/xuedao/performance-management-system";
 const openapiPath = `${root}/docs/contracts/current/theme13-openapi.json`;
 const producerPath = `${root}/docs/contracts/current/theme13-producer-contract-model.ts`;
 const consumerPath = `${root}/docs/contracts/current/theme13-consumer-api-types.ts`;
+const repoOpenapiPath = "/Users/shaotongli/Documents/xuedao/contracts/openapi/xuedao.openapi.json";
 
 function readText(path) {
   return readFileSync(path, "utf8");
@@ -19,6 +20,10 @@ function readText(path) {
 
 function readOpenapi() {
   return JSON.parse(readText(openapiPath));
+}
+
+function readRepoOpenapi() {
+  return JSON.parse(readText(repoOpenapiPath));
 }
 
 test("normal: theme13 contract exposes only frozen endpoints", () => {
@@ -75,6 +80,38 @@ test("boundary: non-goal resources and forbidden detail fields stay excluded", (
       combined.includes(forbiddenText),
       false,
       `unexpected contract evidence found: ${forbiddenText}`
+    );
+  }
+});
+
+test("normal: theme13 snapshot remains covered by repository openapi source", () => {
+  const themeOpenapi = readOpenapi();
+  const repoOpenapi = readRepoOpenapi();
+
+  for (const route of Object.keys(themeOpenapi.paths)) {
+    assert.notEqual(repoOpenapi.paths[route], undefined, `repository openapi is missing ${route}`);
+  }
+
+  for (const schemaName of [
+    "PagePagination",
+    "CapabilityModelPageQuery",
+    "CapabilityModelRecord",
+    "CapabilityModelPageResult",
+    "CapabilityModelSaveRequest",
+    "CapabilityItemRecord",
+    "CapabilityPortraitRecord",
+    "CertificatePageQuery",
+    "CertificateRecord",
+    "CertificatePageResult",
+    "CertificateIssueRequest",
+    "CertificateRecordPageQuery",
+    "CertificateLedgerRecord",
+    "CertificateLedgerPageResult",
+  ]) {
+    assert.notEqual(
+      repoOpenapi.components.schemas[schemaName],
+      undefined,
+      `repository openapi is missing schema ${schemaName}`
     );
   }
 });

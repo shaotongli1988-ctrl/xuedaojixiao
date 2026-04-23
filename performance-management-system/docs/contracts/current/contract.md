@@ -7,7 +7,9 @@
 
 ## 当前合同源
 
-- OpenAPI：
+- Repository OpenAPI source：
+  - [xuedao.openapi.json](/Users/shaotongli/Documents/xuedao/contracts/openapi/xuedao.openapi.json)
+- Theme snapshot：
   - [theme13-openapi.json](/Users/shaotongli/Documents/xuedao/performance-management-system/docs/contracts/current/theme13-openapi.json)
 - Producer：
   - [theme13-producer-contract-model.ts](/Users/shaotongli/Documents/xuedao/performance-management-system/docs/contracts/current/theme13-producer-contract-model.ts)
@@ -50,5 +52,5 @@ python3 /Users/shaotongli/.codex/skills/api-schema-drift-checker/scripts/schema_
 
 ## 使用约束
 
-- 主题13后续若新增字段、接口路径、状态或权限键，必须同步更新以上三份合同源。
+- 主题13后续若新增字段、接口路径、状态或权限键，必须先更新仓库级 OpenAPI 主源，再同步更新本地快照与证据文件。
 - 若执行仓库级 schema drift 守卫，发现的非主题13历史漂移不能回写成“主题13未对齐”。

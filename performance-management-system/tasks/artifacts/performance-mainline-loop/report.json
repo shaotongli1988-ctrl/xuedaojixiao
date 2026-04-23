@@ -3,16 +3,16 @@
   "description": "绩效闭环最小 GUI 点测",
   "configPath": "/Users/shaotongli/Documents/xuedao/performance-management-system/test/gui/scenarios/performance-mainline-loop.json",
   "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/performance-mainline-loop",
-  "uiBaseUrl": "http://127.0.0.1:9007",
+  "uiBaseUrl": "http://127.0.0.1:9000",
   "apiBaseUrl": "http://127.0.0.1:8006",
   "chromeDebugUrl": "http://127.0.0.1:9222",
-  "generatedAt": "2026-04-19T02:33:40.963Z",
+  "generatedAt": "2026-04-20T03:38:57.013Z",
   "scenarios": [
     {
       "name": "hr-performance-loop",
       "username": "hr_admin",
       "route": "/performance/initiated",
-      "status": "passed",
+      "status": "failed",
       "steps": [
         {
           "index": 1,
@@ -39,42 +39,11 @@
         {
           "index": 4,
           "type": "waitBodyText",
-          "status": "passed",
-          "includes": [
-            "目标地图",
-            "新建目标"
-          ],
-          "excludes": []
-        },
-        {
-          "index": 5,
-          "type": "screenshot",
-          "status": "passed",
-          "file": "tasks/artifacts/performance-mainline-loop/performance-loop-hr-goals.png"
-        },
-        {
-          "index": 6,
-          "type": "navigate",
-          "status": "passed",
-          "route": "/performance/feedback"
-        },
-        {
-          "index": 7,
-          "type": "waitBodyText",
-          "status": "passed",
-          "includes": [
-            "360 环评任务",
-            "发起环评任务"
-          ],
-          "excludes": []
-        },
-        {
-          "index": 8,
-          "type": "screenshot",
-          "status": "passed",
-          "file": "tasks/artifacts/performance-mainline-loop/performance-loop-hr-feedback.png"
+          "status": "failed",
+          "error": "waitUntil timeout: (() => {\n\t\tconst text = document.body?.innerText || \"\";\n\t\treturn [\"目标地图\",\"新建目标\"].every(item => text.includes(item))\n\t\t\t&& [].every(item => !text.includes(item));\n\t})()"
         }
-      ]
+      ],
+      "error": "waitUntil timeout: (() => {\n\t\tconst text = document.body?.innerText || \"\";\n\t\treturn [\"目标地图\",\"新建目标\"].every(item => text.includes(item))\n\t\t\t&& [].every(item => !text.includes(item));\n\t})()"
     },
     {
       "name": "manager-performance-loop",
@@ -135,7 +104,7 @@
       "name": "employee-performance-loop",
       "username": "employee_platform",
       "route": "/performance/my-assessment",
-      "status": "failed",
+      "status": "passed",
       "steps": [
         {
           "index": 1,
@@ -182,11 +151,22 @@
         {
           "index": 7,
           "type": "assertBodyText",
-          "status": "failed",
-          "error": "assertBodyText failed: includes=[\"404\",\"找不到您要查找的页面\"] excludes=[\"待我审批\"]"
+          "status": "passed",
+          "includes": [
+            "404",
+            "找不到您要查找的页面"
+          ],
+          "excludes": [
+            "待我审批"
+          ]
+        },
+        {
+          "index": 8,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/performance-mainline-loop/performance-loop-employee-pending-404.png"
         }
-      ],
-      "error": "assertBodyText failed: includes=[\"404\",\"找不到您要查找的页面\"] excludes=[\"待我审批\"]"
+      ]
     }
   ],
   "summary": {

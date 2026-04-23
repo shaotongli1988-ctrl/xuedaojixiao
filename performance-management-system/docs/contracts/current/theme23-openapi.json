@@ -1,0 +1,1945 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Theme23 Goal Contract Snapshot",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/admin/performance/goal/page": {
+      "post": {
+        "tags": [
+          "performance.goal"
+        ],
+        "summary": "目标分页",
+        "operationId": "performanceGoalPage",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalPageQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "目标分页结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_GoalPageResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/goal/info": {
+      "get": {
+        "tags": [
+          "performance.goal"
+        ],
+        "summary": "目标详情",
+        "operationId": "performanceGoalInfo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "目标详情结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_GoalRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/goal/add": {
+      "post": {
+        "tags": [
+          "performance.goal"
+        ],
+        "summary": "新增目标",
+        "operationId": "performanceGoalAdd",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "新增目标结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_GoalRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/goal/update": {
+      "post": {
+        "tags": [
+          "performance.goal"
+        ],
+        "summary": "修改目标",
+        "operationId": "performanceGoalUpdate",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "修改目标结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_GoalRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/goal/delete": {
+      "post": {
+        "tags": [
+          "performance.goal"
+        ],
+        "summary": "删除目标",
+        "operationId": "performanceGoalDelete",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteIdsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "删除目标结果"
+          }
+        }
+      }
+    },
+    "/admin/performance/goal/progressUpdate": {
+      "post": {
+        "tags": [
+          "performance.goal"
+        ],
+        "summary": "更新目标进度",
+        "operationId": "performanceGoalProgressUpdate",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalProgressUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新目标进度结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_GoalRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/goal/export": {
+      "post": {
+        "tags": [
+          "performance.goal"
+        ],
+        "summary": "导出目标",
+        "operationId": "performanceGoalExport",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalExportQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "导出目标结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_GoalExportRows"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/goal/opsDepartmentConfig": {
+      "get": {
+        "tags": [
+          "performance.goal"
+        ],
+        "summary": "目标运营台部门配置",
+        "operationId": "performanceGoalOpsDepartmentConfig",
+        "parameters": [
+          {
+            "name": "departmentId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "目标运营台部门配置结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_GoalOpsDepartmentConfig"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/goal/opsAccessProfile": {
+      "get": {
+        "tags": [
+          "performance.goal"
+        ],
+        "summary": "目标运营台权限画像",
+        "operationId": "performanceGoalOpsAccessProfile",
+        "parameters": [
+          {
+            "name": "departmentId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "目标运营台权限画像结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_GoalOpsAccessProfile"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/goal/opsDepartmentConfigSave": {
+      "post": {
+        "tags": [
+          "performance.goal"
+        ],
+        "summary": "保存目标运营台部门配置",
+        "operationId": "performanceGoalOpsDepartmentConfigSave",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalOpsDepartmentConfig"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "保存目标运营台部门配置结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_GoalOpsDepartmentConfig"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/goal/opsPlanPage": {
+      "post": {
+        "tags": [
+          "performance.goal"
+        ],
+        "summary": "目标运营台计划分页",
+        "operationId": "performanceGoalOpsPlanPage",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalOpsPlanPageQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "目标运营台计划分页结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_GoalOpsPlanPageResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/goal/opsPlanInfo": {
+      "get": {
+        "tags": [
+          "performance.goal"
+        ],
+        "summary": "目标运营台计划详情",
+        "operationId": "performanceGoalOpsPlanInfo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "目标运营台计划详情结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_GoalOpsPlanRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/goal/opsPlanSave": {
+      "post": {
+        "tags": [
+          "performance.goal"
+        ],
+        "summary": "保存目标运营台计划",
+        "operationId": "performanceGoalOpsPlanSave",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalOpsPlanSaveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "保存目标运营台计划结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_GoalOpsPlanRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/goal/opsPlanDelete": {
+      "post": {
+        "tags": [
+          "performance.goal"
+        ],
+        "summary": "删除目标运营台计划",
+        "operationId": "performanceGoalOpsPlanDelete",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteIdsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "删除目标运营台计划结果"
+          }
+        }
+      }
+    },
+    "/admin/performance/goal/opsDailySubmit": {
+      "post": {
+        "tags": [
+          "performance.goal"
+        ],
+        "summary": "目标运营台日结果填报",
+        "operationId": "performanceGoalOpsDailySubmit",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalOpsDailySubmitRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "目标运营台日结果填报结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_GoalOpsOverview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/goal/opsDailyFinalize": {
+      "post": {
+        "tags": [
+          "performance.goal"
+        ],
+        "summary": "目标运营台日结果自动补零",
+        "operationId": "performanceGoalOpsDailyFinalize",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalOpsDailyFinalizeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "目标运营台日结果自动补零结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_GoalOpsDailyFinalizeResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/goal/opsOverview": {
+      "post": {
+        "tags": [
+          "performance.goal"
+        ],
+        "summary": "目标运营台总览",
+        "operationId": "performanceGoalOpsOverview",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalOpsOverviewQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "目标运营台总览结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_GoalOpsOverview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/goal/opsReportInfo": {
+      "get": {
+        "tags": [
+          "performance.goal"
+        ],
+        "summary": "目标运营台日报详情",
+        "operationId": "performanceGoalOpsReportInfo",
+        "parameters": [
+          {
+            "name": "reportDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "departmentId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "目标运营台日报详情结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_GoalOpsReportInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/goal/opsReportGenerate": {
+      "post": {
+        "tags": [
+          "performance.goal"
+        ],
+        "summary": "生成目标运营台日报",
+        "operationId": "performanceGoalOpsReportGenerate",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalOpsReportGenerateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "生成目标运营台日报结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_GoalOpsReportInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/goal/opsReportStatusUpdate": {
+      "post": {
+        "tags": [
+          "performance.goal"
+        ],
+        "summary": "更新目标运营台日报状态",
+        "operationId": "performanceGoalOpsReportStatusUpdate",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalOpsReportStatusUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新目标运营台日报状态结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_GoalOpsReportInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PagePagination": {
+        "type": "object",
+        "required": [
+          "page",
+          "size",
+          "total"
+        ],
+        "properties": {
+          "page": {
+            "type": "integer",
+            "description": "页码"
+          },
+          "size": {
+            "type": "integer",
+            "description": "页大小"
+          },
+          "total": {
+            "type": "integer",
+            "description": "总数"
+          }
+        }
+      },
+      "DeleteIdsRequest": {
+        "type": "object",
+        "required": [
+          "ids"
+        ],
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "GoalStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "in-progress",
+          "completed",
+          "cancelled"
+        ]
+      },
+      "GoalProgressRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "goalId": {
+            "type": "integer"
+          },
+          "beforeValue": {
+            "type": "number"
+          },
+          "afterValue": {
+            "type": "number"
+          },
+          "progressRate": {
+            "type": "number"
+          },
+          "remark": {
+            "type": "string"
+          },
+          "operatorId": {
+            "type": "integer"
+          },
+          "operatorName": {
+            "type": "string"
+          },
+          "createTime": {
+            "type": "string"
+          }
+        }
+      },
+      "GoalRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "employeeId": {
+            "type": "integer"
+          },
+          "employeeName": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "integer"
+          },
+          "departmentName": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "targetValue": {
+            "type": "number"
+          },
+          "currentValue": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "weight": {
+            "type": "number"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          },
+          "progressRate": {
+            "type": "number"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GoalStatus"
+          },
+          "createTime": {
+            "type": "string"
+          },
+          "updateTime": {
+            "type": "string"
+          },
+          "progressRecords": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GoalProgressRecord"
+            }
+          }
+        }
+      },
+      "GoalPageQuery": {
+        "type": "object",
+        "required": [
+          "page",
+          "size"
+        ],
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "keyword": {
+            "type": "string"
+          },
+          "employeeId": {
+            "type": "integer"
+          },
+          "departmentId": {
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GoalStatus"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          }
+        }
+      },
+      "GoalCreateRequest": {
+        "type": "object",
+        "required": [
+          "employeeId",
+          "title",
+          "targetValue",
+          "startDate",
+          "endDate"
+        ],
+        "properties": {
+          "employeeId": {
+            "type": "integer"
+          },
+          "departmentId": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "targetValue": {
+            "type": "number"
+          },
+          "currentValue": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "weight": {
+            "type": "number"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          }
+        }
+      },
+      "GoalUpdateRequest": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "employeeId": {
+            "type": "integer"
+          },
+          "departmentId": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "targetValue": {
+            "type": "number"
+          },
+          "currentValue": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "weight": {
+            "type": "number"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          }
+        }
+      },
+      "GoalProgressUpdateRequest": {
+        "type": "object",
+        "required": [
+          "id",
+          "currentValue"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "currentValue": {
+            "type": "number"
+          },
+          "remark": {
+            "type": "string"
+          }
+        }
+      },
+      "GoalExportQuery": {
+        "type": "object",
+        "properties": {
+          "keyword": {
+            "type": "string"
+          },
+          "employeeId": {
+            "type": "integer"
+          },
+          "departmentId": {
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GoalStatus"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          }
+        }
+      },
+      "GoalExportRow": {
+        "type": "object",
+        "required": [
+          "employeeName",
+          "departmentName",
+          "title",
+          "targetValue",
+          "currentValue",
+          "unit",
+          "weight",
+          "status",
+          "startDate",
+          "endDate"
+        ],
+        "properties": {
+          "employeeName": {
+            "type": "string"
+          },
+          "departmentName": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "targetValue": {
+            "type": "number"
+          },
+          "currentValue": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "weight": {
+            "type": "number"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GoalStatus"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          },
+          "updateTime": {
+            "type": "string"
+          }
+        }
+      },
+      "GoalExportRows": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/GoalExportRow"
+        }
+      },
+      "GoalPageResult": {
+        "type": "object",
+        "required": [
+          "list",
+          "pagination"
+        ],
+        "properties": {
+          "list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GoalRecord"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PagePagination"
+          }
+        }
+      },
+      "GoalOpsPeriodType": {
+        "type": "string",
+        "enum": [
+          "day",
+          "week",
+          "month"
+        ]
+      },
+      "GoalOpsSourceType": {
+        "type": "string",
+        "enum": [
+          "public",
+          "personal"
+        ]
+      },
+      "GoalOpsPlanStatus": {
+        "type": "string",
+        "enum": [
+          "assigned",
+          "submitted",
+          "auto_zero"
+        ]
+      },
+      "GoalOpsReportStatus": {
+        "type": "string",
+        "enum": [
+          "generated",
+          "sent",
+          "intercepted",
+          "delayed"
+        ]
+      },
+      "GoalOpsDepartmentScopeQuery": {
+        "type": "object",
+        "properties": {
+          "departmentId": {
+            "type": "integer"
+          }
+        }
+      },
+      "GoalOpsDepartmentConfig": {
+        "type": "object",
+        "required": [
+          "assignTime",
+          "submitDeadline",
+          "reportSendTime",
+          "reportPushMode"
+        ],
+        "properties": {
+          "departmentId": {
+            "type": "integer"
+          },
+          "departmentName": {
+            "type": "string"
+          },
+          "assignTime": {
+            "type": "string"
+          },
+          "submitDeadline": {
+            "type": "string"
+          },
+          "reportSendTime": {
+            "type": "string"
+          },
+          "reportPushMode": {
+            "type": "string"
+          },
+          "reportPushTarget": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedBy": {
+            "type": "integer",
+            "nullable": true
+          },
+          "updateTime": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "GoalOpsAccessProfile": {
+        "type": "object",
+        "required": [
+          "departmentId",
+          "activePersonaKey",
+          "roleKind",
+          "scopeKey",
+          "isHr",
+          "canManageDepartment",
+          "canMaintainPersonalPlan",
+          "manageableDepartmentIds"
+        ],
+        "properties": {
+          "departmentId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "activePersonaKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "roleKind": {
+            "type": "string",
+            "enum": ["employee", "manager", "hr", "readonly", "unsupported"]
+          },
+          "scopeKey": {
+            "type": "string",
+            "enum": ["self", "department", "company"]
+          },
+          "isHr": {
+            "type": "boolean"
+          },
+          "canManageDepartment": {
+            "type": "boolean"
+          },
+          "canMaintainPersonalPlan": {
+            "type": "boolean"
+          },
+          "manageableDepartmentIds": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "GoalOpsPlanPageQuery": {
+        "type": "object",
+        "required": [
+          "page",
+          "size"
+        ],
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "periodType": {
+            "$ref": "#/components/schemas/GoalOpsPeriodType"
+          },
+          "planDate": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "integer"
+          },
+          "employeeId": {
+            "type": "integer"
+          },
+          "sourceType": {
+            "$ref": "#/components/schemas/GoalOpsSourceType"
+          },
+          "keyword": {
+            "type": "string"
+          },
+          "periodStartDate": {
+            "type": "string"
+          },
+          "periodEndDate": {
+            "type": "string"
+          }
+        }
+      },
+      "GoalOpsPlanRecord": {
+        "type": "object",
+        "required": [
+          "periodType",
+          "periodStartDate",
+          "periodEndDate",
+          "sourceType",
+          "title",
+          "targetValue"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "departmentId": {
+            "type": "integer"
+          },
+          "departmentName": {
+            "type": "string"
+          },
+          "employeeId": {
+            "type": "integer"
+          },
+          "employeeName": {
+            "type": "string"
+          },
+          "periodType": {
+            "$ref": "#/components/schemas/GoalOpsPeriodType"
+          },
+          "planDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "periodStartDate": {
+            "type": "string"
+          },
+          "periodEndDate": {
+            "type": "string"
+          },
+          "sourceType": {
+            "$ref": "#/components/schemas/GoalOpsSourceType"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetValue": {
+            "type": "number"
+          },
+          "actualValue": {
+            "type": "number"
+          },
+          "completionRate": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/GoalOpsPlanStatus"
+          },
+          "parentPlanId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "isSystemGenerated": {
+            "type": "boolean"
+          },
+          "assignedBy": {
+            "type": "integer",
+            "nullable": true
+          },
+          "submittedBy": {
+            "type": "integer",
+            "nullable": true
+          },
+          "submittedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "createTime": {
+            "type": "string"
+          },
+          "updateTime": {
+            "type": "string"
+          }
+        }
+      },
+      "GoalOpsPlanSaveRequest": {
+        "type": "object",
+        "required": [
+          "periodType",
+          "periodStartDate",
+          "periodEndDate",
+          "sourceType",
+          "title",
+          "targetValue"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "departmentId": {
+            "type": "integer"
+          },
+          "employeeId": {
+            "type": "integer"
+          },
+          "periodType": {
+            "$ref": "#/components/schemas/GoalOpsPeriodType"
+          },
+          "planDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "periodStartDate": {
+            "type": "string"
+          },
+          "periodEndDate": {
+            "type": "string"
+          },
+          "sourceType": {
+            "$ref": "#/components/schemas/GoalOpsSourceType"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetValue": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string",
+            "nullable": true
+          },
+          "parentPlanId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "isSystemGenerated": {
+            "type": "boolean"
+          }
+        }
+      },
+      "GoalOpsPlanPageResult": {
+        "type": "object",
+        "required": [
+          "list",
+          "pagination"
+        ],
+        "properties": {
+          "list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GoalOpsPlanRecord"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PagePagination"
+          }
+        }
+      },
+      "GoalOpsOverviewRow": {
+        "type": "object",
+        "required": [
+          "employeeId",
+          "employeeName",
+          "departmentId",
+          "publicTargetValue",
+          "publicActualValue",
+          "personalTargetValue",
+          "personalActualValue",
+          "totalTargetValue",
+          "totalActualValue",
+          "completionRate",
+          "assignedCount",
+          "submittedCount",
+          "autoZeroCount"
+        ],
+        "properties": {
+          "employeeId": {
+            "type": "integer"
+          },
+          "employeeName": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "integer"
+          },
+          "publicTargetValue": {
+            "type": "number"
+          },
+          "publicActualValue": {
+            "type": "number"
+          },
+          "personalTargetValue": {
+            "type": "number"
+          },
+          "personalActualValue": {
+            "type": "number"
+          },
+          "totalTargetValue": {
+            "type": "number"
+          },
+          "totalActualValue": {
+            "type": "number"
+          },
+          "completionRate": {
+            "type": "number"
+          },
+          "assignedCount": {
+            "type": "integer"
+          },
+          "submittedCount": {
+            "type": "integer"
+          },
+          "autoZeroCount": {
+            "type": "integer"
+          }
+        }
+      },
+      "GoalOpsDepartmentSummary": {
+        "type": "object",
+        "required": [
+          "planDate",
+          "departmentId",
+          "employeeCount",
+          "publicTargetValue",
+          "publicActualValue",
+          "personalTargetValue",
+          "personalActualValue",
+          "totalTargetValue",
+          "totalActualValue",
+          "completionRate",
+          "assignedCount",
+          "submittedCount",
+          "autoZeroCount"
+        ],
+        "properties": {
+          "planDate": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "integer"
+          },
+          "employeeCount": {
+            "type": "integer"
+          },
+          "publicTargetValue": {
+            "type": "number"
+          },
+          "publicActualValue": {
+            "type": "number"
+          },
+          "personalTargetValue": {
+            "type": "number"
+          },
+          "personalActualValue": {
+            "type": "number"
+          },
+          "totalTargetValue": {
+            "type": "number"
+          },
+          "totalActualValue": {
+            "type": "number"
+          },
+          "completionRate": {
+            "type": "number"
+          },
+          "assignedCount": {
+            "type": "integer"
+          },
+          "submittedCount": {
+            "type": "integer"
+          },
+          "autoZeroCount": {
+            "type": "integer"
+          }
+        }
+      },
+      "GoalOpsLeaderboard": {
+        "type": "object",
+        "required": [
+          "completionRate",
+          "output"
+        ],
+        "properties": {
+          "completionRate": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GoalOpsOverviewRow"
+            }
+          },
+          "output": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GoalOpsOverviewRow"
+            }
+          }
+        }
+      },
+      "GoalOpsOverview": {
+        "type": "object",
+        "required": [
+          "planDate",
+          "departmentSummary",
+          "leaderboard",
+          "rows"
+        ],
+        "properties": {
+          "planDate": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "departmentSummary": {
+            "$ref": "#/components/schemas/GoalOpsDepartmentSummary"
+          },
+          "leaderboard": {
+            "$ref": "#/components/schemas/GoalOpsLeaderboard"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GoalOpsOverviewRow"
+            }
+          }
+        }
+      },
+      "GoalOpsReportAutoZeroEmployee": {
+        "type": "object",
+        "required": [
+          "employeeId",
+          "employeeName",
+          "autoZeroCount"
+        ],
+        "properties": {
+          "employeeId": {
+            "type": "integer"
+          },
+          "employeeName": {
+            "type": "string"
+          },
+          "autoZeroCount": {
+            "type": "integer"
+          }
+        }
+      },
+      "GoalOpsReportSummary": {
+        "type": "object",
+        "required": [
+          "planDate",
+          "departmentId",
+          "departmentSummary",
+          "topCompletionEmployees",
+          "topOutputEmployees",
+          "autoZeroEmployees"
+        ],
+        "properties": {
+          "planDate": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "integer"
+          },
+          "departmentSummary": {
+            "$ref": "#/components/schemas/GoalOpsDepartmentSummary"
+          },
+          "topCompletionEmployees": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GoalOpsOverviewRow"
+            }
+          },
+          "topOutputEmployees": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GoalOpsOverviewRow"
+            }
+          },
+          "autoZeroEmployees": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GoalOpsReportAutoZeroEmployee"
+            }
+          }
+        }
+      },
+      "GoalOpsReportInfo": {
+        "type": "object",
+        "required": [
+          "departmentId",
+          "reportDate",
+          "status",
+          "summary"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "departmentId": {
+            "type": "integer"
+          },
+          "reportDate": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GoalOpsReportStatus"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/GoalOpsReportSummary",
+            "nullable": true
+          },
+          "generatedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "sentAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "pushMode": {
+            "type": "string"
+          },
+          "pushTarget": {
+            "type": "string",
+            "nullable": true
+          },
+          "generatedBy": {
+            "type": "integer",
+            "nullable": true
+          },
+          "operatedBy": {
+            "type": "integer",
+            "nullable": true
+          },
+          "operationRemark": {
+            "type": "string",
+            "nullable": true
+          },
+          "createTime": {
+            "type": "string"
+          },
+          "updateTime": {
+            "type": "string"
+          }
+        }
+      },
+      "GoalOpsDailyResultItem": {
+        "type": "object",
+        "required": [
+          "planId",
+          "actualValue"
+        ],
+        "properties": {
+          "planId": {
+            "type": "integer"
+          },
+          "actualValue": {
+            "type": "number"
+          }
+        }
+      },
+      "GoalOpsDailySubmitRequest": {
+        "type": "object",
+        "required": [
+          "planDate",
+          "items"
+        ],
+        "properties": {
+          "planDate": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GoalOpsDailyResultItem"
+            }
+          }
+        }
+      },
+      "GoalOpsDailyFinalizeRequest": {
+        "type": "object",
+        "required": [
+          "planDate"
+        ],
+        "properties": {
+          "planDate": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "integer"
+          }
+        }
+      },
+      "GoalOpsDailyFinalizeResult": {
+        "type": "object",
+        "required": [
+          "departmentId",
+          "planDate",
+          "autoZeroCount"
+        ],
+        "properties": {
+          "departmentId": {
+            "type": "integer"
+          },
+          "planDate": {
+            "type": "string"
+          },
+          "autoZeroCount": {
+            "type": "integer"
+          }
+        }
+      },
+      "GoalOpsOverviewQuery": {
+        "type": "object",
+        "required": [
+          "planDate"
+        ],
+        "properties": {
+          "planDate": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "integer"
+          },
+          "employeeId": {
+            "type": "integer"
+          }
+        }
+      },
+      "GoalOpsReportQuery": {
+        "type": "object",
+        "required": [
+          "reportDate"
+        ],
+        "properties": {
+          "reportDate": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "integer"
+          }
+        }
+      },
+      "GoalOpsReportGenerateRequest": {
+        "type": "object",
+        "required": [
+          "planDate"
+        ],
+        "properties": {
+          "planDate": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "integer"
+          }
+        }
+      },
+      "GoalOpsReportStatusUpdateRequest": {
+        "type": "object",
+        "required": [
+          "reportDate",
+          "status"
+        ],
+        "properties": {
+          "reportDate": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GoalOpsReportStatus"
+          },
+          "remark": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponse_GoalRecord": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/GoalRecord"
+          }
+        }
+      },
+      "ApiResponse_GoalPageResult": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/GoalPageResult"
+          }
+        }
+      },
+      "ApiResponse_GoalExportRows": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/GoalExportRows"
+          }
+        }
+      },
+      "ApiResponse_GoalOpsDepartmentConfig": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/GoalOpsDepartmentConfig"
+          }
+        }
+      },
+      "ApiResponse_GoalOpsAccessProfile": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/GoalOpsAccessProfile"
+          }
+        }
+      },
+      "ApiResponse_GoalOpsPlanRecord": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/GoalOpsPlanRecord"
+          }
+        }
+      },
+      "ApiResponse_GoalOpsPlanPageResult": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/GoalOpsPlanPageResult"
+          }
+        }
+      },
+      "ApiResponse_GoalOpsOverview": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/GoalOpsOverview"
+          }
+        }
+      },
+      "ApiResponse_GoalOpsDailyFinalizeResult": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/GoalOpsDailyFinalizeResult"
+          }
+        }
+      },
+      "ApiResponse_GoalOpsReportInfo": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/GoalOpsReportInfo"
+          }
+        }
+      }
+    }
+  }
+}

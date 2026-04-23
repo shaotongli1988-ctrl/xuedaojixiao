@@ -4,9 +4,9 @@
   "configPath": "/Users/shaotongli/Documents/xuedao/performance-management-system/test/gui/scenarios/theme22-office-collab.json",
   "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/theme22-office-collab-gui",
   "uiBaseUrl": "http://127.0.0.1:9007",
-  "apiBaseUrl": "http://127.0.0.1:8129",
+  "apiBaseUrl": "http://127.0.0.1:8006",
   "chromeDebugUrl": "http://127.0.0.1:9222",
-  "generatedAt": "2026-04-19T11:05:46.355Z",
+  "generatedAt": "2026-04-20T02:04:38.764Z",
   "scenarios": [
     {
       "name": "hr-annual-inspection-mainline",

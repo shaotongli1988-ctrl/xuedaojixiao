@@ -1,0 +1,701 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Theme 1 Assessment Contract Snapshot",
+    "version": "0.1.0",
+    "description": "Frozen contract evidence for module 1 assessment APIs."
+  },
+  "tags": [
+    {
+      "name": "performance.assessment",
+      "description": "Module 1 assessment APIs."
+    }
+  ],
+  "paths": {
+    "/admin/performance/assessment/add": {
+      "post": {
+        "tags": [
+          "performance.assessment"
+        ],
+        "summary": "新增评估单",
+        "operationId": "performanceAssessmentAdd",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssessmentSaveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "新增评估单结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_AssessmentRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/assessment/approve": {
+      "post": {
+        "tags": [
+          "performance.assessment"
+        ],
+        "summary": "审批通过",
+        "operationId": "performanceAssessmentApprove",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssessmentReviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "审批通过结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_AssessmentRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/assessment/delete": {
+      "post": {
+        "tags": [
+          "performance.assessment"
+        ],
+        "summary": "删除评估单",
+        "operationId": "performanceAssessmentDelete",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteIdsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "删除评估单结果"
+          }
+        }
+      }
+    },
+    "/admin/performance/assessment/export": {
+      "post": {
+        "tags": [
+          "performance.assessment"
+        ],
+        "summary": "导出评估单",
+        "operationId": "performanceAssessmentExport",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssessmentExportQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "导出评估单结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_AssessmentExportRows"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/assessment/info": {
+      "get": {
+        "tags": [
+          "performance.assessment"
+        ],
+        "summary": "评估单详情",
+        "operationId": "performanceAssessmentInfo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "评估单详情结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_AssessmentRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/assessment/page": {
+      "post": {
+        "tags": [
+          "performance.assessment"
+        ],
+        "summary": "评估单分页",
+        "operationId": "performanceAssessmentPage",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssessmentPageQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "评估单分页结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_AssessmentPageResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/assessment/reject": {
+      "post": {
+        "tags": [
+          "performance.assessment"
+        ],
+        "summary": "审批驳回",
+        "operationId": "performanceAssessmentReject",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssessmentReviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "审批驳回结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_AssessmentRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/assessment/submit": {
+      "post": {
+        "tags": [
+          "performance.assessment"
+        ],
+        "summary": "提交评估单",
+        "operationId": "performanceAssessmentSubmit",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssessmentActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "提交评估单结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_AssessmentRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/assessment/update": {
+      "post": {
+        "tags": [
+          "performance.assessment"
+        ],
+        "summary": "修改评估单",
+        "operationId": "performanceAssessmentUpdate",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssessmentSaveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "修改评估单结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_AssessmentRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PagePagination": {
+        "type": "object",
+        "required": [
+          "page",
+          "size",
+          "total"
+        ],
+        "properties": {
+          "page": {
+            "type": "integer",
+            "description": "页码"
+          },
+          "size": {
+            "type": "integer",
+            "description": "页大小"
+          },
+          "total": {
+            "type": "integer",
+            "description": "总数"
+          }
+        }
+      },
+      "DeleteIdsRequest": {
+        "type": "object",
+        "required": [
+          "ids"
+        ],
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "ApiResponse_AssessmentPageResult": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AssessmentPageResult"
+          }
+        }
+      },
+      "AssessmentPageResult": {
+        "type": "object",
+        "required": [
+          "list",
+          "pagination"
+        ],
+        "properties": {
+          "list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssessmentRecord"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PagePagination"
+          }
+        }
+      },
+      "AssessmentRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "code": {
+            "type": "string"
+          },
+          "employeeId": {
+            "type": "integer"
+          },
+          "employeeName": {
+            "type": "string"
+          },
+          "assessorId": {
+            "type": "integer"
+          },
+          "assessorName": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "integer"
+          },
+          "departmentName": {
+            "type": "string"
+          },
+          "periodType": {
+            "type": "string"
+          },
+          "periodValue": {
+            "type": "string"
+          },
+          "targetCompletion": {
+            "type": "number"
+          },
+          "totalScore": {
+            "type": "number"
+          },
+          "grade": {
+            "type": "string"
+          },
+          "selfEvaluation": {
+            "type": "string"
+          },
+          "managerFeedback": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AssessmentStatus"
+          },
+          "submitTime": {
+            "type": "string"
+          },
+          "approveTime": {
+            "type": "string"
+          },
+          "createTime": {
+            "type": "string"
+          },
+          "updateTime": {
+            "type": "string"
+          },
+          "scoreItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssessmentScoreItem"
+            }
+          }
+        }
+      },
+      "AssessmentStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "submitted",
+          "approved",
+          "rejected"
+        ]
+      },
+      "AssessmentScoreItem": {
+        "type": "object",
+        "required": [
+          "indicatorName",
+          "score",
+          "weight"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "indicatorId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "indicatorName": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number"
+          },
+          "weight": {
+            "type": "number"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "weightedScore": {
+            "type": "number"
+          }
+        }
+      },
+      "ApiResponse_AssessmentRecord": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AssessmentRecord"
+          }
+        }
+      },
+      "ApiResponse_AssessmentExportRows": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AssessmentExportRows"
+          }
+        }
+      },
+      "AssessmentExportRows": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/AssessmentExportRow"
+        }
+      },
+      "AssessmentExportRow": {
+        "type": "object",
+        "required": [
+          "code",
+          "employeeName",
+          "departmentName",
+          "periodType",
+          "periodValue",
+          "assessorName",
+          "status",
+          "targetCompletion",
+          "totalScore",
+          "grade"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "employeeName": {
+            "type": "string"
+          },
+          "departmentName": {
+            "type": "string"
+          },
+          "periodType": {
+            "type": "string"
+          },
+          "periodValue": {
+            "type": "string"
+          },
+          "assessorName": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AssessmentStatus"
+          },
+          "targetCompletion": {
+            "type": "number"
+          },
+          "totalScore": {
+            "type": "number"
+          },
+          "grade": {
+            "type": "string"
+          },
+          "submitTime": {
+            "type": "string"
+          },
+          "approveTime": {
+            "type": "string"
+          }
+        }
+      },
+      "AssessmentPageMode": {
+        "type": "string",
+        "enum": [
+          "initiated",
+          "my",
+          "pending"
+        ]
+      },
+      "AssessmentPageQuery": {
+        "type": "object",
+        "required": [
+          "page",
+          "size"
+        ],
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "employeeId": {
+            "type": "integer"
+          },
+          "assessorId": {
+            "type": "integer"
+          },
+          "periodValue": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AssessmentStatus"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/AssessmentPageMode"
+          }
+        }
+      },
+      "AssessmentSaveRequest": {
+        "type": "object",
+        "required": [
+          "employeeId",
+          "assessorId",
+          "periodType",
+          "periodValue",
+          "targetCompletion",
+          "selfEvaluation",
+          "scoreItems"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "code": {
+            "type": "string"
+          },
+          "employeeId": {
+            "type": "integer"
+          },
+          "assessorId": {
+            "type": "integer"
+          },
+          "departmentId": {
+            "type": "integer"
+          },
+          "periodType": {
+            "type": "string"
+          },
+          "periodValue": {
+            "type": "string"
+          },
+          "targetCompletion": {
+            "type": "number"
+          },
+          "selfEvaluation": {
+            "type": "string"
+          },
+          "scoreItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssessmentScoreItem"
+            }
+          }
+        }
+      },
+      "AssessmentActionRequest": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          }
+        }
+      },
+      "AssessmentReviewRequest": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "comment": {
+            "type": "string"
+          }
+        }
+      },
+      "AssessmentExportQuery": {
+        "type": "object",
+        "properties": {
+          "employeeId": {
+            "type": "integer"
+          },
+          "assessorId": {
+            "type": "integer"
+          },
+          "periodValue": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AssessmentStatus"
+          }
+        }
+      }
+    }
+  }
+}

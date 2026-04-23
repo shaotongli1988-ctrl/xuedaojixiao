@@ -1,0 +1,212 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Theme 4 Indicator Library",
+    "version": "2026-04-21"
+  },
+  "paths": {
+    "/admin/performance/indicator/page": {
+      "post": {
+        "summary": "指标分页"
+      }
+    },
+    "/admin/performance/indicator/info": {
+      "get": {
+        "summary": "指标详情"
+      }
+    },
+    "/admin/performance/indicator/add": {
+      "post": {
+        "summary": "新增指标"
+      }
+    },
+    "/admin/performance/indicator/update": {
+      "post": {
+        "summary": "修改指标"
+      }
+    },
+    "/admin/performance/indicator/delete": {
+      "post": {
+        "summary": "删除指标"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PagePagination": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "page",
+          "size",
+          "total"
+        ]
+      },
+      "IndicatorCategory": {
+        "type": "string",
+        "enum": [
+          "assessment",
+          "goal",
+          "feedback"
+        ]
+      },
+      "IndicatorApplyScope": {
+        "type": "string",
+        "enum": [
+          "all",
+          "department",
+          "employee"
+        ]
+      },
+      "IndicatorStatus": {
+        "type": "integer",
+        "enum": [
+          0,
+          1
+        ]
+      },
+      "IndicatorPageQuery": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "keyword": {
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/IndicatorCategory"
+          },
+          "status": {
+            "$ref": "#/components/schemas/IndicatorStatus"
+          }
+        },
+        "required": [
+          "page",
+          "size"
+        ]
+      },
+      "IndicatorRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/IndicatorCategory"
+          },
+          "weight": {
+            "type": "number"
+          },
+          "scoreScale": {
+            "type": "integer"
+          },
+          "applyScope": {
+            "$ref": "#/components/schemas/IndicatorApplyScope"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/IndicatorStatus"
+          },
+          "createTime": {
+            "type": "string"
+          },
+          "updateTime": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "code",
+          "category",
+          "weight",
+          "scoreScale",
+          "applyScope",
+          "status"
+        ]
+      },
+      "IndicatorSaveRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/IndicatorCategory"
+          },
+          "weight": {
+            "type": "number"
+          },
+          "scoreScale": {
+            "type": "integer"
+          },
+          "applyScope": {
+            "$ref": "#/components/schemas/IndicatorApplyScope"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/IndicatorStatus"
+          }
+        },
+        "required": [
+          "name",
+          "code",
+          "category",
+          "weight",
+          "scoreScale",
+          "applyScope",
+          "status"
+        ]
+      },
+      "IndicatorPageResult": {
+        "type": "object",
+        "properties": {
+          "list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IndicatorRecord"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PagePagination"
+          }
+        },
+        "required": [
+          "list",
+          "pagination"
+        ]
+      }
+    }
+  }
+}

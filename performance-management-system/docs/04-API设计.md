@@ -2,7 +2,17 @@
 
 ## 文档职责
 
-这份文档是“接口契约”的唯一事实源。
+这份文档是“接口说明与迁移索引”事实源。
+
+已迁移到仓库级 OpenAPI 的资源，API 唯一事实源以 [contracts/openapi/xuedao.openapi.json](/Users/shaotongli/Documents/xuedao/contracts/openapi/xuedao.openapi.json) 为准；本页保留业务说明、迁移边界和未迁移资源的冻结口径。
+
+当前仓库级 OpenAPI 覆盖范围已经扩展到现有后台模块：
+
+1. `performance` 继续使用 `controller/service/types -> OpenAPI -> generated types` 的强类型收敛链路。
+   - 前端业务实体模型的唯一事实源固定为 `OpenAPI -> generated/*`。
+   - `cool-uni/types/performance-*.ts` 只允许做 generated re-export、`ApiResponse.data` 派生别名和页面级 helper，不允许再手写平级 `Record / PageResult / Status` 领域模型。
+2. `base`、`demo`、`dict`、`plugin`、`recycle`、`space`、`task`、`user` 当前使用 `EPS snapshot -> OpenAPI -> eps.ssot.d.ts` 的仓库级收敛链路。
+3. 非 `performance` 模块前端当前仍保留动态 EPS 消费，不把本页误写成“已经全部切到静态 service wrapper”；但其方法签名、请求类型和响应类型已经通过 `cool-admin-vue/build/cool/eps.ssot.d.ts` 受主源驱动。
 
 它只负责定义：
 
@@ -58,6 +68,81 @@
 | 登录失效 | HTTP `401` |
 | 非法状态流转 | `code != 1000`，`message` 明确说明原因 |
 | 数据不存在 | `code != 1000`，`message` 为“数据不存在” |
+
+### 登录后公共绩效角色上下文接口
+
+补充说明：
+
+1. 绩效域大部分业务接口仍挂在 `/admin/performance/*`。
+2. 但“当前账号的绩效角色访问上下文”和“当前 persona 偏好写入”属于登录后公共身份信息，固定复用基座通用入口 `/admin/base/comm/*`。
+3. 这组接口是 `Web` 与 `cool-uni` 共享的唯一 persona 偏好入口；前端不得各自维护独立的本地事实源。
+
+#### 获取当前绩效访问上下文
+
+- 请求路径：`/admin/base/comm/performanceAccessContext`
+- 请求方式：`GET`
+- 权限要求：已登录
+
+##### 请求参数
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| activePersonaKey | string | 否 | 本次请求临时指定的 persona；只参与本次返回，不落库 |
+
+##### 返回结构
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| availablePersonas | object[] | 当前账号可切换 persona 列表 |
+| defaultPersonaKey | string \| null | 当前权限下推导出的默认 persona |
+| activePersonaKey | string \| null | 本次最终生效的 persona |
+| roleKind | string | 当前 persona 对应的角色类型 |
+| canSwitchPersona | boolean | 当前账号是否存在多个可切换 persona |
+| workbenchPages | string[] | 当前 persona 可见的工作台页面列表 |
+| surfaceAccess | object | 当前 persona 的页面入口访问快照 |
+
+`availablePersonas[]` 对象结构
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| key | string | persona 键 |
+| label | string | persona 展示名 |
+| description | string | persona 说明 |
+
+##### 解析优先级
+
+1. 本次请求显式传入的 `activePersonaKey`
+2. `base_sys_user.activePerformancePersonaKey` 中已持久化的偏好值
+3. 当前账号按现有权限推导出的 `defaultPersonaKey`
+
+##### 行为规则
+
+1. 请求参数和数据库偏好都只能在属于当前 `availablePersonas` 时生效。
+2. 若请求参数或数据库偏好已失效，接口必须自动回退到 `defaultPersonaKey`，不能报错阻断登录后主链。
+3. `availablePersonas / roleKind / workbenchPages / surfaceAccess` 必须继续由后端基于当前权限和部门范围实时推导，不能直接信任数据库值。
+
+#### 保存当前绩效视角
+
+- 请求路径：`/admin/base/comm/performanceAccessContext/activePersona`
+- 请求方式：`POST`
+- 权限要求：已登录
+
+##### 请求参数
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| activePersonaKey | string \| null | 目标 persona；传 `null` 表示清空偏好并回退默认视角 |
+
+##### 返回结构
+
+- 返回刷新后的绩效访问上下文，结构与 `GET /admin/base/comm/performanceAccessContext` 一致。
+
+##### 行为规则
+
+1. 后端保存前必须校验 `activePersonaKey` 是否属于当前账号的 `availablePersonas`。
+2. 若请求的 persona 不属于当前账号，接口返回业务错误，不得写库。
+3. 传 `null` 时只清空偏好字段，不改变当前账号已有权限、角色或数据范围。
+4. `POST /admin/base/comm/personUpdate` 不得作为 `activePerformancePersonaKey` 的写入入口，避免通用资料修改接口成为后门。
 
 ## 接口分组
 
@@ -297,6 +382,7 @@
 - 同一条评估单允许因视角不同同时出现在“已发起考核”和“待我审批”中。
 - 首期仅开放评估导出，且只允许 `HR` 使用，导出字段必须按权限裁剪。
 - 首期评估导出固定为标准摘要列，不导出自评全文、审批意见全文和评分明细。
+- `assessment` 当前已进入仓库级 API 契约迁移范围；前端与移动端类型必须由 `node ./scripts/openapi-contract-sync.mjs --write` 基于 `contracts/openapi/xuedao.openapi.json` 刷新，不再维护第二份手写 API 契约。
 
 ### 3. 目标地图
 
@@ -400,6 +486,7 @@
 3. 当 `currentValue >= targetValue` 时，服务端自动把目标状态置为 `completed`。
 4. `completed` 状态不允许继续执行 `progressUpdate`。
 5. 首期不额外新增“发布目标 / 完成目标 / 取消目标”独立动作接口。
+6. `goal` 当前已进入仓库级 API 契约迁移范围；目标主链与目标运营台子接口的前端 / 移动端类型必须由 `node ./scripts/openapi-contract-sync.mjs --write` 基于 `contracts/openapi/xuedao.openapi.json` 刷新，不再维护第二份手写 API 契约。
 
 #### 目标导出业务规则
 
@@ -430,9 +517,10 @@
 #### 目标运营台权限裁剪补充规则（2026-04-19）
 
 1. `performance:goal:opsManage` 是部门运营台管理专用权限键，只负责公共目标、部门配置、自动补零、日报生成与状态更新。
-2. `performance:goal:add` 不能再被前后端视为“可管理部门运营台”的代替信号。
-3. `opsAccessProfile` 返回 `departmentId / isHr / canManageDepartment / canMaintainPersonalPlan / manageableDepartmentIds`，作为前端视图裁剪的唯一实时依据。
-4. 页面裁剪不能再借用薪酬模块权限推断 HR 身份，必须以 `opsAccessProfile` 和当前目标模块权限结果为准。
+2. `performance:goal:opsGlobalScope` 是目标运营台全局范围专用权限键，只用于标记 `HR` 视角的跨部门访问能力，不能再通过角色标签推断。
+3. `performance:goal:add` 不能再被前后端视为“可管理部门运营台”的代替信号。
+4. `opsAccessProfile` 返回 `departmentId / activePersonaKey / roleKind / scopeKey / isHr / canManageDepartment / canMaintainPersonalPlan / manageableDepartmentIds`，其中 `activePersonaKey + roleKind + scopeKey` 是前端角色展示与范围裁剪的唯一事实源。
+5. 页面裁剪不能再借用薪酬模块权限、角色名或角色标签推断 HR 身份，必须以 `opsAccessProfile` 和当前目标模块权限结果为准。
 
 #### 目标运营台计划对象返回字段
 
@@ -497,6 +585,11 @@
 | 新增指标 | `/admin/performance/indicator/add` | `POST` | `performance:indicator:add` |
 | 修改指标 | `/admin/performance/indicator/update` | `POST` | `performance:indicator:update` |
 | 删除指标 | `/admin/performance/indicator/delete` | `POST` | `performance:indicator:delete` |
+
+补充约束：
+
+1. 指标库当前已并入仓库级 OpenAPI 主源，`page / info / add / update / delete` 的请求与响应字段以 `contracts/openapi/xuedao.openapi.json` 为唯一事实源。
+2. 前端生成类型必须由 `node ./scripts/openapi-contract-sync.mjs --write` 刷新，不再手写第二份 indicator API 类型。
 
 ### 5. 360 环评
 
@@ -759,6 +852,142 @@
 7. 当 `assessmentId` 为空时，`sourceReason` 必填。
 8. `submit` 只允许 `draft` 状态执行。
 9. `review` 只允许 `reviewing` 状态执行。
+
+### 7.1 工作计划（来源承接）
+
+工作计划资源用于承接“内部分配执行”和“外部审批来源快照”，它不替代真实审批流引擎，也不回写钉钉审批主数据。
+
+| 接口名称 | 请求路径 | 请求方式 | 权限要求 |
+| --- | --- | --- | --- |
+| 工作计划分页 | `/admin/performance/workPlan/page` | `POST` | `performance:workPlan:page` |
+| 工作计划详情 | `/admin/performance/workPlan/info` | `GET` | `performance:workPlan:info` |
+| 新增工作计划 | `/admin/performance/workPlan/add` | `POST` | `performance:workPlan:add` |
+| 修改工作计划 | `/admin/performance/workPlan/update` | `POST` | `performance:workPlan:update` |
+| 删除工作计划 | `/admin/performance/workPlan/delete` | `POST` | `performance:workPlan:delete` |
+| 开始执行 | `/admin/performance/workPlan/start` | `POST` | `performance:workPlan:start` |
+| 完成计划 | `/admin/performance/workPlan/complete` | `POST` | `performance:workPlan:complete` |
+| 取消计划 | `/admin/performance/workPlan/cancel` | `POST` | `performance:workPlan:cancel` |
+| 手工同步钉钉来源 | `/admin/performance/workPlan/syncDingtalkApproval` | `POST` | `performance:workPlan:sync` |
+| 钉钉回调承接 | `/admin/performance/workPlan/dingtalk/callback` | `POST` | 忽略登录态，需 `x-workplan-sync-token` |
+
+#### 工作计划分页请求参数
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| page | number | 是 | 页码 |
+| size | number | 是 | 每页数量 |
+| keyword | string | 否 | 支持匹配计划标题 / 单号 / 来源标题 / 外部实例 ID |
+| departmentId | number | 否 | 所属部门筛选 |
+| ownerId | number | 否 | 负责人筛选 |
+| assigneeId | number | 否 | 协作执行人筛选 |
+| status | string | 否 | 执行状态：`draft / planned / inProgress / completed / cancelled` |
+| sourceStatus | string | 否 | 来源审批状态：`none / processing / approved / rejected / withdrawn / terminated` |
+
+#### 工作计划列表 / 详情返回字段
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | number | 主键 |
+| workNo | string | 工作计划单号 |
+| title | string | 计划标题 |
+| description | string | 计划说明 |
+| ownerDepartmentId | number | 所属部门 ID |
+| ownerDepartmentName | string | 所属部门名称 |
+| ownerId | number | 负责人 ID |
+| ownerName | string | 负责人姓名 |
+| assigneeIds | number[] | 协作执行人 ID 列表 |
+| assigneeList | object[] | 协作执行人快照 |
+| assigneeNames | string[] | 协作执行人名称列表 |
+| priority | string | `low / medium / high / urgent` |
+| plannedStartDate | string | 计划开始日期 |
+| plannedEndDate | string | 计划结束日期 |
+| startedAt | string | 实际开始执行时间 |
+| completedAt | string | 实际完成时间 |
+| status | string | 执行状态 |
+| progressSummary | string | 进展摘要 |
+| resultSummary | string | 结果总结 |
+| sourceType | string | `manual / dingtalkApproval` |
+| sourceBizType | string | 来源业务类型，如 `proposal` |
+| sourceBizId | string | 来源业务 ID |
+| sourceTitle | string | 来源标题快照 |
+| sourceStatus | string | 来源审批状态 |
+| externalInstanceId | string | 钉钉审批实例 ID |
+| externalProcessCode | string | 钉钉审批模板编码 |
+| approvalFinishedAt | string | 来源审批完成时间 |
+| sourceSnapshot | object | 来源审批轻量快照 |
+| createTime | string | 创建时间 |
+| updateTime | string | 更新时间 |
+
+#### 新增 / 修改工作计划请求参数
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| id | number | 修改时是 | 工作计划 ID |
+| title | string | 是 | 计划标题 |
+| description | string | 否 | 计划说明 |
+| ownerDepartmentId | number | 是 | 所属部门 ID |
+| ownerId | number | 是 | 负责人 ID |
+| assigneeIds | number[] | 否 | 协作执行人 ID 列表 |
+| priority | string | 否 | 默认 `medium` |
+| plannedStartDate | string | 否 | `YYYY-MM-DD` |
+| plannedEndDate | string | 否 | `YYYY-MM-DD` |
+| progressSummary | string | 否 | 计划期内摘要 |
+| resultSummary | string | 否 | 结果总结，仅编辑场景补充 |
+
+#### 工作计划动作接口请求参数
+
+`start`
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| id | number | 是 | 工作计划 ID |
+| startedAt | string | 否 | `YYYY-MM-DD HH:mm:ss`，不传则服务端取当前时间 |
+| progressSummary | string | 否 | 开始执行时补充进展摘要 |
+
+`complete`
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| id | number | 是 | 工作计划 ID |
+| completedAt | string | 否 | `YYYY-MM-DD HH:mm:ss`，不传则服务端取当前时间 |
+| resultSummary | string | 否 | 完成总结 |
+
+`cancel`
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| id | number | 是 | 工作计划 ID |
+| progressSummary | string | 否 | 取消前的进展说明 |
+
+#### 钉钉来源同步请求参数
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| externalInstanceId | string | 是 | 钉钉审批实例 ID |
+| sourceTitle | string | 否 | 审批标题 |
+| sourceBizType | string | 否 | 来源业务类型，默认 `proposal` |
+| sourceBizId | string | 否 | 来源业务 ID |
+| externalProcessCode | string | 否 | 审批模板编码 |
+| sourceStatus | string | 是 | 审批状态，支持中英文别名，服务端归一化到固定枚举 |
+| approvalFinishedAt | string | 否 | `YYYY-MM-DD HH:mm:ss` |
+| ownerDepartmentId | number | 新建时是 | 目标所属部门 |
+| ownerId | number | 新建时是 | 目标负责人 |
+| assigneeIds | number[] | 否 | 协作执行人 |
+| planTitle | string | 否 | 生成或覆盖计划标题 |
+| planDescription | string | 否 | 生成或覆盖计划说明 |
+| priority | string | 否 | 默认 `medium` |
+| plannedStartDate | string | 否 | `YYYY-MM-DD` |
+| plannedEndDate | string | 否 | `YYYY-MM-DD` |
+| sourceSnapshot | object | 否 | 原始审批快照摘要 |
+
+#### 工作计划首期规则
+
+1. 工作计划执行状态与来源审批状态必须拆开维护，禁止使用单一状态同时表达两条语义。
+2. `sourceType = dingtalkApproval` 且 `sourceStatus != approved` 时，不允许开始执行。
+3. 钉钉回调承接只允许幂等 upsert，不创建真实审批流节点，不发送消息通知。
+4. 同一 `externalInstanceId` 最多对应 1 条工作计划；若无实例 ID 冲突，则允许按 `sourceBizType + sourceBizId` 回补既有记录。
+5. 计划日期必须满足 `plannedStartDate <= plannedEndDate`。
+6. 员工默认仅可查看或执行与本人、本人协作或本人部门范围相关的计划；全量管理由已有高权限角色控制。
 
 ### 8. 薪资
 
@@ -1359,6 +1588,7 @@
    - 职位标准
    - 录用管理
 3. 首批不冻结简历附件、录用决策、面试评价全文导出
+4. 主题 8 当前已接入仓库级 OpenAPI 主源，`contracts/openapi/xuedao.openapi.json` 中的 `Interview*` schema 是唯一事实源；本节继续冻结接口方向、权限和字段边界。
 
 ### 标准接口
 
@@ -1393,6 +1623,9 @@
 | interviewDate | string | 是 | 面试时间 |
 | interviewType | string | 否 | `technical / behavioral / manager / hr` |
 | score | number | 否 | 摘要分数 |
+| resumePoolId | number | 否 | 弱引用来源简历 ID，只保留引用关系，不下沉简历全文 |
+| recruitPlanId | number | 否 | 弱引用来源招聘计划 ID |
+| sourceSnapshot | object | 否 | 来源快照，只允许 ID + 摘要字段 |
 | status | string | 否 | 默认 `scheduled` |
 
 ### 面试详情返回最小字段
@@ -1408,6 +1641,11 @@
 | interviewDate | string | 面试时间 |
 | interviewType | string \| null | 面试类型 |
 | score | number \| null | 分数摘要 |
+| resumePoolId | number \| null | 来源简历 ID |
+| recruitPlanId | number \| null | 来源招聘计划 ID |
+| sourceSnapshot | object \| null | 来源快照，只允许摘要字段 |
+| resumePoolSummary | object \| null | 简历来源摘要，不含 phone / email / resumeText |
+| recruitPlanSummary | object \| null | 招聘计划来源摘要 |
 | status | string | 面试状态 |
 | createTime | string | 创建时间 |
 | updateTime | string | 更新时间 |
@@ -1415,10 +1653,11 @@
 ### 业务规则
 
 1. 删除面试只允许在 `scheduled` 状态执行。
-2. 首批不返回候选人联系方式、附件、简历全文和评语全文。
-3. 首批不开放录用结果接口，也不通过面试资源创建录用单据。
-4. 部门经理的数据范围首批按 `departmentId` 判定。
-5. `completed / cancelled` 为终态，首批不允许再补录或修改业务字段。
+2. 允许从 `resumePool / recruitPlan / talentAsset` 带入弱引用来源快照，但下游只保留 ID 与摘要，不建立全文主数据所有权。
+3. 首批不返回候选人联系方式、附件、简历全文和评语全文；`resumePoolSummary / sourceSnapshot` 禁止携带 `phone / email`。
+4. 首批不开放录用结果接口，也不通过面试资源创建录用单据。
+5. 部门经理的数据范围首批按 `departmentId` 判定。
+6. `completed / cancelled` 为终态，首批不允许再补录或修改业务字段。
 
 ## 二期主题 9：会议管理接口冻结基线（2026-04-18）
 
@@ -1447,6 +1686,11 @@
 | 修改会议 | `/admin/performance/meeting/update` | `POST` | `performance:meeting:update` |
 | 删除会议 | `/admin/performance/meeting/delete` | `POST` | `performance:meeting:delete` |
 | 会议签到 | `/admin/performance/meeting/checkIn` | `POST` | `performance:meeting:checkIn` |
+
+补充约束：
+
+1. 会议管理当前已并入仓库级 OpenAPI 主源，`page / info / add / update / delete / checkIn` 的请求与响应字段以 `contracts/openapi/xuedao.openapi.json` 为唯一事实源。
+2. 前端生成类型必须由 `node ./scripts/openapi-contract-sync.mjs --write` 刷新，不再维护第二份 meeting API 类型定义。
 
 ### 会议分页请求参数
 
@@ -1747,11 +1991,15 @@
 
 ## 二期主题 12：招聘人才资产增强接口冻结基线（2026-04-18）
 
-本节只冻结招聘人才资产增强进入开发前评审前必须遵守的最小接口方向，不代表主题 12 已进入实现开发。
+本节只冻结招聘人才资产增强进入开发前评审前必须遵守的最小接口方向；已迁移 API 的请求/响应结构以 `contracts/openapi/xuedao.openapi.json` 为唯一事实源，本节继续保留业务边界和冻结说明。
 
 ### 当前冻结结论
 
 - 当前唯一结论：`招聘人才资产增强接口方向已冻结，且主题12已完成阶段0冻结`
+- 当前局部 contract evidence 固定在：
+  - `performance-management-system/docs/contracts/current/theme12-openapi.json`
+  - `performance-management-system/docs/contracts/current/theme12-producer-contract-model.ts`
+  - `performance-management-system/docs/contracts/current/theme12-consumer-api-types.ts`
 
 ### 资源边界
 
@@ -1832,6 +2080,7 @@
 ### 当前冻结结论
 
 - 当前唯一结论：`人才发展与认证增强接口方向已冻结，且主题13已完成阶段0冻结`
+- 主题13资源的 API 契约载体已开始迁移到仓库级 OpenAPI；已迁移接口的路径、请求和响应结构以 `contracts/openapi/xuedao.openapi.json` 为准，本节继续定义业务边界与冻结说明。
 
 ### 资源边界
 
@@ -2112,11 +2361,15 @@
 
 ## 二期主题 15：招聘简历池管理接口冻结基线（2026-04-18）
 
-本节只冻结招聘简历池管理进入开发前评审前必须遵守的最小接口方向，不代表主题 15 已进入实现开发。
+本节只冻结招聘简历池管理进入开发前评审前必须遵守的最小接口方向；已迁移 API 的请求/响应结构以 `contracts/openapi/xuedao.openapi.json` 为唯一事实源，本节继续保留业务边界和冻结说明。
 
 ### 当前冻结结论
 
 - 当前唯一结论：`招聘简历池管理接口方向已冻结，且主题15已完成阶段0冻结`
+- 当前局部 contract evidence 固定在：
+  - `performance-management-system/docs/contracts/current/theme15-openapi.json`
+  - `performance-management-system/docs/contracts/current/theme15-producer-contract-model.ts`
+  - `performance-management-system/docs/contracts/current/theme15-consumer-api-types.ts`
 
 ### 资源边界
 
@@ -2274,6 +2527,7 @@
 | endDate | string | 是 | 计划结束日期 |
 | recruiterId | number | 否 | 负责人 ID |
 | requirementSummary | string | 否 | 需求摘要 |
+| jobStandardId | number | 否 | 可选职位标准引用 ID，只允许弱引用 |
 | status | string | 否 | 默认 `draft`，首批不允许手填非 `draft` 值 |
 
 ### 招聘计划扩展动作请求字段
@@ -2312,6 +2566,9 @@
 | recruiterId | number \| null | 负责人 ID |
 | recruiterName | string \| null | 负责人姓名 |
 | requirementSummary | string \| null | 需求摘要 |
+| jobStandardId | number \| null | 可选职位标准引用 ID |
+| jobStandardSummary | object \| null | 只读来源摘要，首批固定为职位标准轻量快照 |
+| jobStandardSnapshot | object \| null | 只读来源快照，字段与 `jobStandardSummary` 对齐 |
 | status | string | 当前状态 |
 | createTime | string | 创建时间 |
 | updateTime | string | 更新时间 |
@@ -2326,6 +2583,8 @@
 6. `void` 只允许 `active -> voided`；`reopen` 只允许 `closed / voided -> active`。
 7. `close` 只负责关闭计划，不自动关闭简历池、面试或录用主链，也不反向改写主题8 / 15 / 18状态。
 8. `recruitPlan/info` 首批不返回简历全文、候选人联系方式、面试评语全文、录用决策全文或预算明细对象。
+9. 列表 / 详情 / 导出允许返回 `jobStandardId + jobStandardSummary + jobStandardSnapshot` 作为弱引用证据，但不得直接内联职位标准全文对象。
+10. `recruitPlan` 当前已进入仓库级 API 契约迁移范围；前端与移动端类型必须由 `node ./scripts/openapi-contract-sync.mjs --write` 基于 `contracts/openapi/xuedao.openapi.json` 刷新，不再维护第二份手写 API 契约。
 
 ## 二期主题 17：职位标准管理接口冻结基线（2026-04-19）
 
@@ -2403,6 +2662,114 @@
 3. `setStatus` 只负责 `draft / active / inactive` 的状态切换，不自动改写招聘计划、面试或录用对象。
 4. `jobStandard/info` 首批不返回简历全文、候选人联系方式、面试评语全文、录用决策全文和薪资区间对象。
 5. 首批不开放 `delete` 动作；若后续要增加删除或引用校验，必须重新打开阶段0冻结。
+6. `jobStandard` 当前已进入仓库级 API 契约迁移范围；前端与移动端类型必须由 `node ./scripts/openapi-contract-sync.mjs --write` 基于 `contracts/openapi/xuedao.openapi.json` 刷新，不再维护第二份手写 API 契约。
+
+## 二期主题 18：录用管理接口冻结基线（2026-04-21）
+
+本节只冻结录用管理进入开发前评审前必须遵守的最小接口方向，不代表主题 18 会扩展到入职、人事、合同或跨主题自动反写。
+
+### 当前冻结结论
+
+- 当前唯一结论：`录用管理接口方向已冻结，且主题18已纳入仓库级 OpenAPI 主源`
+
+### 资源边界
+
+1. 主题 18 统一资源名固定为 `hiring`
+2. 首批只冻结录用主链，不扩到：
+   - 入职管理
+   - 员工主数据
+   - 合同签署或 Offer PDF
+   - 简历附件下载
+   - 面试评语全文
+   - 跨主题自动状态编排
+3. 首批不冻结 `delete`、`export`、`createEmployee`、`syncTalentAssetStatus` 等扩展接口。
+4. 主题 18 当前已接入仓库级 OpenAPI 主源，`contracts/openapi/xuedao.openapi.json` 中的 `Hiring*` schema 是唯一事实源；本节继续冻结接口方向、字段边界和业务规则。
+
+### 标准接口
+
+| 接口名称 | 请求路径 | 请求方式 | 权限要求 |
+| --- | --- | --- | --- |
+| 录用分页 | `/admin/performance/hiring/page` | `POST` | `performance:hiring:page` |
+| 录用详情 | `/admin/performance/hiring/info` | `GET` | `performance:hiring:info` |
+| 新增录用 | `/admin/performance/hiring/add` | `POST` | `performance:hiring:add` |
+| 更新录用状态 | `/admin/performance/hiring/updateStatus` | `POST` | `performance:hiring:updateStatus` |
+| 关闭录用 | `/admin/performance/hiring/close` | `POST` | `performance:hiring:close` |
+
+### 录用分页请求参数
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| page | number | 是 | 页码 |
+| size | number | 是 | 页大小 |
+| keyword | string | 否 | 候选人姓名 / 目标岗位关键字 |
+| targetDepartmentId | number | 否 | 目标部门 ID；经理范围按此字段判定 |
+| status | string | 否 | `offered / accepted / rejected / closed` |
+| sourceType | string | 否 | `manual / resumePool / talentAsset / interview` |
+
+### 录用新增请求字段
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| candidateName | string | 是 | 候选人姓名 |
+| targetDepartmentId | number | 是 | 目标部门 ID |
+| targetPosition | string | 否 | 目标岗位 |
+| sourceType | string | 否 | 来源类型；首批允许手工或弱引用来源 |
+| sourceId | number | 否 | 来源资源 ID |
+| sourceStatusSnapshot | string | 否 | 来源状态快照文本 |
+| sourceSnapshot | object \| string | 否 | 来源摘要 / 快照，只允许 ID + 摘要字段 |
+| interviewId | number | 否 | 弱引用来源面试 ID |
+| resumePoolId | number | 否 | 弱引用来源简历 ID |
+| recruitPlanId | number | 否 | 弱引用来源招聘计划 ID |
+| hiringDecision | string | 否 | 录用决策正文；首批兼容 `decisionContent` 入参 |
+| decisionContent | string | 否 | 兼容字段，最终与 `hiringDecision` 收敛为同一语义 |
+| status | string | 否 | 若传入仅允许 `offered` |
+
+### 录用状态动作请求字段
+
+| 接口 | 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- | --- |
+| `updateStatus` | id | number | 是 | 录用单 ID |
+| `updateStatus` | status | string | 是 | 仅允许 `accepted / rejected` |
+| `close` | id | number | 是 | 录用单 ID |
+| `close` | closeReason | string | 是 | 关闭原因 |
+
+### 录用详情返回最小字段
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | number | 主键 |
+| candidateName | string | 候选人姓名 |
+| targetDepartmentId | number | 目标部门 ID |
+| targetDepartmentName | string \| null | 目标部门名称 |
+| targetPosition | string \| null | 目标岗位 |
+| sourceType | string \| null | 来源类型 |
+| sourceId | number \| null | 来源资源 ID |
+| sourceStatusSnapshot | string \| null | 来源状态快照文本 |
+| sourceSnapshot | object \| string \| null | 来源摘要 / 快照 |
+| interviewId | number \| null | 来源面试 ID |
+| resumePoolId | number \| null | 来源简历 ID |
+| recruitPlanId | number \| null | 来源招聘计划 ID |
+| interviewSummary / interviewSnapshot | object \| null | 面试摘要 / 快照，只允许轻量字段 |
+| resumePoolSummary / resumePoolSnapshot | object \| null | 简历摘要 / 快照，只允许 `id / candidateName / targetDepartmentId / targetDepartmentName / targetPosition / status / recruitPlanId / jobStandardId` |
+| recruitPlanSummary / recruitPlanSnapshot | object \| null | 招聘计划摘要 / 快照 |
+| hiringDecision | string \| null | 录用决策正文 |
+| decisionContent | string \| null | 与 `hiringDecision` 同语义的兼容字段 |
+| status | string | 当前状态 |
+| offeredAt / acceptedAt / rejectedAt / closedAt | string \| null | 状态时间线 |
+| closeReason | string \| null | 关闭原因 |
+| createTime | string | 创建时间 |
+| updateTime | string | 更新时间 |
+
+### 业务规则
+
+1. `add` 首批允许手工创建，不要求必须绑定 `interviewId`。
+2. `add` 成功后统一落为 `offered`，不开放 `draft`。
+3. `updateStatus` 只允许 `offered -> accepted` 或 `offered -> rejected`。
+4. `close` 只允许 `offered -> closed`，且必须记录 `closeReason`。
+5. `accepted / rejected / closed` 都是终态，首批不允许重新打开或回退。
+6. 列表 / 详情允许返回 `interviewId + resumePoolId + recruitPlanId + summary/snapshot`，但不得直接内联简历联系方式、简历全文、附件下载地址或面试评语全文。
+7. `hiring` 不自动改写 `resumePool / talentAsset / interview` 主状态，也不创建员工、人事、合同记录。
+8. `hiring` 当前已进入仓库级 API 契约迁移范围；前端与移动端类型必须由 `node ./scripts/openapi-contract-sync.mjs --write` 基于 `contracts/openapi/xuedao.openapi.json` 刷新，不再维护第二份手写 API 契约。
 
 ## 招聘中心跨模块整合接口协同基线（2026-04-19）
 
@@ -2514,6 +2881,65 @@
 4. 只允许对 `partnered` 的班主任创建班级。
 5. `teacherDashboard/summary` 与 `teacherTodo/page` 只返回当前权限范围内的聚合和待办，不返回跨范围原始明细。
 6. 首批不开放 `import / export / performance / settlement / agent` 等扩展动作。
+
+## 采购&资产 Phase 1：物资管理接口基线（2026-04-19）
+
+本节只冻结物资管理进入开发前评审前必须遵守的最小接口方向，不代表 Phase 1 已扩展到审批流、盘点或报表。
+
+### 当前冻结结论
+
+- 当前唯一结论：`物资管理 Phase 1 只冻结 catalog / stock / inbound / issue 四条主链，不扩审批流、库存调整、盘点或报表导出`
+
+### 资源边界
+
+1. Phase 1 统一资源名固定为：
+   - `materialCatalog`
+   - `materialStock`
+   - `materialInbound`
+   - `materialIssue`
+2. 首批只冻结物资侧基础台账、库存可见性、入库闭环和领用闭环，不扩到：
+   - 借还审批流
+   - 库存盘点
+   - 物资报表
+   - 采购审批中心
+3. `materialCatalog` 作为 `stock / inbound / issue` 的单一来源，不允许绕开目录直接写库存或单据。
+
+### 标准接口
+
+| 接口名称 | 请求路径 | 请求方式 | 权限要求 |
+| --- | --- | --- | --- |
+| 物资台账分页 | `/admin/performance/materialCatalog/page` | `POST` | `performance:materialCatalog:page` |
+| 物资台账详情 | `/admin/performance/materialCatalog/info` | `GET` | `performance:materialCatalog:info` |
+| 新增物资 | `/admin/performance/materialCatalog/add` | `POST` | `performance:materialCatalog:add` |
+| 编辑物资 | `/admin/performance/materialCatalog/update` | `POST` | `performance:materialCatalog:update` |
+| 更新物资状态 | `/admin/performance/materialCatalog/updateStatus` | `POST` | `performance:materialCatalog:updateStatus` |
+| 删除物资 | `/admin/performance/materialCatalog/delete` | `POST` | `performance:materialCatalog:delete` |
+| 物资库存分页 | `/admin/performance/materialStock/page` | `POST` | `performance:materialStock:page` |
+| 物资库存详情 | `/admin/performance/materialStock/info` | `GET` | `performance:materialStock:info` |
+| 物资库存汇总 | `/admin/performance/materialStock/summary` | `GET` | `performance:materialStock:summary` |
+| 物资入库分页 | `/admin/performance/materialInbound/page` | `POST` | `performance:materialInbound:page` |
+| 物资入库详情 | `/admin/performance/materialInbound/info` | `GET` | `performance:materialInbound:info` |
+| 新增物资入库单 | `/admin/performance/materialInbound/add` | `POST` | `performance:materialInbound:add` |
+| 编辑物资入库单 | `/admin/performance/materialInbound/update` | `POST` | `performance:materialInbound:update` |
+| 提交物资入库单 | `/admin/performance/materialInbound/submit` | `POST` | `performance:materialInbound:submit` |
+| 确认物资入库 | `/admin/performance/materialInbound/receive` | `POST` | `performance:materialInbound:receive` |
+| 取消物资入库单 | `/admin/performance/materialInbound/cancel` | `POST` | `performance:materialInbound:cancel` |
+| 物资领用分页 | `/admin/performance/materialIssue/page` | `POST` | `performance:materialIssue:page` |
+| 物资领用详情 | `/admin/performance/materialIssue/info` | `GET` | `performance:materialIssue:info` |
+| 新增物资领用单 | `/admin/performance/materialIssue/add` | `POST` | `performance:materialIssue:add` |
+| 编辑物资领用单 | `/admin/performance/materialIssue/update` | `POST` | `performance:materialIssue:update` |
+| 提交物资领用单 | `/admin/performance/materialIssue/submit` | `POST` | `performance:materialIssue:submit` |
+| 确认物资出库 | `/admin/performance/materialIssue/issue` | `POST` | `performance:materialIssue:issue` |
+| 取消物资领用单 | `/admin/performance/materialIssue/cancel` | `POST` | `performance:materialIssue:cancel` |
+
+### 业务规则
+
+1. `materialCatalog/updateStatus` 只允许更新目录状态，不允许借此修改库存数量。
+2. `materialStock` Phase 1 保持只读，只提供 `page / info / summary`，不开放手工调账接口。
+3. `materialInbound/receive` 必须回写库存主记录，不允许只推进单据状态。
+4. `materialIssue/issue` 必须校验库存充足后才能出库。
+5. 当前 Phase 1 不新增物资借还审批资源，也不提前虚写 `approve / reject / return` 接口。
+
 ## 二期主题 20：资产管理全生命周期接口冻结基线（2026-04-19）
 
 本节只冻结资产管理进入开发前评审前必须遵守的最小接口方向，不代表主题20已进入实现开发。
@@ -2601,6 +3027,27 @@
 | 资产报表分页 | `/admin/performance/assetReport/page` | `POST` | `performance:assetReport:page` |
 | 导出资产报表 | `/admin/performance/assetReport/export` | `GET` | `performance:assetReport:export` |
 
+### Theme20 L1/L2 领用申请审批化实现补记（2026-04-20）
+
+以下内容是 2026-04-20 已在本地 stage2 runtime 中真实落地并完成 smoke 验证的接口补充，不代表 GUI 验收已完成。
+
+| 接口名称 | 请求路径 | 请求方式 | 权限要求 |
+| --- | --- | --- | --- |
+| 领用申请分页 | `/admin/performance/assetAssignmentRequest/page` | `POST` | `performance:assetAssignmentRequest:page` |
+| 领用申请详情 | `/admin/performance/assetAssignmentRequest/info` | `GET` | `performance:assetAssignmentRequest:info` |
+| 新增领用申请草稿 | `/admin/performance/assetAssignmentRequest/add` | `POST` | `performance:assetAssignmentRequest:add` |
+| 编辑领用申请草稿 | `/admin/performance/assetAssignmentRequest/update` | `POST` | `performance:assetAssignmentRequest:update` |
+| 提交领用申请 | `/admin/performance/assetAssignmentRequest/submit` | `POST` | `performance:assetAssignmentRequest:submit` |
+| 撤回领用申请 | `/admin/performance/assetAssignmentRequest/withdraw` | `POST` | `performance:assetAssignmentRequest:withdraw` |
+| 配发资产 | `/admin/performance/assetAssignmentRequest/assign` | `POST` | `performance:assetAssignmentRequest:assign` |
+| 取消领用申请 | `/admin/performance/assetAssignmentRequest/cancel` | `POST` | `performance:assetAssignmentRequest:cancel` |
+
+补充约束：
+
+1. `assetAssignmentRequest` 只承接 `L1 / L2` 申请、审批绑定和待配发，不承接真实资产归还、丢失或台账主数据维护。
+2. `assetAssignment:add` 保留 `L0` 直领入口，但已增加门禁，命中敏感资产、跨部门借用、异常补领、高金额等非 `L0` 场景不得绕过申请层。
+3. 审批动作统一继续走 `/admin/performance/approval-flow/*`，不为 `assetAssignmentRequest` 再复制一套 `approve / reject` 专用接口。
+
 ### 资产首页汇总返回补充（2026-04-19）
 
 `/admin/performance/assetDashboard/summary` 在原有资产总量、金额、状态分布、分类分布基础上，补充以下字段：
@@ -2646,6 +3093,25 @@
 3. 维护完成后必须回写资产状态，不允许停留在孤立维护记录。
 4. `assetDepreciation` 首批只提供分页、汇总和重算，不引入会计凭证生成。
 5. `assetDisposal/execute` 必须把资产主状态推进到 `scrapped`。
+6. 资产领用审批正式按 `L0 / L1 / L2` 分层执行：
+   - `L0`：免审批直领
+   - `L1`：单级审批
+   - `L2`：加强审批
+7. 当前阶段0接口仍沿用既有 `assetAssignment page / add / update / return / markLost / delete`，不新增领用审批专用接口。
+8. 当前阶段0系统主链中，`assetAssignment/add` 仍表示直接办理领用；`L1 / L2` 规则当前作为正式治理口径冻结，不代表系统已新增领用申请层。
+9. 资产领用正式金额阈值冻结为：
+   - `L0`：单价 `< 1000`
+   - `L1`：单价 `1000 - 5000`
+   - `L2`：单价 `>= 5000`
+10. 资产领用正式敏感资产默认名单冻结为：
+   - 笔记本
+   - 手机
+   - 平板
+   - 高配工作站
+   - 涉密终端
+   - 跨部门借用设备
+11. 只要命中敏感资产名单、跨部门借用、遗失后补领、异常补发或报废替换发放，即使金额未达阈值，也不得按 `L0` 直领。
+12. 若后续要把 `L1 / L2` 场景系统审批化，必须新增领用申请层对象并重新打开主题20与统一审批流边界，不能直接把现有 `assetAssignment` 混成审批申请单。
 
 ## 二期主题 21：文件管理与知识库接口冻结基线（2026-04-19）
 
@@ -2887,4 +3353,4 @@
 
 1. `talent-asset` 的代码路径已统一收敛为 `talentAsset`，资源名与权限键保持 `talentAsset`，不再混用连字符文件名。
 2. 前端 service、菜单、运行态 smoke、GUI 脚本与当前合同快照已按同一资源名回写。
-3. 本节是总文档补充说明；具体字段、状态和异常语义仍以各主题冻结卡和 `docs/contracts/current/*` 为实现期唯一事实源。
+3. 进入仓库级 OpenAPI 迁移后的资源，以仓库根 `contracts/openapi/xuedao.openapi.json` 为 API 唯一事实源；主题冻结卡和 `docs/contracts/current/*` 只保留阶段证据与范围说明职责。

@@ -2,9 +2,9 @@
 
 - Name: theme21-office-knowledge-gui
 - Description: Theme21 文件管理与知识库最小 GUI 点测
-- Generated At: 2026-04-19T04:39:20.159Z
-- UI Base URL: http://127.0.0.1:9019
-- API Base URL: http://127.0.0.1:8068
+- Generated At: 2026-04-20T02:05:54.102Z
+- UI Base URL: http://127.0.0.1:9007
+- API Base URL: http://127.0.0.1:8006
 - Chrome Debug URL: http://127.0.0.1:9222
 - PASS: 4
 - FAIL: 0

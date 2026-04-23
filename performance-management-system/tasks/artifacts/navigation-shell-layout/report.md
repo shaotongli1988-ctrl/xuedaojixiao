@@ -2,8 +2,8 @@
 
 - Name: navigation-shell-layout-gui
 - Description: 导航栏与侧栏改造最小 GUI 点测
-- Generated At: 2026-04-19T12:46:08.882Z
-- UI Base URL: http://127.0.0.1:9007
+- Generated At: 2026-04-19T13:38:01.536Z
+- UI Base URL: http://127.0.0.1:9025
 - API Base URL: http://127.0.0.1:19136
 - Chrome Debug URL: http://127.0.0.1:9222
 - PASS: 3

@@ -25,6 +25,7 @@ function parseArgs(argv) {
 		outputDir: "",
 		chromeDebugUrl: defaultChromeDebugUrl,
 		uiBaseUrl: "",
+		loginRoute: "",
 		apiBaseUrl: "",
 		password: defaultPassword,
 		scenarioNames: []
@@ -54,6 +55,12 @@ function parseArgs(argv) {
 
 		if (current === "--ui-base-url" && next) {
 			options.uiBaseUrl = next;
+			index += 1;
+			continue;
+		}
+
+		if (current === "--login-route" && next) {
+			options.loginRoute = next;
 			index += 1;
 			continue;
 		}
@@ -97,6 +104,7 @@ Options:
   --output-dir, -o       Override output directory
   --chrome-debug-url     Override Chrome remote debug base URL (default: ${defaultChromeDebugUrl})
   --ui-base-url          Override UI base URL
+  --login-route          Override login route (default: /login)
   --api-base-url         Override API base URL
   --password             Override login password (default: ${defaultPassword})
   --scenario             Run only one named scenario; repeatable
@@ -429,7 +437,10 @@ async function inputByLabel(session, { label, value, index = 0, rootSelector = "
 }
 
 async function prepareLoggedInSession(runConfig, scenario) {
-	const target = await createTarget(runConfig.chromeDebugUrl, normalizeUrl(runConfig.uiBaseUrl, "/login"));
+	const target = await createTarget(
+		runConfig.chromeDebugUrl,
+		normalizeUrl(runConfig.uiBaseUrl, runConfig.loginRoute)
+	);
 	const session = createSession(target.webSocketDebuggerUrl);
 	await session.open();
 	await session.send("Page.enable");
@@ -438,7 +449,9 @@ async function prepareLoggedInSession(runConfig, scenario) {
 
 	const viewport = runConfig.viewport || { width: 1440, height: 1100, deviceScaleFactor: 1, mobile: false };
 	await session.send("Emulation.setDeviceMetricsOverride", viewport);
-	await session.send("Page.navigate", { url: normalizeUrl(runConfig.uiBaseUrl, "/login") });
+	await session.send("Page.navigate", {
+		url: normalizeUrl(runConfig.uiBaseUrl, runConfig.loginRoute)
+	});
 	await sleep(1200);
 
 	const loginData = await loginWithCaptcha({
@@ -589,6 +602,7 @@ function buildRunConfig(config, options) {
 		name: config.meta?.name || path.basename(options.configPath, ".json"),
 		description: config.meta?.description || "",
 		uiBaseUrl: options.uiBaseUrl || defaults.uiBaseUrl,
+		loginRoute: options.loginRoute || defaults.loginRoute || "/login",
 		apiBaseUrl: options.apiBaseUrl || defaults.apiBaseUrl,
 		chromeDebugUrl: options.chromeDebugUrl || defaults.chromeDebugUrl || defaultChromeDebugUrl,
 		password: options.password || defaults.password || defaultPassword,
@@ -604,7 +618,7 @@ function buildRunConfig(config, options) {
 }
 
 function ensureRequiredConfig(runConfig) {
-	for (const key of ["uiBaseUrl", "apiBaseUrl", "chromeDebugUrl", "password", "cacheDir"]) {
+	for (const key of ["uiBaseUrl", "loginRoute", "apiBaseUrl", "chromeDebugUrl", "password", "cacheDir"]) {
 		if (!runConfig[key]) {
 			throw new Error(`Missing required run config field: ${key}`);
 		}
