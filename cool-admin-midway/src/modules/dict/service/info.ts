@@ -5,6 +5,13 @@ import { BaseService } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Repository, In } from 'typeorm';
 import * as _ from 'lodash';
+import { getBusinessDictGroups } from './business';
+
+interface DictDataGroup {
+  key: string;
+  version: string;
+  items: any[];
+}
 
 /**
  * 字典信息
@@ -25,43 +32,57 @@ export class DictInfoService extends BaseService {
    * @param types
    */
   async data(types: string[]) {
-    const result = {};
+    const requestedTypes = Array.from(
+      new Set((types || []).map(item => String(item || '').trim()).filter(Boolean))
+    );
+    const result: Record<string, DictDataGroup> = {};
+    const businessGroups = getBusinessDictGroups(requestedTypes);
+
     let typeData = await this.dictTypeEntity.find();
-    if (!_.isEmpty(types)) {
-      typeData = await this.dictTypeEntity.findBy({ key: In(types) });
+    if (!_.isEmpty(requestedTypes)) {
+      typeData = await this.dictTypeEntity.findBy({ key: In(requestedTypes) });
     }
-    if (_.isEmpty(typeData)) {
-      return {};
-    }
-    const data = await this.dictInfoEntity
-      .createQueryBuilder('a')
-      .select([
-        'a.id',
-        'a.name',
-        'a.typeId',
-        'a.parentId',
-        'a.orderNum',
-        'a.value',
-      ])
-      .where('a.typeId in(:...typeIds)', {
-        typeIds: typeData.map(e => {
-          return e.id;
-        }),
-      })
-      .orderBy('a.orderNum', 'ASC')
-      .addOrderBy('a.createTime', 'ASC')
-      .getMany();
-    for (const item of typeData) {
-      result[item.key] = _.filter(data, { typeId: item.id }).map(e => {
-        const value = e.value ? Number(e.value) : e.value;
-        return {
-          ...e,
-          // @ts-ignore
-          value: isNaN(value) ? e.value : value,
+
+    if (!_.isEmpty(typeData)) {
+      const data = await this.dictInfoEntity
+        .createQueryBuilder('a')
+        .select([
+          'a.id',
+          'a.name',
+          'a.typeId',
+          'a.parentId',
+          'a.orderNum',
+          'a.value',
+        ])
+        .where('a.typeId in(:...typeIds)', {
+          typeIds: typeData.map(e => {
+            return e.id;
+          }),
+        })
+        .orderBy('a.orderNum', 'ASC')
+        .addOrderBy('a.createTime', 'ASC')
+        .getMany();
+
+      for (const item of typeData) {
+        result[item.key] = {
+          key: item.key,
+          version: 'db',
+          items: _.filter(data, { typeId: item.id }).map(e => {
+            const value = e.value ? Number(e.value) : e.value;
+            return {
+              ...e,
+              // @ts-ignore
+              value: isNaN(value) ? e.value : value,
+            };
+          }),
         };
-      });
+      }
     }
-    return result;
+
+    return {
+      ...result,
+      ...businessGroups,
+    };
   }
 
   /**

@@ -1,7 +1,7 @@
 import { Inject, Provide } from '@midwayjs/core';
 import { BaseService } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { BaseSysRoleEntity } from '../../entity/sys/role';
 import { BaseSysUserRoleEntity } from '../../entity/sys/user_role';
 import * as _ from 'lodash';
@@ -9,6 +9,8 @@ import { BaseSysRoleMenuEntity } from '../../entity/sys/role_menu';
 import { BaseSysRoleDepartmentEntity } from '../../entity/sys/role_department';
 import { BaseSysPermsService } from './perms';
 import { Brackets } from 'typeorm';
+import { CoolCommException } from '@cool-midway/core';
+import { resolveUserAdminRuntimeContext } from '../../../user/domain';
 
 /**
  * 角色
@@ -57,6 +59,47 @@ export class BaseSysRoleService extends BaseService {
     }
   }
 
+  private sanitizeSuperAdminFlag(param: any) {
+    if (param && Object.prototype.hasOwnProperty.call(param, 'isSuperAdmin')) {
+      delete param.isSuperAdmin;
+    }
+    return param;
+  }
+
+  private normalizeRoleIds(ids: any) {
+    const values = Array.isArray(ids) ? ids : String(ids || '').split(',');
+    return values
+      .map(item => Number(item))
+      .filter(item => Number.isInteger(item) && item > 0);
+  }
+
+  private async assertNotSuperAdminRoles(ids: any) {
+    const roleIds = this.normalizeRoleIds(ids);
+    if (!roleIds.length) {
+      return;
+    }
+    const roles = await this.baseSysRoleEntity.findBy({ id: In(roleIds) } as any);
+    if (roles.some(role => role.isSuperAdmin === true)) {
+      throw new CoolCommException('系统超管角色仅允许通过系统基座维护');
+    }
+  }
+
+  async add(param) {
+    await super.add(this.sanitizeSuperAdminFlag(param));
+    return param.id;
+  }
+
+  async update(param) {
+    await this.assertNotSuperAdminRoles(param?.id);
+    await super.update(this.sanitizeSuperAdminFlag(param));
+    return param.id;
+  }
+
+  async delete(ids) {
+    await this.assertNotSuperAdminRoles(ids);
+    return super.delete(ids);
+  }
+
   /**
    * 更新权限
    * @param roleId
@@ -95,7 +138,7 @@ export class BaseSysRoleService extends BaseService {
   async info(id) {
     const info = await this.baseSysRoleEntity.findOneBy({ id });
     if (info) {
-      const isAdminRole = info.label === 'admin';
+      const isAdminRole = info.isSuperAdmin === true;
       const menus = await this.baseSysRoleMenuEntity.findBy(
         isAdminRole ? {} : { roleId: id }
       );
@@ -118,17 +161,18 @@ export class BaseSysRoleService extends BaseService {
   }
 
   async list() {
-    const isAdmin = await this.baseSysPermsService.isAdmin(this.ctx.admin.roleIds);
+    const currentAdmin = resolveUserAdminRuntimeContext(this.ctx.admin);
+    const isAdmin = await this.baseSysPermsService.isAdmin(currentAdmin.roleIds);
     return this.baseSysRoleEntity
       .createQueryBuilder('a')
       .where(
         new Brackets(qb => {
-          qb.where('a.label != :label', { label: 'admin' }); // 超级管理员的角色不展示
+          qb.where('COALESCE(a.isSuperAdmin, 0) != 1'); // 超级管理员的角色不展示
           // 如果不是超管，只能看到自己新建的或者自己有的角色
           if (!isAdmin) {
             qb.andWhere('(a.userId=:userId or a.id in (:...roleId))', {
-              userId: this.ctx.admin.userId,
-              roleId: this.ctx.admin.roleIds,
+              userId: currentAdmin.userId,
+              roleId: currentAdmin.roleIds,
             });
           }
         })

@@ -12,6 +12,20 @@ import {
 } from '@midwayjs/core';
 import { CachingFactory, MidwayCache } from '@midwayjs/cache-manager';
 import { Utils } from '../../../comm/utils';
+import {
+  baseIsLoginOnlyRoute,
+  baseResolveRuntimePermissionCandidates,
+} from '../domain';
+import {
+  buildUserAuthCacheKey,
+  isUserAdminRefreshToken,
+  resolveUserAdminIsAdmin,
+  resolveUserAdminPasswordVersion,
+  resolveUserAdminPermissionMask,
+  resolveUserAdminUserId,
+  verifyUserAdminToken,
+} from '../../user/domain';
+import { hasAnyPermissionKeys } from '../service/sys/permission-ssot';
 
 const resolveBaseModuleConfig = (app?: IMidwayApplication) => {
   return require('../config').default({
@@ -71,9 +85,9 @@ export class BaseAuthorityMiddleware
       // 路由地址为 admin前缀的 需要权限校验
       if (_.startsWith(url, adminUrl)) {
         try {
-          ctx.admin = jwt.verify(token, this.jwtConfig.secret);
+          ctx.admin = verifyUserAdminToken(token, this.jwtConfig.secret);
           ctx.requestContext.registerObject(REQUEST_CTX_KEY, ctx);
-          if (ctx.admin.isRefresh) {
+          if (ctx.admin && isUserAdminRefreshToken(ctx.admin)) {
             ctx.status = 401;
             throw new CoolCommException('登录失效~', ctx.status);
           }
@@ -87,18 +101,26 @@ export class BaseAuthorityMiddleware
           return;
         }
         if (ctx.admin) {
+          const currentAdminUserId = resolveUserAdminUserId(ctx.admin);
+          const currentAdminPasswordVersion =
+            resolveUserAdminPasswordVersion(ctx.admin);
+          const currentAdminIsAdmin = resolveUserAdminIsAdmin(ctx.admin);
+
+          if (currentAdminUserId == null || currentAdminPasswordVersion == null) {
+            throw new CoolCommException('登录失效~', 401);
+          }
           const rToken = await this.midwayCache.get(
-            `admin:token:${ctx.admin.userId}`
+            buildUserAuthCacheKey('accessToken', currentAdminUserId)
           );
           // 判断密码版本是否正确
           const passwordV = await this.midwayCache.get(
-            `admin:passwordVersion:${ctx.admin.userId}`
+            buildUserAuthCacheKey('passwordVersion', currentAdminUserId)
           );
-          if (passwordV != ctx.admin.passwordVersion) {
+          if (passwordV != currentAdminPasswordVersion) {
             throw new CoolCommException('登录失效~', 401);
           }
           // 超管拥有所有权限
-          if (ctx.admin.isAdmin === true && !ctx.admin.isRefresh) {
+          if (currentAdminIsAdmin === true && !isUserAdminRefreshToken(ctx.admin)) {
             if (rToken !== token && this.jwtConfig.sso) {
               throw new CoolCommException('登录失效~', 401);
             } else {
@@ -116,7 +138,7 @@ export class BaseAuthorityMiddleware
             return;
           }
           // 如果传的token是refreshToken则校验失败
-          if (ctx.admin.isRefresh) {
+          if (isUserAdminRefreshToken(ctx.admin)) {
             throw new CoolCommException('登录失效~', 401);
           }
           if (!rToken) {
@@ -125,17 +147,26 @@ export class BaseAuthorityMiddleware
           if (rToken !== token && this.jwtConfig.sso) {
             statusCode = 401;
           } else {
-            let perms: string[] = await this.midwayCache.get(
-              `admin:perms:${ctx.admin.userId}`
+            if (baseIsLoginOnlyRoute(url)) {
+              await next();
+              return;
+            }
+            const perms: string[] = (await this.midwayCache.get(
+              buildUserAuthCacheKey('perms', currentAdminUserId)
+            )) as any;
+            const permissionCandidates = baseResolveRuntimePermissionCandidates(
+              url
+            ).map(item => item.replace(/\//g, ':'));
+            const hasRoutePermission = hasAnyPermissionKeys(
+              {
+                perms: Array.isArray(perms) ? perms : [],
+                permissionMask: resolveUserAdminPermissionMask(ctx.admin),
+                isAdmin: currentAdminIsAdmin === true,
+              },
+              permissionCandidates
             );
-            if (!_.isEmpty(perms)) {
-              perms = perms.map(e => {
-                return e.replace(/:/g, '/');
-              });
-              if (!perms.includes(url.split('?')[0].replace('/admin/', ''))) {
-                statusCode = 403;
-              }
-            } else {
+
+            if (!hasRoutePermission) {
               statusCode = 403;
             }
           }

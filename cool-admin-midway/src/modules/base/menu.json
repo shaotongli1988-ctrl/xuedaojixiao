@@ -952,12 +952,133 @@
         "isShow": true,
         "childMenus": [
             {
+                "name": "工作台",
+                "router": "/performance/workbench",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-workbench",
+                "orderNum": 1,
+                "viewPath": "modules/performance/views/workbench/index.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": []
+            },
+            {
+                "name": "工作计划",
+                "router": "/performance/work-plan",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-calendar",
+                "orderNum": 2,
+                "viewPath": "modules/performance/views/work-plan/index.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": [
+                    {
+                        "name": "查询",
+                        "router": null,
+                        "perms": "performance:workPlan:page,performance:workPlan:info",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 1,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "新增",
+                        "router": null,
+                        "perms": "performance:workPlan:add",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 2,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "编辑",
+                        "router": null,
+                        "perms": "performance:workPlan:update",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 3,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "删除",
+                        "router": null,
+                        "perms": "performance:workPlan:delete",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 4,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "开始执行",
+                        "router": null,
+                        "perms": "performance:workPlan:start",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 5,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "完成执行",
+                        "router": null,
+                        "perms": "performance:workPlan:complete",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 6,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "取消计划",
+                        "router": null,
+                        "perms": "performance:workPlan:cancel",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 7,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "同步钉钉审批",
+                        "router": null,
+                        "perms": "performance:workPlan:sync",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 8,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    }
+                ]
+            },
+            {
                 "name": "绩效驾驶舱",
                 "router": "/data-center/dashboard",
                 "perms": null,
                 "type": 1,
                 "icon": "icon-ppt",
-                "orderNum": 1,
+                "orderNum": 3,
                 "viewPath": "modules/performance/views/dashboard/index.vue",
                 "keepAlive": true,
                 "isShow": true,
@@ -987,18 +1108,6 @@
                         "childMenus": []
                     }
                 ]
-            },
-            {
-                "name": "工作台",
-                "router": "/performance/workbench",
-                "perms": null,
-                "type": 1,
-                "icon": "icon-workbench",
-                "orderNum": 2,
-                "viewPath": "modules/performance/views/workbench/index.vue",
-                "keepAlive": true,
-                "isShow": true,
-                "childMenus": []
             },
             {
                 "name": "我的考核",
@@ -1050,7 +1159,7 @@
                     {
                         "name": "审批流详情",
                         "router": null,
-                        "perms": "performance:approvalFlow:info",
+                        "perms": "performance:approvalFlow:info,performance:approval-flow:info",
                         "type": 2,
                         "icon": null,
                         "orderNum": 4,
@@ -1062,7 +1171,7 @@
                     {
                         "name": "审批流撤回",
                         "router": null,
-                        "perms": "performance:approvalFlow:withdraw",
+                        "perms": "performance:approvalFlow:withdraw,performance:approval-flow:withdraw",
                         "type": 2,
                         "icon": null,
                         "orderNum": 5,
@@ -1074,7 +1183,7 @@
                     {
                         "name": "审批流催办",
                         "router": null,
-                        "perms": "performance:approvalFlow:remind",
+                        "perms": "performance:approvalFlow:remind,performance:approval-flow:remind",
                         "type": 2,
                         "icon": null,
                         "orderNum": 6,
@@ -1208,7 +1317,7 @@
                     {
                         "name": "审批流配置",
                         "router": null,
-                        "perms": "performance:approvalFlow:configInfo,performance:approvalFlow:configSave",
+                        "perms": "performance:approvalFlow:configInfo,performance:approvalFlow:configSave,performance:approval-flow:configInfo,performance:approval-flow:configSave",
                         "type": 2,
                         "icon": null,
                         "orderNum": 4,
@@ -1220,7 +1329,7 @@
                     {
                         "name": "审批流详情",
                         "router": null,
-                        "perms": "performance:approvalFlow:info",
+                        "perms": "performance:approvalFlow:info,performance:approval-flow:info",
                         "type": 2,
                         "icon": null,
                         "orderNum": 5,
@@ -1232,7 +1341,7 @@
                     {
                         "name": "审批流通过",
                         "router": null,
-                        "perms": "performance:approvalFlow:approve",
+                        "perms": "performance:approvalFlow:approve,performance:approval-flow:approve",
                         "type": 2,
                         "icon": null,
                         "orderNum": 6,
@@ -1244,7 +1353,7 @@
                     {
                         "name": "审批流驳回",
                         "router": null,
-                        "perms": "performance:approvalFlow:reject",
+                        "perms": "performance:approvalFlow:reject,performance:approval-flow:reject",
                         "type": 2,
                         "icon": null,
                         "orderNum": 7,
@@ -1256,7 +1365,7 @@
                     {
                         "name": "审批流转办",
                         "router": null,
-                        "perms": "performance:approvalFlow:transfer",
+                        "perms": "performance:approvalFlow:transfer,performance:approval-flow:transfer",
                         "type": 2,
                         "icon": null,
                         "orderNum": 8,
@@ -1268,7 +1377,7 @@
                     {
                         "name": "审批流人工处理",
                         "router": null,
-                        "perms": "performance:approvalFlow:resolve,performance:approvalFlow:fallback,performance:approvalFlow:terminate",
+                        "perms": "performance:approvalFlow:resolve,performance:approvalFlow:fallback,performance:approvalFlow:terminate,performance:approval-flow:resolve,performance:approval-flow:fallback,performance:approval-flow:terminate",
                         "type": 2,
                         "icon": null,
                         "orderNum": 9,
@@ -1497,12 +1606,48 @@
                         "childMenus": []
                     },
                     {
+                        "name": "运营台全局范围",
+                        "router": null,
+                        "perms": "performance:goal:opsGlobalScope",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 7,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "运营台访问",
+                        "router": null,
+                        "perms": "performance:goal:opsAccessProfile,performance:goal:opsPlanPage,performance:goal:opsPlanInfo,performance:goal:opsPlanSave,performance:goal:opsDailySubmit,performance:goal:opsOverview",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 8,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "运营台扩展管理",
+                        "router": null,
+                        "perms": "performance:goal:opsDepartmentConfig,performance:goal:opsDepartmentConfigSave,performance:goal:opsPlanDelete,performance:goal:opsDailyFinalize,performance:goal:opsReportInfo,performance:goal:opsReportGenerate,performance:goal:opsReportStatusUpdate",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 9,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
                         "name": "导出",
                         "router": null,
                         "perms": "performance:goal:export",
                         "type": 2,
                         "icon": null,
-                        "orderNum": 7,
+                        "orderNum": 10,
                         "viewPath": null,
                         "keepAlive": true,
                         "isShow": true,
@@ -2540,6 +2685,18 @@
                         "viewPath": null,
                         "keepAlive": true,
                         "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "全量查看",
+                        "router": null,
+                        "perms": "performance:hiring:all",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 5,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": false,
                         "childMenus": []
                     }
                 ]
@@ -3982,7 +4139,7 @@
                 ]
             },
             {
-                "name": "领用归还",
+                "name": "资产作业",
                 "router": "/performance/asset/assignment",
                 "perms": null,
                 "type": 1,
@@ -4059,6 +4216,176 @@
                         "type": 2,
                         "icon": null,
                         "orderNum": 6,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    }
+                ]
+            },
+            {
+                "name": "领用申请",
+                "router": "/performance/asset/request",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-user",
+                "orderNum": 25.1,
+                "viewPath": "modules/performance/views/asset/request.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": [
+                    {
+                        "name": "查询",
+                        "router": null,
+                        "perms": "performance:assetAssignmentRequest:page",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 1,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "详情",
+                        "router": null,
+                        "perms": "performance:assetAssignmentRequest:info",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 2,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "新增",
+                        "router": null,
+                        "perms": "performance:assetAssignmentRequest:add",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 3,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "编辑",
+                        "router": null,
+                        "perms": "performance:assetAssignmentRequest:update",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 4,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "提交",
+                        "router": null,
+                        "perms": "performance:assetAssignmentRequest:submit",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 5,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "撤回",
+                        "router": null,
+                        "perms": "performance:assetAssignmentRequest:withdraw",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 6,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "配发",
+                        "router": null,
+                        "perms": "performance:assetAssignmentRequest:assign",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 7,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "取消",
+                        "router": null,
+                        "perms": "performance:assetAssignmentRequest:cancel",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 8,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    }
+                ]
+            },
+            {
+                "name": "待配发申请",
+                "router": "/performance/asset/request-pending",
+                "perms": null,
+                "type": 1,
+                "icon": "icon-workbench",
+                "orderNum": 25.2,
+                "viewPath": "modules/performance/views/asset/request-pending.vue",
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": [
+                    {
+                        "name": "查询",
+                        "router": null,
+                        "perms": "performance:assetAssignmentRequest:page",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 1,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "详情",
+                        "router": null,
+                        "perms": "performance:assetAssignmentRequest:info",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 2,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "配发",
+                        "router": null,
+                        "perms": "performance:assetAssignmentRequest:assign",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 3,
+                        "viewPath": null,
+                        "keepAlive": true,
+                        "isShow": true,
+                        "childMenus": []
+                    },
+                    {
+                        "name": "取消",
+                        "router": null,
+                        "perms": "performance:assetAssignmentRequest:cancel",
+                        "type": 2,
+                        "icon": null,
+                        "orderNum": 4,
                         "viewPath": null,
                         "keepAlive": true,
                         "isShow": true,
@@ -4590,6 +4917,311 @@
                 ]
             },
             {
+                "name": "采购&资产",
+                "router": null,
+                "perms": null,
+                "type": 0,
+                "icon": "icon-set",
+                "orderNum": 33,
+                "viewPath": null,
+                "keepAlive": true,
+                "isShow": true,
+                "childMenus": [
+                    {
+                        "name": "物资台账",
+                        "router": "/performance/material/catalog",
+                        "perms": null,
+                        "type": 1,
+                        "icon": "icon-list",
+                        "orderNum": 1,
+                        "viewPath": "modules/performance/views/material/redirect.vue",
+                        "keepAlive": true,
+                        "isShow": false,
+                        "childMenus": [
+                            {
+                                "name": "查询",
+                                "router": null,
+                                "perms": "performance:materialCatalog:page,performance:materialCatalog:info",
+                                "type": 2,
+                                "icon": null,
+                                "orderNum": 1,
+                                "viewPath": null,
+                                "keepAlive": true,
+                                "isShow": true,
+                                "childMenus": []
+                            },
+                            {
+                                "name": "新增",
+                                "router": null,
+                                "perms": "performance:materialCatalog:add",
+                                "type": 2,
+                                "icon": null,
+                                "orderNum": 2,
+                                "viewPath": null,
+                                "keepAlive": true,
+                                "isShow": true,
+                                "childMenus": []
+                            },
+                            {
+                                "name": "编辑",
+                                "router": null,
+                                "perms": "performance:materialCatalog:update",
+                                "type": 2,
+                                "icon": null,
+                                "orderNum": 3,
+                                "viewPath": null,
+                                "keepAlive": true,
+                                "isShow": true,
+                                "childMenus": []
+                            },
+                            {
+                                "name": "状态更新",
+                                "router": null,
+                                "perms": "performance:materialCatalog:updateStatus",
+                                "type": 2,
+                                "icon": null,
+                                "orderNum": 4,
+                                "viewPath": null,
+                                "keepAlive": true,
+                                "isShow": true,
+                                "childMenus": []
+                            },
+                            {
+                                "name": "删除",
+                                "router": null,
+                                "perms": "performance:materialCatalog:delete",
+                                "type": 2,
+                                "icon": null,
+                                "orderNum": 5,
+                                "viewPath": null,
+                                "keepAlive": true,
+                                "isShow": true,
+                                "childMenus": []
+                            }
+                        ]
+                    },
+                    {
+                        "name": "物资库存",
+                        "router": "/performance/material/stock",
+                        "perms": null,
+                        "type": 1,
+                        "icon": "icon-data-board",
+                        "orderNum": 2,
+                        "viewPath": "modules/performance/views/material/redirect.vue",
+                        "keepAlive": true,
+                        "isShow": false,
+                        "childMenus": [
+                            {
+                                "name": "查询",
+                                "router": null,
+                                "perms": "performance:materialStock:page,performance:materialStock:info",
+                                "type": 2,
+                                "icon": null,
+                                "orderNum": 1,
+                                "viewPath": null,
+                                "keepAlive": true,
+                                "isShow": true,
+                                "childMenus": []
+                            },
+                            {
+                                "name": "汇总",
+                                "router": null,
+                                "perms": "performance:materialStock:summary",
+                                "type": 2,
+                                "icon": null,
+                                "orderNum": 2,
+                                "viewPath": null,
+                                "keepAlive": true,
+                                "isShow": true,
+                                "childMenus": []
+                            },
+                            {
+                                "name": "库存流水",
+                                "router": null,
+                                "perms": "performance:materialStockLog:page",
+                                "type": 2,
+                                "icon": null,
+                                "orderNum": 3,
+                                "viewPath": null,
+                                "keepAlive": true,
+                                "isShow": false,
+                                "childMenus": []
+                            }
+                        ]
+                    },
+                    {
+                        "name": "物资入库",
+                        "router": "/performance/material/inbound",
+                        "perms": null,
+                        "type": 1,
+                        "icon": "icon-order",
+                        "orderNum": 3,
+                        "viewPath": "modules/performance/views/material/redirect.vue",
+                        "keepAlive": true,
+                        "isShow": false,
+                        "childMenus": [
+                            {
+                                "name": "查询",
+                                "router": null,
+                                "perms": "performance:materialInbound:page,performance:materialInbound:info",
+                                "type": 2,
+                                "icon": null,
+                                "orderNum": 1,
+                                "viewPath": null,
+                                "keepAlive": true,
+                                "isShow": true,
+                                "childMenus": []
+                            },
+                            {
+                                "name": "新增",
+                                "router": null,
+                                "perms": "performance:materialInbound:add",
+                                "type": 2,
+                                "icon": null,
+                                "orderNum": 2,
+                                "viewPath": null,
+                                "keepAlive": true,
+                                "isShow": true,
+                                "childMenus": []
+                            },
+                            {
+                                "name": "编辑",
+                                "router": null,
+                                "perms": "performance:materialInbound:update",
+                                "type": 2,
+                                "icon": null,
+                                "orderNum": 3,
+                                "viewPath": null,
+                                "keepAlive": true,
+                                "isShow": true,
+                                "childMenus": []
+                            },
+                            {
+                                "name": "提交",
+                                "router": null,
+                                "perms": "performance:materialInbound:submit",
+                                "type": 2,
+                                "icon": null,
+                                "orderNum": 4,
+                                "viewPath": null,
+                                "keepAlive": true,
+                                "isShow": true,
+                                "childMenus": []
+                            },
+                            {
+                                "name": "确认入库",
+                                "router": null,
+                                "perms": "performance:materialInbound:receive",
+                                "type": 2,
+                                "icon": null,
+                                "orderNum": 5,
+                                "viewPath": null,
+                                "keepAlive": true,
+                                "isShow": true,
+                                "childMenus": []
+                            },
+                            {
+                                "name": "取消",
+                                "router": null,
+                                "perms": "performance:materialInbound:cancel",
+                                "type": 2,
+                                "icon": null,
+                                "orderNum": 6,
+                                "viewPath": null,
+                                "keepAlive": true,
+                                "isShow": true,
+                                "childMenus": []
+                            }
+                        ]
+                    },
+                    {
+                        "name": "物资领用",
+                        "router": "/performance/material/issue",
+                        "perms": null,
+                        "type": 1,
+                        "icon": "icon-user",
+                        "orderNum": 4,
+                        "viewPath": "modules/performance/views/material/redirect.vue",
+                        "keepAlive": true,
+                        "isShow": false,
+                        "childMenus": [
+                            {
+                                "name": "查询",
+                                "router": null,
+                                "perms": "performance:materialIssue:page,performance:materialIssue:info",
+                                "type": 2,
+                                "icon": null,
+                                "orderNum": 1,
+                                "viewPath": null,
+                                "keepAlive": true,
+                                "isShow": true,
+                                "childMenus": []
+                            },
+                            {
+                                "name": "新增",
+                                "router": null,
+                                "perms": "performance:materialIssue:add",
+                                "type": 2,
+                                "icon": null,
+                                "orderNum": 2,
+                                "viewPath": null,
+                                "keepAlive": true,
+                                "isShow": true,
+                                "childMenus": []
+                            },
+                            {
+                                "name": "编辑",
+                                "router": null,
+                                "perms": "performance:materialIssue:update",
+                                "type": 2,
+                                "icon": null,
+                                "orderNum": 3,
+                                "viewPath": null,
+                                "keepAlive": true,
+                                "isShow": true,
+                                "childMenus": []
+                            },
+                            {
+                                "name": "提交",
+                                "router": null,
+                                "perms": "performance:materialIssue:submit",
+                                "type": 2,
+                                "icon": null,
+                                "orderNum": 4,
+                                "viewPath": null,
+                                "keepAlive": true,
+                                "isShow": true,
+                                "childMenus": []
+                            },
+                            {
+                                "name": "发放",
+                                "router": null,
+                                "perms": "performance:materialIssue:issue",
+                                "type": 2,
+                                "icon": null,
+                                "orderNum": 5,
+                                "viewPath": null,
+                                "keepAlive": true,
+                                "isShow": true,
+                                "childMenus": []
+                            },
+                            {
+                                "name": "取消",
+                                "router": null,
+                                "perms": "performance:materialIssue:cancel",
+                                "type": 2,
+                                "icon": null,
+                                "orderNum": 6,
+                                "viewPath": null,
+                                "keepAlive": true,
+                                "isShow": true,
+                                "childMenus": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
                 "name": "首页看板",
                 "router": "/performance/teacher-channel/dashboard",
                 "perms": null,
@@ -4628,7 +5260,7 @@
                     {
                         "name": "查询",
                         "router": null,
-                        "perms": "performance:teacherInfo:page,performance:teacherInfo:info,performance:teacherFollow:page",
+                        "perms": "performance:teacherInfo:page,performance:teacherInfo:info,performance:teacherInfo:attributionInfo,performance:teacherInfo:attributionHistory,performance:teacherFollow:page",
                         "type": 2,
                         "icon": null,
                         "orderNum": 1,

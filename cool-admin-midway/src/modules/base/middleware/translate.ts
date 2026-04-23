@@ -105,7 +105,11 @@ export class BaseTranslateMiddleware
       }
       if (url == '/admin/dict/info/data' || url == '/app/dict/info/data') {
         for (const key in data.data) {
-          for (const item of data.data[key]) {
+          const group = Array.isArray(data.data[key])
+            ? { items: data.data[key] }
+            : data.data[key];
+
+          for (const item of group?.items || []) {
             item.name = await this.baseTranslateService.translate(
               'dict:info',
               language,

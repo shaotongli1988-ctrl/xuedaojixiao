@@ -19,6 +19,7 @@ import {
 } from '@midwayjs/core';
 import { Utils } from '../../../comm/utils';
 import { CoolUrlTagData, TagTypes } from '@cool-midway/core';
+import { resolveUserAdminRuntimeContext } from '../../user/domain';
 
 /**
  * 不操作租户
@@ -26,16 +27,17 @@ import { CoolUrlTagData, TagTypes } from '@cool-midway/core';
  * @param func
  */
 export const noTenant = async (ctx, func) => {
-  let result;
-  const tenantId = ctx?.admin?.tenantId;
-  if (tenantId) {
+  const currentAdmin = resolveUserAdminRuntimeContext(ctx?.admin);
+  const tenantId = currentAdmin.tenantId;
+  if (tenantId && ctx?.admin) {
     ctx.admin.tenantId = null;
-    result = await func();
-    ctx.admin.tenantId = tenantId;
-  } else {
-    result = await func();
+    try {
+      return await func();
+    } finally {
+      ctx.admin.tenantId = tenantId;
+    }
   }
-  return result;
+  return func();
 };
 
 @EventSubscriberModel()
@@ -133,8 +135,12 @@ export class TenantSubscriber implements EntitySubscriberInterface<any> {
     ctx = this.getCtx();
     if (!ctx || !this.checkHandler()) return undefined;
     url = ctx?.url;
+    const currentAdmin = resolveUserAdminRuntimeContext(ctx?.admin);
     // 忽略用户
-    if (this.ignoreUsername.includes(ctx?.admin?.username)) {
+    if (
+      currentAdmin.username &&
+      this.ignoreUsername.includes(currentAdmin.username)
+    ) {
       return undefined;
     }
     // 忽略系统接口
@@ -144,7 +150,7 @@ export class TenantSubscriber implements EntitySubscriberInterface<any> {
       return undefined;
     }
     if (_.startsWith(url, '/admin/')) {
-      tenantId = ctx?.admin?.tenantId;
+      tenantId = currentAdmin.tenantId;
     } else if (_.startsWith(url, '/app/')) {
       tenantId = ctx?.user?.tenantId;
     }

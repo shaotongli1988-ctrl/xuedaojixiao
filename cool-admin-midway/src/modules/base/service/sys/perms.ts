@@ -15,11 +15,16 @@ import { BaseSysMenuService } from './menu';
 import { BaseSysRoleService } from './role';
 import { BaseSysDepartmentService } from './department';
 import { Context } from '@midwayjs/koa';
-import * as jwt from 'jsonwebtoken';
 import { CachingFactory, MidwayCache } from '@midwayjs/cache-manager';
 import { BaseSysRoleEntity } from '../../entity/sys/role';
 import { In, Repository } from 'typeorm';
 import { InjectEntityModel } from '@midwayjs/typeorm';
+import { resolveRuntimePermissionMask } from './permission-ssot';
+import {
+  buildUserAuthCacheKey,
+  resolveUserAdminRuntimeContext,
+  verifyUserAdminToken,
+} from '../../../user/domain';
 
 const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
   return require('../../config').default({
@@ -79,11 +84,7 @@ export class BaseSysPermsService extends BaseService {
     if (!token) {
       return undefined;
     }
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
+    return verifyUserAdminToken(token, resolveBaseJwtConfig(this.app).secret);
   }
   base: any;
 
@@ -92,16 +93,19 @@ export class BaseSysPermsService extends BaseService {
    * @param userId 用户ID
    */
   async refreshPerms(userId) {
-    await this.midwayCache.del(`admin:token:${userId}`);
+    await this.midwayCache.del(buildUserAuthCacheKey('accessToken', userId));
     const roleIds = await this.baseSysRoleService.getByUser(userId);
     const perms = await this.baseSysMenuService.getPerms(roleIds);
-    await this.midwayCache.set(`admin:perms:${userId}`, perms);
+    await this.midwayCache.set(buildUserAuthCacheKey('perms', userId), perms);
     // 更新部门权限
     const departments = await this.baseSysDepartmentService.getByRoleIds(
       roleIds,
       await this.isAdmin(roleIds)
     );
-    await this.midwayCache.set(`admin:department:${userId}`, departments);
+    await this.midwayCache.set(
+      buildUserAuthCacheKey('departmentIds', userId),
+      departments
+    );
   }
 
   /**
@@ -113,15 +117,37 @@ export class BaseSysPermsService extends BaseService {
       return false;
     }
     const roles = await this.baseSysRoleEntity.findBy({ id: In(roleIds) });
-    const roleLabels = roles.map(item => item.label);
-    return roleLabels.includes('admin');
+    return roles.some(item => item.isSuperAdmin === true);
   }
 
-  async currentUserIsAdmin(roleIds: number[] = this.currentAdmin?.roleIds || []) {
-    if (typeof this.currentAdmin?.isAdmin === 'boolean') {
-      return this.currentAdmin.isAdmin;
+  async currentUserIsAdmin(roleIds?: number[]) {
+    const currentAdmin = resolveUserAdminRuntimeContext(this.currentAdmin);
+    const effectiveRoleIds =
+      Array.isArray(roleIds) && roleIds.length > 0
+        ? roleIds
+        : currentAdmin.roleIds;
+    const currentAdminIsAdmin = currentAdmin.isAdmin;
+    if (typeof currentAdminIsAdmin === 'boolean') {
+      return currentAdminIsAdmin;
     }
-    return this.isAdmin(roleIds);
+    return this.isAdmin(effectiveRoleIds);
+  }
+
+  getPermissionMask(perms: string[] = [], isAdmin = false) {
+    return resolveRuntimePermissionMask({ perms, isAdmin });
+  }
+
+  async currentPermissionMask(roleIds?: number[]) {
+    const currentAdmin = resolveUserAdminRuntimeContext(this.currentAdmin);
+    const effectiveRoleIds =
+      Array.isArray(roleIds) && roleIds.length > 0
+        ? roleIds
+        : currentAdmin.roleIds;
+    const perms = await this.baseSysMenuService.getPerms(effectiveRoleIds);
+    return this.getPermissionMask(
+      perms,
+      await this.currentUserIsAdmin(effectiveRoleIds)
+    );
   }
 
   /**
@@ -144,7 +170,7 @@ export class BaseSysPermsService extends BaseService {
    */
   async departmentIds(userId: number) {
     const department: any = await this.midwayCache.get(
-      `admin:department:${userId}`
+      buildUserAuthCacheKey('departmentIds', userId)
     );
     if (department) {
       return department;
