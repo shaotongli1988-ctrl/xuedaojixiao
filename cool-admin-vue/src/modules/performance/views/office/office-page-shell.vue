@@ -1,7 +1,7 @@
 <!-- 文件职责：提供行政协同模块骨架页统一壳层；不负责真实业务查询、表单和状态流转；依赖共享 page-shell 与权限工具；维护重点是路由、标题和 page 权限键必须与菜单事实源一致。 -->
 <template>
 	<div class="office-page-shell">
-		<PageShell
+		<page-shell
 			v-if="canAccess"
 			:title="title"
 			:route="route"

@@ -1,6 +1,6 @@
 <!-- 文件职责：承接物资入库单查询、录入、提交和确认入库；不负责采购审批中心、财务凭证或菜单注册；依赖 material-inbound service、物资目录/部门选项与物资私有页面壳；维护重点是 title/catalogId/departmentId 和 submit/receive/cancel 动作键不能漂移。 -->
 <template>
-	<MaterialCrudPage
+	<material-crud-page
 		class="material-inbound-page"
 		title="物资入库"
 		description="记录入库标题、目录、部门、数量和金额，完成一期最小入库闭环。"

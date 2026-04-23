@@ -1,7 +1,7 @@
 <!-- 文件职责：承接主题20资产报表页面；不负责 BI 看板、外部导出模板或财务总账分析；依赖 asset-report service、共享金额格式化和通用资产 CRUD 页面壳；维护重点是 summary/page/export 三个冻结接口必须全部有入口。 -->
 <template>
 	<div class="asset-report-page">
-		<AssetCrudPage
+		<asset-crud-page
 			title="资产报表"
 			description="查看资产原值、净值、报废状态和月度折旧，支持导出。"
 			notice="报表导出首批只做资产侧导出，不进入财务总账或税务分析。"

@@ -1,6 +1,6 @@
 <!-- 文件职责：承接主题20资产盘点页面；不负责扫码/RFID 设备或仓储任务调度；依赖 asset-inventory service、共享状态映射和通用资产 CRUD 页面壳；维护重点是 start/complete/close 的动作键和页面显隐不能漂移。 -->
 <template>
-	<AssetCrudPage
+	<asset-crud-page
 		class="asset-inventory-page"
 		title="资产盘点"
 		description="维护盘点单、盘点结果摘要和盘点关闭状态，统一查看盘点差异。"

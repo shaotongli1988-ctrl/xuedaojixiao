@@ -8,7 +8,7 @@
 		<div v-if="denied" class="permission-overlay__mask">
 			<div class="permission-overlay__panel">
 				<div class="permission-overlay__icon">
-					<el-icon><Lock /></el-icon>
+					<el-icon><lock /></el-icon>
 				</div>
 				<h3>{{ title }}</h3>
 				<p>{{ description }}</p>

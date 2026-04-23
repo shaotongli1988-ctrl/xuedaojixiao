@@ -1,6 +1,6 @@
 <!-- 文件职责：承接主题20资产维护保养页面；不负责台账主数据、折旧或报废逻辑；依赖 asset-maintenance service、共享状态映射和通用资产 CRUD 页面壳；维护重点是 complete/cancel 入口与冻结状态流保持一致。 -->
 <template>
-	<AssetCrudPage
+	<asset-crud-page
 		class="asset-maintenance-page"
 		title="维护保养"
 		description="管理维护类型、费用、服务商和维护结果，并回看维护完成时间。"

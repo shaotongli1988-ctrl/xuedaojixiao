@@ -1,6 +1,6 @@
 <!-- 文件职责：承接主题20资产调拨页面；不负责物流签收、仓储系统或外部审批流；依赖 asset-transfer service、共享状态映射和通用资产 CRUD 页面壳；维护重点是 submit/complete/cancel 的状态键与冻结文档保持一致。 -->
 <template>
-	<AssetCrudPage
+	<asset-crud-page
 		class="asset-transfer-page"
 		title="资产调拨"
 		description="管理调拨单、调出调入部门和目标位置，跟踪调拨状态。"

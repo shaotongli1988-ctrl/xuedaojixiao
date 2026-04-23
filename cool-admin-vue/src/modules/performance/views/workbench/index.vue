@@ -166,7 +166,7 @@
 				</div>
 
 				<div class="performance-workbench__pending-grid">
-					<WorkbenchTaskCard
+					<workbench-task-card
 						v-for="card in pendingSection.cards"
 						:key="card.id"
 						:card="card"
@@ -194,7 +194,7 @@
 					</div>
 
 					<div class="performance-workbench__compact-list">
-						<WorkbenchTaskCard
+						<workbench-task-card
 							v-for="card in shortcutSection.cards"
 							:key="card.id"
 							:card="card"
@@ -221,7 +221,7 @@
 					</div>
 
 					<div class="performance-workbench__compact-list">
-						<WorkbenchTaskCard
+						<workbench-task-card
 							v-for="card in riskSection.cards"
 							:key="card.id"
 							:card="card"
@@ -263,7 +263,7 @@
 						:sm="12"
 						:xl="section.key === 'zone' ? 12 : 8"
 					>
-						<WorkbenchTaskCard :card="card" />
+						<workbench-task-card :card="card" />
 					</el-col>
 				</el-row>
 			</section>
@@ -292,7 +292,7 @@
 
 			<el-row :gutter="16">
 				<el-col v-for="card in section.cards" :key="card.id" :xs="24" :sm="12" :xl="8">
-					<WorkbenchTaskCard :card="card" />
+					<workbench-task-card :card="card" />
 				</el-col>
 			</el-row>
 		</section>

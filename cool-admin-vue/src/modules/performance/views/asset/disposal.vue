@@ -1,6 +1,6 @@
 <!-- 文件职责：承接主题20资产报废页面；不负责财务核销、残值处置或外部审批流；依赖 asset-disposal service、共享状态映射和通用资产 CRUD 页面壳；维护重点是 submit/approve/execute/cancel 四个动作必须完整显隐。 -->
 <template>
-	<AssetCrudPage
+	<asset-crud-page
 		class="asset-disposal-page"
 		title="报废"
 		description="管理报废单、报废原因、审批和执行状态，查看执行时间。"

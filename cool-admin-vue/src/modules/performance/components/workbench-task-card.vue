@@ -56,7 +56,7 @@
 			>
 				{{ card.actionText || '进入页面' }}
 				<el-icon class="workbench-task-card__action-icon">
-					<ArrowRight />
+					<arrow-right />
 				</el-icon>
 			</el-button>
 		</div>

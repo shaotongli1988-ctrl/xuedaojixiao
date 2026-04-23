@@ -1,6 +1,6 @@
 <!-- 文件职责：承接 Theme20 资产管理员待配发申请页；不负责审批待办流转、员工草稿维护或正式领用结果展示；依赖 asset-assignment-request service、资产 CRUD 页面壳和资产基础选项；维护重点是配发动作只能针对 approvedPendingAssignment 请求单执行。 -->
 <template>
-	<AssetCrudPage
+	<asset-crud-page
 		class="asset-request-pending-page"
 		title="待配发申请"
 		description="资产管理员查看审批通过的领用申请，并为其配发具体资产。"

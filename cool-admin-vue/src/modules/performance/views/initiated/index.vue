@@ -1,5 +1,5 @@
 <template>
-	<AssessmentPage class="initiated-assessment-page" title="已发起考核" mode="initiated" />
+	<assessment-page class="initiated-assessment-page" title="已发起考核" mode="initiated" />
 </template>
 
 <script lang="ts" setup>

@@ -1,6 +1,6 @@
 <!-- 文件职责：承接主题20资产台账的查询、新增、编辑和删除主链；不负责领用、调拨、报废或折旧重算；依赖 asset-info service、共享状态映射和通用资产 CRUD 页面壳；维护重点是字段命名与冻结接口保持一致，尤其是 name/assetStatus/departmentId 口径不能漂移。 -->
 <template>
-	<AssetCrudPage
+	<asset-crud-page
 		class="asset-ledger-base-page"
 		title="资产台账"
 		description="维护资产编号、分类、部门、负责人和采购金额等基础台账。"

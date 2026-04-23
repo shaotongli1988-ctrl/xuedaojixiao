@@ -87,7 +87,7 @@ function handleCrossDrilldown(metricCode: string) {
 
 <template>
 	<div class="dashboard-page">
-		<DashboardFilterBar
+		<dashboard-filter-bar
 			:model-value="filters"
 			:title="pageVm.hero.title"
 			:subtitle="pageVm.hero.description"
@@ -99,7 +99,11 @@ function handleCrossDrilldown(metricCode: string) {
 			@refresh="handleRefresh"
 		/>
 
-		<DashboardEmptyState v-if="emptyKind" :kind="emptyKind" :description="errorMessage || ''" />
+		<dashboard-empty-state
+			v-if="emptyKind"
+			:kind="emptyKind"
+			:description="errorMessage || ''"
+		/>
 
 		<template v-else>
 			<section class="dashboard-page__overview">
@@ -132,7 +136,7 @@ function handleCrossDrilldown(metricCode: string) {
 					class="dashboard-page__stat"
 					:class="`dashboard-page__stat--${item.variant || 'default'}`"
 				>
-					<DashboardStatCard
+					<dashboard-stat-card
 						:label="item.label"
 						:value="item.value"
 						:unit="item.unit"
@@ -163,7 +167,7 @@ function handleCrossDrilldown(metricCode: string) {
 						/>
 
 						<div v-else class="dashboard-page__cross-grid">
-							<DashboardCrossMetric
+							<dashboard-cross-metric
 								v-for="item in pageVm.crossMetrics"
 								:key="item.metricCode"
 								:item="item"
@@ -173,12 +177,12 @@ function handleCrossDrilldown(metricCode: string) {
 						</div>
 					</section>
 
-					<DashboardStageProgress :items="pageVm.stageProgress" />
+					<dashboard-stage-progress :items="pageVm.stageProgress" />
 				</div>
 
 				<div class="dashboard-page__side-column">
-					<DashboardDepartmentChart :items="pageVm.departmentBars" />
-					<DashboardGradeChart :items="pageVm.gradeSlices" />
+					<dashboard-department-chart :items="pageVm.departmentBars" />
+					<dashboard-grade-chart :items="pageVm.gradeSlices" />
 				</div>
 			</section>
 		</template>

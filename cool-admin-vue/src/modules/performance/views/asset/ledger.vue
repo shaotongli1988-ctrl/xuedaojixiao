@@ -97,9 +97,9 @@
 			</el-tabs>
 		</el-card>
 
-		<AssetLedgerBase v-if="activeTab === 'asset'" />
-		<MaterialCatalogPage v-else-if="activeTab === 'materialCatalog'" />
-		<MaterialStockPage v-else />
+		<asset-ledger-base v-if="activeTab === 'asset'" />
+		<material-catalog-page v-else-if="activeTab === 'materialCatalog'" />
+		<material-stock-page v-else />
 	</div>
 </template>
 

@@ -1,6 +1,6 @@
 <!-- 文件职责：承接部门维度物资库存只读视图；不负责库存调整、盘点任务或菜单注册；依赖 material-stock service、部门选项与物资私有页面壳；维护重点是 currentQty/availableQty/issuedQty/isLowStock 口径必须与后端库存聚合一致。 -->
 <template>
-	<MaterialCrudPage
+	<material-crud-page
 		class="material-stock-page"
 		title="物资库存"
 		description="查看目录在各部门下的当前库存、可用数量、预留数量和低库存预警。"

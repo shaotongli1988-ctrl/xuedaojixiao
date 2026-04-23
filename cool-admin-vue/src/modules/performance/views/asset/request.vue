@@ -1,6 +1,6 @@
 <!-- 文件职责：承接 Theme20 L1/L2 员工领用申请页；不负责真实资产台账选择、审批待办中心或正式领用执行记录；依赖 asset-assignment-request service、共享资产 CRUD 页面壳和资产基础选项；维护重点是员工只能维护本人草稿并通过请求单进入审批链。 -->
 <template>
-	<AssetCrudPage
+	<asset-crud-page
 		class="asset-request-page"
 		title="领用申请"
 		description="员工提交 L1/L2 领用申请，审批通过后由资产管理员配发具体资产。"

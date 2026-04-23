@@ -1,6 +1,6 @@
 <!-- 文件职责：承接物资领用单查询、录入、提交和确认领用；不负责归还流程、库存盘点或菜单注册；依赖 material-issue service、物资目录/部门/用户选项与物资私有页面壳；维护重点是 submit/issue/cancel 动作口径不能漂移。 -->
 <template>
-	<MaterialCrudPage
+	<material-crud-page
 		class="material-issue-page"
 		title="物资领用"
 		description="记录领用标题、目录、部门、领用人、用途和领用日期，完成一期最小领用闭环。"

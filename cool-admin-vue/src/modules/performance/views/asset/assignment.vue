@@ -99,9 +99,9 @@
 			</el-tabs>
 		</el-card>
 
-		<AssetAssignmentBase v-if="activeTab === 'asset'" />
-		<MaterialInboundPage v-else-if="activeTab === 'materialInbound'" />
-		<MaterialIssuePage v-else />
+		<asset-assignment-base v-if="activeTab === 'asset'" />
+		<material-inbound-page v-else-if="activeTab === 'materialInbound'" />
+		<material-issue-page v-else />
 	</div>
 </template>
 

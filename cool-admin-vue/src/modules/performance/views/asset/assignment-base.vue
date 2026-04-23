@@ -1,6 +1,6 @@
 <!-- 文件职责：承接主题20资产领用归还列表与主操作；不负责资产台账主数据维护、调拨或报废流程；依赖 asset-assignment service、共享状态映射和通用资产 CRUD 页面壳；维护重点是 return/markLost 必须与冻结状态键完全一致。 -->
 <template>
-	<AssetCrudPage
+	<asset-crud-page
 		class="asset-assignment-base-page"
 		title="固定资产领用归还"
 		description="记录固定资产的领用、归还和丢失处理，统一查看资产编号、领用人和领用部门。"

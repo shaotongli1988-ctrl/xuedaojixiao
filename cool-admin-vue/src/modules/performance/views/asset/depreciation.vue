@@ -1,7 +1,7 @@
 <!-- 文件职责：承接主题20资产折旧列表、汇总和重算入口；不负责财务凭证、总账或回冲分录；依赖 asset-depreciation service 与共享金额格式化；维护重点是页面只消费冻结的 page/summary/recalculate 三个接口。 -->
 <template>
 	<div class="asset-depreciation-page">
-		<AssetCrudPage
+		<asset-crud-page
 			title="折旧"
 			description="查看月度折旧列表和汇总，按月份触发资产侧折旧重算。"
 			notice="折旧仅做资产侧汇总和重算，不生成会计凭证。"

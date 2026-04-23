@@ -1,6 +1,6 @@
 <!-- 文件职责：承接主题20资产采购入库页面；不负责主题11采购审批中心、供应商台账或财务凭证；依赖 asset-procurement service、共享状态映射和通用资产 CRUD 页面壳；维护重点是 submit/receive/cancel 必须与冻结接口动作保持一致。 -->
 <template>
-	<AssetCrudPage
+	<asset-crud-page
 		class="asset-procurement-page"
 		title="采购入库"
 		description="记录资产侧入库单、入库数量和采购金额，并通过确认入库生成台账资产。"

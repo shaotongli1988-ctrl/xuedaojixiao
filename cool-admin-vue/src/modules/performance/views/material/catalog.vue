@@ -1,6 +1,6 @@
 <!-- 文件职责：承接物资目录主数据查询、新增、编辑和删除；不负责库存回写、入出库流程或菜单注册；依赖 material-catalog service 与物资私有页面壳；维护重点是 code/name/unit/status 与后端 Phase 1 契约保持一致。 -->
 <template>
-	<MaterialCrudPage
+	<material-crud-page
 		class="material-catalog-page"
 		title="物资目录"
 		description="维护物资编码、名称、分类、规格、计量单位、安全库存和参考单价。"
