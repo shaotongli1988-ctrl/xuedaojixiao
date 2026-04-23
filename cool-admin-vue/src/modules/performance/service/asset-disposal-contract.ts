@@ -18,19 +18,7 @@ import {
 	expectPerformanceServiceRecord,
 	expectPerformanceServiceString
 } from './service-contract';
-
-const ASSET_STATUS = [
-	'assigned',
-	'lost',
-	'pendingInbound',
-	'available',
-	'maintenance',
-	'inTransfer',
-	'inventorying',
-	'scrapped'
-] as const;
-
-const ASSET_DISPOSAL_STATUS = ['scrapped', 'draft', 'cancelled', 'submitted', 'approved'] as const;
+import { ASSET_DISPOSAL_STATUS, ASSET_STATUS } from '../shared/contract-enums';
 
 function decodeAssetStatus(value: unknown, field: string): AssetStatus {
 	return expectPerformanceServiceEnum(value, field, ASSET_STATUS);

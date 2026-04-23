@@ -5,6 +5,10 @@
 
 export interface AssetInfoCreateAssetRequest {
 	id?: number;
+	departmentId?: number;
+	departmentName?: string;
+	createTime?: string;
+	updateTime?: string;
 	assetNo?: string;
 	name?: string;
 	category?: string;
@@ -14,8 +18,6 @@ export interface AssetInfoCreateAssetRequest {
 	model?: string;
 	serialNo?: string;
 	location?: string;
-	departmentId?: number;
-	departmentName?: string;
 	managerId?: number;
 	managerName?: string;
 	purchaseDate?: string;
@@ -26,8 +28,6 @@ export interface AssetInfoCreateAssetRequest {
 	depreciationMonths?: number;
 	depreciationStartMonth?: string;
 	remark?: string;
-	createTime?: string;
-	updateTime?: string;
 	supplierId?: number;
 	purchaseOrderId?: number;
 }
@@ -39,6 +39,10 @@ export interface ApiResponse_AssetInfoRecord {
 	message: string;
 	data: {
   id?: number;
+  departmentId?: number;
+  departmentName?: string;
+  createTime?: string;
+  updateTime?: string;
   assetNo: string;
   name: string;
   category: string;
@@ -48,8 +52,6 @@ export interface ApiResponse_AssetInfoRecord {
   model?: string;
   serialNo?: string;
   location?: string;
-  departmentId?: number;
-  departmentName?: string;
   managerId?: number;
   managerName?: string;
   purchaseDate?: string;
@@ -60,8 +62,6 @@ export interface ApiResponse_AssetInfoRecord {
   depreciationMonths?: number;
   depreciationStartMonth?: string;
   remark?: string;
-  createTime?: string;
-  updateTime?: string;
 } & {
   supplierId?: number;
   purchaseOrderId?: number;
@@ -108,6 +108,10 @@ export interface ApiResponse_AssetInfoPageResult {
 
 export type AssetInfoRecord = {
   id?: number;
+  departmentId?: number;
+  departmentName?: string;
+  createTime?: string;
+  updateTime?: string;
   assetNo: string;
   name: string;
   category: string;
@@ -117,8 +121,6 @@ export type AssetInfoRecord = {
   model?: string;
   serialNo?: string;
   location?: string;
-  departmentId?: number;
-  departmentName?: string;
   managerId?: number;
   managerName?: string;
   purchaseDate?: string;
@@ -129,8 +131,6 @@ export type AssetInfoRecord = {
   depreciationMonths?: number;
   depreciationStartMonth?: string;
   remark?: string;
-  createTime?: string;
-  updateTime?: string;
 } & {
   supplierId?: number;
   purchaseOrderId?: number;
@@ -138,6 +138,10 @@ export type AssetInfoRecord = {
 
 export type AssetInfoUpdatePayload = {
   id?: number;
+  departmentId?: number;
+  departmentName?: string;
+  createTime?: string;
+  updateTime?: string;
   assetNo?: string;
   name?: string;
   category?: string;
@@ -147,8 +151,6 @@ export type AssetInfoUpdatePayload = {
   model?: string;
   serialNo?: string;
   location?: string;
-  departmentId?: number;
-  departmentName?: string;
   managerId?: number;
   managerName?: string;
   purchaseDate?: string;
@@ -159,8 +161,6 @@ export type AssetInfoUpdatePayload = {
   depreciationMonths?: number;
   depreciationStartMonth?: string;
   remark?: string;
-  createTime?: string;
-  updateTime?: string;
   supplierId?: number;
   purchaseOrderId?: number;
 } & {

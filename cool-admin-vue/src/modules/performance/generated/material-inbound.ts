@@ -7,14 +7,14 @@ export interface MaterialInboundCreateInboundRequest {
 	id?: number;
 	departmentId?: number;
 	departmentName?: string;
+	status?: MaterialInboundStatus;
 	createTime?: string;
 	updateTime?: string;
 	title?: string;
 	quantity?: number;
 	amount?: number;
-	status?: MaterialInboundStatus;
-	materialNo?: string;
 	unit?: string;
+	materialNo?: string;
 	inboundNo?: string;
 	catalogId?: number;
 	materialId?: number;
@@ -34,7 +34,7 @@ export interface MaterialInboundCreateInboundRequest {
 	remark?: string;
 }
 
-export type MaterialInboundStatus = "draft" | "cancelled" | "submitted" | "received";
+export type MaterialInboundStatus = "draft" | "submitted" | "cancelled" | "received";
 
 export interface ApiResponse_MaterialInboundRecord {
 	code: number;
@@ -43,14 +43,14 @@ export interface ApiResponse_MaterialInboundRecord {
   id?: number;
   departmentId?: number;
   departmentName?: string;
+  status?: MaterialInboundStatus;
   createTime?: string;
   updateTime?: string;
   title?: string;
   quantity: number;
   amount?: number;
-  status?: MaterialInboundStatus;
-  materialNo?: string;
   unit?: string;
+  materialNo?: string;
   inboundNo?: string;
   catalogId?: number;
   materialId?: number;
@@ -108,14 +108,14 @@ export type MaterialInboundRecord = {
   id?: number;
   departmentId?: number;
   departmentName?: string;
+  status?: MaterialInboundStatus;
   createTime?: string;
   updateTime?: string;
   title?: string;
   quantity: number;
   amount?: number;
-  status?: MaterialInboundStatus;
-  materialNo?: string;
   unit?: string;
+  materialNo?: string;
   inboundNo?: string;
   catalogId?: number;
   materialId?: number;
@@ -150,14 +150,14 @@ export type MaterialInboundUpdatePayload = {
   id?: number;
   departmentId?: number;
   departmentName?: string;
+  status?: MaterialInboundStatus;
   createTime?: string;
   updateTime?: string;
   title?: string;
   quantity?: number;
   amount?: number;
-  status?: MaterialInboundStatus;
-  materialNo?: string;
   unit?: string;
+  materialNo?: string;
   inboundNo?: string;
   catalogId?: number;
   materialId?: number;

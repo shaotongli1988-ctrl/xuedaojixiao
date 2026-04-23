@@ -11,56 +11,53 @@ export interface ContractSaveRequest {
 	contractNumber?: string;
 	startDate: string;
 	endDate: string;
-	probationPeriod?: number | null;
-	salary?: number | null;
+	probationPeriod?: number;
+	salary?: number;
 	position?: string;
-	departmentId?: number | null;
+	departmentId?: number;
 	status?: ContractStatus;
 }
 
-/**
- * 合同类型
- */
 export type ContractType = "full-time" | "part-time" | "internship" | "other";
 
-/**
- * 合同状态
- */
 export type ContractStatus = "draft" | "active" | "expired" | "terminated";
 
 export interface ApiResponse_ContractRecord {
 	code: number;
 	message: string;
-	data: ContractRecord;
-}
-
-export interface ContractRecord {
-	id?: number;
-	employeeId: number;
-	employeeName?: string;
-	type: ContractType;
-	title?: string;
-	contractNumber?: string;
-	startDate: string;
-	endDate: string;
-	probationPeriod?: number | null;
-	salary?: number | null;
-	position?: string;
-	departmentId?: number | null;
-	departmentName?: string;
-	status?: ContractStatus;
-	createTime?: string;
-	updateTime?: string;
+	data: {
+  id?: number;
+  status?: ContractStatus;
+  createTime?: string;
+  updateTime?: string;
+  type: ContractType;
+  startDate: string;
+  endDate: string;
+} & {
+  employeeId: number;
+  departmentId?: number;
+  departmentName?: string;
+  title?: string;
+  employeeName?: string;
+  contractNumber?: string;
+  probationPeriod?: number;
+  salary?: number;
+  position?: string;
+};
 }
 
 export interface DeleteIdsRequest {
 	ids: Array<number>;
 }
 
-export interface ApiResponse_Void {
+export interface ApiResponse_ContractRemoveContractResult {
 	code: number;
 	message: string;
-	data?: null;
+	data: Record<string, unknown>;
+}
+
+export interface ContractInfoQuery {
+	id: number;
 }
 
 export interface ContractPageQuery {
@@ -75,12 +72,11 @@ export interface ContractPageQuery {
 export interface ApiResponse_ContractPageResult {
 	code: number;
 	message: string;
-	data: ContractPageResult;
-}
-
-export interface ContractPageResult {
-	list: Array<ContractRecord>;
-	pagination: PagePagination;
+	data: {
+  pagination: PagePagination;
+} & {
+  list: Array<ContractRecord>;
+};
 }
 
 export interface PagePagination {
@@ -97,3 +93,27 @@ export interface PagePagination {
 	 */
 	total: number;
 }
+
+export type ContractRecord = {
+  id?: number;
+  status?: ContractStatus;
+  createTime?: string;
+  updateTime?: string;
+  type: ContractType;
+  startDate: string;
+  endDate: string;
+} & {
+  employeeId: number;
+  departmentId?: number;
+  departmentName?: string;
+  title?: string;
+  employeeName?: string;
+  contractNumber?: string;
+  probationPeriod?: number;
+  salary?: number;
+  position?: string;
+};
+
+export type ContractUpdateContractRequest = ContractSaveRequest & {
+  id: number;
+};

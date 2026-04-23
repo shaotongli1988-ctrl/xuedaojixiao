@@ -26,16 +26,16 @@ export type SuggestionType = "pip" | "promotion";
 
 export type SuggestionRecord = {
   id?: number;
-  departmentId?: number;
-  departmentName?: string;
-  createTime?: string;
-  status?: SuggestionStatus;
-  assessmentId?: number;
   employeeId?: number;
   employeeName?: string;
-  periodValue?: string;
-  suggestionType: SuggestionType;
+  departmentId?: number;
+  departmentName?: string;
   periodType?: string;
+  periodValue?: string;
+  status?: SuggestionStatus;
+  createTime?: string;
+  assessmentId?: number;
+  suggestionType: SuggestionType;
   triggerLabel?: string;
   handleTime?: string;
   ruleVersion?: string;
@@ -47,7 +47,7 @@ export type SuggestionRecord = {
   linkedEntityId?: number;
 };
 
-export type SuggestionStatus = "rejected" | "pending" | "accepted" | "ignored" | "revoked";
+export type SuggestionStatus = "rejected" | "pending" | "revoked" | "accepted" | "ignored";
 
 export interface SuggestionIgnoreRequest {
 	id: number;
@@ -58,16 +58,16 @@ export interface ApiResponse_SuggestionRecord {
 	message: string;
 	data: {
   id?: number;
-  departmentId?: number;
-  departmentName?: string;
-  createTime?: string;
-  status?: SuggestionStatus;
-  assessmentId?: number;
   employeeId?: number;
   employeeName?: string;
-  periodValue?: string;
-  suggestionType: SuggestionType;
+  departmentId?: number;
+  departmentName?: string;
   periodType?: string;
+  periodValue?: string;
+  status?: SuggestionStatus;
+  createTime?: string;
+  assessmentId?: number;
+  suggestionType: SuggestionType;
   triggerLabel?: string;
   handleTime?: string;
   ruleVersion?: string;

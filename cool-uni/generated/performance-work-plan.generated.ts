@@ -1,5 +1,5 @@
 /**
- * Generated from contracts/openapi/xuedao.openapi.json for cool-uni performance workPlan.
+ * Generated from contracts/openapi/xuedao.openapi.json for cool-uni performance work-plan.
  * Do not hand edit this file; update the OpenAPI source and rerun scripts/openapi-contract-sync.mjs.
  */
 
@@ -50,10 +50,10 @@ export interface ApiResponse_WorkPlanRecord {
 	message: string;
 	data: {
   id?: number;
+  status?: WorkPlanStatus;
   createTime?: string;
   updateTime?: string;
   title: string;
-  status?: WorkPlanStatus;
   workNo?: string;
   assigneeIds?: Array<number>;
   assigneeList?: Array<WorkPlanAssignee>;
@@ -141,10 +141,10 @@ export interface ApiResponse_WorkPlanPageResult {
 
 export type WorkPlanRecord = {
   id?: number;
+  status?: WorkPlanStatus;
   createTime?: string;
   updateTime?: string;
   title: string;
-  status?: WorkPlanStatus;
   workNo?: string;
   assigneeIds?: Array<number>;
   assigneeList?: Array<WorkPlanAssignee>;

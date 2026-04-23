@@ -1,5 +1,5 @@
 /**
- * Generated from contracts/openapi/xuedao.openapi.json for cool-uni performance teacherChannel.
+ * Generated from contracts/openapi/xuedao.openapi.json for cool-uni performance teacher-channel.
  * Do not hand edit this file; update the OpenAPI source and rerun scripts/openapi-contract-sync.mjs.
  */
 
@@ -49,7 +49,7 @@ export type TeacherTodoRecord = {
   nextFollowTime?: string;
 };
 
-export type TeacherCooperationStatus = "uncontacted" | "contacted" | "negotiating" | "partnered" | "terminated";
+export type TeacherCooperationStatus = "terminated" | "uncontacted" | "contacted" | "negotiating" | "partnered";
 
 export type TeacherTodoBucket = "today" | "overdue";
 

@@ -20,7 +20,7 @@ export interface KnowledgeBaseCreateKnowledgeRequest {
 	updateTime?: string;
 }
 
-export type KnowledgeBaseStatus = "draft" | "published" | "archived";
+export type KnowledgeBaseStatus = "draft" | "archived" | "published";
 
 export interface ApiResponse_KnowledgeBaseRecord {
 	code: number;
@@ -179,10 +179,10 @@ export interface ApiResponse_KnowledgeSearchResult {
 
 export type DocumentCenterRecord = {
   id?: number;
-  category: DocumentCenterCategory;
+  status?: DocumentCenterStatus;
   createTime?: string;
   updateTime?: string;
-  status?: DocumentCenterStatus;
+  category: DocumentCenterCategory;
   fileNo: string;
   fileName: string;
   fileType: DocumentCenterFileType;
@@ -199,9 +199,9 @@ export type DocumentCenterRecord = {
   expireDate?: string;
 };
 
-export type DocumentCenterCategory = "policy" | "process" | "template" | "contract" | "archive" | "other";
+export type DocumentCenterStatus = "draft" | "archived" | "published" | "review";
 
-export type DocumentCenterStatus = "draft" | "published" | "review" | "archived";
+export type DocumentCenterCategory = "other" | "policy" | "process" | "template" | "contract" | "archive";
 
 export type DocumentCenterFileType = "other" | "pdf" | "doc" | "xls" | "ppt" | "img" | "zip";
 

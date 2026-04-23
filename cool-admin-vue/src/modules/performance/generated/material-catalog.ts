@@ -5,13 +5,13 @@
 
 export interface MaterialCatalogCreateMaterialRequest {
 	id?: number;
-	name?: string;
+	code?: string;
+	status?: MaterialCatalogStatus;
 	createTime?: string;
 	updateTime?: string;
-	status?: MaterialCatalogStatus;
-	code?: string;
-	materialNo?: string;
+	name?: string;
 	unit?: string;
+	materialNo?: string;
 	stockDepartmentCount?: number;
 	departmentCount?: number;
 	currentQty?: number;
@@ -32,13 +32,13 @@ export interface ApiResponse_MaterialCatalogRecord {
 	message: string;
 	data: {
   id?: number;
-  name: string;
+  code: string;
+  status?: MaterialCatalogStatus;
   createTime?: string;
   updateTime?: string;
-  status?: MaterialCatalogStatus;
-  code: string;
-  materialNo?: string;
+  name: string;
   unit: string;
+  materialNo?: string;
   stockDepartmentCount?: number;
   departmentCount?: number;
   currentQty?: number;
@@ -91,13 +91,13 @@ export interface ApiResponse_MaterialCatalogPageResult {
 
 export type MaterialCatalogRecord = {
   id?: number;
-  name: string;
+  code: string;
+  status?: MaterialCatalogStatus;
   createTime?: string;
   updateTime?: string;
-  status?: MaterialCatalogStatus;
-  code: string;
-  materialNo?: string;
+  name: string;
   unit: string;
+  materialNo?: string;
   stockDepartmentCount?: number;
   departmentCount?: number;
   currentQty?: number;
@@ -114,13 +114,13 @@ export type MaterialCatalogRecord = {
 
 export type MaterialCatalogUpdatePayload = {
   id?: number;
-  name?: string;
+  code?: string;
+  status?: MaterialCatalogStatus;
   createTime?: string;
   updateTime?: string;
-  status?: MaterialCatalogStatus;
-  code?: string;
-  materialNo?: string;
+  name?: string;
   unit?: string;
+  materialNo?: string;
   stockDepartmentCount?: number;
   departmentCount?: number;
   currentQty?: number;

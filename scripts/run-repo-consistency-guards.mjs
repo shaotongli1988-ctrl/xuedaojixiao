@@ -36,6 +36,10 @@ const guardEntries = [
 		args: ['--write']
 	},
 	{
+		script: 'check-performance-contract-closure.mjs',
+		args: []
+	},
+	{
 		script: 'check-performance-domain-model-ssot.mjs',
 		args: []
 	},

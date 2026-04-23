@@ -141,6 +141,16 @@ const batchRules = [
 		}
 	},
 	{
+		id: 'local-runtime-env',
+		title: '本地运行时环境文件',
+		riskLevel: 'medium',
+		recommendedVerification:
+			'不纳入仓库级 SSOT 交付批次；仅确认变量名仍受 environment-config catalog 治理，且不提交真实本地真值。',
+		matches(filePath) {
+			return filePath === 'cool-admin-vue/.env' || filePath.startsWith('cool-admin-vue/.env.');
+		}
+	},
+	{
 		id: 'governance-ssot',
 		title: '仓库治理与 SSOT',
 		riskLevel: 'high',

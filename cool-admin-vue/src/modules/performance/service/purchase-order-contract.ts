@@ -23,16 +23,7 @@ import {
 	expectPerformanceServiceRecord,
 	expectPerformanceServiceString
 } from './service-contract';
-
-const PURCHASE_ORDER_STATUS = [
-	'draft',
-	'cancelled',
-	'approved',
-	'closed',
-	'received',
-	'inquiring',
-	'pendingApproval'
-] as const;
+import { PURCHASE_ORDER_STATUS } from '../shared/contract-enums';
 
 function decodeOptionalNullableString(value: unknown, field: string) {
 	if (value === undefined) {

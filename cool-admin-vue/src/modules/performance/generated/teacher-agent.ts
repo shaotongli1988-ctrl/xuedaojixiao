@@ -5,8 +5,8 @@
 
 export interface TeacherAgentCreateTeacherAgentRequest {
 	id?: number;
-	name?: string;
 	status?: TeacherAgentStatus;
+	name?: string;
 	agentType?: string;
 	blacklistStatus?: TeacherAgentBlacklistStatus;
 	level?: string;
@@ -28,8 +28,8 @@ export interface ApiResponse_TeacherAgentRecord {
 	message: string;
 	data: {
   id?: number;
-  name: string;
   status?: TeacherAgentStatus;
+  name: string;
   agentType: string;
   blacklistStatus?: TeacherAgentBlacklistStatus;
 } & {
@@ -77,8 +77,8 @@ export interface ApiResponse_TeacherAgentPageResult {
 
 export type TeacherAgentRecord = {
   id?: number;
-  name: string;
   status?: TeacherAgentStatus;
+  name: string;
   agentType: string;
   blacklistStatus?: TeacherAgentBlacklistStatus;
 } & {
@@ -98,8 +98,8 @@ export interface TeacherAgentUnblacklistRequest {
 
 export type TeacherAgentUpdatePayload = {
   id?: number;
-  name?: string;
   status?: TeacherAgentStatus;
+  name?: string;
   agentType?: string;
   blacklistStatus?: TeacherAgentBlacklistStatus;
   level?: string;

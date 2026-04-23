@@ -27,7 +27,7 @@ export interface AssetDisposalCreateDisposalRequest {
 
 export type AssetStatus = "assigned" | "lost" | "pendingInbound" | "available" | "maintenance" | "inTransfer" | "inventorying" | "scrapped";
 
-export type AssetDisposalStatus = "scrapped" | "draft" | "cancelled" | "submitted" | "approved";
+export type AssetDisposalStatus = "draft" | "submitted" | "approved" | "scrapped" | "cancelled";
 
 export interface ApiResponse_AssetDisposalRecord {
 	code: number;

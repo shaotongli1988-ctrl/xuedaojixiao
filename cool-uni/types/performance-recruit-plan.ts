@@ -4,20 +4,42 @@
  */
 export type {
 	RecruitPlanActionRequest,
-	RecruitPlanDeleteResult,
 	RecruitPlanExportQuery,
 	RecruitPlanExportRow,
 	RecruitPlanImportCellValue,
 	RecruitPlanImportRequest,
-	RecruitPlanImportResult,
 	RecruitPlanImportRow,
 	RecruitPlanPageQuery,
-	RecruitPlanPageResult,
 	RecruitPlanRecord,
 	RecruitPlanSaveRequest,
-	RecruitPlanSourceSnapshot,
+	RecruitmentSourceSnapshot,
 	RecruitPlanStatus,
 } from "/@/generated/performance-recruit-plan.generated";
+
+export interface PagePagination {
+	page: number;
+	size: number;
+	total: number;
+}
+
+export interface RecruitPlanDeleteResult {
+	id: number;
+	deleted: boolean;
+}
+
+export interface RecruitPlanImportResult {
+	fileId: number;
+	importedCount: number;
+	skippedCount: number;
+}
+
+export type RecruitPlanPageResult = {
+	list: import("/@/generated/performance-recruit-plan.generated").RecruitPlanRecord[];
+	pagination: PagePagination;
+};
+
+export type RecruitPlanSourceSnapshot =
+	import("/@/generated/performance-recruit-plan.generated").RecruitmentSourceSnapshot;
 
 export type RecruitPlanInfoQuery =
 	import("/@/generated/performance-recruit-plan.generated").RecruitPlanActionRequest;

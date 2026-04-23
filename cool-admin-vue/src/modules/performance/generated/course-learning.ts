@@ -8,8 +8,8 @@ export interface ApiResponse_CourseLearningTaskRecord {
 	message: string;
 	data: {
   id: number;
-  title: string;
   status: CourseLearningTaskStatus;
+  title: string;
   courseId: number;
   taskType: CourseLearningTaskType;
   submissionText?: string;
@@ -54,8 +54,8 @@ export interface ApiResponse_CourseLearningPageResult {
 
 export type CourseLearningTaskRecord = {
   id: number;
-  title: string;
   status: CourseLearningTaskStatus;
+  title: string;
   courseId: number;
   taskType: CourseLearningTaskType;
   submissionText?: string;
@@ -72,4 +72,25 @@ export type CourseLearningTaskRecord = {
 export interface CourseLearningSubmitPayload {
 	id: number;
 	submissionText: string;
+}
+
+export interface ApiResponse_CourseExamSummary {
+	code: number;
+	message: string;
+	data: {
+  courseId: number;
+  resultStatus: CourseExamResultStatus;
+} & {
+  courseTitle?: string;
+  latestScore?: number;
+  passThreshold?: number;
+  summaryText?: string;
+  updatedAt?: string;
+};
+}
+
+export type CourseExamResultStatus = "pending" | "locked" | "passed" | "failed";
+
+export interface CourseExamFetchSummaryQuery {
+	courseId: number;
 }

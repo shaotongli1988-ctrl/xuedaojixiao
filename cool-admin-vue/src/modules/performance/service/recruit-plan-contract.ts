@@ -26,9 +26,10 @@ import {
 	expectPerformanceServiceRecord,
 	expectPerformanceServiceString
 } from './service-contract';
-
-const RECRUIT_PLAN_STATUS = ['draft', 'active', 'voided', 'closed'] as const;
-const JOB_STANDARD_STATUS = ['draft', 'active', 'inactive'] as const;
+import {
+	JOB_STANDARD_STATUS,
+	RECRUIT_PLAN_STATUS
+} from '../shared/contract-enums';
 
 function decodeOptionalNullableString(value: unknown, field: string) {
 	if (value === undefined) {

@@ -200,8 +200,16 @@ export const GLOBAL_SSOT_MODULES: Readonly<
       {
         key: 'api_contract',
         status: 'partial',
-        currentSourcePaths: ['contracts/openapi/xuedao.openapi.json'],
-        notes: 'OpenAPI 仍是接口发布主链，尚未由 performance registry 正向生成。',
+        currentSourcePaths: [
+          'contracts/openapi/xuedao.openapi.json',
+          'src/modules/performance/domain/registry/contract-source.json',
+          'src/modules/performance/domain/registry/contract-source.mjs',
+          'src/modules/performance/domain/registry/contracts.ts',
+        ],
+        targetSourcePath:
+          'src/modules/performance/domain/registry/contract-source.json',
+        notes:
+          'OpenAPI 仍是仓库级发布主链，但 performance 模块覆盖范围、consumer targets 与 closure guard 已收口到 backend registry source；剩余缺口是少量 publish-only 历史模块尚未完全正向生成。',
       },
       {
         key: 'menu_rbac',
@@ -239,14 +247,16 @@ export const GLOBAL_SSOT_MODULES: Readonly<
         key: 'frontend_types',
         status: 'partial',
         currentSourcePaths: [
+          'src/modules/performance/domain/registry/contract-source.json',
           '../cool-admin-vue/src/modules/performance/generated',
           '../cool-uni/types',
         ],
-        notes: '前端 generated types 仍主要从 OpenAPI 契约链消费。',
+        notes:
+          '前端 generated types 仍从 OpenAPI 消费，但 web/uni target coverage 已改为 registry-driven，不再靠扫描现有 service 文件反推。',
       },
     ],
     nextMilestone:
-      '把 OpenAPI、菜单与权限生成链改为只读消费 performance registry，而不是继续双向维护。',
+      '继续把 publish-only 的历史 performance API 模块从 legacy/openapi-only 状态迁移到 registry-driven producer，最终消除剩余 partial 标记。',
     runtimeRegistry: PERFORMANCE_DOMAIN_REGISTRY,
   },
   plugin: {

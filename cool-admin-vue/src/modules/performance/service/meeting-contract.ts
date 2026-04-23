@@ -14,8 +14,7 @@ import {
 	expectPerformanceServiceRecord,
 	expectPerformanceServiceString
 } from './service-contract';
-
-const MEETING_STATUS = ['scheduled', 'in_progress', 'completed', 'cancelled'] as const;
+import { MEETING_STATUS } from '../shared/contract-enums';
 
 function decodeMeetingStatus(value: unknown, field: string): MeetingStatus {
 	return expectPerformanceServiceEnum(value, field, MEETING_STATUS);

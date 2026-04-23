@@ -14,9 +14,7 @@ import {
 	expectPerformanceServiceRecord,
 	expectPerformanceServiceString
 } from './service-contract';
-
-const CONTRACT_TYPE = ['full-time', 'part-time', 'internship', 'other'] as const;
-const CONTRACT_STATUS = ['draft', 'active', 'expired', 'terminated'] as const;
+import { CONTRACT_STATUS, CONTRACT_TYPE } from '../shared/contract-enums';
 
 function decodeOptionalNullableString(value: unknown, field: string) {
 	if (value === undefined) {

@@ -4,9 +4,19 @@
  */
 export type {
 	CapabilityModelPageQuery,
-	CapabilityModelPageResult,
 	CapabilityModelRecord,
-} from "/@/generated/performance-talent-development.generated";
+} from "/@/generated/performance-capability.generated";
+
+export interface PagePagination {
+	page: number;
+	size: number;
+	total: number;
+}
+
+export type CapabilityModelPageResult = {
+	list: import("/@/generated/performance-capability.generated").CapabilityModelRecord[];
+	pagination: PagePagination;
+};
 
 export interface CapabilityModelInfoQuery {
 	id: number;

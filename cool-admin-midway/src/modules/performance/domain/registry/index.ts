@@ -10,6 +10,10 @@ import {
   type PerformanceBusinessDictDefinition,
 } from '../dicts/catalog';
 import {
+  PERFORMANCE_CONTRACT_REGISTRY,
+  type PerformanceContractSourceRegistry,
+} from './contracts';
+import {
   PERFORMANCE_DOMAIN_ERRORS,
   PERFORMANCE_DOMAIN_ERROR_BY_CODE,
   type PerformanceDomainErrorDefinition,
@@ -57,6 +61,7 @@ export const PERFORMANCE_STATE_MACHINES = [
 
 export interface PerformanceDomainRegistry {
   version: string;
+  contractSource: PerformanceContractSourceRegistry;
   errors: readonly PerformanceDomainErrorDefinition[];
   errorByCode: Readonly<Record<string, PerformanceDomainErrorDefinition>>;
   stateMachines: readonly PerformanceStateMachineDefinition[];
@@ -95,6 +100,7 @@ export interface PerformanceDomainRegistry {
 export const PERFORMANCE_DOMAIN_REGISTRY: PerformanceDomainRegistry =
   Object.freeze({
     version: PERFORMANCE_DOMAIN_REGISTRY_VERSION,
+    contractSource: PERFORMANCE_CONTRACT_REGISTRY,
     errors: PERFORMANCE_DOMAIN_ERRORS,
     errorByCode: PERFORMANCE_DOMAIN_ERROR_BY_CODE,
     stateMachines: PERFORMANCE_STATE_MACHINES,

@@ -8,8 +8,8 @@ export interface ApiResponse_CourseLearningTaskRecord {
 	message: string;
 	data: {
   id: number;
-  title: string;
   status: CourseLearningTaskStatus;
+  title: string;
   courseId: number;
   taskType: CourseLearningTaskType;
   submissionText?: string;
@@ -54,8 +54,8 @@ export interface ApiResponse_CourseLearningPageResult {
 
 export type CourseLearningTaskRecord = {
   id: number;
-  title: string;
   status: CourseLearningTaskStatus;
+  title: string;
   courseId: number;
   taskType: CourseLearningTaskType;
   submissionText?: string;

@@ -30,7 +30,7 @@ export interface TeacherInfoCreateTeacherInfoRequest {
 	updateTime?: string;
 }
 
-export type TeacherCooperationStatus = "uncontacted" | "contacted" | "negotiating" | "partnered" | "terminated";
+export type TeacherCooperationStatus = "terminated" | "uncontacted" | "contacted" | "negotiating" | "partnered";
 
 export interface ApiResponse_TeacherInfoRecord {
 	code: number;

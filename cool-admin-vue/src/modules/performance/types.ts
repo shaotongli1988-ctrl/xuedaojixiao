@@ -3,15 +3,41 @@
  * 这里只定义评估单、目标地图等模块内复用结构，不负责接口请求实现。
  */
 import type {
+	ApiResponse_AssessmentRecord as GeneratedAssessmentRecordResponse,
+	AssessmentActionRequest,
+	AssessmentExportQuery,
 	AssessmentPageMode,
-	AssessmentRecord,
-	AssessmentSaveRequest
+	AssessmentPageQuery,
+	AssessmentReviewRequest,
+	AssessmentSaveRequest,
+	AssessmentScoreItem as GeneratedAssessmentScoreItem,
+	AssessmentStatus,
+	DeleteIdsRequest
 } from './generated/assessment';
 import type {
+	ApiResponse_GoalOpsPlanRecord as GeneratedGoalOpsPlanRecordResponse,
 	GoalCreateRequest,
-	GoalOpsAccessProfile as GeneratedGoalOpsAccessProfile,
-	GoalOpsDepartmentConfig,
-	GoalOpsPlanRecord
+	GoalExportQuery,
+	GoalExportRow,
+	GoalOpsDailyFinalizeRequest,
+	GoalOpsDailyResultItem,
+	GoalOpsDailySubmitRequest,
+	GoalOpsDepartmentConfig as GeneratedGoalOpsDepartmentConfig,
+	GoalOpsDepartmentScopeQuery,
+	GoalOpsOverviewQuery,
+	GoalOpsPeriodType,
+	GoalOpsPlanPageQuery,
+	GoalOpsPlanSaveRequest,
+	GoalOpsPlanStatus,
+	GoalOpsReportGenerateRequest,
+	GoalOpsReportQuery,
+	GoalOpsReportStatus,
+	GoalOpsReportStatusUpdateRequest,
+	GoalOpsSourceType,
+	GoalPageQuery,
+	GoalProgressUpdateRequest,
+	GoalStatus,
+	GoalUpdateRequest
 } from './generated/goal';
 import type {
 	ApiResponse_DashboardFetchSummaryResult as GeneratedDashboardSummaryResponse,
@@ -34,7 +60,13 @@ import type {
 } from './generated/capability';
 import type {
 	CapabilityItemRecord as GeneratedCapabilityItemRecord,
-	CapabilityPortraitRecord as GeneratedCapabilityPortraitRecord
+	CapabilityPortraitRecord as GeneratedCapabilityPortraitRecord,
+	CertificateLedgerPageResult as GeneratedCertificateLedgerPageResponse,
+	CertificateLedgerRecord as GeneratedCertificateLedgerRecord,
+	CertificatePageResult as GeneratedCertificatePageResponse,
+	CertificateRecord as GeneratedCertificateRecord,
+	CertificateRecordStatus as GeneratedCertificateRecordStatus,
+	CertificateStatus as GeneratedCertificateStatus
 } from './generated/talent-development';
 import type {
 	ApiResponse_AssetAssignmentPageResult as GeneratedAssetAssignmentPageResponse,
@@ -96,14 +128,6 @@ import type {
 	AssetTransferStatus as GeneratedAssetTransferStatus
 } from './generated/asset-transfer';
 import type {
-	ApiResponse_CertificateLedgerPageResult as GeneratedCertificateLedgerPageResponse,
-	ApiResponse_CertificatePageResult as GeneratedCertificatePageResponse,
-	CertificateLedgerRecord as GeneratedCertificateLedgerRecord,
-	CertificateRecord as GeneratedCertificateRecord,
-	CertificateRecordStatus as GeneratedCertificateRecordStatus,
-	CertificateStatus as GeneratedCertificateStatus
-} from './generated/certificate';
-import type {
 	ApiResponse_ContractPageResult as GeneratedContractPageResponse,
 	ContractRecord as GeneratedContractRecord,
 	ContractStatus as GeneratedContractStatus,
@@ -136,8 +160,6 @@ import type {
 } from './generated/feedback';
 import type {
 	ApiResponse_HiringPageResult as GeneratedHiringPageResponse,
-	HiringRecord as GeneratedHiringRecord,
-	HiringSourceSnapshot as GeneratedHiringSourceSnapshot,
 	HiringSourceType as GeneratedHiringSourceType,
 	HiringStatus as GeneratedHiringStatus
 } from './generated/hiring';
@@ -232,11 +254,7 @@ import type {
 import type {
 	ApiResponse_ResumePoolPageResult as GeneratedResumePoolPageResponse,
 	ResumePoolAttachmentSummary as GeneratedResumePoolAttachmentSummary,
-	ResumePoolInterviewSourceSnapshot as GeneratedResumePoolInterviewSourceSnapshot,
-	ResumePoolJobStandardSnapshot as GeneratedResumePoolJobStandardSnapshot,
-	ResumePoolRecruitPlanSnapshot as GeneratedResumePoolRecruitPlanSnapshot,
 	ResumePoolRecord as GeneratedResumePoolRecord,
-	ResumePoolReferenceSnapshot as GeneratedResumePoolReferenceSnapshot,
 	ResumePoolSourceType as GeneratedResumePoolSourceType,
 	ResumePoolStatus as GeneratedResumePoolStatus
 } from './generated/resume-pool';
@@ -324,14 +342,9 @@ import type {
 export type {
 	AssessmentActionRequest,
 	AssessmentExportQuery,
-	AssessmentExportRow,
-	AssessmentExportRows,
 	AssessmentPageQuery,
-	AssessmentPageResult,
-	AssessmentRecord,
 	AssessmentReviewRequest,
 	AssessmentSaveRequest,
-	AssessmentScoreItem,
 	AssessmentStatus,
 	DeleteIdsRequest
 } from './generated/assessment';
@@ -340,35 +353,21 @@ export type {
 	GoalExportQuery,
 	GoalExportRow,
 	GoalOpsDailyFinalizeRequest,
-	GoalOpsDailyFinalizeResult,
 	GoalOpsDailyResultItem,
 	GoalOpsDailySubmitRequest,
-	GoalOpsDepartmentConfig,
 	GoalOpsDepartmentScopeQuery,
-	GoalOpsDepartmentSummary,
-	GoalOpsLeaderboard,
-	GoalOpsOverview,
 	GoalOpsOverviewQuery,
-	GoalOpsOverviewRow,
 	GoalOpsPeriodType,
 	GoalOpsPlanPageQuery,
-	GoalOpsPlanPageResult,
-	GoalOpsPlanRecord,
 	GoalOpsPlanSaveRequest,
 	GoalOpsPlanStatus,
-	GoalOpsReportAutoZeroEmployee,
 	GoalOpsReportGenerateRequest,
-	GoalOpsReportInfo,
 	GoalOpsReportQuery,
 	GoalOpsReportStatus,
 	GoalOpsReportStatusUpdateRequest,
-	GoalOpsReportSummary,
 	GoalOpsSourceType,
 	GoalPageQuery,
-	GoalPageResult,
-	GoalProgressRecord,
 	GoalProgressUpdateRequest,
-	GoalRecord,
 	GoalStatus,
 	GoalUpdateRequest
 } from './generated/goal';
@@ -409,25 +408,18 @@ export type {
 } from './generated/meeting';
 export type {
 	RecruitPlanActionRequest,
-	RecruitPlanDeleteResult,
 	RecruitPlanExportQuery,
 	RecruitPlanImportRequest,
-	RecruitPlanImportResult,
 	RecruitPlanPageQuery,
 	RecruitPlanSaveRequest
 } from './generated/recruit-plan';
 export type {
 	ResumePoolActionRequest,
-	ResumePoolAttachmentDownloadResult,
-	ResumePoolCreateInterviewResult,
 	ResumePoolDownloadAttachmentRequest,
 	ResumePoolExportQuery,
-	ResumePoolExportRow,
 	ResumePoolImportRequest,
-	ResumePoolImportResult,
 	ResumePoolPageQuery,
 	ResumePoolSaveRequest,
-	ResumePoolTalentAssetConvertResult,
 	ResumePoolUploadAttachmentRequest
 } from './generated/resume-pool';
 export type { TalentAssetPageQuery, TalentAssetSaveRequest } from './generated/talent-asset';
@@ -453,10 +445,289 @@ export interface GoalOpsPlanInfoQuery {
 	id: number;
 }
 type ApiResponseData<T extends { data: unknown }> = T['data'];
+type StripIndexSignature<T> = {
+	[K in keyof T as string extends K
+		? never
+		: number extends K
+			? never
+			: symbol extends K
+				? never
+				: K]: T[K];
+};
+export interface PerformanceListPageResult<T> {
+	list: T[];
+	pagination: {
+		page: number;
+		size: number;
+		total: number;
+	};
+}
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
 export interface JsonObject {
 	[key: string]: JsonValue | undefined;
+}
+
+export type AssessmentScoreItem = Omit<GeneratedAssessmentScoreItem, 'indicatorId'> & {
+	indicatorId?: number | null;
+};
+
+export type AssessmentRecord = Omit<
+	ApiResponseData<GeneratedAssessmentRecordResponse>,
+	'scoreItems'
+> & {
+	scoreItems?: AssessmentScoreItem[];
+};
+
+export interface AssessmentExportRow {
+	code: string;
+	employeeName: string;
+	departmentName: string;
+	periodType: string;
+	periodValue: string;
+	assessorName: string;
+	status: AssessmentStatus;
+	targetCompletion: number;
+	totalScore: number;
+	grade: string;
+	submitTime?: string;
+	approveTime?: string;
+}
+
+export type AssessmentExportRows = AssessmentExportRow[];
+export type AssessmentPageResult = PerformanceListPageResult<AssessmentRecord>;
+
+export interface GoalProgressRecord {
+	id?: number;
+	goalId?: number;
+	beforeValue?: number;
+	afterValue?: number;
+	progressRate?: number;
+	remark?: string;
+	operatorId?: number;
+	operatorName?: string;
+	createTime?: string;
+}
+
+export interface GoalRecord {
+	id?: number;
+	employeeId?: number;
+	employeeName?: string;
+	departmentId?: number;
+	departmentName?: string;
+	title?: string;
+	description?: string | null;
+	targetValue?: number;
+	currentValue?: number;
+	unit?: string | null;
+	weight?: number;
+	startDate?: string;
+	endDate?: string;
+	progressRate?: number;
+	status?: GoalStatus;
+	createTime?: string;
+	updateTime?: string;
+	progressRecords?: GoalProgressRecord[];
+}
+
+export type GoalPageResult = PerformanceListPageResult<GoalRecord>;
+
+export interface GoalOpsAccessProfile {
+	departmentId: number | null;
+	activePersonaKey: string | null;
+	roleKind: PerformanceAccessContext['roleKind'];
+	scopeKey: 'company' | 'department' | 'self';
+	isHr: boolean;
+	canManageDepartment: boolean;
+	canMaintainPersonalPlan: boolean;
+	manageableDepartmentIds: number[];
+}
+
+export type GoalOpsDepartmentConfig = Omit<
+	GeneratedGoalOpsDepartmentConfig,
+	'reportPushTarget' | 'updatedBy' | 'updateTime'
+> & {
+	reportPushTarget?: string | null;
+	updatedBy?: number | null;
+	updateTime?: string | null;
+};
+
+export interface GoalOpsOverviewRow {
+	employeeId: number;
+	employeeName: string;
+	departmentId: number;
+	publicTargetValue: number;
+	publicActualValue: number;
+	personalTargetValue: number;
+	personalActualValue: number;
+	totalTargetValue: number;
+	totalActualValue: number;
+	completionRate: number;
+	assignedCount: number;
+	submittedCount: number;
+	autoZeroCount: number;
+}
+
+export interface GoalOpsDepartmentSummary {
+	planDate: string;
+	departmentId: number;
+	employeeCount: number;
+	publicTargetValue: number;
+	publicActualValue: number;
+	personalTargetValue: number;
+	personalActualValue: number;
+	totalTargetValue: number;
+	totalActualValue: number;
+	completionRate: number;
+	assignedCount: number;
+	submittedCount: number;
+	autoZeroCount: number;
+}
+
+export interface GoalOpsLeaderboard {
+	completionRate: GoalOpsOverviewRow[];
+	output: GoalOpsOverviewRow[];
+}
+
+export interface GoalOpsOverview {
+	planDate: string;
+	departmentId?: number | null;
+	departmentSummary: GoalOpsDepartmentSummary;
+	leaderboard: GoalOpsLeaderboard;
+	rows: GoalOpsOverviewRow[];
+}
+
+export type GoalOpsPlanRecord = Omit<
+	ApiResponseData<GeneratedGoalOpsPlanRecordResponse>,
+	| 'planDate'
+	| 'description'
+	| 'actualValue'
+	| 'completionRate'
+	| 'unit'
+	| 'status'
+	| 'parentPlanId'
+	| 'assignedBy'
+	| 'submittedBy'
+	| 'submittedAt'
+> & {
+	planDate?: string | null;
+	description?: string | null;
+	actualValue?: number | null;
+	completionRate?: number | null;
+	unit?: string | null;
+	status?: GoalOpsPlanStatus;
+	parentPlanId?: number | null;
+	assignedBy?: number | null;
+	submittedBy?: number | null;
+	submittedAt?: string | null;
+};
+
+export type GoalOpsPlanPageResult = PerformanceListPageResult<GoalOpsPlanRecord>;
+
+export interface GoalOpsReportAutoZeroEmployee {
+	employeeId: number;
+	employeeName: string;
+	autoZeroCount: number;
+}
+
+export interface GoalOpsReportSummary {
+	planDate: string;
+	departmentId: number;
+	departmentSummary: GoalOpsDepartmentSummary;
+	topCompletionEmployees: GoalOpsOverviewRow[];
+	topOutputEmployees: GoalOpsOverviewRow[];
+	autoZeroEmployees: GoalOpsReportAutoZeroEmployee[];
+}
+
+export interface GoalOpsReportInfo {
+	id?: number;
+	departmentId: number;
+	reportDate: string;
+	status: GoalOpsReportStatus;
+	summary?: GoalOpsReportSummary | null;
+	generatedAt?: string | null;
+	sentAt?: string | null;
+	pushMode?: string;
+	pushTarget?: string | null;
+	generatedBy?: number | null;
+	operatedBy?: number | null;
+	operationRemark?: string | null;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface GoalOpsDailyFinalizeResult {
+	departmentId: number;
+	planDate: string;
+	autoZeroCount: number;
+}
+
+export interface RecruitPlanDeleteResult {
+	id: number;
+	deleted: boolean;
+}
+
+export interface RecruitPlanImportResult {
+	fileId: number;
+	importedCount: number;
+	skippedCount: number;
+}
+
+export interface ResumePoolImportResult {
+	fileId: number;
+	importedCount: number;
+	overwrittenCount: number;
+	skippedCount: number;
+}
+
+export interface ResumePoolAttachmentDownloadResult {
+	id: number;
+	name: string;
+	size: number;
+	uploadTime: string;
+	url: string;
+	downloadUrl: string;
+	fileId: string;
+}
+
+export interface ResumePoolTalentAssetConvertResult {
+	talentAssetId: number;
+	created: boolean;
+}
+
+export interface ResumePoolCreateInterviewResult {
+	interviewId: number;
+	status: ResumePoolStatus;
+	resumePoolId: number;
+	recruitPlanId?: number | null;
+	jobStandardId?: number | null;
+	sourceSnapshot?: RecruitmentSourceSnapshot;
+	snapshot?: RecruitmentSourceSnapshot;
+	resumePoolSummary?: RecruitmentSourceSnapshot;
+	resumePoolSnapshot?: RecruitmentSourceSnapshot;
+	recruitPlanSummary?: RecruitmentSourceSnapshot | null;
+	recruitPlanSnapshot?: RecruitmentSourceSnapshot | null;
+	jobStandardSummary?: RecruitmentSourceSnapshot | null;
+	jobStandardSnapshot?: RecruitmentSourceSnapshot | null;
+}
+
+export interface ResumePoolExportRow {
+	id?: number;
+	candidateName: string;
+	targetDepartmentId: number;
+	targetDepartmentName?: string;
+	targetPosition?: string | null;
+	phone: string;
+	email?: string | null;
+	resumeText: string;
+	sourceType: ResumePoolSourceType;
+	sourceRemark?: string | null;
+	externalLink?: string | null;
+	status: ResumePoolStatus;
+	linkedTalentAssetId?: number | null;
+	latestInterviewId?: number | null;
+	createTime?: string;
+	updateTime?: string;
 }
 
 export type DashboardCrossMetricCode = GeneratedDashboardCrossMetricCode;
@@ -568,17 +839,26 @@ export interface PerformanceAccessContext {
 	};
 }
 
-export type GoalOpsAccessProfile = GeneratedGoalOpsAccessProfile & {
-	activePersonaKey: string | null;
-	roleKind: PerformanceAccessContext['roleKind'];
-	scopeKey: 'company' | 'department' | 'self';
-};
-
 export type RecruitPlanRecord = Omit<
 	GeneratedRecruitPlanRecord,
-	'targetDepartmentId' | 'jobStandardSummary' | 'jobStandardSnapshot' | 'status'
+	| 'targetDepartmentId'
+	| 'targetDepartmentName'
+	| 'requirementSummary'
+	| 'recruiterId'
+	| 'recruiterName'
+	| 'jobStandardId'
+	| 'jobStandardPositionName'
+	| 'sourceSnapshot'
+	| 'jobStandardSummary'
+	| 'jobStandardSnapshot'
+	| 'status'
 > & {
 	targetDepartmentId: number | undefined;
+	targetDepartmentName?: string | null;
+	requirementSummary?: string | null;
+	recruiterId?: number | null;
+	recruiterName?: string | null;
+	jobStandardId?: number | null;
 	jobStandardPositionName?: string | null;
 	jobStandardSummary?: RecruitmentSourceSnapshot | null;
 	jobStandardSnapshot?: RecruitmentSourceSnapshot | null;
@@ -618,8 +898,27 @@ export interface RecruitPlanExportRow {
 	updateTime?: string;
 }
 
-export type ContractRecord = Omit<GeneratedContractRecord, 'employeeId'> & {
+export type ContractRecord = Omit<
+	GeneratedContractRecord,
+	| 'employeeId'
+	| 'departmentId'
+	| 'departmentName'
+	| 'title'
+	| 'employeeName'
+	| 'contractNumber'
+	| 'probationPeriod'
+	| 'salary'
+	| 'position'
+> & {
 	employeeId: number | undefined;
+	departmentId?: number | null;
+	departmentName?: string | null;
+	title?: string | null;
+	employeeName?: string | null;
+	contractNumber?: string | null;
+	probationPeriod?: number | null;
+	salary?: number | null;
+	position?: string | null;
 };
 
 export type ContractPageResult = Omit<ApiResponseData<GeneratedContractPageResponse>, 'list'> & {
@@ -938,11 +1237,11 @@ export interface CertificateInfoQuery {
 	id: number;
 }
 
-export type CertificatePageResult = ApiResponseData<GeneratedCertificatePageResponse>;
+export type CertificatePageResult = GeneratedCertificatePageResponse;
 
 export type CertificateLedgerRecord = GeneratedCertificateLedgerRecord;
 
-export type CertificateLedgerPageResult = ApiResponseData<GeneratedCertificateLedgerPageResponse>;
+export type CertificateLedgerPageResult = GeneratedCertificateLedgerPageResponse;
 
 export type CourseRecord = Omit<GeneratedCourseRecord, 'startDate' | 'endDate'> & {
 	startDate?: string | null;
@@ -1101,17 +1400,115 @@ export type HiringSourceType = GeneratedHiringSourceType;
 
 export type HiringStatus = GeneratedHiringStatus;
 
-export type HiringSourceSnapshot = GeneratedHiringSourceSnapshot;
+export type HiringSourceSnapshot = {
+	sourceResource?: HiringSourceType | null;
+	interviewId?: number | null;
+	resumePoolId?: number | null;
+	recruitPlanId?: number | null;
+	recruitPlanTitle?: string | null;
+	candidateName?: string | null;
+	targetDepartmentId?: number | null;
+	targetDepartmentName?: string | null;
+	targetPosition?: string | null;
+	interviewStatus?: InterviewStatus | null;
+	sourceStatusSnapshot?: string | null;
+};
 export interface HiringInfoQuery {
 	id: number;
 }
 
-export type HiringTransportRecord = Omit<GeneratedHiringRecord, 'sourceSnapshot'> & {
+type GeneratedHiringRecord = StripIndexSignature<
+	ApiResponseData<GeneratedHiringPageResponse>['list'][number]
+>;
+
+export type HiringTransportRecord = Omit<
+	GeneratedHiringRecord,
+	| 'targetDepartmentName'
+	| 'targetPosition'
+	| 'sourceType'
+	| 'sourceId'
+	| 'sourceStatusSnapshot'
+	| 'sourceSnapshot'
+	| 'interviewId'
+	| 'resumePoolId'
+	| 'recruitPlanId'
+	| 'hiringDecision'
+	| 'decisionContent'
+	| 'status'
+	| 'offeredAt'
+	| 'acceptedAt'
+	| 'rejectedAt'
+	| 'closedAt'
+	| 'closeReason'
+	| 'interviewSnapshot'
+	| 'resumePoolSnapshot'
+	| 'recruitPlanSnapshot'
+> & {
+	targetDepartmentName?: string | null;
+	targetPosition?: string | null;
+	sourceType?: HiringSourceType | null;
+	sourceId?: number | null;
+	sourceStatusSnapshot?: string | null;
 	sourceSnapshot?: HiringSourceSnapshot | string | null;
+	interviewId?: number | null;
+	resumePoolId?: number | null;
+	recruitPlanId?: number | null;
+	hiringDecision?: string | null;
+	decisionContent?: string | null;
+	status?: HiringStatus;
+	offeredAt?: string | null;
+	acceptedAt?: string | null;
+	rejectedAt?: string | null;
+	closedAt?: string | null;
+	closeReason?: string | null;
+	interviewSnapshot?: HiringSourceSnapshot | null;
+	resumePoolSnapshot?: HiringSourceSnapshot | null;
+	recruitPlanSnapshot?: HiringSourceSnapshot | null;
 };
 
-export type HiringRecord = Omit<GeneratedHiringRecord, 'sourceSnapshot'> & {
+export type HiringRecord = Omit<
+	GeneratedHiringRecord,
+	| 'targetDepartmentName'
+	| 'targetPosition'
+	| 'sourceType'
+	| 'sourceId'
+	| 'sourceStatusSnapshot'
+	| 'sourceSnapshot'
+	| 'interviewId'
+	| 'resumePoolId'
+	| 'recruitPlanId'
+	| 'hiringDecision'
+	| 'decisionContent'
+	| 'status'
+	| 'offeredAt'
+	| 'acceptedAt'
+	| 'rejectedAt'
+	| 'closedAt'
+	| 'closeReason'
+	| 'interviewSnapshot'
+	| 'resumePoolSnapshot'
+	| 'recruitPlanSnapshot'
+> & {
+	targetDepartmentName?: string | null;
+	targetPosition?: string | null;
+	sourceType?: HiringSourceType | null;
+	sourceId?: number | null;
+	sourceStatusSnapshot?: string | null;
 	sourceSnapshot?: HiringSourceSnapshot | null;
+	interviewId?: number | null;
+	resumePoolId?: number | null;
+	recruitPlanId?: number | null;
+	hiringDecision?: string | null;
+	decisionContent?: string | null;
+	status?: HiringStatus;
+	offeredAt?: string | null;
+	acceptedAt?: string | null;
+	rejectedAt?: string | null;
+	closedAt?: string | null;
+	closeReason?: string | null;
+	interviewSnapshot?: HiringSourceSnapshot | null;
+	resumePoolSnapshot?: HiringSourceSnapshot | null;
+	recruitPlanSnapshot?: HiringSourceSnapshot | null;
 };
 
 export type HiringFormRecord = Omit<HiringRecord, 'targetDepartmentId'> & {
@@ -1150,6 +1547,8 @@ export type InterviewRecord = Omit<
 	GeneratedInterviewRecord,
 	| 'departmentId'
 	| 'interviewerId'
+	| 'interviewType'
+	| 'score'
 	| 'resumePoolId'
 	| 'recruitPlanId'
 	| 'sourceSnapshot'
@@ -1161,6 +1560,8 @@ export type InterviewRecord = Omit<
 > & {
 	departmentId?: number | null | undefined;
 	interviewerId: number | undefined;
+	interviewType?: InterviewType | null;
+	score?: number | null;
 	resumePoolId?: number | null | undefined;
 	recruitPlanId?: number | null | undefined;
 	sourceSnapshot?: RecruitmentSourceSnapshot | null;
@@ -1179,15 +1580,26 @@ export interface InterviewInfoQuery {
 }
 
 export type ResumePoolAttachmentSummary = GeneratedResumePoolAttachmentSummary;
-export type ResumePoolInterviewSourceSnapshot = GeneratedResumePoolInterviewSourceSnapshot;
-export type ResumePoolReferenceSnapshot = GeneratedResumePoolReferenceSnapshot;
-export type ResumePoolRecruitPlanSnapshot = GeneratedResumePoolRecruitPlanSnapshot;
-export type ResumePoolJobStandardSnapshot = GeneratedResumePoolJobStandardSnapshot;
+export type ResumePoolInterviewSourceSnapshot = RecruitmentSourceSnapshot;
+export type ResumePoolReferenceSnapshot = RecruitmentSourceSnapshot;
+export type ResumePoolRecruitPlanSnapshot = RecruitmentSourceSnapshot;
+export type ResumePoolJobStandardSnapshot = RecruitmentSourceSnapshot;
 
 export type ResumePoolRecord = Omit<
 	GeneratedResumePoolRecord,
 	| 'targetDepartmentId'
+	| 'targetPosition'
+	| 'email'
+	| 'sourceRemark'
+	| 'externalLink'
+	| 'recruitPlanId'
+	| 'recruitPlanTitle'
+	| 'jobStandardId'
+	| 'jobStandardPositionName'
+	| 'linkedTalentAssetId'
+	| 'latestInterviewId'
 	| 'resumeText'
+	| 'sourceSnapshot'
 	| 'recruitPlanSummary'
 	| 'recruitPlanSnapshot'
 	| 'jobStandardSummary'
@@ -1195,9 +1607,17 @@ export type ResumePoolRecord = Omit<
 	| 'status'
 > & {
 	targetDepartmentId: number | undefined;
-	resumeText: string;
+	targetPosition?: string | null;
+	email?: string | null;
+	sourceRemark?: string | null;
+	externalLink?: string | null;
+	recruitPlanId?: number | null;
 	recruitPlanTitle?: string | null;
+	jobStandardId?: number | null;
 	jobStandardPositionName?: string | null;
+	linkedTalentAssetId?: number | null;
+	latestInterviewId?: number | null;
+	resumeText: string;
 	sourceSnapshot?: RecruitmentSourceSnapshot | null;
 	recruitPlanSnapshot?: RecruitmentSourceSnapshot | null;
 	jobStandardSnapshot?: RecruitmentSourceSnapshot | null;
@@ -1214,8 +1634,22 @@ export interface ResumePoolInfoQuery {
 	id: number;
 }
 
-export type MeetingRecord = Omit<GeneratedMeetingRecord, 'organizerId' | 'status'> & {
+export type MeetingRecord = Omit<
+	GeneratedMeetingRecord,
+	| 'code'
+	| 'type'
+	| 'description'
+	| 'location'
+	| 'organizerId'
+	| 'organizerName'
+	| 'status'
+> & {
+	code?: string | null;
+	type?: string | null;
+	description?: string | null;
+	location?: string | null;
 	organizerId: number | undefined;
+	organizerName?: string | null;
 	participantIds?: number[];
 	status?: MeetingStatus;
 };
@@ -1230,9 +1664,20 @@ export type MeetingRemovePayload = import('./generated/assessment').DeleteIdsReq
 
 export type TalentAssetRecord = Omit<
 	GeneratedTalentAssetRecord,
-	'targetDepartmentId' | 'status'
+	| 'code'
+	| 'targetDepartmentId'
+	| 'targetDepartmentName'
+	| 'targetPosition'
+	| 'followUpSummary'
+	| 'nextFollowUpDate'
+	| 'status'
 > & {
+	code?: string | null;
 	targetDepartmentId: number | undefined;
+	targetDepartmentName?: string | null;
+	targetPosition?: string | null;
+	followUpSummary?: string | null;
+	nextFollowUpDate?: string | null;
 	status?: TalentAssetStatus;
 };
 
@@ -1869,9 +2314,20 @@ export type TeacherTodoPageQuery =
 
 export type JobStandardRecord = Omit<
 	GeneratedJobStandardRecord,
-	'targetDepartmentId' | 'status'
+	| 'targetDepartmentId'
+	| 'targetDepartmentName'
+	| 'jobLevel'
+	| 'profileSummary'
+	| 'requirementSummary'
+	| 'interviewTemplateSummary'
+	| 'status'
 > & {
 	targetDepartmentId: number | undefined;
+	targetDepartmentName?: string | null;
+	jobLevel?: string | null;
+	profileSummary?: string | null;
+	requirementSummary?: string | null;
+	interviewTemplateSummary?: string | null;
 	status?: JobStandardStatus;
 };
 
@@ -1890,6 +2346,13 @@ export interface RecruitmentSourceSnapshot {
 	title?: string | null;
 	status?: string | null;
 	positionName?: string | null;
+	phone?: string | null;
+	email?: string | null;
+	headcount?: number | null;
+	startDate?: string | null;
+	endDate?: string | null;
+	jobLevel?: string | null;
+	requirementSummary?: string | null;
 	sourceResource?: RecruitmentSourceResource | null;
 	jobStandardId?: number | null;
 	jobStandardPositionName?: string | null;
@@ -2287,9 +2750,13 @@ export type IndicatorCategory = GeneratedIndicatorCategory;
 export type IndicatorApplyScope = GeneratedIndicatorApplyScope;
 export type IndicatorStatus = GeneratedIndicatorStatus;
 
-export type IndicatorRecord = GeneratedIndicatorRecord;
+export type IndicatorRecord = Omit<GeneratedIndicatorRecord, 'description'> & {
+	description?: string | null;
+};
 
-export type IndicatorPageResult = ApiResponseData<GeneratedIndicatorPageResponse>;
+export type IndicatorPageResult = Omit<ApiResponseData<GeneratedIndicatorPageResponse>, 'list'> & {
+	list: IndicatorRecord[];
+};
 export interface IndicatorInfoQuery {
 	id: number;
 }

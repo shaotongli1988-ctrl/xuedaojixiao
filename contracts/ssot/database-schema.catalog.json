@@ -1,0 +1,89 @@
+{
+  "version": "1.0",
+  "owner": "repo-governance",
+  "scope": "migration-first additive schema ownership",
+  "notes": [
+    "This catalog is the repository-level SSOT for schema ownership boundaries, migration entrypoints, and entity aggregation roots.",
+    "It does not enumerate every table or column yet; phase-1 only locks ownership, migration coverage, and entity-root coverage.",
+    "The current repository standard is migration-first for durable schema history, with entities acting as runtime consumers that must remain aligned."
+  ],
+  "sourcePaths": {
+    "entityAggregator": "cool-admin-midway/src/entities.ts",
+    "migrationRunner": "cool-admin-midway/scripts/run-migrations.mjs",
+    "migrationRoot": "cool-admin-midway/scripts/migrations",
+    "schemaBootstrapEntrypoints": [
+      "cool-admin-midway/scripts/ensure-local-schema.mjs",
+      "cool-admin-midway/scripts/ensure-local-performance-schema.mjs",
+      "cool-admin-midway/src/config/config.local.ts",
+      "cool-admin-midway/src/config/config.prod.ts"
+    ]
+  },
+  "ownershipGroups": [
+    {
+      "id": "platform-foundation",
+      "entityRoots": [
+        "cool-admin-midway/src/modules/base/entity",
+        "cool-admin-midway/src/modules/space/entity"
+      ],
+      "migrationFiles": [
+        "20260420150000-add-base-space-cache-tables.mjs",
+        "20260421093000-add-base-role-is-super-admin.mjs",
+        "20260421110000-backfill-base-super-admin-login-link.mjs",
+        "20260423090000-add-base-user-active-performance-persona.mjs"
+      ],
+      "tableNamespaces": [
+        "base_",
+        "space_",
+        "cool_schema_migration"
+      ],
+      "notes": "Base and space operational schema plus repository migration bookkeeping."
+    },
+    {
+      "id": "module-support",
+      "entityRoots": [
+        "cool-admin-midway/src/modules/demo/entity",
+        "cool-admin-midway/src/modules/dict/entity",
+        "cool-admin-midway/src/modules/plugin/entity",
+        "cool-admin-midway/src/modules/recycle/entity",
+        "cool-admin-midway/src/modules/task/entity",
+        "cool-admin-midway/src/modules/user/entity"
+      ],
+      "migrationFiles": [
+        "20260420151000-add-module-support-tables.mjs"
+      ],
+      "tableNamespaces": [
+        "demo_",
+        "dict_",
+        "plugin_",
+        "recycle_",
+        "task_",
+        "user_"
+      ],
+      "notes": "Additive support-module schema that is not part of the performance business domain."
+    },
+    {
+      "id": "performance-domain",
+      "entityRoots": [
+        "cool-admin-midway/src/modules/performance/entity"
+      ],
+      "migrationFiles": [
+        "20260419231000-add-performance-material-tables.mjs",
+        "20260420001000-add-performance-work-plan-table.mjs",
+        "20260420103000-add-performance-asset-assignment-request-table.mjs",
+        "20260420114500-add-performance-interview-source-snapshot.mjs",
+        "20260420123000-add-performance-vehicle-table.mjs",
+        "20260420124000-add-performance-intellectual-property-table.mjs",
+        "20260420125000-add-performance-suggestion-table.mjs",
+        "20260420132000-add-performance-core-mainline-tables.mjs",
+        "20260420141000-add-performance-learning-capability-certificate-tables.mjs",
+        "20260420142000-add-performance-recruitment-goalops-meeting-tables.mjs",
+        "20260420143000-add-performance-teacher-office-knowledge-tables.mjs",
+        "20260420144000-add-performance-procurement-asset-feedback-approval-tables.mjs"
+      ],
+      "tableNamespaces": [
+        "performance_"
+      ],
+      "notes": "Primary performance schema baseline, including stage-2 theme tables and teacher-channel extensions."
+    }
+  ]
+}

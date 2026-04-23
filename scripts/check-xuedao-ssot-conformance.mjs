@@ -10,6 +10,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
 	getSsotArtifactRoot,
@@ -159,15 +160,39 @@ function checkDocumentation(findings) {
 	const checks = [
 		{
 			file: 'README.md',
-			patterns: ['check-xuedao-ssot-manifest.mjs', 'check-xuedao-ssot-conformance.mjs', 'reports/delivery']
+			patterns: [
+				'check-xuedao-ssot-manifest.mjs',
+				'check-xuedao-ssot-conformance.mjs',
+				'check-performance-contract-closure.mjs',
+				'contract-source.{json,mjs}',
+				'xuedao-ssot-inventory.md',
+				'reports/delivery'
+			]
 		},
 		{
 			file: 'contracts/README.md',
-			patterns: ['check-xuedao-ssot-manifest.mjs', 'check-xuedao-ssot-conformance.mjs', 'xuedao-ssot-manifest.yaml']
+			patterns: [
+				'check-xuedao-ssot-manifest.mjs',
+				'check-xuedao-ssot-conformance.mjs',
+				'check-environment-config-ssot.mjs',
+				'check-database-schema-ssot.mjs',
+				'check-performance-contract-closure.mjs',
+				'xuedao-ssot-inventory.md',
+				'xuedao-ssot-manifest.yaml',
+				'performanceContractSource'
+			]
 		},
 		{
 			file: 'performance-management-system/docs/24-自动化测试策略与脚本规划.md',
-			patterns: ['check-xuedao-ssot-manifest.mjs', 'check-xuedao-ssot-conformance.mjs', 'run-repo-consistency-guards.mjs']
+			patterns: [
+				'check-xuedao-ssot-manifest.mjs',
+				'check-xuedao-ssot-conformance.mjs',
+				'check-environment-config-ssot.mjs',
+				'check-database-schema-ssot.mjs',
+				'check-performance-contract-closure.mjs',
+				'performanceContractSource',
+				'run-repo-consistency-guards.mjs'
+			]
 		}
 	];
 
@@ -185,6 +210,48 @@ function checkDocumentation(findings) {
 				);
 			}
 		}
+	}
+}
+
+function checkPilotGovernanceGuards(findings) {
+	const pilotGuards = [
+		{
+			scope: 'environmentConfig',
+			command: [process.execPath, resolveSsotRepoPath('scripts/check-environment-config-ssot.mjs')],
+			requiredFix: '补齐 environment-config catalog 或扫描范围说明后重新执行环境变量 SSOT 守卫。'
+		},
+		{
+			scope: 'databaseSchema',
+			command: [process.execPath, resolveSsotRepoPath('scripts/check-database-schema-ssot.mjs')],
+			requiredFix: '补齐 database-schema catalog 中的 migration/entity ownership 后重新执行 schema SSOT 守卫。'
+		},
+		{
+			scope: 'performanceContractClosure',
+			command: [process.execPath, resolveSsotRepoPath('scripts/check-performance-contract-closure.mjs')],
+			requiredFix:
+				'补齐 performance contract-source registry、OpenAPI 覆盖或 generated 消费链后重新执行 performance contract closure 守卫。'
+		}
+	];
+
+	for (const pilotGuard of pilotGuards) {
+		const result = spawnSync(pilotGuard.command[0], pilotGuard.command.slice(1), {
+			cwd: repoRoot,
+			encoding: 'utf8'
+		});
+
+		if (result.status === 0) {
+			continue;
+		}
+
+		const detail = (result.stderr || result.stdout || '').trim().split('\n')[0] || 'guard failed';
+		findings.push(
+			createFinding(
+				'P2',
+				`pilotGuard.${pilotGuard.scope}`,
+				`report-only 治理守卫失败: ${detail}`,
+				pilotGuard.requiredFix
+			)
+		);
 	}
 }
 
@@ -386,6 +453,7 @@ function main() {
 	checkRuntimeBinding(findings);
 	checkDocumentation(findings);
 	checkRecordsAndEvidence(findings, args.strictReportArtifacts);
+	checkPilotGovernanceGuards(findings);
 
 	const result = render(findings);
 	const reportMd = path.resolve(args.reportMd || resolveDefaultReportPath('xuedao-ssot-conformance.latest.md'));

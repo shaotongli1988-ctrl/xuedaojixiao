@@ -87,6 +87,12 @@ const forbiddenLocalIsUserCancelledPattern =
 	/^\s*function\s+(isUserCancelled|isUserCancelledError)\s*\(/m;
 const forbiddenInlineCancelComparisonPattern =
 	/error\s*={2,3}\s*'cancel'|error\s*!==\s*'cancel'|error\s*={2,3}\s*'close'/m;
+const contractEnumGuardFileNames = new Set(
+	fs
+		.readdirSync(performanceServiceDir)
+		.filter(name => name.endsWith('-contract.ts'))
+);
+const localContractEnumPattern = /^\s*const\s+([A-Z0-9_]+)\s*=\s*(?:\[|\{)/gm;
 
 const interfacePattern = /^\s*export interface\s+([A-Za-z0-9]+(?:Record|PageResult))\b/m;
 const statusPattern = /^\s*export type\s+([A-Za-z0-9]+Status)\s*=/m;
@@ -695,6 +701,21 @@ const adminGeneratedDerivedSymbols = [
 ];
 
 const violations = [];
+
+function assertNoLocalContractEnums(filePath) {
+	if (!contractEnumGuardFileNames.has(path.basename(filePath))) {
+		return;
+	}
+
+	const fileText = fs.readFileSync(filePath, 'utf8');
+	for (const match of fileText.matchAll(localContractEnumPattern)) {
+		violations.push({
+			filePath,
+			symbol: match[1],
+			rule: 'performance contract adapters must reuse shared/contract-enums.ts instead of redefining local runtime enum sources'
+		});
+	}
+}
 
 function escapeRegExp(value) {
 	return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -1468,6 +1489,10 @@ for (const filePath of [
 			rule: 'performance shared option/access/query helper types must stay centralized in src/modules/performance/types.ts'
 		});
 	}
+}
+
+for (const serviceFilePath of collectFilesByExtension(performanceServiceDir, '.ts')) {
+	assertNoLocalContractEnums(serviceFilePath);
 }
 
 for (const filePath of [

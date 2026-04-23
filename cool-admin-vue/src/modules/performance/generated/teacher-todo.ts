@@ -49,6 +49,6 @@ export type TeacherTodoRecord = {
   nextFollowTime?: string;
 };
 
-export type TeacherCooperationStatus = "uncontacted" | "contacted" | "negotiating" | "partnered" | "terminated";
+export type TeacherCooperationStatus = "terminated" | "uncontacted" | "contacted" | "negotiating" | "partnered";
 
 export type TeacherTodoBucket = "today" | "overdue";

@@ -50,10 +50,10 @@ export interface ApiResponse_WorkPlanRecord {
 	message: string;
 	data: {
   id?: number;
+  status?: WorkPlanStatus;
   createTime?: string;
   updateTime?: string;
   title: string;
-  status?: WorkPlanStatus;
   workNo?: string;
   assigneeIds?: Array<number>;
   assigneeList?: Array<WorkPlanAssignee>;
@@ -141,10 +141,10 @@ export interface ApiResponse_WorkPlanPageResult {
 
 export type WorkPlanRecord = {
   id?: number;
+  status?: WorkPlanStatus;
   createTime?: string;
   updateTime?: string;
   title: string;
-  status?: WorkPlanStatus;
   workNo?: string;
   assigneeIds?: Array<number>;
   assigneeList?: Array<WorkPlanAssignee>;

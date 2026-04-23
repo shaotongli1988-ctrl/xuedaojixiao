@@ -20,9 +20,10 @@ import {
 	expectPerformanceServiceOptionalString,
 	expectPerformanceServiceRecord
 } from './service-contract';
-
-const MATERIAL_CATALOG_STATUS = ['active', 'inactive'] as const;
-const MATERIAL_STOCK_STATUS = ['sufficient', 'lowStock', 'outOfStock'] as const;
+import {
+	MATERIAL_CATALOG_STATUS,
+	MATERIAL_STOCK_STATUS
+} from '../shared/contract-enums';
 
 function decodeOptionalNullableString(value: unknown, field: string) {
 	if (value === undefined) {

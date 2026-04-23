@@ -184,7 +184,7 @@ export type AssetAssignmentRequestLevel = "L1" | "L2";
 
 export type AssetAssignmentRequestType = "standard" | "crossDepartmentBorrow" | "lostReplacement" | "abnormalReissue" | "scrapReplacement";
 
-export type AssetAssignmentRequestStatus = "draft" | "inApproval" | "rejected" | "withdrawn" | "approvedPendingAssignment" | "issuing" | "issued" | "cancelled" | "manualPending";
+export type AssetAssignmentRequestStatus = "draft" | "rejected" | "inApproval" | "withdrawn" | "approvedPendingAssignment" | "issuing" | "issued" | "cancelled" | "manualPending";
 
 export interface ApiResponse_AssetAssignmentRequestRecord {
 	code: number;

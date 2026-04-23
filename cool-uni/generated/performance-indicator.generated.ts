@@ -11,44 +11,47 @@ export interface IndicatorSaveRequest {
 	weight: number;
 	scoreScale: number;
 	applyScope: IndicatorApplyScope;
-	description?: string | null;
+	description?: string;
 	status: IndicatorStatus;
 }
 
 export type IndicatorCategory = "assessment" | "goal" | "feedback";
 
-export type IndicatorApplyScope = "all" | "department" | "employee";
+export type IndicatorApplyScope = "department" | "employee" | "all";
 
 export type IndicatorStatus = 0 | 1;
 
 export interface ApiResponse_IndicatorRecord {
 	code: number;
 	message: string;
-	data: IndicatorRecord;
-}
-
-export interface IndicatorRecord {
-	id?: number;
-	name: string;
-	code: string;
-	category: IndicatorCategory;
-	weight: number;
-	scoreScale: number;
-	applyScope: IndicatorApplyScope;
-	description?: string | null;
-	status: IndicatorStatus;
-	createTime?: string;
-	updateTime?: string;
+	data: {
+  id?: number;
+  code: string;
+  status: IndicatorStatus;
+  createTime?: string;
+  updateTime?: string;
+  name: string;
+  category: IndicatorCategory;
+  weight: number;
+  scoreScale: number;
+  applyScope: IndicatorApplyScope;
+} & {
+  description?: string;
+};
 }
 
 export interface DeleteIdsRequest {
 	ids: Array<number>;
 }
 
-export interface ApiResponse_Void {
+export interface ApiResponse_IndicatorRemoveIndicatorResult {
 	code: number;
 	message: string;
-	data?: null;
+	data: Record<string, unknown>;
+}
+
+export interface IndicatorInfoQuery {
+	id: number;
 }
 
 export interface IndicatorPageQuery {
@@ -62,25 +65,32 @@ export interface IndicatorPageQuery {
 export interface ApiResponse_IndicatorPageResult {
 	code: number;
 	message: string;
-	data: IndicatorPageResult;
+	data: {
+  pagination: {
+  page: number;
+  size: number;
+  total: number;
+};
+} & {
+  list: Array<IndicatorRecord>;
+};
 }
 
-export interface IndicatorPageResult {
-	list: Array<IndicatorRecord>;
-	pagination: PagePagination;
-}
+export type IndicatorRecord = {
+  id?: number;
+  code: string;
+  status: IndicatorStatus;
+  createTime?: string;
+  updateTime?: string;
+  name: string;
+  category: IndicatorCategory;
+  weight: number;
+  scoreScale: number;
+  applyScope: IndicatorApplyScope;
+} & {
+  description?: string;
+};
 
-export interface PagePagination {
-	/**
-	 * 页码
-	 */
-	page: number;
-	/**
-	 * 页大小
-	 */
-	size: number;
-	/**
-	 * 总数
-	 */
-	total: number;
-}
+export type IndicatorUpdateIndicatorRequest = IndicatorSaveRequest & {
+  id: number;
+};

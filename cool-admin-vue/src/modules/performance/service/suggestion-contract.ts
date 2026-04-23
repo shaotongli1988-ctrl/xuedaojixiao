@@ -21,9 +21,7 @@ import {
 	expectPerformanceServiceRecord,
 	expectPerformanceServiceString
 } from './service-contract';
-
-const SUGGESTION_TYPE = ['pip', 'promotion'] as const;
-const SUGGESTION_STATUS = ['rejected', 'pending', 'accepted', 'ignored', 'revoked'] as const;
+import { SUGGESTION_STATUS, SUGGESTION_TYPE } from '../shared/contract-enums';
 
 function decodeSuggestionType(value: unknown, field: string): SuggestionType {
 	return expectPerformanceServiceEnum(value, field, SUGGESTION_TYPE);

@@ -7,124 +7,79 @@ export interface HiringSaveRequest {
 	id?: number;
 	candidateName: string;
 	targetDepartmentId: number;
-	targetPosition?: string | null;
-	sourceType?: HiringSourceType | null;
-	sourceId?: number | null;
-	sourceStatusSnapshot?: string | null;
-	sourceSnapshot?: HiringSourceSnapshot | string | null;
-	interviewId?: number | null;
-	resumePoolId?: number | null;
-	recruitPlanId?: number | null;
-	hiringDecision?: string | null;
-	decisionContent?: string | null;
+	targetPosition?: string;
+	sourceType?: HiringSourceType;
+	sourceId?: number;
+	sourceStatusSnapshot?: string;
+	sourceSnapshot?: string | HiringSourceSnapshot;
+	interviewId?: number;
+	resumePoolId?: number;
+	recruitPlanId?: number;
+	hiringDecision?: string;
+	decisionContent?: string;
 	status?: HiringStatus;
 }
 
 export type HiringSourceType = "manual" | "resumePool" | "talentAsset" | "interview";
 
 export interface HiringSourceSnapshot {
-	sourceResource?: HiringSourceType | null;
-	interviewId?: number | null;
-	resumePoolId?: number | null;
-	recruitPlanId?: number | null;
-	recruitPlanTitle?: string | null;
-	candidateName?: string | null;
-	targetDepartmentId?: number | null;
-	targetDepartmentName?: string | null;
-	targetPosition?: string | null;
-	interviewStatus?: InterviewStatus | null;
-	sourceStatusSnapshot?: string | null;
+	sourceResource?: HiringSourceType;
+	interviewId?: number;
+	resumePoolId?: number;
+	recruitPlanId?: number;
+	recruitPlanTitle?: string;
+	candidateName?: string;
+	targetDepartmentId?: number;
+	targetDepartmentName?: string;
+	targetPosition?: string;
+	interviewStatus?: InterviewStatus;
+	sourceStatusSnapshot?: string;
 }
 
-export type InterviewStatus = "scheduled" | "completed" | "cancelled";
+export type InterviewStatus = "cancelled" | "completed" | "scheduled";
 
-export type HiringStatus = "offered" | "accepted" | "rejected" | "closed";
+export type HiringStatus = "rejected" | "closed" | "offered" | "accepted";
 
-export interface ApiResponse_HiringRecord {
+export interface ApiResponse_HiringTransportRecord {
 	code: number;
 	message: string;
-	data: HiringRecord;
+	data: {
+  id?: number;
+  createTime?: string;
+  updateTime?: string;
+  candidateName: string;
+  targetDepartmentId: number;
+} & {
+  targetDepartmentName?: string;
+  targetPosition?: string;
+  sourceType?: HiringSourceType;
+  sourceId?: number;
+  sourceStatusSnapshot?: string;
+  sourceSnapshot?: string | HiringSourceSnapshot;
+  interviewId?: number;
+  resumePoolId?: number;
+  recruitPlanId?: number;
+  hiringDecision?: string;
+  decisionContent?: string;
+  status?: HiringStatus;
+  offeredAt?: string;
+  acceptedAt?: string;
+  rejectedAt?: string;
+  closedAt?: string;
+  closeReason?: string;
+  interviewSnapshot?: HiringSourceSnapshot;
+  resumePoolSnapshot?: HiringSourceSnapshot;
+  recruitPlanSnapshot?: HiringSourceSnapshot;
+};
 }
-
-export interface HiringRecord {
-	id?: number;
-	candidateName: string;
-	targetDepartmentId: number;
-	targetDepartmentName?: string | null;
-	targetPosition?: string | null;
-	sourceType?: HiringSourceType | null;
-	sourceId?: number | null;
-	sourceStatusSnapshot?: string | null;
-	sourceSnapshot?: HiringSourceSnapshot | string | null;
-	interviewId?: number | null;
-	resumePoolId?: number | null;
-	recruitPlanId?: number | null;
-	interviewSummary?: HiringInterviewSummary | null;
-	interviewSnapshot?: HiringInterviewSummary | null;
-	resumePoolSummary?: HiringResumePoolSummary | null;
-	resumePoolSnapshot?: HiringResumePoolSummary | null;
-	recruitPlanSummary?: HiringRecruitPlanSummary | null;
-	recruitPlanSnapshot?: HiringRecruitPlanSummary | null;
-	hiringDecision?: string | null;
-	decisionContent?: string | null;
-	status: HiringStatus;
-	offeredAt?: string | null;
-	acceptedAt?: string | null;
-	rejectedAt?: string | null;
-	closedAt?: string | null;
-	closeReason?: string | null;
-	createTime?: string;
-	updateTime?: string;
-}
-
-export interface HiringInterviewSummary {
-	id: number;
-	candidateName: string;
-	position: string;
-	departmentId?: number | null;
-	interviewDate?: string | null;
-	interviewType?: InterviewType | null;
-	interviewerId?: number | null;
-	interviewerName?: string | null;
-	score?: number | null;
-	status?: InterviewStatus | null;
-	resumePoolId?: number | null;
-	recruitPlanId?: number | null;
-}
-
-export type InterviewType = "technical" | "behavioral" | "manager" | "hr";
-
-export interface HiringResumePoolSummary {
-	id: number;
-	candidateName: string;
-	targetDepartmentId: number;
-	targetDepartmentName?: string | null;
-	targetPosition?: string | null;
-	status?: ResumePoolStatus | null;
-	recruitPlanId?: number | null;
-	jobStandardId?: number | null;
-}
-
-export type ResumePoolStatus = "new" | "screening" | "interviewing" | "archived";
-
-export interface HiringRecruitPlanSummary {
-	id: number;
-	title: string;
-	positionName?: string | null;
-	targetDepartmentId: number;
-	targetDepartmentName?: string | null;
-	headcount?: number | null;
-	startDate?: string | null;
-	endDate?: string | null;
-	status?: RecruitPlanStatus | null;
-	jobStandardId?: number | null;
-}
-
-export type RecruitPlanStatus = "draft" | "active" | "voided" | "closed";
 
 export interface HiringCloseRequest {
 	id: number;
 	closeReason: string;
+}
+
+export interface HiringInfoQuery {
+	id: number;
 }
 
 export interface HiringPageQuery {
@@ -139,32 +94,49 @@ export interface HiringPageQuery {
 export interface ApiResponse_HiringPageResult {
 	code: number;
 	message: string;
-	data: HiringPageResult;
+	data: {
+  pagination: {
+  page: number;
+  size: number;
+  total: number;
+};
+} & {
+  list: Array<HiringTransportRecord>;
+};
 }
 
-export interface HiringPageResult {
-	list: Array<HiringRecord>;
-	pagination: PagePagination;
-}
-
-export interface PagePagination {
-	/**
-	 * 页码
-	 */
-	page: number;
-	/**
-	 * 页大小
-	 */
-	size: number;
-	/**
-	 * 总数
-	 */
-	total: number;
-}
+export type HiringTransportRecord = {
+  id?: number;
+  createTime?: string;
+  updateTime?: string;
+  candidateName: string;
+  targetDepartmentId: number;
+} & {
+  targetDepartmentName?: string;
+  targetPosition?: string;
+  sourceType?: HiringSourceType;
+  sourceId?: number;
+  sourceStatusSnapshot?: string;
+  sourceSnapshot?: string | HiringSourceSnapshot;
+  interviewId?: number;
+  resumePoolId?: number;
+  recruitPlanId?: number;
+  hiringDecision?: string;
+  decisionContent?: string;
+  status?: HiringStatus;
+  offeredAt?: string;
+  acceptedAt?: string;
+  rejectedAt?: string;
+  closedAt?: string;
+  closeReason?: string;
+  interviewSnapshot?: HiringSourceSnapshot;
+  resumePoolSnapshot?: HiringSourceSnapshot;
+  recruitPlanSnapshot?: HiringSourceSnapshot;
+};
 
 export interface HiringStatusUpdateRequest {
 	id: number;
 	status: HiringUpdateStatus;
 }
 
-export type HiringUpdateStatus = "accepted" | "rejected";
+export type HiringUpdateStatus = "rejected" | "accepted";

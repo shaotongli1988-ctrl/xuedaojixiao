@@ -18,6 +18,13 @@ requiredDirectories:
 requiredFiles:
   - "contracts/openapi/xuedao.openapi.json"
   - "contracts/ssot/xuedao-ssot-manifest.yaml"
+  - "contracts/ssot/xuedao-ssot-inventory.md"
+  - "contracts/ssot/environment-config.catalog.json"
+  - "contracts/ssot/database-schema.catalog.json"
+  - "contracts/ssot/menu-route-topology.catalog.json"
+  - "cool-admin-midway/src/modules/performance/domain/registry/contract-source.json"
+  - "cool-admin-midway/src/modules/performance/domain/registry/contract-source.mjs"
+  - "cool-admin-midway/src/modules/performance/domain/registry/contracts.ts"
   - "contracts/ssot/records/change-record.template.yaml"
   - "contracts/ssot/records/verification-record.template.yaml"
   - "scripts/run-repo-consistency-guards.mjs"
@@ -36,11 +43,16 @@ enabledCapabilities:
   localPrePushGate: true
   repoConsistencyGuards: true
   deliveryReports: true
+  environmentConfigCatalog: true
+  databaseSchemaCatalog: true
+  menuRouteTopologyCatalog: true
+  performanceContractSource: true
   changeRecordsTemplate: true
   verificationRecordsTemplate: true
 
 adoptionSequence:
   - "confirm_openapi_source_path"
+  - "register_performance_contract_source"
   - "bind_manifest_to_existing_scripts"
   - "create_first_change_record_from_template"
   - "create_first_verification_record_from_template"
@@ -49,7 +61,7 @@ adoptionSequence:
 
 successCriteria:
   - "manifest points to real xuedao scripts"
+  - "inventory maps every repository SSOT category to a concrete owner and validator"
   - "first repo-level change writes both change and verification records"
   - "reports/delivery becomes the default governance artifact directory"
   - "pre-push and consistency guard commands are traceable from this bootstrap file"
-

@@ -6,12 +6,12 @@
 export interface CertificateRecord {
 	id?: number;
 	name: string;
-	code?: string | null;
-	category?: string | null;
-	issuer?: string | null;
-	description?: string | null;
-	validityMonths?: number | null;
-	sourceCourseId?: number | null;
+	code?: string;
+	category?: string;
+	issuer?: string;
+	description?: string;
+	validityMonths?: number;
+	sourceCourseId?: number;
 	status?: CertificateStatus;
 	issuedCount?: number;
 	createTime?: string;
@@ -23,21 +23,38 @@ export type CertificateStatus = "draft" | "active" | "retired";
 export interface ApiResponse_CertificateRecord {
 	code: number;
 	message: string;
-	data: CertificateRecord;
+	data: {
+  id?: number;
+  name: string;
+  code?: string;
+  category?: string;
+  issuer?: string;
+  description?: string;
+  validityMonths?: number;
+  sourceCourseId?: number;
+  status?: CertificateStatus;
+  issuedCount?: number;
+  createTime?: string;
+  updateTime?: string;
+};
+}
+
+export interface CertificateInfoQuery {
+	id: number;
 }
 
 export interface CertificateIssueRequest {
 	certificateId: number;
 	employeeId: number;
 	issuedAt: string;
-	remark?: string | null;
-	sourceCourseId?: number | null;
+	remark?: string;
+	sourceCourseId?: number;
 }
 
-export interface ApiResponse_Void {
+export interface ApiResponse_CertificateIssueCertificateResult {
 	code: number;
 	message: string;
-	data?: null;
+	data: Record<string, unknown>;
 }
 
 export interface CertificatePageQuery {
@@ -51,12 +68,10 @@ export interface CertificatePageQuery {
 export interface ApiResponse_CertificatePageResult {
 	code: number;
 	message: string;
-	data: CertificatePageResult;
-}
-
-export interface CertificatePageResult {
-	list: Array<CertificateRecord>;
-	pagination: PagePagination;
+	data: {
+  list: Array<CertificateRecord>;
+  pagination: PagePagination;
+};
 }
 
 export interface PagePagination {
@@ -88,12 +103,10 @@ export type CertificateRecordStatus = "issued" | "revoked";
 export interface ApiResponse_CertificateLedgerPageResult {
 	code: number;
 	message: string;
-	data: CertificateLedgerPageResult;
-}
-
-export interface CertificateLedgerPageResult {
-	list: Array<CertificateLedgerRecord>;
-	pagination: PagePagination;
+	data: {
+  list: Array<CertificateLedgerRecord>;
+  pagination: PagePagination;
+};
 }
 
 export interface CertificateLedgerRecord {
@@ -102,10 +115,14 @@ export interface CertificateLedgerRecord {
 	certificateName?: string;
 	employeeId?: number;
 	employeeName?: string;
-	departmentId?: number | null;
-	departmentName?: string | null;
+	departmentId?: number;
+	departmentName?: string;
 	issuedAt: string;
 	issuedBy?: string;
-	sourceCourseId?: number | null;
+	sourceCourseId?: number;
 	status?: CertificateRecordStatus;
 }
+
+export type CertificateUpdateCertificateRequest = CertificateRecord & {
+  id: number;
+};

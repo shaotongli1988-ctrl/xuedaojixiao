@@ -28,7 +28,7 @@ export interface AssetTransferCreateTransferRequest {
 
 export type AssetStatus = "assigned" | "lost" | "pendingInbound" | "available" | "maintenance" | "inTransfer" | "inventorying" | "scrapped";
 
-export type AssetTransferStatus = "draft" | "cancelled" | "submitted" | "completed" | "inTransit";
+export type AssetTransferStatus = "draft" | "submitted" | "cancelled" | "completed" | "inTransit";
 
 export interface ApiResponse_AssetTransferRecord {
 	code: number;

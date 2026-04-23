@@ -5,12 +5,12 @@
 
 export interface CourseCreateCourseRequest {
 	id?: number;
-	category?: string;
+	code?: string;
+	status?: CourseStatus;
 	createTime?: string;
 	updateTime?: string;
+	category?: string;
 	title?: string;
-	status?: CourseStatus;
-	code?: string;
 	description?: string;
 	enrollmentCount?: number;
 	startDate?: string;
@@ -24,12 +24,12 @@ export interface ApiResponse_CourseRecord {
 	message: string;
 	data: {
   id?: number;
-  category?: string;
+  code?: string;
+  status?: CourseStatus;
   createTime?: string;
   updateTime?: string;
+  category?: string;
   title: string;
-  status?: CourseStatus;
-  code?: string;
   description?: string;
   enrollmentCount?: number;
 } & {
@@ -105,12 +105,12 @@ export interface ApiResponse_CoursePageResult {
 
 export type CourseRecord = {
   id?: number;
-  category?: string;
+  code?: string;
+  status?: CourseStatus;
   createTime?: string;
   updateTime?: string;
+  category?: string;
   title: string;
-  status?: CourseStatus;
-  code?: string;
   description?: string;
   enrollmentCount?: number;
 } & {
@@ -120,12 +120,12 @@ export type CourseRecord = {
 
 export type CourseUpdatePayload = {
   id?: number;
-  category?: string;
+  code?: string;
+  status?: CourseStatus;
   createTime?: string;
   updateTime?: string;
+  category?: string;
   title?: string;
-  status?: CourseStatus;
-  code?: string;
   description?: string;
   enrollmentCount?: number;
   startDate?: string;
@@ -149,7 +149,7 @@ export interface ApiResponse_CourseExamSummary {
 };
 }
 
-export type CourseExamResultStatus = "locked" | "pending" | "passed" | "failed";
+export type CourseExamResultStatus = "pending" | "locked" | "passed" | "failed";
 
 export interface CourseExamFetchSummaryQuery {
 	courseId: number;
@@ -160,8 +160,8 @@ export interface ApiResponse_CourseLearningTaskRecord {
 	message: string;
 	data: {
   id: number;
-  title: string;
   status: CourseLearningTaskStatus;
+  title: string;
   courseId: number;
   taskType: CourseLearningTaskType;
   submissionText?: string;
@@ -206,8 +206,8 @@ export interface ApiResponse_CourseLearningPageResult {
 
 export type CourseLearningTaskRecord = {
   id: number;
-  title: string;
   status: CourseLearningTaskStatus;
+  title: string;
   courseId: number;
   taskType: CourseLearningTaskType;
   submissionText?: string;

@@ -19,6 +19,13 @@ export type GlobalSsotModuleKey =
 
 export type GlobalSsotModuleCategory = 'business' | 'platform' | 'support';
 
+/**
+ * 模块成熟度语义：
+ * - implemented: 模块已纳入仓库级治理主链，并具备稳定 registry 或 machine source 主入口；局部 surface 仍可为 partial，但缺口必须显式登记。
+ * - partial: 已有局部事实源或消费者链，但尚未形成可依赖的全模块闭环。
+ * - planned: 已进入治理路线图，但 machine source 或守卫还未稳定到可执行状态。
+ * - excluded: 明确排除在当前业务域治理范围外，但必须保留显式登记以避免盲区。
+ */
 export type GlobalSsotModuleStatus =
   | 'implemented'
   | 'partial'
@@ -34,6 +41,13 @@ export type GlobalSsotSurfaceKey =
   | 'business_dict'
   | 'frontend_types';
 
+/**
+ * 表面成熟度语义：
+ * - implemented: 已有唯一主源且消费者链真实使用。
+ * - partial: 已有主源雏形，但仍存在影子源、双向维护或消费链不闭合。
+ * - missing: 当前没有可信主源。
+ * - out_of_scope: 当前模块不以该表面作为治理重点。
+ */
 export type GlobalSsotSurfaceStatus =
   | 'implemented'
   | 'partial'

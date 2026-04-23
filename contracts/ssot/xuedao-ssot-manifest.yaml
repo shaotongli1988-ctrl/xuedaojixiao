@@ -2,7 +2,7 @@
 # Responsible for binding current repository-wide SSOT assets to concrete
 # scripts, sources, and generated consumers.
 
-manifestVersion: "1.0"
+manifestVersion: "1.1"
 repository:
   key: "xuedao"
   root: "/Users/shaotongli/Documents/xuedao"
@@ -12,13 +12,34 @@ sourceOfTruth:
     sourceFile: "contracts/openapi/xuedao.openapi.json"
     validators:
       - "node ./scripts/check-doc-contract-writeback.mjs"
+      - "node ./scripts/check-performance-contract-closure.mjs"
     generators:
       - "node ./scripts/openapi-contract-sync.mjs --write"
       - "node ./scripts/sync-eps-openapi-ssot.mjs --write"
     generatedConsumers:
       - "cool-admin-vue/src/modules/performance/service/"
+      - "cool-admin-vue/src/modules/performance/generated/"
       - "cool-uni/service/performance/"
+      - "cool-uni/generated/"
+      - "cool-uni/types/"
       - "cool-admin-vue/build/cool/eps.ssot.d.ts"
+
+  performanceContractSource:
+    sourceFiles:
+      - "cool-admin-midway/src/modules/performance/domain/registry/contract-source.json"
+      - "cool-admin-midway/src/modules/performance/domain/registry/contract-source.mjs"
+      - "cool-admin-midway/src/modules/performance/domain/registry/contracts.ts"
+    validators:
+      - "node ./scripts/check-performance-contract-closure.mjs"
+      - "node ./scripts/check-xuedao-ssot-manifest.mjs"
+    generatedConsumers:
+      - "cool-admin-midway/src/modules/performance/domain/registry/index.ts"
+      - "cool-admin-midway/src/modules/performance/domain/index.ts"
+      - "scripts/sync-performance-openapi-ssot.mjs"
+      - "scripts/openapi-contract-sync.mjs"
+      - "cool-admin-vue/src/modules/performance/generated/"
+      - "cool-uni/generated/"
+      - "cool-uni/types/"
 
   permissionBits:
     sourceFiles:
@@ -57,6 +78,48 @@ sourceOfTruth:
       - "cool-admin-midway/src/modules/user/middleware/app.ts"
       - "cool-admin-vue/src/plugins/upload/hooks/index.ts"
       - "cool-uni/cool/upload/index.ts"
+
+  environmentConfig:
+    sourceFile: "contracts/ssot/environment-config.catalog.json"
+    validators:
+      - "node ./scripts/check-environment-config-ssot.mjs"
+    generatedConsumers:
+      - "cool-admin-midway/src/config"
+      - "cool-admin-midway/src/comm/port.ts"
+      - "cool-admin-midway/src/modules/performance/service/workPlan.ts"
+      - "cool-admin-midway/scripts"
+      - "cool-admin-vue/src/config"
+      - "cool-admin-vue/src/cool/service/request.ts"
+      - "cool-admin-vue/env.d.ts"
+      - "cool-admin-vue/test/material-gui-smoke.mjs"
+      - "cool-uni/config"
+      - "scripts/git-pre-push-gate.mjs"
+
+  databaseSchema:
+    sourceFile: "contracts/ssot/database-schema.catalog.json"
+    validators:
+      - "node ./scripts/check-database-schema-ssot.mjs"
+    generatedConsumers:
+      - "cool-admin-midway/src/entities.ts"
+      - "cool-admin-midway/src/modules/base/entity"
+      - "cool-admin-midway/src/modules/performance/entity"
+      - "cool-admin-midway/scripts/migrations"
+      - "cool-admin-midway/scripts/run-migrations.mjs"
+      - "cool-admin-midway/scripts/ensure-local-schema.mjs"
+      - "cool-admin-midway/scripts/ensure-local-performance-schema.mjs"
+      - "cool-admin-midway/src/config/config.local.ts"
+      - "cool-admin-midway/src/config/config.prod.ts"
+
+  menuRouteTopology:
+    sourceFile: "contracts/ssot/menu-route-topology.catalog.json"
+    validators:
+      - "node ./scripts/check-menu-route-viewpath-drift.mjs --file cool-admin-midway/src/modules/base/menu.json"
+    generatedConsumers:
+      - "cool-admin-midway/src/modules/base/menu.json"
+      - "cool-admin-vue/src/modules/base/store/menu.ts"
+      - "cool-admin-vue/src/modules/performance/views"
+      - "performance-management-system/docs/10-路由与菜单映射.md"
+      - "performance-management-system/docs/06-权限矩阵.md"
 
   mobileSharedContract:
     sourceFile: "cool-uni/types/performance-mobile.ts"

@@ -1,0 +1,225 @@
+{
+  "version": "1.0",
+  "owner": "repo-governance",
+  "scope": "runtime-entrypoints-and-repo-automation",
+  "notes": [
+    "This catalog is the repository-level SSOT for environment variable names and namespaces that are allowed in runtime entrypoints and governance automation.",
+    "It does not replace code-level runtime config objects; it governs variable identity, sensitivity, and allowed discovery roots.",
+    "Phase-1 governance only covers curated runtime/config/automation roots and intentionally excludes vendor, generated, and historical scratch files."
+  ],
+  "scanRoots": [
+    "cool-admin-midway/src/config",
+    "cool-admin-midway/src/comm/port.ts",
+    "cool-admin-midway/src/modules/performance/service/workPlan.ts",
+    "cool-admin-midway/scripts",
+    "cool-admin-vue/src/config",
+    "cool-admin-vue/src/cool/service/request.ts",
+    "cool-admin-vue/env.d.ts",
+    "cool-admin-vue/vite.config.ts",
+    "cool-admin-vue/test",
+    "cool-uni/config",
+    "cool-uni/vite.config.ts",
+    "scripts"
+  ],
+  "exactVariables": {
+    "BASE_URL": {
+      "classification": "runtime-builtin",
+      "sensitive": false,
+      "required": false,
+      "description": "Frontend base URL runtime value used by browser-side routing and selected smoke helpers."
+    },
+    "COOL_ADMIN_ALLOW_MULTI_INSTANCE": {
+      "classification": "backend-runtime",
+      "sensitive": false,
+      "required": false,
+      "description": "Allows the backend dev-port guard to skip the single-instance restriction."
+    },
+    "COOL_ADMIN_PORT": {
+      "classification": "backend-runtime",
+      "sensitive": false,
+      "required": false,
+      "description": "Preferred backend runtime port override."
+    },
+    "COOL_ADMIN_PROXY_TARGET": {
+      "classification": "frontend-runtime",
+      "sensitive": false,
+      "required": false,
+      "description": "Explicit dev proxy target for cool-admin-vue."
+    },
+    "DEV": {
+      "classification": "runtime-builtin",
+      "sensitive": false,
+      "required": false,
+      "description": "Vite development-mode builtin consumed by cool-admin-vue."
+    },
+    "LOCAL_DB_HOST": {
+      "classification": "database-runtime",
+      "sensitive": false,
+      "required": false,
+      "description": "MySQL host for local Midway boot, migrations, seed, and audit scripts."
+    },
+    "LOCAL_DB_NAME": {
+      "classification": "database-runtime",
+      "sensitive": false,
+      "required": false,
+      "description": "MySQL database name for local Midway boot, migrations, seed, and audit scripts."
+    },
+    "LOCAL_DB_PASSWORD": {
+      "classification": "database-runtime",
+      "sensitive": true,
+      "required": false,
+      "description": "MySQL password for local Midway boot, migrations, seed, and audit scripts."
+    },
+    "LOCAL_DB_PORT": {
+      "classification": "database-runtime",
+      "sensitive": false,
+      "required": false,
+      "description": "MySQL port for local Midway boot, migrations, seed, and audit scripts."
+    },
+    "LOCAL_DB_USER": {
+      "classification": "database-runtime",
+      "sensitive": false,
+      "required": false,
+      "description": "MySQL username for local Midway boot, migrations, seed, and audit scripts."
+    },
+    "MATERIAL_FRONTEND_BASE_URL": {
+      "classification": "automation-runtime",
+      "sensitive": false,
+      "required": false,
+      "description": "GUI smoke target for the material frontend proxy flow."
+    },
+    "MATERIAL_GUI_BACKEND_CONFIG_PATH": {
+      "classification": "automation-runtime",
+      "sensitive": false,
+      "required": false,
+      "description": "Optional backend runtime fingerprint path for material GUI smoke."
+    },
+    "MATERIAL_GUI_BROWSER": {
+      "classification": "automation-runtime",
+      "sensitive": false,
+      "required": false,
+      "description": "Playwright browser selection for material GUI smoke."
+    },
+    "MATERIAL_GUI_HEADLESS": {
+      "classification": "automation-runtime",
+      "sensitive": false,
+      "required": false,
+      "description": "Headless toggle for material GUI smoke."
+    },
+    "MODE": {
+      "classification": "runtime-builtin",
+      "sensitive": false,
+      "required": false,
+      "description": "Vite runtime mode consumed by cool-admin-vue and cool-uni config."
+    },
+    "PORT": {
+      "classification": "backend-runtime",
+      "sensitive": false,
+      "required": false,
+      "description": "Fallback backend runtime port override when COOL_ADMIN_PORT is absent."
+    },
+    "STAGE2_SMOKE_ALLOW_RUNTIME_MISMATCH": {
+      "classification": "automation-runtime",
+      "sensitive": false,
+      "required": false,
+      "description": "Allows stage-2 smoke to continue when runtime fingerprint mismatch is accepted explicitly."
+    },
+    "STAGE2_SMOKE_BASE_URL": {
+      "classification": "automation-runtime",
+      "sensitive": false,
+      "required": false,
+      "description": "Shared backend smoke base URL namespace for stage-2 flows."
+    },
+    "STAGE2_SMOKE_CACHE_DIR": {
+      "classification": "automation-runtime",
+      "sensitive": false,
+      "required": false,
+      "description": "Shared cache directory namespace for stage-2 smoke and GUI helpers."
+    },
+    "STAGE2_SMOKE_PASSWORD": {
+      "classification": "automation-runtime",
+      "sensitive": true,
+      "required": false,
+      "description": "Shared smoke password namespace for stage-2 flows."
+    },
+    "STAGE2_SMOKE_USERNAME": {
+      "classification": "automation-runtime",
+      "sensitive": false,
+      "required": false,
+      "description": "Shared smoke username namespace for stage-2 GUI helpers."
+    },
+    "UNI_INPUT_DIR": {
+      "classification": "runtime-builtin",
+      "sensitive": false,
+      "required": false,
+      "description": "Uni/Vite build root override injected by cool-uni vite config."
+    },
+    "VITE_DEV_PROXY_TARGET": {
+      "classification": "frontend-runtime",
+      "sensitive": false,
+      "required": false,
+      "description": "Vite-side dev proxy target fallback for cool-admin-vue."
+    },
+    "VITE_NAME": {
+      "classification": "frontend-runtime",
+      "sensitive": false,
+      "required": false,
+      "description": "Frontend app display name."
+    },
+    "VITE_ROOT_DIR": {
+      "classification": "runtime-builtin",
+      "sensitive": false,
+      "required": false,
+      "description": "Uni/Vite root directory injected during build startup."
+    },
+    "VITE_TIMEOUT": {
+      "classification": "frontend-runtime",
+      "sensitive": false,
+      "required": false,
+      "description": "Frontend request timeout value."
+    },
+    "WORK_PLAN_DINGTALK_SYNC_TOKEN": {
+      "classification": "integration-secret",
+      "sensitive": true,
+      "required": false,
+      "description": "Work-plan DingTalk sync token consumed by the performance service."
+    }
+  },
+  "patternVariables": [
+    {
+      "id": "approval-flow-smoke",
+      "pattern": "^APPROVAL_FLOW_SMOKE_.*$",
+      "classification": "automation-runtime",
+      "sensitive": false,
+      "description": "Approval-flow smoke namespace."
+    },
+    {
+      "id": "base-admin-login-smoke",
+      "pattern": "^BASE_ADMIN_LOGIN_.*$",
+      "classification": "automation-runtime",
+      "sensitive": false,
+      "description": "Base admin login smoke namespace."
+    },
+    {
+      "id": "latest-reset-runtime",
+      "pattern": "^LATEST_RESET_.*$",
+      "classification": "automation-runtime",
+      "sensitive": false,
+      "description": "Runtime reset orchestration namespace."
+    },
+    {
+      "id": "recruitment-chain-runtime",
+      "pattern": "^RECRUITMENT_CHAIN(?:_SMOKE)?_.*$",
+      "classification": "automation-runtime",
+      "sensitive": false,
+      "description": "Recruitment-chain smoke and live runtime namespace."
+    },
+    {
+      "id": "theme-smoke-runtime",
+      "pattern": "^THEME\\d+_.*$",
+      "classification": "automation-runtime",
+      "sensitive": false,
+      "description": "Theme-scoped smoke namespace. Theme-specific URLs, credentials, cache paths, and seed selectors must stay under this prefix."
+    }
+  ]
+}

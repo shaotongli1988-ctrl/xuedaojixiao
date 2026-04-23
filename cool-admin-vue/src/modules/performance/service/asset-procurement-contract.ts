@@ -19,8 +19,7 @@ import {
 	expectPerformanceServiceRecord,
 	expectPerformanceServiceString
 } from './service-contract';
-
-const ASSET_PROCUREMENT_STATUS = ['draft', 'cancelled', 'submitted', 'received'] as const;
+import { ASSET_PROCUREMENT_STATUS } from '../shared/contract-enums';
 
 function decodeOptionalNullableNumber(value: unknown, field: string) {
 	if (value === undefined) {

@@ -25,16 +25,13 @@ import {
 	expectPerformanceServiceRecord,
 	expectPerformanceServiceString
 } from './service-contract';
-
-const DASHBOARD_CROSS_METRIC_CODE = [
-	'recruitment_completion_rate',
-	'training_pass_rate',
-	'meeting_effectiveness_index'
-] as const;
-const DASHBOARD_CROSS_SOURCE_DOMAIN = ['recruitment', 'training', 'meeting'] as const;
-const DASHBOARD_CROSS_SCOPE_TYPE = ['global', 'department_tree'] as const;
-const DASHBOARD_CROSS_DATA_STATUS = ['ready', 'delayed', 'unavailable'] as const;
-const DASHBOARD_GRADE = ['S', 'A', 'B', 'C'] as const;
+import {
+	DASHBOARD_CROSS_DATA_STATUS,
+	DASHBOARD_CROSS_METRIC_CODE,
+	DASHBOARD_CROSS_SCOPE_TYPE,
+	DASHBOARD_CROSS_SOURCE_DOMAIN,
+	DASHBOARD_GRADE
+} from '../shared/contract-enums';
 
 function decodeDashboardCrossMetricCode(value: unknown, field: string): DashboardCrossMetricCode {
 	return expectPerformanceServiceEnum(value, field, DASHBOARD_CROSS_METRIC_CODE);

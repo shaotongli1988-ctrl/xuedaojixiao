@@ -1,0 +1,855 @@
+{
+  "version": "phase5-v1",
+  "ownedSourceFiles": [
+    "cool-admin-midway/src/modules/performance/domain/registry/contract-source.json",
+    "cool-admin-midway/src/modules/performance/domain/registry/contract-source.mjs",
+    "cool-admin-midway/src/modules/performance/domain/registry/contracts.ts",
+    "cool-admin-midway/src/modules/performance/domain/registry/index.ts"
+  ],
+  "producer": {
+    "publishOnlyModules": [],
+    "manualModules": [
+      {
+        "moduleRoot": "approvalFlow",
+        "controllerFile": "approval-flow.ts",
+        "strategy": "manual_operations",
+        "operationPreset": "approvalFlow"
+      },
+      {
+        "moduleRoot": "annualInspection",
+        "controllerFile": "annualInspection.ts",
+        "strategy": "shared_office_collab",
+        "operationPreset": "officeCollab"
+      },
+      {
+        "moduleRoot": "designCollab",
+        "controllerFile": "designCollab.ts",
+        "strategy": "shared_office_collab",
+        "operationPreset": "officeCollab"
+      },
+      {
+        "moduleRoot": "expressCollab",
+        "controllerFile": "expressCollab.ts",
+        "strategy": "shared_office_collab",
+        "operationPreset": "officeCollab"
+      },
+      {
+        "moduleRoot": "honor",
+        "controllerFile": "honor.ts",
+        "strategy": "shared_office_collab",
+        "operationPreset": "officeCollab"
+      },
+      {
+        "moduleRoot": "intellectualProperty",
+        "controllerFile": "intellectualProperty.ts",
+        "strategy": "shared_office_collab",
+        "operationPreset": "officeCollab"
+      },
+      {
+        "moduleRoot": "publicityMaterial",
+        "controllerFile": "publicityMaterial.ts",
+        "strategy": "shared_office_collab",
+        "operationPreset": "officeCollab"
+      },
+      {
+        "moduleRoot": "vehicle",
+        "controllerFile": "vehicle.ts",
+        "strategy": "shared_office_collab",
+        "operationPreset": "officeCollab"
+      },
+      {
+        "moduleRoot": "materialStockLog",
+        "controllerFile": "materialStockLog.ts",
+        "strategy": "manual_operations",
+        "operationPreset": "materialStockLog"
+      }
+    ],
+    "serviceModules": [
+      {
+        "moduleRoot": "assessment",
+        "controllerFile": "assessment.ts",
+        "serviceFile": "assessment.ts"
+      },
+      {
+        "moduleRoot": "assetAssignment",
+        "controllerFile": "assetAssignment.ts",
+        "serviceFile": "asset-assignment.ts"
+      },
+      {
+        "moduleRoot": "assetAssignmentRequest",
+        "controllerFile": "assetAssignmentRequest.ts",
+        "serviceFile": "asset-assignment-request.ts"
+      },
+      {
+        "moduleRoot": "assetDashboard",
+        "controllerFile": "assetDashboard.ts",
+        "serviceFile": "asset-dashboard.ts"
+      },
+      {
+        "moduleRoot": "assetDepreciation",
+        "controllerFile": "assetDepreciation.ts",
+        "serviceFile": "asset-depreciation.ts"
+      },
+      {
+        "moduleRoot": "assetDisposal",
+        "controllerFile": "assetDisposal.ts",
+        "serviceFile": "asset-disposal.ts"
+      },
+      {
+        "moduleRoot": "assetInfo",
+        "controllerFile": "assetInfo.ts",
+        "serviceFile": "asset-info.ts"
+      },
+      {
+        "moduleRoot": "assetInventory",
+        "controllerFile": "assetInventory.ts",
+        "serviceFile": "asset-inventory.ts"
+      },
+      {
+        "moduleRoot": "assetMaintenance",
+        "controllerFile": "assetMaintenance.ts",
+        "serviceFile": "asset-maintenance.ts"
+      },
+      {
+        "moduleRoot": "assetProcurement",
+        "controllerFile": "assetProcurement.ts",
+        "serviceFile": "asset-procurement.ts"
+      },
+      {
+        "moduleRoot": "assetReport",
+        "controllerFile": "assetReport.ts",
+        "serviceFile": "asset-report.ts"
+      },
+      {
+        "moduleRoot": "assetTransfer",
+        "controllerFile": "assetTransfer.ts",
+        "serviceFile": "asset-transfer.ts"
+      },
+      {
+        "moduleRoot": "capabilityItem",
+        "controllerFile": "capabilityItem.ts",
+        "serviceFile": "capability.ts"
+      },
+      {
+        "moduleRoot": "capabilityModel",
+        "controllerFile": "capabilityModel.ts",
+        "serviceFile": "capability.ts"
+      },
+      {
+        "moduleRoot": "capabilityPortrait",
+        "controllerFile": "capabilityPortrait.ts",
+        "serviceFile": "capability.ts"
+      },
+      {
+        "moduleRoot": "certificate",
+        "controllerFile": "certificate.ts",
+        "serviceFile": "certificate.ts"
+      },
+      {
+        "moduleRoot": "contract",
+        "controllerFile": "contract.ts",
+        "serviceFile": "contract.ts"
+      },
+      {
+        "moduleRoot": "courseExam",
+        "controllerFile": "course-exam.ts",
+        "serviceFile": "course-exam.ts"
+      },
+      {
+        "moduleRoot": "coursePractice",
+        "controllerFile": "course-practice.ts",
+        "serviceFile": "course-practice.ts"
+      },
+      {
+        "moduleRoot": "courseRecite",
+        "controllerFile": "course-recite.ts",
+        "serviceFile": "course-recite.ts"
+      },
+      {
+        "moduleRoot": "course",
+        "controllerFile": "course.ts",
+        "serviceFile": "course.ts"
+      },
+      {
+        "moduleRoot": "dashboard",
+        "controllerFile": "dashboard.ts",
+        "serviceFile": "dashboard.ts"
+      },
+      {
+        "moduleRoot": "documentCenter",
+        "controllerFile": "documentCenter.ts",
+        "serviceFile": "documentCenter.ts"
+      },
+      {
+        "moduleRoot": "feedback",
+        "controllerFile": "feedback.ts",
+        "serviceFile": "feedback.ts"
+      },
+      {
+        "moduleRoot": "goal",
+        "controllerFile": "goal.ts",
+        "serviceFile": "goal.ts"
+      },
+      {
+        "moduleRoot": "hiring",
+        "controllerFile": "hiring.ts",
+        "serviceFile": "hiring.ts"
+      },
+      {
+        "moduleRoot": "indicator",
+        "controllerFile": "indicator.ts",
+        "serviceFile": "indicator.ts"
+      },
+      {
+        "moduleRoot": "interview",
+        "controllerFile": "interview.ts",
+        "serviceFile": "interview.ts"
+      },
+      {
+        "moduleRoot": "jobStandard",
+        "controllerFile": "job-standard.ts",
+        "serviceFile": "job-standard.ts"
+      },
+      {
+        "moduleRoot": "knowledgeBase",
+        "controllerFile": "knowledgeBase.ts",
+        "serviceFile": "knowledgeBase.ts"
+      },
+      {
+        "moduleRoot": "materialCatalog",
+        "controllerFile": "materialCatalog.ts",
+        "serviceFile": "material-catalog.ts"
+      },
+      {
+        "moduleRoot": "materialInbound",
+        "controllerFile": "materialInbound.ts",
+        "serviceFile": "material-inbound.ts"
+      },
+      {
+        "moduleRoot": "materialIssue",
+        "controllerFile": "materialIssue.ts",
+        "serviceFile": "material-issue.ts"
+      },
+      {
+        "moduleRoot": "materialStock",
+        "controllerFile": "materialStock.ts",
+        "serviceFile": "material-stock.ts"
+      },
+      {
+        "moduleRoot": "meeting",
+        "controllerFile": "meeting.ts",
+        "serviceFile": "meeting.ts"
+      },
+      {
+        "moduleRoot": "pip",
+        "controllerFile": "pip.ts",
+        "serviceFile": "pip.ts"
+      },
+      {
+        "moduleRoot": "promotion",
+        "controllerFile": "promotion.ts",
+        "serviceFile": "promotion.ts"
+      },
+      {
+        "moduleRoot": "purchaseOrder",
+        "controllerFile": "purchase-order.ts",
+        "serviceFile": "purchase-order.ts"
+      },
+      {
+        "moduleRoot": "purchaseReport",
+        "controllerFile": "purchase-report.ts",
+        "serviceFile": "purchase-report.ts"
+      },
+      {
+        "moduleRoot": "recruitPlan",
+        "controllerFile": "recruit-plan.ts",
+        "serviceFile": "recruit-plan.ts"
+      },
+      {
+        "moduleRoot": "resumePool",
+        "controllerFile": "resumePool.ts",
+        "serviceFile": "resumePool.ts"
+      },
+      {
+        "moduleRoot": "salary",
+        "controllerFile": "salary.ts",
+        "serviceFile": "salary.ts"
+      },
+      {
+        "moduleRoot": "suggestion",
+        "controllerFile": "suggestion.ts",
+        "serviceFile": "suggestion.ts"
+      },
+      {
+        "moduleRoot": "supplier",
+        "controllerFile": "supplier.ts",
+        "serviceFile": "supplier.ts"
+      },
+      {
+        "moduleRoot": "talentAsset",
+        "controllerFile": "talentAsset.ts",
+        "serviceFile": "talentAsset.ts"
+      },
+      {
+        "moduleRoot": "teacherAgent",
+        "controllerFile": "teacher-agent.ts",
+        "serviceFile": "teacherAgent.ts"
+      },
+      {
+        "moduleRoot": "teacherAgentAudit",
+        "controllerFile": "teacher-agent-audit.ts",
+        "serviceFile": "teacherAgentAudit.ts"
+      },
+      {
+        "moduleRoot": "teacherAgentRelation",
+        "controllerFile": "teacher-agent-relation.ts",
+        "serviceFile": "teacherAgentRelation.ts"
+      },
+      {
+        "moduleRoot": "teacherAttribution",
+        "controllerFile": "teacher-attribution.ts",
+        "serviceFile": "teacherAttribution.ts"
+      },
+      {
+        "moduleRoot": "teacherAttributionConflict",
+        "controllerFile": "teacher-attribution-conflict.ts",
+        "serviceFile": "teacherAttributionConflict.ts"
+      },
+      {
+        "moduleRoot": "teacherClass",
+        "controllerFile": "teacher-class.ts",
+        "serviceFile": "teacherClass.ts"
+      },
+      {
+        "moduleRoot": "teacherCooperation",
+        "controllerFile": "teacher-cooperation.ts",
+        "serviceFile": "teacherCooperation.ts"
+      },
+      {
+        "moduleRoot": "teacherDashboard",
+        "controllerFile": "teacher-dashboard.ts",
+        "serviceFile": "teacherDashboard.ts"
+      },
+      {
+        "moduleRoot": "teacherFollow",
+        "controllerFile": "teacher-follow.ts",
+        "serviceFile": "teacherFollow.ts"
+      },
+      {
+        "moduleRoot": "teacherInfo",
+        "controllerFile": "teacher-info.ts",
+        "serviceFile": "teacherInfo.ts"
+      },
+      {
+        "moduleRoot": "teacherTodo",
+        "controllerFile": "teacher-todo.ts",
+        "serviceFile": "teacherTodo.ts"
+      },
+      {
+        "moduleRoot": "workPlan",
+        "controllerFile": "workPlan.ts",
+        "serviceFile": "workPlan.ts"
+      }
+    ]
+  },
+  "consumers": {
+    "webSupportFiles": [
+      "access-context-contract.ts",
+      "office-ledger-contract.ts",
+      "service-contract.ts",
+      "teacher-contract.ts"
+    ],
+    "webTargets": [
+      {
+        "targetKey": "annual-inspection",
+        "moduleRoots": ["annualInspection"],
+        "serviceFiles": ["annualInspection.ts"],
+        "contractAdapterFiles": []
+      },
+      {
+        "targetKey": "assessment",
+        "moduleRoots": ["assessment"],
+        "serviceFiles": ["assessment.ts"],
+        "contractAdapterFiles": ["assessment-contract.ts"]
+      },
+      {
+        "targetKey": "asset-assignment-request",
+        "moduleRoots": ["assetAssignmentRequest"],
+        "serviceFiles": ["asset-assignment-request.ts"],
+        "contractAdapterFiles": ["asset-assignment-request-contract.ts"]
+      },
+      {
+        "targetKey": "asset-assignment",
+        "moduleRoots": ["assetAssignment"],
+        "serviceFiles": ["asset-assignment.ts"],
+        "contractAdapterFiles": ["asset-assignment-contract.ts"]
+      },
+      {
+        "targetKey": "asset-dashboard",
+        "moduleRoots": ["assetDashboard"],
+        "serviceFiles": ["asset-dashboard.ts"],
+        "contractAdapterFiles": ["asset-dashboard-contract.ts"]
+      },
+      {
+        "targetKey": "asset-depreciation",
+        "moduleRoots": ["assetDepreciation"],
+        "serviceFiles": ["asset-depreciation.ts"],
+        "contractAdapterFiles": ["asset-depreciation-contract.ts"]
+      },
+      {
+        "targetKey": "asset-disposal",
+        "moduleRoots": ["assetDisposal"],
+        "serviceFiles": ["asset-disposal.ts"],
+        "contractAdapterFiles": ["asset-disposal-contract.ts"]
+      },
+      {
+        "targetKey": "asset-info",
+        "moduleRoots": ["assetInfo"],
+        "serviceFiles": ["asset-info.ts"],
+        "contractAdapterFiles": ["asset-info-contract.ts"]
+      },
+      {
+        "targetKey": "asset-inventory",
+        "moduleRoots": ["assetInventory"],
+        "serviceFiles": ["asset-inventory.ts"],
+        "contractAdapterFiles": ["asset-inventory-contract.ts"]
+      },
+      {
+        "targetKey": "asset-maintenance",
+        "moduleRoots": ["assetMaintenance"],
+        "serviceFiles": ["asset-maintenance.ts"],
+        "contractAdapterFiles": ["asset-maintenance-contract.ts"]
+      },
+      {
+        "targetKey": "asset-procurement",
+        "moduleRoots": ["assetProcurement"],
+        "serviceFiles": ["asset-procurement.ts"],
+        "contractAdapterFiles": ["asset-procurement-contract.ts"]
+      },
+      {
+        "targetKey": "asset-report",
+        "moduleRoots": ["assetReport"],
+        "serviceFiles": ["asset-report.ts"],
+        "contractAdapterFiles": ["asset-report-contract.ts"]
+      },
+      {
+        "targetKey": "asset-transfer",
+        "moduleRoots": ["assetTransfer"],
+        "serviceFiles": ["asset-transfer.ts"],
+        "contractAdapterFiles": ["asset-transfer-contract.ts"]
+      },
+      {
+        "targetKey": "capability",
+        "moduleRoots": ["capabilityModel", "capabilityItem", "capabilityPortrait"],
+        "serviceFiles": ["capability.ts"],
+        "contractAdapterFiles": ["capability-contract.ts"]
+      },
+      {
+        "targetKey": "certificate",
+        "moduleRoots": ["certificate"],
+        "serviceFiles": ["certificate.ts"],
+        "contractAdapterFiles": ["certificate-contract.ts"]
+      },
+      {
+        "targetKey": "contract",
+        "moduleRoots": ["contract"],
+        "serviceFiles": ["contract.ts"],
+        "contractAdapterFiles": ["contract-contract.ts"]
+      },
+      {
+        "targetKey": "course-exam",
+        "moduleRoots": ["courseExam"],
+        "serviceFiles": ["course-exam.ts"],
+        "contractAdapterFiles": ["course-exam-contract.ts"]
+      },
+      {
+        "targetKey": "course-learning",
+        "moduleRoots": ["courseRecite", "coursePractice", "courseExam"],
+        "serviceFiles": ["course-learning.ts"],
+        "contractAdapterFiles": ["course-learning-contract.ts"]
+      },
+      {
+        "targetKey": "course-practice",
+        "moduleRoots": ["coursePractice"],
+        "serviceFiles": ["course-practice.ts"],
+        "contractAdapterFiles": []
+      },
+      {
+        "targetKey": "course-recite",
+        "moduleRoots": ["courseRecite"],
+        "serviceFiles": ["course-recite.ts"],
+        "contractAdapterFiles": []
+      },
+      {
+        "targetKey": "course",
+        "moduleRoots": ["course"],
+        "serviceFiles": ["course.ts"],
+        "contractAdapterFiles": ["course-contract.ts"]
+      },
+      {
+        "targetKey": "dashboard",
+        "moduleRoots": ["dashboard"],
+        "serviceFiles": ["dashboard.ts"],
+        "contractAdapterFiles": ["dashboard-contract.ts"]
+      },
+      {
+        "targetKey": "design-collab",
+        "moduleRoots": ["designCollab"],
+        "serviceFiles": ["designCollab.ts"],
+        "contractAdapterFiles": []
+      },
+      {
+        "targetKey": "document-center",
+        "moduleRoots": ["documentCenter"],
+        "serviceFiles": ["documentCenter.ts"],
+        "contractAdapterFiles": ["document-center-contract.ts"]
+      },
+      {
+        "targetKey": "express-collab",
+        "moduleRoots": ["expressCollab"],
+        "serviceFiles": ["expressCollab.ts"],
+        "contractAdapterFiles": []
+      },
+      {
+        "targetKey": "feedback",
+        "moduleRoots": ["feedback"],
+        "serviceFiles": ["feedback.ts"],
+        "contractAdapterFiles": ["feedback-contract.ts"]
+      },
+      {
+        "targetKey": "goal",
+        "moduleRoots": ["goal"],
+        "serviceFiles": ["goal.ts"],
+        "contractAdapterFiles": ["goal-contract.ts"]
+      },
+      {
+        "targetKey": "hiring",
+        "moduleRoots": ["hiring"],
+        "serviceFiles": ["hiring.ts"],
+        "contractAdapterFiles": ["hiring-contract.ts"]
+      },
+      {
+        "targetKey": "honor",
+        "moduleRoots": ["honor"],
+        "serviceFiles": ["honor.ts"],
+        "contractAdapterFiles": []
+      },
+      {
+        "targetKey": "indicator",
+        "moduleRoots": ["indicator"],
+        "serviceFiles": ["indicator.ts"],
+        "contractAdapterFiles": ["indicator-contract.ts"]
+      },
+      {
+        "targetKey": "intellectual-property",
+        "moduleRoots": ["intellectualProperty"],
+        "serviceFiles": ["intellectualProperty.ts"],
+        "contractAdapterFiles": []
+      },
+      {
+        "targetKey": "interview",
+        "moduleRoots": ["interview"],
+        "serviceFiles": ["interview.ts"],
+        "contractAdapterFiles": ["interview-contract.ts"]
+      },
+      {
+        "targetKey": "job-standard",
+        "moduleRoots": ["jobStandard"],
+        "serviceFiles": ["job-standard.ts"],
+        "contractAdapterFiles": ["job-standard-contract.ts"]
+      },
+      {
+        "targetKey": "knowledge-base",
+        "moduleRoots": ["knowledgeBase"],
+        "serviceFiles": ["knowledgeBase.ts"],
+        "contractAdapterFiles": ["knowledge-base-contract.ts"]
+      },
+      {
+        "targetKey": "material-catalog",
+        "moduleRoots": ["materialCatalog"],
+        "serviceFiles": ["material-catalog.ts"],
+        "contractAdapterFiles": ["material-catalog-contract.ts"]
+      },
+      {
+        "targetKey": "material-inbound",
+        "moduleRoots": ["materialInbound"],
+        "serviceFiles": ["material-inbound.ts"],
+        "contractAdapterFiles": ["material-inbound-contract.ts"]
+      },
+      {
+        "targetKey": "material-issue",
+        "moduleRoots": ["materialIssue"],
+        "serviceFiles": ["material-issue.ts"],
+        "contractAdapterFiles": ["material-issue-contract.ts"]
+      },
+      {
+        "targetKey": "material-stock",
+        "moduleRoots": ["materialStock"],
+        "serviceFiles": ["material-stock.ts"],
+        "contractAdapterFiles": ["material-stock-contract.ts"]
+      },
+      {
+        "targetKey": "meeting",
+        "moduleRoots": ["meeting"],
+        "serviceFiles": ["meeting.ts"],
+        "contractAdapterFiles": ["meeting-contract.ts"]
+      },
+      {
+        "targetKey": "pip",
+        "moduleRoots": ["pip"],
+        "serviceFiles": ["pip.ts"],
+        "contractAdapterFiles": ["pip-contract.ts"]
+      },
+      {
+        "targetKey": "promotion",
+        "moduleRoots": ["promotion"],
+        "serviceFiles": ["promotion.ts"],
+        "contractAdapterFiles": ["promotion-contract.ts"]
+      },
+      {
+        "targetKey": "publicity-material",
+        "moduleRoots": ["publicityMaterial"],
+        "serviceFiles": ["publicityMaterial.ts"],
+        "contractAdapterFiles": []
+      },
+      {
+        "targetKey": "purchase-order",
+        "moduleRoots": ["purchaseOrder"],
+        "serviceFiles": ["purchase-order.ts"],
+        "contractAdapterFiles": ["purchase-order-contract.ts"]
+      },
+      {
+        "targetKey": "purchase-report",
+        "moduleRoots": ["purchaseReport"],
+        "serviceFiles": ["purchase-report.ts"],
+        "contractAdapterFiles": ["purchase-report-contract.ts"]
+      },
+      {
+        "targetKey": "recruit-plan",
+        "moduleRoots": ["recruitPlan"],
+        "serviceFiles": ["recruit-plan.ts"],
+        "contractAdapterFiles": ["recruit-plan-contract.ts"]
+      },
+      {
+        "targetKey": "resume-pool",
+        "moduleRoots": ["resumePool"],
+        "serviceFiles": ["resumePool.ts"],
+        "contractAdapterFiles": ["resume-pool-contract.ts"]
+      },
+      {
+        "targetKey": "salary",
+        "moduleRoots": ["salary"],
+        "serviceFiles": ["salary.ts"],
+        "contractAdapterFiles": ["salary-contract.ts"]
+      },
+      {
+        "targetKey": "suggestion",
+        "moduleRoots": ["suggestion"],
+        "serviceFiles": ["suggestion.ts"],
+        "contractAdapterFiles": ["suggestion-contract.ts"]
+      },
+      {
+        "targetKey": "supplier",
+        "moduleRoots": ["supplier"],
+        "serviceFiles": ["supplier.ts"],
+        "contractAdapterFiles": ["supplier-contract.ts"]
+      },
+      {
+        "targetKey": "talent-asset",
+        "moduleRoots": ["talentAsset"],
+        "serviceFiles": ["talentAsset.ts"],
+        "contractAdapterFiles": ["talent-asset-contract.ts"]
+      },
+      {
+        "targetKey": "teacher-agent",
+        "moduleRoots": ["teacherAgent"],
+        "serviceFiles": ["teacherAgent.ts"],
+        "contractAdapterFiles": []
+      },
+      {
+        "targetKey": "teacher-agent-audit",
+        "moduleRoots": ["teacherAgentAudit"],
+        "serviceFiles": ["teacherAgentAudit.ts"],
+        "contractAdapterFiles": []
+      },
+      {
+        "targetKey": "teacher-agent-relation",
+        "moduleRoots": ["teacherAgentRelation"],
+        "serviceFiles": ["teacherAgentRelation.ts"],
+        "contractAdapterFiles": []
+      },
+      {
+        "targetKey": "teacher-attribution",
+        "moduleRoots": ["teacherAttribution"],
+        "serviceFiles": ["teacherAttribution.ts"],
+        "contractAdapterFiles": []
+      },
+      {
+        "targetKey": "teacher-attribution-conflict",
+        "moduleRoots": ["teacherAttributionConflict"],
+        "serviceFiles": ["teacherAttributionConflict.ts"],
+        "contractAdapterFiles": []
+      },
+      {
+        "targetKey": "teacher-class",
+        "moduleRoots": ["teacherClass"],
+        "serviceFiles": ["teacherClass.ts"],
+        "contractAdapterFiles": []
+      },
+      {
+        "targetKey": "teacher-cooperation",
+        "moduleRoots": ["teacherCooperation"],
+        "serviceFiles": ["teacherCooperation.ts"],
+        "contractAdapterFiles": []
+      },
+      {
+        "targetKey": "teacher-dashboard",
+        "moduleRoots": ["teacherDashboard"],
+        "serviceFiles": ["teacherDashboard.ts"],
+        "contractAdapterFiles": []
+      },
+      {
+        "targetKey": "teacher-follow",
+        "moduleRoots": ["teacherFollow"],
+        "serviceFiles": ["teacherFollow.ts"],
+        "contractAdapterFiles": []
+      },
+      {
+        "targetKey": "teacher-info",
+        "moduleRoots": ["teacherInfo"],
+        "serviceFiles": ["teacherInfo.ts"],
+        "contractAdapterFiles": []
+      },
+      {
+        "targetKey": "teacher-todo",
+        "moduleRoots": ["teacherTodo"],
+        "serviceFiles": ["teacherTodo.ts"],
+        "contractAdapterFiles": []
+      },
+      {
+        "targetKey": "vehicle",
+        "moduleRoots": ["vehicle"],
+        "serviceFiles": ["vehicle.ts"],
+        "contractAdapterFiles": []
+      },
+      {
+        "targetKey": "work-plan",
+        "moduleRoots": ["workPlan"],
+        "serviceFiles": ["workPlan.ts"],
+        "contractAdapterFiles": ["work-plan-contract.ts"]
+      }
+    ],
+    "uniTargets": [
+      {
+        "targetKey": "assessment",
+        "moduleRoots": ["assessment"],
+        "serviceFiles": ["assessment.ts"]
+      },
+      {
+        "targetKey": "capability",
+        "moduleRoots": ["capabilityModel"],
+        "serviceFiles": ["capability.ts"]
+      },
+      {
+        "targetKey": "certificate",
+        "moduleRoots": ["certificate"],
+        "serviceFiles": ["certificate.ts"]
+      },
+      {
+        "targetKey": "contract",
+        "moduleRoots": ["contract"],
+        "serviceFiles": ["contract.ts"]
+      },
+      {
+        "targetKey": "course",
+        "moduleRoots": ["course"],
+        "serviceFiles": ["course.ts"]
+      },
+      {
+        "targetKey": "course-learning",
+        "moduleRoots": ["courseRecite", "coursePractice", "courseExam"],
+        "serviceFiles": ["courseLearning.ts"]
+      },
+      {
+        "targetKey": "dashboard",
+        "moduleRoots": ["dashboard"],
+        "serviceFiles": ["dashboard.ts"]
+      },
+      {
+        "targetKey": "feedback",
+        "moduleRoots": ["feedback"],
+        "serviceFiles": ["feedback.ts"]
+      },
+      {
+        "targetKey": "goal",
+        "moduleRoots": ["goal"],
+        "serviceFiles": ["goal.ts"]
+      },
+      {
+        "targetKey": "indicator",
+        "moduleRoots": ["indicator"],
+        "serviceFiles": ["indicator.ts"]
+      },
+      {
+        "targetKey": "job-standard",
+        "moduleRoots": ["jobStandard"],
+        "serviceFiles": ["jobStandard.ts"]
+      },
+      {
+        "targetKey": "meeting",
+        "moduleRoots": ["meeting"],
+        "serviceFiles": ["meeting.ts"]
+      },
+      {
+        "targetKey": "pip",
+        "moduleRoots": ["pip"],
+        "serviceFiles": ["pip.ts"]
+      },
+      {
+        "targetKey": "promotion",
+        "moduleRoots": ["promotion"],
+        "serviceFiles": ["promotion.ts"]
+      },
+      {
+        "targetKey": "recruit-plan",
+        "moduleRoots": ["recruitPlan"],
+        "serviceFiles": ["recruitPlan.ts"]
+      },
+      {
+        "targetKey": "resume-pool",
+        "moduleRoots": ["resumePool"],
+        "serviceFiles": ["resumePool.ts"]
+      },
+      {
+        "targetKey": "salary",
+        "moduleRoots": ["salary"],
+        "serviceFiles": ["salary.ts"]
+      },
+      {
+        "targetKey": "suggestion",
+        "moduleRoots": ["suggestion"],
+        "serviceFiles": ["suggestion.ts"]
+      },
+      {
+        "targetKey": "supplier",
+        "moduleRoots": ["supplier"],
+        "serviceFiles": ["supplier.ts"]
+      },
+      {
+        "targetKey": "talent-asset",
+        "moduleRoots": ["talentAsset"],
+        "serviceFiles": ["talentAsset.ts"]
+      },
+      {
+        "targetKey": "teacher-channel",
+        "moduleRoots": ["teacherTodo", "teacherDashboard", "teacherInfo", "teacherClass", "teacherFollow"],
+        "serviceFiles": ["teacherChannel.ts"]
+      },
+      {
+        "targetKey": "work-plan",
+        "moduleRoots": ["workPlan"],
+        "serviceFiles": ["workPlan.ts"]
+      }
+    ]
+  }
+}

@@ -12,8 +12,7 @@ import {
 	expectPerformanceServiceNumber,
 	expectPerformanceServiceRecord
 } from './service-contract';
-
-const COURSE_EXAM_RESULT_STATUS = ['locked', 'pending', 'passed', 'failed'] as const;
+import { COURSE_EXAM_RESULT_STATUS } from '../shared/contract-enums';
 
 function decodeOptionalNullableString(value: unknown, field: string) {
 	if (value === undefined) {

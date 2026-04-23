@@ -4,11 +4,21 @@
  */
 export type {
 	ContractPageQuery,
-	ContractPageResult,
 	ContractRecord,
 	ContractStatus,
 	ContractType,
 } from "/@/generated/performance-contract.generated";
+
+export interface PagePagination {
+	page: number;
+	size: number;
+	total: number;
+}
+
+export type ContractPageResult = {
+	list: import("/@/generated/performance-contract.generated").ContractRecord[];
+	pagination: PagePagination;
+};
 
 export interface ContractInfoQuery {
 	id: number;

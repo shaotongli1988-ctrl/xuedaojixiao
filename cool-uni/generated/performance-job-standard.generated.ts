@@ -1,5 +1,5 @@
 /**
- * Generated from contracts/openapi/xuedao.openapi.json for cool-uni performance jobStandard.
+ * Generated from contracts/openapi/xuedao.openapi.json for cool-uni performance job-standard.
  * Do not hand edit this file; update the OpenAPI source and rerun scripts/openapi-contract-sync.mjs.
  */
 
@@ -7,11 +7,11 @@ export interface JobStandardSaveRequest {
 	id?: number;
 	positionName: string;
 	targetDepartmentId: number;
-	jobLevel?: string | null;
-	profileSummary?: string | null;
-	requirementSummary?: string | null;
+	jobLevel?: string;
+	profileSummary?: string;
+	requirementSummary?: string;
 	skillTagList?: Array<string>;
-	interviewTemplateSummary?: string | null;
+	interviewTemplateSummary?: string;
 	status?: JobStandardStatus;
 }
 
@@ -20,22 +20,25 @@ export type JobStandardStatus = "draft" | "active" | "inactive";
 export interface ApiResponse_JobStandardRecord {
 	code: number;
 	message: string;
-	data: JobStandardRecord;
+	data: {
+  id?: number;
+  createTime?: string;
+  updateTime?: string;
+  positionName: string;
+  skillTagList?: Array<string>;
+} & {
+  targetDepartmentId: number;
+  targetDepartmentName?: string;
+  jobLevel?: string;
+  profileSummary?: string;
+  requirementSummary?: string;
+  interviewTemplateSummary?: string;
+  status?: JobStandardStatus;
+};
 }
 
-export interface JobStandardRecord {
-	id?: number;
-	positionName: string;
-	targetDepartmentId: number;
-	targetDepartmentName?: string;
-	jobLevel?: string | null;
-	profileSummary?: string | null;
-	requirementSummary?: string | null;
-	skillTagList?: Array<string>;
-	interviewTemplateSummary?: string | null;
-	status: JobStandardStatus;
-	createTime?: string;
-	updateTime?: string;
+export interface JobStandardInfoQuery {
+	id: number;
 }
 
 export interface JobStandardPageQuery {
@@ -49,12 +52,11 @@ export interface JobStandardPageQuery {
 export interface ApiResponse_JobStandardPageResult {
 	code: number;
 	message: string;
-	data: JobStandardPageResult;
-}
-
-export interface JobStandardPageResult {
-	list: Array<JobStandardRecord>;
-	pagination: PagePagination;
+	data: {
+  pagination: PagePagination;
+} & {
+  list: Array<JobStandardRecord>;
+};
 }
 
 export interface PagePagination {
@@ -72,7 +74,27 @@ export interface PagePagination {
 	total: number;
 }
 
+export type JobStandardRecord = {
+  id?: number;
+  createTime?: string;
+  updateTime?: string;
+  positionName: string;
+  skillTagList?: Array<string>;
+} & {
+  targetDepartmentId: number;
+  targetDepartmentName?: string;
+  jobLevel?: string;
+  profileSummary?: string;
+  requirementSummary?: string;
+  interviewTemplateSummary?: string;
+  status?: JobStandardStatus;
+};
+
 export interface JobStandardStatusUpdateRequest {
 	id: number;
 	status: JobStandardStatus;
 }
+
+export type JobStandardUpdateJobStandardRequest = JobStandardSaveRequest & {
+  id: number;
+};

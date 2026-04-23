@@ -56,8 +56,8 @@ export interface AssetDashboardActionSummaryItem {
 export type AssetDashboardActivityItem = {
   id?: number;
   departmentName?: string;
-  title: string;
   status?: string;
+  title: string;
   resultStatus?: string;
   operatorName?: string;
   module: "assetInfo" | "assetAssignment" | "assetMaintenance" | "assetProcurement" | "assetTransfer" | "assetInventory" | "assetDisposal" | "assetDepreciation";

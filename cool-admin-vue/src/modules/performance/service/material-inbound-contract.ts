@@ -19,8 +19,7 @@ import {
 	expectPerformanceServiceOptionalString,
 	expectPerformanceServiceRecord
 } from './service-contract';
-
-const MATERIAL_INBOUND_STATUS = ['draft', 'cancelled', 'submitted', 'received'] as const;
+import { MATERIAL_INBOUND_STATUS } from '../shared/contract-enums';
 
 function decodeOptionalNullableString(value: unknown, field: string) {
 	if (value === undefined) {

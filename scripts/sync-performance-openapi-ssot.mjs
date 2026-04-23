@@ -12,6 +12,10 @@ import path from 'node:path';
 import process from 'node:process';
 import ts from 'typescript';
 import { fileURLToPath } from 'node:url';
+import {
+	loadPerformanceContractSourceConfig,
+	PERFORMANCE_WEB_SERVICE_ROOT,
+} from '../cool-admin-midway/src/modules/performance/domain/registry/contract-source.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
@@ -22,7 +26,7 @@ const midwayControllerRoot = path.join(
 	'cool-admin-midway/src/modules/performance/controller/admin'
 );
 
-const MANUAL_MODULES = {
+const MANUAL_OPERATION_PRESETS = {
 	approvalFlow: {
 		baseRoute: '/admin/performance/approval-flow',
 		operations: [
@@ -38,34 +42,6 @@ const MANUAL_MODULES = {
 			{ method: 'post', routeSuffix: '/fallback', requestSchemaName: 'ApprovalFlowActionRequest', responseSchemaName: 'ApprovalFlowInstanceRecord' },
 			{ method: 'post', routeSuffix: '/terminate', requestSchemaName: 'ApprovalFlowActionRequest', responseSchemaName: 'ApprovalFlowInstanceRecord' },
 		],
-	},
-	annualInspection: {
-		baseRoute: '/admin/performance/annualInspection',
-		sharedGroup: 'officeCollab',
-	},
-	honor: {
-		baseRoute: '/admin/performance/honor',
-		sharedGroup: 'officeCollab',
-	},
-	publicityMaterial: {
-		baseRoute: '/admin/performance/publicityMaterial',
-		sharedGroup: 'officeCollab',
-	},
-	designCollab: {
-		baseRoute: '/admin/performance/designCollab',
-		sharedGroup: 'officeCollab',
-	},
-	expressCollab: {
-		baseRoute: '/admin/performance/expressCollab',
-		sharedGroup: 'officeCollab',
-	},
-	intellectualProperty: {
-		baseRoute: '/admin/performance/intellectualProperty',
-		sharedGroup: 'officeCollab',
-	},
-	vehicle: {
-		baseRoute: '/admin/performance/vehicle',
-		sharedGroup: 'officeCollab',
 	},
 	materialStockLog: {
 		baseRoute: '/admin/performance/materialStockLog',
@@ -312,41 +288,6 @@ const MANUAL_SCHEMAS = {
 	},
 };
 
-const SKIP_VUE_SERVICE_FILES = new Set([
-	'assessment.ts',
-	'contract.ts',
-	'goal.ts',
-	'hiring.ts',
-	'indicator.ts',
-	'interview.ts',
-	'job-standard.ts',
-	'meeting.ts',
-	'recruit-plan.ts',
-	'resumePool.ts',
-	'talentAsset.ts',
-	'certificate.ts',
-	'office-ledger.ts',
-	'workbench.ts',
-]);
-
-const FROZEN_SAMPLE_MODULES = new Set([
-	'assessment',
-	'capabilityItem',
-	'capabilityModel',
-	'capabilityPortrait',
-	'certificate',
-	'contract',
-	'goal',
-	'hiring',
-	'indicator',
-	'interview',
-	'jobStandard',
-	'meeting',
-	'recruitPlan',
-	'resumePool',
-	'talentAsset',
-]);
-
 function readJson(filePath) {
 	return JSON.parse(fs.readFileSync(filePath, 'utf8'));
 }
@@ -395,6 +336,28 @@ function moduleRootFromBaseRoute(baseRoute) {
 	return String(baseRoute).split('/').filter(Boolean).pop();
 }
 
+function resolvePerformanceRouteRoot(moduleRoot) {
+	return moduleRoot === 'approvalFlow' ? 'approval-flow' : moduleRoot;
+}
+
+function resolvePerformanceBaseRoute(moduleRoot) {
+	return `/admin/performance/${resolvePerformanceRouteRoot(moduleRoot)}`;
+}
+
+function resolveOperationModuleRouteRoot(route) {
+	const segments = String(route).split('/').filter(Boolean);
+	return segments[0] === 'admin' && segments[1] === 'performance' ? segments[2] || '' : '';
+}
+
+function normalizeAbsoluteOperationRouteSuffix(route, moduleRoot) {
+	const baseRoute = resolvePerformanceBaseRoute(moduleRoot);
+	if (!String(route).startsWith(baseRoute)) {
+		return '';
+	}
+	const suffix = String(route).slice(baseRoute.length);
+	return suffix ? (suffix.startsWith('/') ? suffix : `/${suffix}`) : '/';
+}
+
 function normalizeMethod(value) {
 	return String(value).toLowerCase();
 }
@@ -409,22 +372,18 @@ function unwrapPromise(type, checker) {
 	return typeArgs[0] || type;
 }
 
-function collectProgramFiles() {
+function collectProgramFiles(serviceFilePaths) {
 	const files = [
 		path.join(repoRoot, 'cool-admin-vue/src/modules/performance/types.ts'),
 		path.join(repoRoot, 'cool-admin-vue/src/modules/performance/course-learning.types.ts'),
 		path.join(repoRoot, 'cool-admin-vue/src/modules/performance/workbench/types.ts'),
-		...listFiles(vueServiceRoot, name => name.endsWith('.ts')),
+		...serviceFilePaths,
 	];
 
 	return files;
 }
 
-function cleanupGeneratedAreas(spec) {
-	const dynamicModuleRoots = listFiles(midwayControllerRoot, name => name.endsWith('.ts')).map(filePath =>
-		camelCase(path.basename(filePath, '.ts'))
-	);
-	const removableModuleRoots = dynamicModuleRoots.filter(root => !FROZEN_SAMPLE_MODULES.has(root));
+function cleanupGeneratedAreas(spec, removableModuleRoots) {
 	const removablePrefixes = new Set(
 		removableModuleRoots.map(root => pascalCase(root)).concat(['ApprovalFlow', 'OfficeCollab'])
 	);
@@ -449,8 +408,8 @@ function cleanupGeneratedAreas(spec) {
 	delete spec.components.schemas.Record;
 }
 
-function createProgram() {
-	return ts.createProgram(collectProgramFiles(), {
+function createProgram(serviceFilePaths) {
+	return ts.createProgram(collectProgramFiles([...new Set(serviceFilePaths)]), {
 		target: ts.ScriptTarget.ES2022,
 		module: ts.ModuleKind.ESNext,
 		moduleResolution: ts.ModuleResolutionKind.Bundler,
@@ -522,117 +481,172 @@ function getClassMethodOperation(methodNode) {
 	return null;
 }
 
-function discoverVueServices(program, checker) {
+function discoverVueServices(program, checker, serviceModules) {
 	const services = new Map();
+	const parsedServices = new Map();
 
-	for (const filePath of listFiles(vueServiceRoot, name => name.endsWith('.ts'))) {
-		const fileName = path.basename(filePath);
-		if (SKIP_VUE_SERVICE_FILES.has(fileName)) {
-			continue;
-		}
-
-		const sourceFile = program.getSourceFile(filePath);
-		if (!sourceFile) {
-			continue;
-		}
-
-		let classNode = null;
-		for (const statement of sourceFile.statements) {
-			if (ts.isClassDeclaration(statement) && statement.name) {
-				classNode = statement;
-				break;
-			}
-		}
-
-		if (!classNode) {
-			continue;
-		}
-
-		let baseRoute = '';
-		let moduleRoot = '';
-		const firstHeritageClause = classNode.heritageClauses?.[0];
-		const isOfficeWrapper =
-			Boolean(firstHeritageClause) &&
-			ts.isHeritageClause(firstHeritageClause) &&
-			firstHeritageClause.types.some(
-				item => getExpressionText(item.expression) === 'PerformanceOfficeLedgerService'
-			);
-
-		for (const member of classNode.members) {
-			if (!ts.isConstructorDeclaration(member)) {
+	for (const serviceModule of serviceModules) {
+		const filePath = path.join(
+			repoRoot,
+			PERFORMANCE_WEB_SERVICE_ROOT,
+			serviceModule.serviceFile
+		);
+		if (!parsedServices.has(filePath)) {
+			const sourceFile = program.getSourceFile(filePath);
+			if (!sourceFile) {
+				parsedServices.set(filePath, null);
 				continue;
 			}
 
-			for (const statement of member.body?.statements || []) {
-				if (!ts.isExpressionStatement(statement)) {
+			let classNode = null;
+			for (const statement of sourceFile.statements) {
+				if (ts.isClassDeclaration(statement) && statement.name) {
+					classNode = statement;
+					break;
+				}
+			}
+
+			if (!classNode) {
+				parsedServices.set(filePath, null);
+				continue;
+			}
+
+			let baseRoute = '';
+			let moduleRoot = '';
+			const firstHeritageClause = classNode.heritageClauses?.[0];
+			const isOfficeWrapper =
+				Boolean(firstHeritageClause) &&
+				ts.isHeritageClause(firstHeritageClause) &&
+				firstHeritageClause.types.some(
+					item => getExpressionText(item.expression) === 'PerformanceOfficeLedgerService'
+				);
+
+			for (const member of classNode.members) {
+				if (!ts.isConstructorDeclaration(member)) {
 					continue;
 				}
+
+				for (const statement of member.body?.statements || []) {
+					if (!ts.isExpressionStatement(statement)) {
+						continue;
+					}
+					if (
+						!ts.isCallExpression(statement.expression) ||
+						statement.expression.expression.kind !== ts.SyntaxKind.SuperKeyword
+					) {
+						continue;
+					}
+
+					const firstArg = statement.expression.arguments[0];
+					if (!firstArg || !ts.isStringLiteral(firstArg)) {
+						continue;
+					}
+
+					if (isOfficeWrapper) {
+						moduleRoot = firstArg.text;
+						baseRoute = `/admin/performance/${firstArg.text}`;
+					} else {
+						baseRoute = firstArg.text.startsWith('/')
+							? firstArg.text
+							: `/${firstArg.text}`;
+						moduleRoot = moduleRootFromBaseRoute(baseRoute);
+					}
+				}
+			}
+
+			if (!baseRoute || !moduleRoot) {
+				parsedServices.set(filePath, null);
+				continue;
+			}
+
+			const operations = [];
+			for (const member of classNode.members) {
+				if (!ts.isMethodDeclaration(member) || !member.name) {
+					continue;
+				}
+
+				const operation = getClassMethodOperation(member);
+				if (!operation) {
+					continue;
+				}
+
+				const signature = checker.getSignatureFromDeclaration(member);
+				const returnType = signature
+					? unwrapPromise(checker.getReturnTypeOfSignature(signature), checker)
+					: null;
+				const firstParam = member.parameters[0];
+				const requestType = firstParam ? checker.getTypeAtLocation(firstParam) : null;
+
+				operations.push({
+					methodName: member.name.getText(sourceFile),
+					method: operation.method,
+					routeSuffix: operation.routeSuffix,
+					requestKey: operation.requestKey,
+					requestType,
+					requestNode: firstParam,
+					responseType: returnType,
+					filePath,
+				});
+			}
+
+			parsedServices.set(
+				filePath,
+				operations.length
+					? {
+							moduleRoot,
+							baseRoute,
+							fileBase: path.basename(filePath, '.ts'),
+							filePath,
+							operations,
+					  }
+					: null
+			);
+		}
+
+		const parsedService = parsedServices.get(filePath);
+		if (!parsedService) {
+			continue;
+		}
+
+		const normalizedOperations = [];
+		for (const operation of parsedService.operations) {
+			if (operation.routeSuffix.startsWith('/admin/performance/')) {
 				if (
-					!ts.isCallExpression(statement.expression) ||
-					statement.expression.expression.kind !== ts.SyntaxKind.SuperKeyword
+					resolveOperationModuleRouteRoot(operation.routeSuffix) !==
+					resolvePerformanceRouteRoot(serviceModule.moduleRoot)
 				) {
 					continue;
 				}
-
-				const firstArg = statement.expression.arguments[0];
-				if (!firstArg || !ts.isStringLiteral(firstArg)) {
+				const normalizedRouteSuffix = normalizeAbsoluteOperationRouteSuffix(
+					operation.routeSuffix,
+					serviceModule.moduleRoot
+				);
+				if (!normalizedRouteSuffix) {
 					continue;
 				}
-
-				if (isOfficeWrapper) {
-					moduleRoot = firstArg.text;
-					baseRoute = `/admin/performance/${firstArg.text}`;
-				} else {
-					baseRoute = firstArg.text.startsWith('/')
-						? firstArg.text
-						: `/${firstArg.text}`;
-					moduleRoot = moduleRootFromBaseRoute(baseRoute);
-				}
-			}
-		}
-
-		if (!baseRoute || !moduleRoot) {
-			continue;
-		}
-
-		const operations = [];
-		for (const member of classNode.members) {
-			if (!ts.isMethodDeclaration(member) || !member.name) {
+				normalizedOperations.push({
+					...operation,
+					routeSuffix: normalizedRouteSuffix,
+				});
 				continue;
 			}
 
-			const operation = getClassMethodOperation(member);
-			if (!operation) {
+			if (parsedService.moduleRoot !== resolvePerformanceRouteRoot(serviceModule.moduleRoot)) {
 				continue;
 			}
-
-			const signature = checker.getSignatureFromDeclaration(member);
-			const returnType = signature ? unwrapPromise(checker.getReturnTypeOfSignature(signature), checker) : null;
-			const firstParam = member.parameters[0];
-			const requestType = firstParam ? checker.getTypeAtLocation(firstParam) : null;
-
-			operations.push({
-				methodName: member.name.getText(sourceFile),
-				method: operation.method,
-				routeSuffix: operation.routeSuffix,
-				requestKey: operation.requestKey,
-				requestType,
-				requestNode: firstParam,
-				responseType: returnType,
-				filePath,
-			});
+			normalizedOperations.push(operation);
 		}
 
-		if (operations.length === 0) {
+		if (!normalizedOperations.length) {
 			continue;
 		}
 
-		services.set(moduleRoot, {
-			moduleRoot,
-			baseRoute,
-			fileBase: path.basename(filePath, '.ts'),
+		services.set(serviceModule.moduleRoot, {
+			moduleRoot: serviceModule.moduleRoot,
+			baseRoute: resolvePerformanceBaseRoute(serviceModule.moduleRoot),
+			fileBase: parsedService.fileBase,
 			filePath,
-			operations,
+			operations: normalizedOperations,
 		});
 	}
 
@@ -1082,11 +1096,16 @@ function backfillMissingSchemas(spec) {
 
 function main() {
 	const write = process.argv.includes('--write');
+	const contractSource = loadPerformanceContractSourceConfig(repoRoot);
 	const spec = readJson(openapiPath);
 	spec.components = spec.components || {};
 	spec.components.schemas = spec.components.schemas || {};
 	spec.paths = spec.paths || {};
-	cleanupGeneratedAreas(spec);
+	const removableModuleRoots = [
+		...contractSource.producer.manualModules.map(item => item.moduleRoot),
+		...contractSource.producer.serviceModules.map(item => item.moduleRoot),
+	];
+	cleanupGeneratedAreas(spec, removableModuleRoots);
 
 	for (const [name, schema] of Object.entries(MANUAL_SCHEMAS)) {
 		spec.components.schemas[name] = spec.components.schemas[name] || schema;
@@ -1095,52 +1114,45 @@ function main() {
 		ensureApiResponseSchema(spec, '', { type: 'object', nullable: true });
 	}
 
-	const program = createProgram();
+	const program = createProgram(
+		contractSource.producer.serviceModules.map(item =>
+			path.join(repoRoot, PERFORMANCE_WEB_SERVICE_ROOT, item.serviceFile)
+		)
+	);
 	const checker = program.getTypeChecker();
 	const controllerSummaries = parseControllerSummaries();
-	const discoveredServices = discoverVueServices(program, checker);
+	const discoveredServices = discoverVueServices(
+		program,
+		checker,
+		contractSource.producer.serviceModules
+	);
 	const collectedSchemas = {};
 	const converter = buildSchemaConverter(checker, spec, collectedSchemas);
 
-	for (const moduleInfo of discoveredServices.values()) {
-		buildOperationId(moduleInfo.moduleRoot, '/');
-	}
-
-	const existingModuleRoots = new Set(
-		Object.keys(spec.paths)
-			.map(route => route.split('/').filter(Boolean)[2])
-			.filter(Boolean)
-	);
-	const controllerFiles = listFiles(midwayControllerRoot, name => name.endsWith('.ts'));
-	for (const controllerPath of controllerFiles) {
-		const fileBase = path.basename(controllerPath, '.ts');
-		const moduleRoot = camelCase(fileBase);
-		if (FROZEN_SAMPLE_MODULES.has(moduleRoot) && !MANUAL_MODULES[moduleRoot]) {
-			continue;
-		}
-
-		if (MANUAL_MODULES[moduleRoot]?.sharedGroup === 'officeCollab') {
-			const sharedModule = createSharedOfficeModule(moduleRoot);
+	for (const manualModule of contractSource.producer.manualModules) {
+		if (manualModule.strategy === 'shared_office_collab') {
+			const sharedModule = createSharedOfficeModule(manualModule.moduleRoot);
 			ensureModuleOperations(spec, sharedModule, controllerSummaries, converter);
 			continue;
 		}
 
-		const manualModule = MANUAL_MODULES[moduleRoot];
-		if (manualModule && manualModule.operations) {
+		const manualPreset = MANUAL_OPERATION_PRESETS[manualModule.operationPreset];
+		if (manualPreset?.operations) {
 			ensureModuleOperations(
 				spec,
 				{
-					moduleRoot,
-					baseRoute: manualModule.baseRoute,
-					operations: manualModule.operations,
+					moduleRoot: manualModule.moduleRoot,
+					baseRoute: manualPreset.baseRoute,
+					operations: manualPreset.operations,
 				},
 				controllerSummaries,
 				converter
 			);
-			continue;
 		}
+	}
 
-		const discovered = discoveredServices.get(moduleRoot);
+	for (const serviceModule of contractSource.producer.serviceModules) {
+		const discovered = discoveredServices.get(serviceModule.moduleRoot);
 		if (!discovered) {
 			continue;
 		}

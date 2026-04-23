@@ -21,10 +21,11 @@ import {
 	expectPerformanceServiceRecord,
 	expectPerformanceServiceString
 } from './service-contract';
-
-const HIRING_SOURCE_TYPE = ['manual', 'resumePool', 'talentAsset', 'interview'] as const;
-const HIRING_STATUS = ['offered', 'accepted', 'rejected', 'closed'] as const;
-const INTERVIEW_STATUS = ['scheduled', 'completed', 'cancelled'] as const;
+import {
+	HIRING_SOURCE_TYPE,
+	HIRING_STATUS,
+	INTERVIEW_STATUS
+} from '../shared/contract-enums';
 
 function decodeOptionalNullableString(value: unknown, field: string) {
 	if (value === undefined) {

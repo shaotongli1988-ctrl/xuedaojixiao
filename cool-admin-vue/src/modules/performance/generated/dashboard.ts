@@ -12,9 +12,9 @@ export interface ApiResponse_DashboardCrossSummary {
 }
 
 export type DashboardCrossMetricCard = {
-  unit: string;
-  periodValue: string;
   periodType: string;
+  periodValue: string;
+  unit: string;
   metricCode: DashboardCrossMetricCode;
   metricLabel: string;
   sourceDomain: DashboardCrossSourceDomain;

@@ -14,8 +14,7 @@ import {
 	expectPerformanceServiceString,
 	expectPerformanceServiceStringArray
 } from './service-contract';
-
-const TALENT_ASSET_STATUS = ['new', 'tracking', 'archived'] as const;
+import { TALENT_ASSET_STATUS } from '../shared/contract-enums';
 
 function decodeOptionalNullableString(value: unknown, field: string) {
 	if (value === undefined) {

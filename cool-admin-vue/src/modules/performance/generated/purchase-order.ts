@@ -6,12 +6,12 @@
 export interface PurchaseOrderCreatePurchaseOrderRequest {
 	id?: number;
 	departmentName?: string;
-	supplierName?: string;
+	status?: PurchaseOrderStatus;
 	createTime?: string;
 	updateTime?: string;
+	supplierName?: string;
 	title?: string;
 	requesterName?: string;
-	status?: PurchaseOrderStatus;
 	totalAmount?: number;
 	orderNo?: string;
 	orderDate?: string;
@@ -33,7 +33,7 @@ export interface PurchaseOrderCreatePurchaseOrderRequest {
 	remark?: string;
 }
 
-export type PurchaseOrderStatus = "draft" | "cancelled" | "approved" | "closed" | "received" | "inquiring" | "pendingApproval";
+export type PurchaseOrderStatus = "draft" | "approved" | "cancelled" | "closed" | "received" | "inquiring" | "pendingApproval";
 
 export type PurchaseOrderItemRecord = {
   id?: number;
@@ -85,12 +85,12 @@ export interface ApiResponse_PurchaseOrderRecord {
 	data: {
   id?: number;
   departmentName?: string;
-  supplierName?: string;
+  status?: PurchaseOrderStatus;
   createTime?: string;
   updateTime?: string;
+  supplierName?: string;
   title: string;
   requesterName?: string;
-  status?: PurchaseOrderStatus;
   totalAmount: number;
   orderNo?: string;
   orderDate: string;
@@ -167,12 +167,12 @@ export interface ApiResponse_PurchaseOrderPageResult {
 export type PurchaseOrderRecord = {
   id?: number;
   departmentName?: string;
-  supplierName?: string;
+  status?: PurchaseOrderStatus;
   createTime?: string;
   updateTime?: string;
+  supplierName?: string;
   title: string;
   requesterName?: string;
-  status?: PurchaseOrderStatus;
   totalAmount: number;
   orderNo?: string;
   orderDate: string;
@@ -220,12 +220,12 @@ export interface PurchaseOrderSubmitInquiryRequest {
 export type PurchaseOrderUpdatePayload = {
   id?: number;
   departmentName?: string;
-  supplierName?: string;
+  status?: PurchaseOrderStatus;
   createTime?: string;
   updateTime?: string;
+  supplierName?: string;
   title?: string;
   requesterName?: string;
-  status?: PurchaseOrderStatus;
   totalAmount?: number;
   orderNo?: string;
   orderDate?: string;

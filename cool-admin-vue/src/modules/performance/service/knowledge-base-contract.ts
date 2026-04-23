@@ -30,20 +30,14 @@ import {
 	expectPerformanceServiceString,
 	expectPerformanceServiceStringArray
 } from './service-contract';
-
-const KNOWLEDGE_BASE_STATUS = ['draft', 'published', 'archived'] as const;
-const DOCUMENT_CENTER_STATUS = ['draft', 'published', 'review', 'archived'] as const;
-const DOCUMENT_CENTER_CATEGORY = [
-	'policy',
-	'process',
-	'template',
-	'contract',
-	'archive',
-	'other'
-] as const;
-const DOCUMENT_CENTER_FILE_TYPE = ['other', 'pdf', 'doc', 'xls', 'ppt', 'img', 'zip'] as const;
-const DOCUMENT_CENTER_STORAGE = ['local', 'cloud', 'hybrid'] as const;
-const DOCUMENT_CENTER_CONFIDENTIALITY = ['public', 'internal', 'secret'] as const;
+import {
+	DOCUMENT_CENTER_CATEGORY,
+	DOCUMENT_CENTER_CONFIDENTIALITY,
+	DOCUMENT_CENTER_FILE_TYPE,
+	DOCUMENT_CENTER_STATUS,
+	DOCUMENT_CENTER_STORAGE,
+	KNOWLEDGE_BASE_STATUS
+} from '../shared/contract-enums';
 
 function decodeKnowledgeBaseStatus(value: unknown, field: string): KnowledgeBaseStatus {
 	return expectPerformanceServiceEnum(value, field, KNOWLEDGE_BASE_STATUS);

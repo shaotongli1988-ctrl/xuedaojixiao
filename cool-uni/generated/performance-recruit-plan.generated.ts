@@ -1,5 +1,5 @@
 /**
- * Generated from contracts/openapi/xuedao.openapi.json for cool-uni performance recruitPlan.
+ * Generated from contracts/openapi/xuedao.openapi.json for cool-uni performance recruit-plan.
  * Do not hand edit this file; update the OpenAPI source and rerun scripts/openapi-contract-sync.mjs.
  */
 
@@ -11,51 +11,67 @@ export interface RecruitPlanSaveRequest {
 	headcount: number;
 	startDate: string;
 	endDate: string;
-	recruiterId?: number | null;
-	requirementSummary?: string | null;
-	jobStandardId?: number | null;
+	recruiterId?: number;
+	requirementSummary?: string;
+	jobStandardId?: number;
 	status?: RecruitPlanStatus;
 }
 
-export type RecruitPlanStatus = "draft" | "active" | "voided" | "closed";
+export type RecruitPlanStatus = "draft" | "closed" | "active" | "voided";
 
 export interface ApiResponse_RecruitPlanRecord {
 	code: number;
 	message: string;
-	data: RecruitPlanRecord;
+	data: {
+  id?: number;
+  createTime?: string;
+  updateTime?: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  positionName: string;
+  headcount: number;
+} & {
+  targetDepartmentId: number;
+  targetDepartmentName?: string;
+  requirementSummary?: string;
+  recruiterId?: number;
+  recruiterName?: string;
+  jobStandardId?: number;
+  jobStandardPositionName?: string;
+  jobStandardSummary?: RecruitmentSourceSnapshot;
+  jobStandardSnapshot?: RecruitmentSourceSnapshot;
+  sourceSnapshot?: RecruitmentSourceSnapshot;
+  status?: RecruitPlanStatus;
+};
 }
 
-export interface RecruitPlanRecord {
+export interface RecruitmentSourceSnapshot {
 	id?: number;
-	title: string;
-	targetDepartmentId: number;
-	targetDepartmentName?: string | null;
-	positionName: string;
-	headcount: number;
-	startDate: string;
-	endDate: string;
-	recruiterId?: number | null;
-	recruiterName?: string | null;
-	requirementSummary?: string | null;
-	jobStandardId?: number | null;
-	jobStandardSummary?: RecruitPlanSourceSnapshot | null;
-	jobStandardSnapshot?: RecruitPlanSourceSnapshot | null;
-	status: RecruitPlanStatus;
-	createTime?: string;
-	updateTime?: string;
-}
-
-export interface RecruitPlanSourceSnapshot {
-	id?: number | null;
+	title?: string;
+	status?: string;
 	positionName?: string;
-	jobLevel?: string | null;
-	targetDepartmentId?: number | null;
-	targetDepartmentName?: string | null;
-	status?: JobStandardStatus | null;
-	requirementSummary?: string | null;
+	sourceResource?: RecruitmentSourceResource;
+	jobStandardId?: number;
+	jobStandardPositionName?: string;
+	jobStandardRequirementSummary?: string;
+	talentAssetId?: number;
+	recruitPlanId?: number;
+	recruitPlanTitle?: string;
+	recruitPlanStatus?: RecruitPlanStatus;
+	resumePoolId?: number;
+	interviewId?: number;
+	candidateName?: string;
+	targetDepartmentId?: number;
+	targetDepartmentName?: string;
+	targetPosition?: string;
+	interviewStatus?: InterviewStatus;
+	sourceStatusSnapshot?: string;
 }
 
-export type JobStandardStatus = "draft" | "active" | "inactive";
+export type RecruitmentSourceResource = "resumePool" | "talentAsset" | "interview" | "jobStandard" | "recruitPlan";
+
+export type InterviewStatus = "cancelled" | "completed" | "scheduled";
 
 export interface RecruitPlanActionRequest {
 	id: number;
@@ -64,12 +80,10 @@ export interface RecruitPlanActionRequest {
 export interface ApiResponse_RecruitPlanDeleteResult {
 	code: number;
 	message: string;
-	data: RecruitPlanDeleteResult;
-}
-
-export interface RecruitPlanDeleteResult {
-	id: number;
-	deleted: boolean;
+	data: {
+  id: number;
+  deleted: boolean;
+};
 }
 
 export interface RecruitPlanExportQuery {
@@ -80,30 +94,24 @@ export interface RecruitPlanExportQuery {
 	endDate?: string;
 }
 
-export interface ApiResponse_RecruitPlanExportRows {
+export interface ApiResponse_RecruitPlanExportRecruitPlanSummaryResult {
 	code: number;
 	message: string;
-	data: RecruitPlanExportRows;
+	data: Array<RecruitPlanExportRow>;
 }
-
-export type RecruitPlanExportRows = Array<RecruitPlanExportRow>;
 
 export interface RecruitPlanExportRow {
 	id?: number;
 	title: string;
-	targetDepartmentId: number;
-	targetDepartmentName?: string | null;
+	targetDepartmentId?: number;
+	targetDepartmentName?: string;
 	positionName: string;
 	headcount: number;
 	startDate: string;
 	endDate: string;
-	recruiterId?: number | null;
-	recruiterName?: string | null;
-	requirementSummary?: string | null;
-	jobStandardId?: number | null;
-	jobStandardSummary?: RecruitPlanSourceSnapshot | null;
-	jobStandardSnapshot?: RecruitPlanSourceSnapshot | null;
-	status: RecruitPlanStatus;
+	recruiterId?: number;
+	recruiterName?: string;
+	status?: RecruitPlanStatus;
 	createTime?: string;
 	updateTime?: string;
 }
@@ -125,18 +133,20 @@ export interface RecruitPlanImportRow {
 	jobStandardId?: RecruitPlanImportCellValue;
 }
 
-export type RecruitPlanImportCellValue = string | number | null;
+export type RecruitPlanImportCellValue = string | number;
 
 export interface ApiResponse_RecruitPlanImportResult {
 	code: number;
 	message: string;
-	data: RecruitPlanImportResult;
+	data: {
+  fileId: number;
+  importedCount: number;
+  skippedCount: number;
+};
 }
 
-export interface RecruitPlanImportResult {
-	fileId: number;
-	importedCount: number;
-	skippedCount: number;
+export interface RecruitPlanInfoQuery {
+	id: number;
 }
 
 export interface RecruitPlanPageQuery {
@@ -152,12 +162,11 @@ export interface RecruitPlanPageQuery {
 export interface ApiResponse_RecruitPlanPageResult {
 	code: number;
 	message: string;
-	data: RecruitPlanPageResult;
-}
-
-export interface RecruitPlanPageResult {
-	list: Array<RecruitPlanRecord>;
-	pagination: PagePagination;
+	data: {
+  pagination: PagePagination;
+} & {
+  list: Array<RecruitPlanRecord>;
+};
 }
 
 export interface PagePagination {
@@ -174,3 +183,30 @@ export interface PagePagination {
 	 */
 	total: number;
 }
+
+export type RecruitPlanRecord = {
+  id?: number;
+  createTime?: string;
+  updateTime?: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  positionName: string;
+  headcount: number;
+} & {
+  targetDepartmentId: number;
+  targetDepartmentName?: string;
+  requirementSummary?: string;
+  recruiterId?: number;
+  recruiterName?: string;
+  jobStandardId?: number;
+  jobStandardPositionName?: string;
+  jobStandardSummary?: RecruitmentSourceSnapshot;
+  jobStandardSnapshot?: RecruitmentSourceSnapshot;
+  sourceSnapshot?: RecruitmentSourceSnapshot;
+  status?: RecruitPlanStatus;
+};
+
+export type RecruitPlanUpdateRecruitPlanRequest = RecruitPlanSaveRequest & {
+  id: number;
+};

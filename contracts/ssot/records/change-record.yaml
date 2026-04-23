@@ -1,15 +1,14 @@
 # xuedao repo-level change record.
-# Captures the first runtime binding of the repository SSOT manifest into
-# executable guard/config/report paths.
+# Captures the fourth-batch SSOT governance rollout that reduces performance contract residual risk.
 
 recordVersion: "1.0"
-changeId: "XUEDAO-CHG-20260423-001"
-title: "Expand repository SSOT machine-source coverage, harden conformance records, and converge local shared-deps recovery paths"
+changeId: "XUEDAO-CHG-20260424-001"
+title: "Close remaining performance contract residual risk with capability shared-service promotion and full decoder enum centralization"
 owner: "codex"
 status: "verified"
 reviewers:
   - "codex-self-review"
-requestedAt: "2026-04-23"
+requestedAt: "2026-04-24"
 targetRelease: "2026.04.r2"
 
 classification:
@@ -17,139 +16,125 @@ classification:
   severityGate: "strict-change-template"
   triggers:
     - "shared_module"
+    - "api_contract"
     - "repo_guard"
-    - "release_governance"
+    - "generated_consumer"
+    - "documentation_sync"
 
 scope:
-  outcome: "让仓库级 SSOT manifest 不只登记 OpenAPI，还同时登记权限主源、状态机、业务字典、错误目录，并要求 change/verification record 满足 strict-change 级别的结构闭环，同时把 Midway 本地 lint、离线 shared-deps 安装、compat-only 快速修复三条路径都收敛为仓库脚本自动修补，并通过临时工作区 + 本地 mock registry 的回归测试锁定 clean-environment 能力。"
+  outcome: "在第四批仓库级 SSOT 治理基础上，完成 performance contract 两个剩余缺口的闭环：把 capability 三模块提升到 serviceModules 并补齐 shared service discovery 表达；把全部 performance contract adapter 的 runtime enum 常量收敛到共享入口。"
   nonGoals:
-    - "不重写现有 RBAC、状态机、组件复用守卫的具体规则。"
-    - "不调整业务模块 API、状态机或权限语义。"
-    - "不清理本仓库中与本次治理改动无关的历史脏工作区。"
+    - "不改业务 API path、字段、状态、错误语义。"
+    - "不扩写 RBAC、状态机、字典、数据库 parity 或环境变量漏扫治理范围。"
   affectedModules:
-    - "contracts/ssot"
+    - "cool-admin-midway/src/modules/performance/domain/registry"
+    - "cool-admin-vue/src/modules/performance/service"
     - "scripts"
-    - "github workflow"
-    - "package scripts"
     - "performance-management-system/test"
-    - "repo-level docs"
+    - "contracts/openapi"
+    - "contracts/ssot"
+    - "performance-management-system/docs"
 
 sourceOfTruth:
   primaryDocs:
     - "contracts/openapi/xuedao.openapi.json"
-    - "contracts/ssot/xuedao-ssot-manifest.yaml"
-    - "contracts/ssot/records/change-record.template.yaml"
-    - "contracts/ssot/records/verification-record.template.yaml"
+    - "cool-admin-midway/src/modules/performance/domain/registry/contract-source.json"
+    - "cool-admin-midway/src/modules/performance/domain/registry/contract-source.mjs"
+    - "cool-admin-midway/src/modules/performance/domain/registry/contracts.ts"
+    - "contracts/ssot/xuedao-ssot-inventory.md"
   linkedDocs:
-    - "contracts/README.md"
     - "performance-management-system/docs/24-自动化测试策略与脚本规划.md"
-    - "README.md"
   machineSourcesTouched:
-    - "contracts/ssot/xuedao-ssot-manifest.yaml"
-    - "cool-admin-midway/src/modules/base/domain/permissions/source.json"
-    - "cool-admin-midway/src/modules/base/domain/permissions/source.mjs"
-    - "cool-admin-midway/src/modules/performance/domain/states/approval-flow.ts"
-    - "cool-admin-midway/src/modules/performance/domain/states/assessment.ts"
-    - "cool-admin-midway/src/modules/performance/domain/states/types.ts"
-    - "cool-admin-midway/src/modules/performance/domain/dicts/catalog.ts"
-    - "cool-admin-midway/src/modules/performance/domain/errors/catalog.ts"
+    - "cool-admin-midway/src/modules/performance/domain/registry/contract-source.json"
+    - "contracts/openapi/xuedao.openapi.json"
   generatedConsumers:
-    - "cool-admin-midway/src/modules/base/generated/permission-bits.generated.ts"
-    - "cool-admin-midway/src/modules/base/generated/permissions.generated.ts"
-    - "cool-admin-midway/src/modules/base/generated/route-permissions.generated.ts"
-    - "cool-admin-vue/src/modules/performance/service/"
-    - "cool-admin-vue/src/modules/performance/views/"
-    - "cool-uni/service/performance/"
-    - "reports/delivery/xuedao-ssot-conformance.latest.md"
-    - "reports/delivery/xuedao-ssot-conformance.latest.json"
+    - "cool-admin-vue/src/modules/performance/generated"
+    - "cool-uni/generated"
+    - "cool-uni/types"
 
 impactSurface:
   code:
-    - "contracts/ssot"
-    - "scripts/check-xuedao-ssot-manifest.mjs"
-    - "scripts/check-xuedao-ssot-conformance.mjs"
-    - "scripts/xuedao-ssot-manifest.mjs"
-    - "scripts/git-pre-push-gate.mjs"
-    - ".github/workflows/rbac-governance.yml"
-    - "cool-admin-midway/.eslintrc.json"
-    - "cool-admin-midway/scripts/ensure-local-lint-compat.mjs"
-    - "cool-admin-midway/scripts/install-local-deps.mjs"
-    - "cool-admin-midway/src/modules/base/service/sys/param.ts"
-    - "cool-admin-midway/src/modules/performance/service/course-helper.ts"
-    - "cool-admin-vue/package.json"
-    - "cool-uni/package.json"
+    - "cool-admin-midway/src/modules/performance/domain/registry/contract-source.json"
+    - "cool-admin-vue/src/modules/performance/shared/contract-enums.ts"
+    - "cool-admin-vue/src/modules/performance/service/*-contract.ts"
+    - "contracts/openapi/xuedao.openapi.json"
   tests:
     - "performance-management-system/test/repo-guard-scripts.test.mjs"
   docs:
-    - "README.md"
-    - "contracts/README.md"
-    - "contracts/ssot/README.md"
-    - "reports/delivery/README.md"
+    - "contracts/ssot/xuedao-ssot-inventory.md"
     - "performance-management-system/docs/24-自动化测试策略与脚本规划.md"
   scripts:
-    - "scripts/run-repo-consistency-guards.mjs"
-    - "scripts/check-unified-delivery.mjs"
-  config:
-    - ".github/workflows/rbac-governance.yml"
+    - "scripts/sync-performance-openapi-ssot.mjs"
+    - "scripts/openapi-contract-sync.mjs"
+    - "scripts/check-performance-contract-closure.mjs"
+    - "scripts/check-performance-domain-model-ssot.mjs"
+    - "scripts/audit-worktree-split.mjs"
+  config: []
   migrations: []
 
 acceptance:
   normal:
-    - "xuedao-ssot-manifest 必须登记 OpenAPI、权限主源、状态机、业务字典、错误目录，并且这些路径、校验脚本、消费者路径都能被守卫解析。"
-    - "check-xuedao-ssot-conformance 必须把仓库级记录结构缺口识别成阻断项，而不是继续 PASS。"
-    - "pre-push 与 CI 必须把 format/lint/typecheck|compile/build 质量基线接入实际门禁，不再只跑 repo guard。"
-    - "对于存在历史格式/ESLint 存量债的前端工作区，必须用变更文件级脚本承接本地与 CI 的 format/lint 强阻断。"
+    - "capabilityItem/capabilityModel/capabilityPortrait 必须从 publishOnlyModules 收敛到 serviceModules，且允许复用同一个 capability.ts service wrapper。"
+    - "sync-performance-openapi-ssot.mjs 必须能稳定从单 capability.ts 为三个 moduleRoot 生成对应 OpenAPI paths。"
+    - "全部 performance contract adapter 不再手写局部 runtime enum 常量，统一复用 shared/contract-enums.ts。"
   error:
-    - "缺少 machine source 注册、缺少 strict-change 级记录字段、或记录与 manifest 不一致时，conformance 必须返回 FAIL。"
-    - "缺少统一质量基线步骤时，repo-guard 回归测试必须识别 workflow / pre-push 缺口。"
+    - "若 service-capable 模块仍留在 publishOnlyModules，closure guard 必须 FAIL。"
+    - "若任一 performance *-contract.ts 再次出现局部 const enum source，performance-domain-model guard 必须 FAIL。"
   boundary:
-    - "保持现有受限 YAML 解析器能力，不引入新依赖，也不要求 manifest 支持数组对象。"
+    - "允许多个 moduleRoot 复用同一个 serviceFile，但必须在 registry 中显式登记并能被脚本稳定发现。"
+    - "本轮不新增独立 capabilityItem/capabilityPortrait 前端 service wrapper 文件。"
   permission:
-    - "本次治理不改变任何业务权限语义，但必须把权限主源纳入仓库级 machine source 注册。"
+    - "本次治理不改变业务权限语义。"
   stateFlow:
-    - "本次治理不改变状态机定义，只要求把状态机主源纳入 manifest 并被守卫检查。"
+    - "本次治理不新增业务状态。"
 
 deliveryEvidenceRequired:
   - "verification_record"
-  - "conformance_report"
+  - "performance_openapi_sync_pass"
+  - "performance_contract_sync_pass"
+  - "contract_closure_guard_pass"
+  - "domain_model_guard_pass"
   - "repo_guard_regression"
-  - "rollback_statement"
+  - "repo_consistency_guard_pass"
+  - "frontend_typecheck"
+  - "frontend_build"
+  - "mobile_typecheck"
 
 releaseAndRollback:
   rolloutSteps:
-    - "更新 contracts/ssot manifest 与 records"
-    - "更新脚本校验规则和回归测试"
-    - "执行 conformance、repo guard 回归与定向 consistency guards"
+    - "调整 performance contract-source producer 分类并补齐 capability 共享 service 发现能力"
+    - "同步 OpenAPI 与 generated consumer"
+    - "扩展 contract-enums.ts 并改造剩余 contract adapter"
+    - "升级 closure/domain-model guards 与 repo guard regression"
+    - "回写 inventory 与 records"
   rollbackPath:
-    - "回退 contracts/ssot、scripts、README/docs/test 的本次治理改动"
-    - "重新执行仓库级守卫，确认回到前一稳定状态"
+    - "回退 contract-source producer 分类、contract-enums.ts、相关 adapter/guard/test/doc 改动"
+    - "重新执行 sync 与 repo consistency guards，确认恢复到第三批稳定状态"
   monitoring:
+    - "scripts/check-performance-contract-closure.mjs 输出"
+    - "scripts/check-performance-domain-model-ssot.mjs 输出"
     - "reports/delivery/xuedao-ssot-conformance.latest.{md,json}"
-    - "pre-push 与 CI 中的 repo consistency / unified delivery 失败日志"
 
 waivers: []
 notes:
-  - "本次变更继续沿用 XUEDAO-CHG-20260423-001，同一主题下补齐第二轮治理缺口。"
+  - "本次是第五批 performance contract 残余风险收敛，不扩到 RBAC、状态机全覆盖、schema parity、环境变量全仓漏扫。"
+  - "cool-admin-vue/.env 仍可能存在本地改动，但不再作为仓库级 SSOT 交付残余风险记录。"
 
 delivery:
   requiredCommands:
+    - "node ./scripts/sync-performance-openapi-ssot.mjs --write"
+    - "node ./scripts/openapi-contract-sync.mjs --write"
+    - "node ./scripts/check-performance-contract-closure.mjs"
+    - "node ./scripts/check-performance-domain-model-ssot.mjs"
     - "node ./scripts/check-xuedao-ssot-manifest.mjs"
     - "node ./scripts/check-xuedao-ssot-conformance.mjs"
-    - "node ./scripts/check-xuedao-ssot-conformance.mjs --strict-report-artifacts"
-    - "cd /Users/shaotongli/Documents/xuedao/cool-admin-midway && npm run build"
-    - "node ./scripts/check-changed-workspace-quality.mjs --workspace cool-admin-vue --tool prettier"
-    - "node ./scripts/check-changed-workspace-quality.mjs --workspace cool-admin-vue --tool eslint"
-    - "node ./scripts/check-changed-workspace-quality.mjs --workspace cool-uni --tool prettier"
-    - "node ./scripts/check-changed-workspace-quality.mjs --workspace cool-uni --tool eslint"
-    - "node ./scripts/check-unified-delivery.mjs --phase batch --all --skip-rbac-guard --skip-state-machine-guard --skip-component-reuse-guard"
     - "node --test ./performance-management-system/test/repo-guard-scripts.test.mjs"
-    - "node ./scripts/run-repo-consistency-guards.mjs --file contracts/ssot/xuedao-ssot-manifest.yaml --file contracts/ssot/README.md --file contracts/ssot/records/change-record.template.yaml --file contracts/ssot/records/verification-record.template.yaml --file contracts/ssot/records/change-record.yaml --file contracts/ssot/records/verification-record.yaml --file scripts/xuedao-ssot-manifest.mjs --file scripts/check-xuedao-ssot-manifest.mjs --file scripts/check-xuedao-ssot-conformance.mjs --file scripts/check-unified-delivery.mjs --file scripts/repo-consistency-config.mjs --file performance-management-system/test/repo-guard-scripts.test.mjs --file performance-management-system/docs/24-自动化测试策略与脚本规划.md --file README.md --file contracts/README.md --file reports/delivery/README.md"
+    - "node ./scripts/run-repo-consistency-guards.mjs"
+    - "cd /Users/shaotongli/Documents/xuedao/cool-admin-vue && corepack pnpm run type-check"
+    - "cd /Users/shaotongli/Documents/xuedao/cool-admin-vue && corepack pnpm run build"
+    - "cd /Users/shaotongli/Documents/xuedao/cool-uni && corepack pnpm run type-check"
   expectedArtifacts:
     - "reports/delivery/xuedao-ssot-conformance.latest.md"
     - "reports/delivery/xuedao-ssot-conformance.latest.json"
-    - "reports/delivery/unified-delivery-batch.latest.md"
-    - "reports/delivery/unified-delivery-batch.latest.json"
 residualRisk:
-  - "当前仓库工作区存在大量与本次治理无关的脏改动；本记录只覆盖本次列出的仓库级 SSOT 绑定与 conformance 校验文件。"
-  - "本次只把仓库级 machine source 注册补到 manifest，并补齐质量门禁基线；并未把所有业务域都完全重构成统一可生成主源。"
-  - "cool-admin-midway 本地 `npm run lint`、`npm run deps:local:install`、`npm run deps:local:repair` 已收敛到同一套 `.shared-deps` 兼容修补路径，并有临时工作区 + 本地 mock registry 回归测试锁定；后续仍应在真实干净依赖环境下复核一次，确认不依赖本地历史残留或测试特制输入。"
+  - "仓库级 SSOT 剩余缺口仍集中在菜单/RBAC 分层事实源、状态机覆盖不足、字典/provider 未完全同源、数据库 parity 与环境变量全仓漏扫。"

@@ -3,8 +3,8 @@
  * 这里只复用 OpenAPI 生成类型并补充页面级纯前端判断，不处理请求发送、页面路由或业务状态展示文案。
  */
 import type {
+	ApiResponse_GoalPageResult,
 	GoalProgressUpdateRequest,
-	GoalRecord,
 	GoalUpdateRequest,
 } from "/@/generated/performance-goal.generated";
 
@@ -12,15 +12,58 @@ export type {
 	GoalCreateRequest,
 	GoalExportQuery,
 	GoalExportRow,
-	GoalExportRows,
 	GoalPageQuery,
-	GoalPageResult,
-	GoalProgressRecord,
 	GoalProgressUpdateRequest,
-	GoalRecord,
 	GoalStatus,
 	GoalUpdateRequest,
 } from "/@/generated/performance-goal.generated";
+
+export interface PagePagination {
+	page: number;
+	size: number;
+	total: number;
+}
+
+type GeneratedGoalRecordSource = ApiResponse_GoalPageResult["data"]["list"][number];
+
+export type GoalProgressRecord = GeneratedGoalRecordSource & {
+	id?: number;
+	goalId?: number;
+	beforeValue?: number;
+	afterValue?: number;
+	progressRate?: number;
+	remark?: string;
+	operatorId?: number;
+	operatorName?: string;
+	createTime?: string;
+};
+
+export type GoalRecord = GeneratedGoalRecordSource & {
+	id?: number;
+	employeeId?: number;
+	employeeName?: string;
+	departmentId?: number;
+	departmentName?: string;
+	title?: string;
+	description?: string | null;
+	targetValue?: number;
+	currentValue?: number;
+	unit?: string | null;
+	weight?: number;
+	startDate?: string;
+	endDate?: string;
+	progressRate?: number;
+	status?: import("/@/generated/performance-goal.generated").GoalStatus;
+	createTime?: string;
+	updateTime?: string;
+	progressRecords?: GoalProgressRecord[];
+};
+
+export type GoalExportRows = import("/@/generated/performance-goal.generated").GoalExportRow[];
+export type GoalPageResult = {
+	list: GoalRecord[];
+	pagination: PagePagination;
+};
 
 export type GoalUpdatePayload = GoalUpdateRequest;
 export type GoalProgressPayload = GoalProgressUpdateRequest;

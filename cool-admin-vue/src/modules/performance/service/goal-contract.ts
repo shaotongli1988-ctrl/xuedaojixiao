@@ -33,13 +33,14 @@ import {
 	expectPerformanceServiceRecord,
 	expectPerformanceServiceString
 } from './service-contract';
-
-const GOAL_OPS_ROLE_KIND = ['employee', 'manager', 'hr', 'readonly', 'unsupported'] as const;
-const GOAL_OPS_SCOPE_KEY = ['self', 'department', 'company'] as const;
-const GOAL_OPS_PERIOD_TYPE = ['day', 'week', 'month'] as const;
-const GOAL_OPS_SOURCE_TYPE = ['public', 'personal'] as const;
-const GOAL_OPS_PLAN_STATUS = ['assigned', 'submitted', 'auto_zero'] as const;
-const GOAL_OPS_REPORT_STATUS = ['generated', 'sent', 'intercepted', 'delayed'] as const;
+import {
+	GOAL_OPS_PERIOD_TYPE,
+	GOAL_OPS_PLAN_STATUS,
+	GOAL_OPS_REPORT_STATUS,
+	GOAL_OPS_ROLE_KIND,
+	GOAL_OPS_SCOPE_KEY,
+	GOAL_OPS_SOURCE_TYPE
+} from '../shared/contract-enums';
 
 function decodeOptionalNullableString(value: unknown, field: string) {
 	if (value === undefined) {

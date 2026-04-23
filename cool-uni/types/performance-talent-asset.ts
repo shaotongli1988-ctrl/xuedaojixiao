@@ -5,11 +5,21 @@
 export type {
 	DeleteIdsRequest,
 	TalentAssetPageQuery,
-	TalentAssetPageResult,
 	TalentAssetRecord,
 	TalentAssetSaveRequest,
 	TalentAssetStatus,
 } from "/@/generated/performance-talent-asset.generated";
+
+export interface PagePagination {
+	page: number;
+	size: number;
+	total: number;
+}
+
+export type TalentAssetPageResult = {
+	list: import("/@/generated/performance-talent-asset.generated").TalentAssetRecord[];
+	pagination: PagePagination;
+};
 
 export interface TalentAssetInfoQuery {
 	id: number;

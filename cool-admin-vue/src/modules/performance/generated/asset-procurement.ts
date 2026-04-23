@@ -7,10 +7,11 @@ export interface AssetProcurementCreateProcurementRequest {
 	id?: number;
 	departmentId?: number;
 	departmentName?: string;
-	supplierName?: string;
-	remark?: string;
+	status?: AssetProcurementStatus;
 	createTime?: string;
 	updateTime?: string;
+	supplierName?: string;
+	remark?: string;
 	procurementNo?: string;
 	title?: string;
 	assetCategory?: string;
@@ -20,12 +21,11 @@ export interface AssetProcurementCreateProcurementRequest {
 	requesterName?: string;
 	expectedArrivalDate?: string;
 	receiveDate?: string;
-	status?: AssetProcurementStatus;
 	supplierId?: number;
 	purchaseOrderId?: number;
 }
 
-export type AssetProcurementStatus = "draft" | "cancelled" | "submitted" | "received";
+export type AssetProcurementStatus = "draft" | "submitted" | "cancelled" | "received";
 
 export interface ApiResponse_AssetProcurementRecord {
 	code: number;
@@ -34,10 +34,11 @@ export interface ApiResponse_AssetProcurementRecord {
   id?: number;
   departmentId?: number;
   departmentName?: string;
-  supplierName?: string;
-  remark?: string;
+  status?: AssetProcurementStatus;
   createTime?: string;
   updateTime?: string;
+  supplierName?: string;
+  remark?: string;
   procurementNo?: string;
   title: string;
   assetCategory: string;
@@ -47,7 +48,6 @@ export interface ApiResponse_AssetProcurementRecord {
   requesterName?: string;
   expectedArrivalDate?: string;
   receiveDate?: string;
-  status?: AssetProcurementStatus;
 } & {
   supplierId?: number;
   purchaseOrderId?: number;
@@ -90,10 +90,11 @@ export type AssetProcurementRecord = {
   id?: number;
   departmentId?: number;
   departmentName?: string;
-  supplierName?: string;
-  remark?: string;
+  status?: AssetProcurementStatus;
   createTime?: string;
   updateTime?: string;
+  supplierName?: string;
+  remark?: string;
   procurementNo?: string;
   title: string;
   assetCategory: string;
@@ -103,7 +104,6 @@ export type AssetProcurementRecord = {
   requesterName?: string;
   expectedArrivalDate?: string;
   receiveDate?: string;
-  status?: AssetProcurementStatus;
 } & {
   supplierId?: number;
   purchaseOrderId?: number;
@@ -122,10 +122,11 @@ export type AssetProcurementUpdatePayload = {
   id?: number;
   departmentId?: number;
   departmentName?: string;
-  supplierName?: string;
-  remark?: string;
+  status?: AssetProcurementStatus;
   createTime?: string;
   updateTime?: string;
+  supplierName?: string;
+  remark?: string;
   procurementNo?: string;
   title?: string;
   assetCategory?: string;
@@ -135,7 +136,6 @@ export type AssetProcurementUpdatePayload = {
   requesterName?: string;
   expectedArrivalDate?: string;
   receiveDate?: string;
-  status?: AssetProcurementStatus;
   supplierId?: number;
   purchaseOrderId?: number;
 } & {

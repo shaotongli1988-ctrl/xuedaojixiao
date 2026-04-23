@@ -20,10 +20,11 @@ import {
 	expectPerformanceServiceRecord,
 	expectPerformanceServiceString
 } from './service-contract';
-
-const INDICATOR_CATEGORY = ['assessment', 'goal', 'feedback'] as const;
-const INDICATOR_APPLY_SCOPE = ['all', 'department', 'employee'] as const;
-const INDICATOR_STATUS = [0, 1] as const;
+import {
+	INDICATOR_APPLY_SCOPE,
+	INDICATOR_CATEGORY,
+	INDICATOR_STATUS
+} from '../shared/contract-enums';
 
 function decodeIndicatorCategory(value: unknown, field: string): IndicatorCategory {
 	return expectPerformanceServiceEnum(value, field, INDICATOR_CATEGORY);

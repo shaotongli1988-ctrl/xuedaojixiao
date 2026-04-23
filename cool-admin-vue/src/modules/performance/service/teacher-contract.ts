@@ -43,21 +43,16 @@ import {
 	expectPerformanceServiceRecord,
 	expectPerformanceServiceString
 } from './service-contract';
-
-const TEACHER_COOPERATION_STATUS = [
-	'uncontacted',
-	'contacted',
-	'negotiating',
-	'partnered',
-	'terminated'
-] as const;
-const TEACHER_ATTRIBUTION_STATUS = ['pending', 'active', 'removed', 'conflicted'] as const;
-const TEACHER_ATTRIBUTION_CONFLICT_STATUS = ['cancelled', 'open', 'resolved'] as const;
-const TEACHER_AGENT_STATUS = ['active', 'inactive'] as const;
-const TEACHER_AGENT_BLACKLIST_STATUS = ['normal', 'blacklisted'] as const;
-const TEACHER_AGENT_RELATION_STATUS = ['active', 'inactive'] as const;
-const TEACHER_CLASS_STATUS = ['draft', 'closed', 'active'] as const;
-const TEACHER_TODO_BUCKET = ['today', 'overdue'] as const;
+import {
+	TEACHER_AGENT_BLACKLIST_STATUS,
+	TEACHER_AGENT_RELATION_STATUS,
+	TEACHER_AGENT_STATUS,
+	TEACHER_ATTRIBUTION_CONFLICT_STATUS,
+	TEACHER_ATTRIBUTION_STATUS,
+	TEACHER_CLASS_STATUS,
+	TEACHER_COOPERATION_STATUS,
+	TEACHER_TODO_BUCKET
+} from '../shared/contract-enums';
 
 function decodeOptionalNullableString(value: unknown, field: string) {
 	if (value === undefined) {

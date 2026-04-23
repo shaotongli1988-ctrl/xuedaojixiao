@@ -14,16 +14,13 @@ import type {
 import {
 	decodePerformanceServicePageResult,
 	expectPerformanceServiceEnum,
-	expectPerformanceServiceNullableNumber,
-	expectPerformanceServiceNullableString,
 	expectPerformanceServiceOptionalNumber,
 	expectPerformanceServiceOptionalString,
 	expectPerformanceServiceRecord,
 	expectPerformanceServiceString,
 	expectPerformanceServiceStringArray
 } from './service-contract';
-
-const CAPABILITY_MODEL_STATUS = ['draft', 'active', 'archived'] as const;
+import { CAPABILITY_MODEL_STATUS } from '../shared/contract-enums';
 
 function decodeCapabilityModelStatus(value: unknown, field: string): CapabilityModelStatus {
 	return expectPerformanceServiceEnum(value, field, CAPABILITY_MODEL_STATUS);
@@ -38,21 +35,12 @@ export function decodeCapabilityModelRecord(
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
 		name: expectPerformanceServiceString(record.name, `${field}.name`),
-		code:
-			record.code === undefined
-				? undefined
-				: expectPerformanceServiceNullableString(record.code, `${field}.code`),
-		category:
-			record.category === undefined
-				? undefined
-				: expectPerformanceServiceNullableString(record.category, `${field}.category`),
-		description:
-			record.description === undefined
-				? undefined
-				: expectPerformanceServiceNullableString(
-						record.description,
-						`${field}.description`
-					),
+		code: expectPerformanceServiceOptionalString(record.code, `${field}.code`),
+		category: expectPerformanceServiceOptionalString(record.category, `${field}.category`),
+		description: expectPerformanceServiceOptionalString(
+			record.description,
+			`${field}.description`
+		),
 		status:
 			record.status === undefined
 				? undefined
@@ -83,24 +71,15 @@ export function decodeCapabilityItemRecord(
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
 		modelId: expectPerformanceServiceOptionalNumber(record.modelId, `${field}.modelId`),
 		name: expectPerformanceServiceString(record.name, `${field}.name`),
-		level:
-			record.level === undefined
-				? undefined
-				: expectPerformanceServiceNullableString(record.level, `${field}.level`),
-		description:
-			record.description === undefined
-				? undefined
-				: expectPerformanceServiceNullableString(
-						record.description,
-						`${field}.description`
-					),
-		evidenceHint:
-			record.evidenceHint === undefined
-				? undefined
-				: expectPerformanceServiceNullableString(
-						record.evidenceHint,
-						`${field}.evidenceHint`
-					),
+		level: expectPerformanceServiceOptionalString(record.level, `${field}.level`),
+		description: expectPerformanceServiceOptionalString(
+			record.description,
+			`${field}.description`
+		),
+		evidenceHint: expectPerformanceServiceOptionalString(
+			record.evidenceHint,
+			`${field}.evidenceHint`
+		),
 		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`)
 	};
 }
@@ -118,20 +97,14 @@ export function decodeCapabilityPortraitRecord(
 			record.employeeName,
 			`${field}.employeeName`
 		),
-		departmentId:
-			record.departmentId === undefined
-				? undefined
-				: expectPerformanceServiceNullableNumber(
-						record.departmentId,
-						`${field}.departmentId`
-					),
-		departmentName:
-			record.departmentName === undefined
-				? undefined
-				: expectPerformanceServiceNullableString(
-						record.departmentName,
-						`${field}.departmentName`
-					),
+		departmentId: expectPerformanceServiceOptionalNumber(
+			record.departmentId,
+			`${field}.departmentId`
+		),
+		departmentName: expectPerformanceServiceOptionalString(
+			record.departmentName,
+			`${field}.departmentName`
+		),
 		capabilityTags:
 			record.capabilityTags === undefined
 				? undefined
@@ -147,13 +120,10 @@ export function decodeCapabilityPortraitRecord(
 			record.certificateCount,
 			`${field}.certificateCount`
 		),
-		lastCertifiedAt:
-			record.lastCertifiedAt === undefined
-				? undefined
-				: expectPerformanceServiceNullableString(
-						record.lastCertifiedAt,
-						`${field}.lastCertifiedAt`
-					),
+		lastCertifiedAt: expectPerformanceServiceOptionalString(
+			record.lastCertifiedAt,
+			`${field}.lastCertifiedAt`
+		),
 		updatedAt: expectPerformanceServiceOptionalString(record.updatedAt, `${field}.updatedAt`)
 	};
 }

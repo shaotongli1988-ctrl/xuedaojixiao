@@ -34,11 +34,12 @@ import {
 	expectPerformanceServiceRecord,
 	expectPerformanceServiceString
 } from './service-contract';
-
-const RECRUIT_PLAN_STATUS = ['draft', 'active', 'voided', 'closed'] as const;
-const JOB_STANDARD_STATUS = ['draft', 'active', 'inactive'] as const;
-const RESUME_POOL_STATUS = ['new', 'screening', 'interviewing', 'archived'] as const;
-const RESUME_POOL_SOURCE_TYPE = ['manual', 'attachment', 'external', 'referral'] as const;
+import {
+	JOB_STANDARD_STATUS,
+	RECRUIT_PLAN_STATUS,
+	RESUME_POOL_SOURCE_TYPE,
+	RESUME_POOL_STATUS
+} from '../shared/contract-enums';
 
 function decodeOptionalNullableString(value: unknown, field: string) {
 	if (value === undefined) {

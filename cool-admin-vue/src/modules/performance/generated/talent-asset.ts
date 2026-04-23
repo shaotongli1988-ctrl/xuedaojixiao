@@ -6,42 +6,51 @@
 export interface TalentAssetSaveRequest {
 	id?: number;
 	candidateName: string;
-	code?: string | null;
+	code?: string;
 	targetDepartmentId: number;
-	targetPosition?: string | null;
+	targetPosition?: string;
 	source: string;
 	tagList?: Array<string>;
-	followUpSummary?: string | null;
-	nextFollowUpDate?: string | null;
+	followUpSummary?: string;
+	nextFollowUpDate?: string;
 	status?: TalentAssetStatus;
 }
 
-export type TalentAssetStatus = "new" | "tracking" | "archived";
+export type TalentAssetStatus = "archived" | "new" | "tracking";
 
 export interface ApiResponse_TalentAssetRecord {
 	code: number;
 	message: string;
-	data: TalentAssetRecord;
-}
-
-export interface TalentAssetRecord {
-	id?: number;
-	candidateName: string;
-	code?: string | null;
-	targetDepartmentId: number;
-	targetDepartmentName?: string;
-	targetPosition?: string | null;
-	source: string;
-	tagList?: Array<string>;
-	followUpSummary?: string | null;
-	nextFollowUpDate?: string | null;
-	status: TalentAssetStatus;
-	createTime?: string;
-	updateTime?: string;
+	data: {
+  id?: number;
+  createTime?: string;
+  updateTime?: string;
+  candidateName: string;
+  source: string;
+  tagList?: Array<string>;
+} & {
+  code?: string;
+  targetDepartmentId: number;
+  targetDepartmentName?: string;
+  targetPosition?: string;
+  followUpSummary?: string;
+  nextFollowUpDate?: string;
+  status?: TalentAssetStatus;
+};
 }
 
 export interface DeleteIdsRequest {
 	ids: Array<number>;
+}
+
+export interface ApiResponse_TalentAssetRemoveTalentAssetResult {
+	code: number;
+	message: string;
+	data: Record<string, unknown>;
+}
+
+export interface TalentAssetInfoQuery {
+	id: number;
 }
 
 export interface TalentAssetPageQuery {
@@ -57,12 +66,11 @@ export interface TalentAssetPageQuery {
 export interface ApiResponse_TalentAssetPageResult {
 	code: number;
 	message: string;
-	data: TalentAssetPageResult;
-}
-
-export interface TalentAssetPageResult {
-	list: Array<TalentAssetRecord>;
-	pagination: PagePagination;
+	data: {
+  pagination: PagePagination;
+} & {
+  list: Array<TalentAssetRecord>;
+};
 }
 
 export interface PagePagination {
@@ -79,3 +87,24 @@ export interface PagePagination {
 	 */
 	total: number;
 }
+
+export type TalentAssetRecord = {
+  id?: number;
+  createTime?: string;
+  updateTime?: string;
+  candidateName: string;
+  source: string;
+  tagList?: Array<string>;
+} & {
+  code?: string;
+  targetDepartmentId: number;
+  targetDepartmentName?: string;
+  targetPosition?: string;
+  followUpSummary?: string;
+  nextFollowUpDate?: string;
+  status?: TalentAssetStatus;
+};
+
+export type TalentAssetUpdateTalentAssetRequest = TalentAssetSaveRequest & {
+  id: number;
+};

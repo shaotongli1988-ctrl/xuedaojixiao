@@ -20,11 +20,13 @@ import {
 	expectPerformanceServiceRecord,
 	expectPerformanceServiceString
 } from './service-contract';
-
-const INTERVIEW_STATUS = ['scheduled', 'completed', 'cancelled'] as const;
-const INTERVIEW_TYPE = ['technical', 'behavioral', 'manager', 'hr'] as const;
-const RECRUIT_PLAN_STATUS = ['draft', 'active', 'voided', 'closed'] as const;
-const RESUME_POOL_STATUS = ['new', 'screening', 'interviewing', 'archived'] as const;
+import {
+	INTERVIEW_STATUS,
+	INTERVIEW_TYPE,
+	RECRUITMENT_SOURCE_RESOURCE,
+	RECRUIT_PLAN_STATUS,
+	RESUME_POOL_STATUS
+} from '../shared/contract-enums';
 
 function decodeOptionalNullableString(value: unknown, field: string) {
 	if (value === undefined) {
@@ -58,11 +60,7 @@ function decodeInterviewSourceSnapshot(value: unknown, field: string): Recruitme
 			record.sourceResource === undefined
 				? undefined
 				: expectPerformanceServiceEnum(record.sourceResource, `${field}.sourceResource`, [
-						'jobStandard',
-						'recruitPlan',
-						'resumePool',
-						'interview',
-						'talentAsset'
+						...RECRUITMENT_SOURCE_RESOURCE
 					] as const),
 		talentAssetId: decodeOptionalNullableNumber(record.talentAssetId, `${field}.talentAssetId`),
 		jobStandardId: decodeOptionalNullableNumber(record.jobStandardId, `${field}.jobStandardId`),

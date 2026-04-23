@@ -10,12 +10,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { loadPerformanceContractSourceConfig } from '../cool-admin-midway/src/modules/performance/domain/registry/contract-source.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
 const openapiPath = path.join(repoRoot, 'contracts/openapi/xuedao.openapi.json');
 
-const skipVueModules = new Set(['office-ledger', 'workbench']);
 const extraSchemaNamesByModule = new Map([
   ['goal', ['GoalOpsDepartmentScopeQuery', 'GoalOpsReportQuery']],
 ]);
@@ -34,8 +34,7 @@ function parseStringLiteral(text, regex) {
 
 function discoverModuleTargets() {
   const spec = readOpenapiSpec();
-  const vueServicesRoot = path.join(repoRoot, 'cool-admin-vue/src/modules/performance/service');
-  const uniServicesRoot = path.join(repoRoot, 'cool-uni/service/performance');
+  const contractSource = loadPerformanceContractSourceConfig(repoRoot);
   const targets = [];
   const moduleOperationsCache = new Map();
 
@@ -60,62 +59,27 @@ function discoverModuleTargets() {
     );
   };
 
-  for (const name of fs.readdirSync(vueServicesRoot).filter(item => item.endsWith('.ts')).sort()) {
-    const text = fs.readFileSync(path.join(vueServicesRoot, name), 'utf8');
-    const moduleRoot =
-      parseStringLiteral(text, /super\('admin\/performance\/([^']+)'\)/) ||
-      parseStringLiteral(text, /super\('([^']+)'\)/);
-    if (!moduleRoot || skipVueModules.has(name.replace(/\.ts$/, ''))) {
-      continue;
-    }
+  for (const target of contractSource.consumers.webTargets) {
     targets.push({
-      moduleRoots: [moduleRoot],
-      requiredOperations: collectModuleOperations([moduleRoot]),
+      moduleRoots: target.moduleRoots,
+      requiredOperations: collectModuleOperations(target.moduleRoots),
       outputs: [
         {
-          path: path.join(
-            repoRoot,
-            `cool-admin-vue/src/modules/performance/generated/${
-              name.replace(/\.ts$/, '').includes('-')
-                ? name.replace(/\.ts$/, '')
-                : toKebabCase(name.replace(/\.ts$/, ''))
-            }.ts`
-          ),
-          moduleLabel: `cool-admin-vue performance ${
-            name.replace(/\.ts$/, '').includes('-')
-              ? name.replace(/\.ts$/, '')
-              : toKebabCase(name.replace(/\.ts$/, ''))
-          }`,
+          path: path.join(repoRoot, target.generatedPath),
+          moduleLabel: `cool-admin-vue performance ${target.targetKey}`,
         },
       ],
     });
   }
 
-  for (const name of fs.readdirSync(uniServicesRoot).filter(item => item.endsWith('.ts')).sort()) {
-    const text = fs.readFileSync(path.join(uniServicesRoot, name), 'utf8');
-    const moduleRoots = Array.from(
-      new Set(
-        Array.from(
-          text.matchAll(/createServiceRequester\("admin\/performance\/([^"]+)"\)/g)
-        ).map(match => match[1])
-      )
-    );
-
-    if (!moduleRoots.length) {
-      continue;
-    }
-
-    const fileBase = name.replace(/\.ts$/, '');
+  for (const target of contractSource.consumers.uniTargets) {
     targets.push({
-      moduleRoots,
-      requiredOperations: collectModuleOperations(moduleRoots),
+      moduleRoots: target.moduleRoots,
+      requiredOperations: collectModuleOperations(target.moduleRoots),
       outputs: [
         {
-          path: path.join(
-            repoRoot,
-            `cool-uni/generated/performance-${toKebabCase(fileBase)}.generated.ts`
-          ),
-          moduleLabel: `cool-uni performance ${fileBase}`,
+          path: path.join(repoRoot, target.generatedPath),
+          moduleLabel: `cool-uni performance ${target.targetKey}`,
         },
       ],
     });

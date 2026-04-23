@@ -19,9 +19,7 @@ import {
 	expectPerformanceServiceString,
 	isPerformanceServiceRecord
 } from './service-contract';
-
-const WORK_PLAN_STATUS = ['draft', 'cancelled', 'completed', 'inProgress', 'planned'] as const;
-const WORK_PLAN_PRIORITY = ['low', 'medium', 'high', 'urgent'] as const;
+import { WORK_PLAN_PRIORITY, WORK_PLAN_STATUS } from '../shared/contract-enums';
 
 function decodeOptionalNullableString(value: unknown, field: string) {
 	if (value === undefined) {

@@ -6,11 +6,21 @@ export type {
 	IndicatorApplyScope,
 	IndicatorCategory,
 	IndicatorPageQuery,
-	IndicatorPageResult,
 	IndicatorRecord,
 	IndicatorSaveRequest,
 	IndicatorStatus,
 } from "/@/generated/performance-indicator.generated";
+
+export interface PagePagination {
+	page: number;
+	size: number;
+	total: number;
+}
+
+export type IndicatorPageResult = {
+	list: import("/@/generated/performance-indicator.generated").IndicatorRecord[];
+	pagination: PagePagination;
+};
 
 export interface IndicatorInfoQuery {
 	id: number;

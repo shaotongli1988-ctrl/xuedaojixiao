@@ -4,12 +4,22 @@
  */
 export type {
 	JobStandardPageQuery,
-	JobStandardPageResult,
 	JobStandardRecord,
 	JobStandardSaveRequest,
 	JobStandardStatus,
 	JobStandardStatusUpdateRequest,
 } from "/@/generated/performance-job-standard.generated";
+
+export interface PagePagination {
+	page: number;
+	size: number;
+	total: number;
+}
+
+export type JobStandardPageResult = {
+	list: import("/@/generated/performance-job-standard.generated").JobStandardRecord[];
+	pagination: PagePagination;
+};
 
 export interface JobStandardInfoQuery {
 	id: number;

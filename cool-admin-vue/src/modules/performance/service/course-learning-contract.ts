@@ -20,9 +20,10 @@ import {
 	expectPerformanceServiceRecord,
 	expectPerformanceServiceString
 } from './service-contract';
-
-const COURSE_LEARNING_TASK_STATUS = ['submitted', 'pending', 'evaluated'] as const;
-const COURSE_LEARNING_TASK_TYPE = ['recite', 'practice'] as const;
+import {
+	COURSE_LEARNING_TASK_STATUS,
+	COURSE_LEARNING_TASK_TYPE
+} from '../shared/contract-enums';
 
 function decodeOptionalNullableString(value: unknown, field: string) {
 	if (value === undefined) {

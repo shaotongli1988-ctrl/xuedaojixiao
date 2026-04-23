@@ -15,8 +15,7 @@ import {
 	expectPerformanceServiceString,
 	expectPerformanceServiceStringArray
 } from './service-contract';
-
-const JOB_STANDARD_STATUS = ['draft', 'active', 'inactive'] as const;
+import { JOB_STANDARD_STATUS } from '../shared/contract-enums';
 
 function decodeOptionalNullableString(value: unknown, field: string) {
 	if (value === undefined) {

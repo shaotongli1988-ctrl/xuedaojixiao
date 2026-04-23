@@ -1,11 +1,11 @@
 # xuedao repo-level verification record.
-# Captures the executed evidence for repository SSOT manifest runtime binding.
+# Captures executed evidence for the fifth-batch performance contract residual-risk closure rollout.
 
 recordVersion: "1.0"
-verificationId: "XUEDAO-VER-20260423-001"
-changeId: "XUEDAO-CHG-20260423-001"
+verificationId: "XUEDAO-VER-20260424-002"
+changeId: "XUEDAO-CHG-20260424-001"
 owner: "codex"
-executedAt: "2026-04-23T18:38:00+08:00"
+executedAt: "2026-04-24T01:07:12+08:00"
 overallStatus: "passed"
 
 coverage:
@@ -20,6 +20,34 @@ coverage:
     releaseReadiness: "covered"
 
 checks:
+  - name: "performance-openapi-sync"
+    type: "quality"
+    command: "node ./scripts/sync-performance-openapi-ssot.mjs --write"
+    scope: "capability shared-service promotion plus registry-driven producer coverage into contracts/openapi/xuedao.openapi.json"
+    status: "passed"
+    artifacts: []
+
+  - name: "performance-generated-contract-sync"
+    type: "quality"
+    command: "node ./scripts/openapi-contract-sync.mjs --write"
+    scope: "registry-driven web/uni generated contract consumers after capability producer promotion"
+    status: "passed"
+    artifacts: []
+
+  - name: "performance-contract-closure"
+    type: "quality"
+    command: "node ./scripts/check-performance-contract-closure.mjs"
+    scope: "service-capable publishOnly drift + generated target + shared support adapter + uni wrapper closure"
+    status: "passed"
+    artifacts: []
+
+  - name: "performance-domain-model-ssot"
+    type: "quality"
+    command: "node ./scripts/check-performance-domain-model-ssot.mjs"
+    scope: "full performance contract adapter enum centralization and generated-derived model closure"
+    status: "passed"
+    artifacts: []
+
   - name: "ssot-manifest-path-check"
     type: "quality"
     command: "node ./scripts/check-xuedao-ssot-manifest.mjs"
@@ -30,124 +58,63 @@ checks:
   - name: "ssot-conformance-check"
     type: "quality"
     command: "node ./scripts/check-xuedao-ssot-conformance.mjs"
-    scope: "repo ssot conformance"
+    scope: "repo ssot conformance after batch-4 record/doc updates"
     status: "passed"
     artifacts:
       - "reports/delivery/xuedao-ssot-conformance.latest.md"
       - "reports/delivery/xuedao-ssot-conformance.latest.json"
-
-  - name: "ssot-conformance-check-strict-artifacts"
-    type: "quality"
-    command: "node ./scripts/check-xuedao-ssot-conformance.mjs --strict-report-artifacts"
-    scope: "repo ssot conformance + artifact strictness"
-    status: "passed"
-    artifacts:
-      - "reports/delivery/xuedao-ssot-conformance.latest.md"
-      - "reports/delivery/xuedao-ssot-conformance.latest.json"
-      - "reports/delivery/unified-delivery-batch.latest.md"
-      - "reports/delivery/unified-delivery-batch.latest.json"
-
-  - name: "unified-delivery-batch-default-report"
-    type: "quality"
-    command: "node ./scripts/check-unified-delivery.mjs --phase batch --all --skip-rbac-guard --skip-state-machine-guard --skip-component-reuse-guard"
-    scope: "delivery gate stable artifact output"
-    status: "passed"
-    artifacts:
-      - "reports/delivery/unified-delivery-batch.latest.md"
-      - "reports/delivery/unified-delivery-batch.latest.json"
 
   - name: "repo-guard-script-regression"
     type: "test"
     command: "node --test ./performance-management-system/test/repo-guard-scripts.test.mjs"
-    scope: "repo guard script regression, including temp-workspace midway lint compatibility bootstrap and local-registry install path"
+    scope: "repo guard regression including publishOnly promotion, domain-model guard and local-runtime-env audit"
     status: "passed"
     artifacts: []
 
-  - name: "repo-consistency-guards-targeted"
+  - name: "repo-consistency-guards"
     type: "quality"
-    command: "node ./scripts/run-repo-consistency-guards.mjs --file contracts/ssot/xuedao-ssot-manifest.yaml --file contracts/ssot/README.md --file contracts/ssot/records/change-record.template.yaml --file contracts/ssot/records/verification-record.template.yaml --file contracts/ssot/records/change-record.yaml --file contracts/ssot/records/verification-record.yaml --file scripts/xuedao-ssot-manifest.mjs --file scripts/check-xuedao-ssot-manifest.mjs --file scripts/check-xuedao-ssot-conformance.mjs --file scripts/check-unified-delivery.mjs --file scripts/repo-consistency-config.mjs --file performance-management-system/test/repo-guard-scripts.test.mjs --file performance-management-system/docs/24-自动化测试策略与脚本规划.md --file README.md --file contracts/README.md --file reports/delivery/README.md"
-    scope: "targeted repo consistency guards"
+    command: "node ./scripts/run-repo-consistency-guards.mjs"
+    scope: "manifest + conformance + openapi sync + generated consumer sync + closure/domain/rbac/state/component/doc guards"
     status: "passed"
     artifacts: []
 
-  - name: "midway-build"
+  - name: "vue-typecheck"
     type: "build"
-    command: "cd /Users/shaotongli/Documents/xuedao/cool-admin-midway && npm run build"
-    scope: "backend compile baseline"
+    command: "cd /Users/shaotongli/Documents/xuedao/cool-admin-vue && corepack pnpm run type-check"
+    scope: "admin frontend type baseline after contract-enums centralization"
     status: "passed"
     artifacts: []
 
-  - name: "midway-lint"
-    type: "quality"
-    command: "cd /Users/shaotongli/Documents/xuedao/cool-admin-midway && npm run lint"
-    scope: "backend local lint baseline"
+  - name: "vue-build"
+    type: "build"
+    command: "cd /Users/shaotongli/Documents/xuedao/cool-admin-vue && corepack pnpm run build"
+    scope: "admin frontend build baseline after contract adapter refactor"
     status: "passed"
     artifacts: []
 
-  - name: "midway-local-deps-install"
-    type: "quality"
-    command: "cd /Users/shaotongli/Documents/xuedao/cool-admin-midway && node ./scripts/install-local-deps.mjs mwts"
-    scope: "backend local shared-deps install converges onto lint compatibility bootstrap"
-    status: "passed"
-    artifacts: []
-
-  - name: "midway-local-deps-repair"
-    type: "quality"
-    command: "cd /Users/shaotongli/Documents/xuedao/cool-admin-midway && npm run deps:local:repair"
-    scope: "backend compat-only shared-deps repair converges onto lint compatibility bootstrap"
-    status: "passed"
-    artifacts: []
-
-  - name: "vue-format-check"
-    type: "quality"
-    command: "node ./scripts/check-changed-workspace-quality.mjs --workspace cool-admin-vue --tool prettier"
-    scope: "frontend format baseline"
-    status: "passed"
-    artifacts: []
-
-  - name: "vue-lint-check"
-    type: "quality"
-    command: "node ./scripts/check-changed-workspace-quality.mjs --workspace cool-admin-vue --tool eslint"
-    scope: "frontend lint baseline"
-    status: "passed"
-    artifacts: []
-
-  - name: "uni-format-check"
-    type: "quality"
-    command: "node ./scripts/check-changed-workspace-quality.mjs --workspace cool-uni --tool prettier"
-    scope: "uni format baseline"
-    status: "passed"
-    artifacts: []
-
-  - name: "uni-lint-check"
-    type: "quality"
-    command: "node ./scripts/check-changed-workspace-quality.mjs --workspace cool-uni --tool eslint"
-    scope: "uni lint baseline"
-    status: "passed"
-    artifacts: []
-
-  - name: "uni-type-check"
-    type: "typecheck"
+  - name: "uni-typecheck"
+    type: "build"
     command: "cd /Users/shaotongli/Documents/xuedao/cool-uni && corepack pnpm run type-check"
-    scope: "uni type baseline"
+    scope: "cool-uni type baseline after generated contract refresh"
     status: "passed"
     artifacts: []
 
-skipped:
-  - name: "broader-business-build"
-    reason: "本次改动只涉及仓库级守卫、README 和治理记录，没有修改业务运行时行为。"
-    risk: "未重新执行 cool-admin-midway / cool-admin-vue / cool-uni 的完整业务构建。"
+skipped: []
 
 findings:
   blockers: []
-  followUps: []
+  followUps:
+    - severity: "P2"
+      scope: "rbac-role-catalog"
+      problem: "repo consistency guard 仍提示 backend `user` 与 frontend `manager` 角色集合差异。"
+      owner: "repo-governance"
+      due: "2026-04-30"
+      cleanup: "统一前后端角色目录，或在守卫中把仅单侧存在的角色显式登记为内部别名。"
 
 residualRisk:
-  - "仓库当前存在大量历史脏工作区，本次验证只覆盖与 SSOT runtime binding 直接相关的文件与守卫入口。"
-  - "本次已把现有可执行的 repo 级 format/lint/typecheck/build 基线纳入门禁，但 Vue / Uni 的 format/lint 当前采取变更文件强阻断模式，尚未消化全仓历史格式债。"
-  - "cool-admin-midway 本地 `npm run lint`、`node ./scripts/install-local-deps.mjs mwts`、`npm run deps:local:repair` 已收敛到同一套 `.shared-deps` 兼容层修补路径，并由临时工作区 + 本地 mock registry 回归测试锁定；后续仍建议以一次真实干净依赖安装替代离线 shim，并复核脚本是否可删除。"
+  - "仓库级 SSOT 仍有更高层残余项：菜单/RBAC 分层事实源、状态机覆盖不足、字典/provider 未完全同源、数据库 parity 与环境变量全仓漏扫。"
 
 summary:
-  passedChecks: 15
+  passedChecks: 11
   failedChecks: 0
-  skippedChecks: 1
+  skippedChecks: 0

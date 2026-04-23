@@ -4,9 +4,9 @@
  */
 export type {
 	CertificatePageQuery,
-	CertificatePageResult,
 	CertificateRecord,
-} from "/@/generated/performance-talent-development.generated";
+} from "/@/generated/performance-certificate.generated";
+export type { CertificatePageResult } from "/@/generated/performance-talent-development.generated";
 
 export interface CertificateInfoQuery {
 	id: number;

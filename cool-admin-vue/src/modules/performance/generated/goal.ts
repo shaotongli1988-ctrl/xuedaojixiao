@@ -19,31 +19,29 @@ export interface GoalCreateRequest {
 export interface ApiResponse_GoalRecord {
 	code: number;
 	message: string;
-	data: GoalRecord;
+	data: {
+  id?: number;
+  employeeId?: number;
+  employeeName?: string;
+  departmentId?: number;
+  departmentName?: string;
+  title?: string;
+  description?: string;
+  targetValue?: number;
+  currentValue?: number;
+  unit?: string;
+  weight?: number;
+  startDate?: string;
+  endDate?: string;
+  progressRate?: number;
+  status?: GoalStatus;
+  createTime?: string;
+  updateTime?: string;
+  progressRecords?: Array<GoalProgressRecord>;
+};
 }
 
-export interface GoalRecord {
-	id?: number;
-	employeeId?: number;
-	employeeName?: string;
-	departmentId?: number;
-	departmentName?: string;
-	title?: string;
-	description?: string;
-	targetValue?: number;
-	currentValue?: number;
-	unit?: string;
-	weight?: number;
-	startDate?: string;
-	endDate?: string;
-	progressRate?: number;
-	status?: GoalStatus;
-	createTime?: string;
-	updateTime?: string;
-	progressRecords?: Array<GoalProgressRecord>;
-}
-
-export type GoalStatus = "draft" | "in-progress" | "completed" | "cancelled";
+export type GoalStatus = "draft" | "cancelled" | "completed" | "in-progress";
 
 export interface GoalProgressRecord {
 	id?: number;
@@ -61,6 +59,12 @@ export interface DeleteIdsRequest {
 	ids: Array<number>;
 }
 
+export interface ApiResponse_GoalRemoveGoalResult {
+	code: number;
+	message: string;
+	data: Record<string, unknown>;
+}
+
 export interface GoalExportQuery {
 	keyword?: string;
 	employeeId?: number;
@@ -70,13 +74,11 @@ export interface GoalExportQuery {
 	endDate?: string;
 }
 
-export interface ApiResponse_GoalExportRows {
+export interface ApiResponse_GoalExportSummaryResult {
 	code: number;
 	message: string;
-	data: GoalExportRows;
+	data: Array<GoalExportRow>;
 }
-
-export type GoalExportRows = Array<GoalExportRow>;
 
 export interface GoalExportRow {
 	employeeName: string;
@@ -92,18 +94,27 @@ export interface GoalExportRow {
 	updateTime?: string;
 }
 
+export interface GoalInfoQuery {
+	id: number;
+}
+
 export interface ApiResponse_GoalOpsAccessProfile {
 	code: number;
 	message: string;
-	data: GoalOpsAccessProfile;
+	data: {
+  departmentId: number;
+  activePersonaKey: string;
+  roleKind: "employee" | "manager" | "hr" | "readonly" | "unsupported";
+  scopeKey: "department" | "company" | "self";
+  isHr: boolean;
+  canManageDepartment: boolean;
+  canMaintainPersonalPlan: boolean;
+  manageableDepartmentIds: Array<number>;
+};
 }
 
-export interface GoalOpsAccessProfile {
-	departmentId: number | null;
-	isHr: boolean;
-	canManageDepartment: boolean;
-	canMaintainPersonalPlan: boolean;
-	manageableDepartmentIds: Array<number>;
+export interface GoalOpsDepartmentScopeQuery {
+	departmentId?: number;
 }
 
 export interface GoalOpsDailyFinalizeRequest {
@@ -114,13 +125,11 @@ export interface GoalOpsDailyFinalizeRequest {
 export interface ApiResponse_GoalOpsDailyFinalizeResult {
 	code: number;
 	message: string;
-	data: GoalOpsDailyFinalizeResult;
-}
-
-export interface GoalOpsDailyFinalizeResult {
-	departmentId: number;
-	planDate: string;
-	autoZeroCount: number;
+	data: {
+  departmentId: number;
+  planDate: string;
+  autoZeroCount: number;
+};
 }
 
 export interface GoalOpsDailySubmitRequest {
@@ -137,15 +146,13 @@ export interface GoalOpsDailyResultItem {
 export interface ApiResponse_GoalOpsOverview {
 	code: number;
 	message: string;
-	data: GoalOpsOverview;
-}
-
-export interface GoalOpsOverview {
-	planDate: string;
-	departmentId?: number | null;
-	departmentSummary: GoalOpsDepartmentSummary;
-	leaderboard: GoalOpsLeaderboard;
-	rows: Array<GoalOpsOverviewRow>;
+	data: {
+  planDate: string;
+  departmentId?: number;
+  departmentSummary: GoalOpsDepartmentSummary;
+  leaderboard: GoalOpsLeaderboard;
+  rows: Array<GoalOpsOverviewRow>;
+};
 }
 
 export interface GoalOpsDepartmentSummary {
@@ -188,20 +195,32 @@ export interface GoalOpsOverviewRow {
 export interface ApiResponse_GoalOpsDepartmentConfig {
 	code: number;
 	message: string;
-	data: GoalOpsDepartmentConfig;
+	data: {
+  departmentId?: number;
+  departmentName?: string;
+  assignTime: string;
+  submitDeadline: string;
+  reportSendTime: string;
+  reportPushMode: string;
+} & {
+  reportPushTarget?: string;
+  updatedBy?: number;
+  updateTime?: string;
+};
 }
 
-export interface GoalOpsDepartmentConfig {
-	departmentId?: number;
-	departmentName?: string;
-	assignTime: string;
-	submitDeadline: string;
-	reportSendTime: string;
-	reportPushMode: string;
-	reportPushTarget?: string | null;
-	updatedBy?: number | null;
-	updateTime?: string | null;
-}
+export type GoalOpsDepartmentConfig = {
+  departmentId?: number;
+  departmentName?: string;
+  assignTime: string;
+  submitDeadline: string;
+  reportSendTime: string;
+  reportPushMode: string;
+} & {
+  reportPushTarget?: string;
+  updatedBy?: number;
+  updateTime?: string;
+};
 
 export interface GoalOpsOverviewQuery {
 	planDate: string;
@@ -209,44 +228,53 @@ export interface GoalOpsOverviewQuery {
 	employeeId?: number;
 }
 
+export interface ApiResponse_GoalDeleteOpsPlanResult {
+	code: number;
+	message: string;
+	data: Record<string, unknown>;
+}
+
 export interface ApiResponse_GoalOpsPlanRecord {
 	code: number;
 	message: string;
-	data: GoalOpsPlanRecord;
-}
-
-export interface GoalOpsPlanRecord {
-	id?: number;
-	departmentId?: number;
-	departmentName?: string;
-	employeeId?: number;
-	employeeName?: string;
-	periodType: GoalOpsPeriodType;
-	planDate?: string | null;
-	periodStartDate: string;
-	periodEndDate: string;
-	sourceType: GoalOpsSourceType;
-	title: string;
-	description?: string | null;
-	targetValue: number;
-	actualValue?: number;
-	completionRate?: number;
-	unit?: string | null;
-	status?: GoalOpsPlanStatus;
-	parentPlanId?: number | null;
-	isSystemGenerated?: boolean;
-	assignedBy?: number | null;
-	submittedBy?: number | null;
-	submittedAt?: string | null;
-	createTime?: string;
-	updateTime?: string;
+	data: {
+  id?: number;
+  employeeId?: number;
+  employeeName?: string;
+  departmentId?: number;
+  departmentName?: string;
+  periodType: GoalOpsPeriodType;
+  createTime?: string;
+  updateTime?: string;
+  title: string;
+  periodStartDate: string;
+  periodEndDate: string;
+  sourceType: GoalOpsSourceType;
+  targetValue: number;
+  isSystemGenerated?: boolean;
+} & {
+  planDate?: string;
+  description?: string;
+  actualValue?: number;
+  completionRate?: number;
+  unit?: string;
+  status?: GoalOpsPlanStatus;
+  parentPlanId?: number;
+  assignedBy?: number;
+  submittedBy?: number;
+  submittedAt?: string;
+};
 }
 
 export type GoalOpsPeriodType = "day" | "week" | "month";
 
 export type GoalOpsSourceType = "public" | "personal";
 
-export type GoalOpsPlanStatus = "assigned" | "submitted" | "auto_zero";
+export type GoalOpsPlanStatus = "submitted" | "assigned" | "auto_zero";
+
+export interface GoalOpsPlanInfoQuery {
+	id: number;
+}
 
 export interface GoalOpsPlanPageQuery {
 	page: number;
@@ -264,43 +292,58 @@ export interface GoalOpsPlanPageQuery {
 export interface ApiResponse_GoalOpsPlanPageResult {
 	code: number;
 	message: string;
-	data: GoalOpsPlanPageResult;
+	data: {
+  list: Array<GoalOpsPlanRecord>;
+  pagination: {
+  page: number;
+  size: number;
+  total: number;
+};
+};
 }
 
-export interface GoalOpsPlanPageResult {
-	list: Array<GoalOpsPlanRecord>;
-	pagination: PagePagination;
-}
-
-export interface PagePagination {
-	/**
-	 * 页码
-	 */
-	page: number;
-	/**
-	 * 页大小
-	 */
-	size: number;
-	/**
-	 * 总数
-	 */
-	total: number;
-}
+export type GoalOpsPlanRecord = {
+  id?: number;
+  employeeId?: number;
+  employeeName?: string;
+  departmentId?: number;
+  departmentName?: string;
+  periodType: GoalOpsPeriodType;
+  createTime?: string;
+  updateTime?: string;
+  title: string;
+  periodStartDate: string;
+  periodEndDate: string;
+  sourceType: GoalOpsSourceType;
+  targetValue: number;
+  isSystemGenerated?: boolean;
+} & {
+  planDate?: string;
+  description?: string;
+  actualValue?: number;
+  completionRate?: number;
+  unit?: string;
+  status?: GoalOpsPlanStatus;
+  parentPlanId?: number;
+  assignedBy?: number;
+  submittedBy?: number;
+  submittedAt?: string;
+};
 
 export interface GoalOpsPlanSaveRequest {
 	id?: number;
 	departmentId?: number;
 	employeeId?: number;
 	periodType: GoalOpsPeriodType;
-	planDate?: string | null;
+	planDate?: string;
 	periodStartDate: string;
 	periodEndDate: string;
 	sourceType: GoalOpsSourceType;
 	title: string;
-	description?: string | null;
+	description?: string;
 	targetValue: number;
-	unit?: string | null;
-	parentPlanId?: number | null;
+	unit?: string;
+	parentPlanId?: number;
 	isSystemGenerated?: boolean;
 }
 
@@ -312,27 +355,25 @@ export interface GoalOpsReportGenerateRequest {
 export interface ApiResponse_GoalOpsReportInfo {
 	code: number;
 	message: string;
-	data: GoalOpsReportInfo;
+	data: {
+  id?: number;
+  departmentId: number;
+  reportDate: string;
+  status: GoalOpsReportStatus;
+  summary?: GoalOpsReportSummary;
+  generatedAt?: string;
+  sentAt?: string;
+  pushMode?: string;
+  pushTarget?: string;
+  generatedBy?: number;
+  operatedBy?: number;
+  operationRemark?: string;
+  createTime?: string;
+  updateTime?: string;
+};
 }
 
-export interface GoalOpsReportInfo {
-	id?: number;
-	departmentId: number;
-	reportDate: string;
-	status: GoalOpsReportStatus;
-	summary: GoalOpsReportSummary | null;
-	generatedAt?: string | null;
-	sentAt?: string | null;
-	pushMode?: string;
-	pushTarget?: string | null;
-	generatedBy?: number | null;
-	operatedBy?: number | null;
-	operationRemark?: string | null;
-	createTime?: string;
-	updateTime?: string;
-}
-
-export type GoalOpsReportStatus = "generated" | "sent" | "intercepted" | "delayed";
+export type GoalOpsReportStatus = "delayed" | "generated" | "sent" | "intercepted";
 
 export interface GoalOpsReportSummary {
 	planDate: string;
@@ -347,6 +388,11 @@ export interface GoalOpsReportAutoZeroEmployee {
 	employeeId: number;
 	employeeName: string;
 	autoZeroCount: number;
+}
+
+export interface GoalOpsReportQuery {
+	reportDate: string;
+	departmentId?: number;
 }
 
 export interface GoalOpsReportStatusUpdateRequest {
@@ -370,12 +416,35 @@ export interface GoalPageQuery {
 export interface ApiResponse_GoalPageResult {
 	code: number;
 	message: string;
-	data: GoalPageResult;
+	data: {
+  list: Array<GoalRecord>;
+  pagination: {
+  page: number;
+  size: number;
+  total: number;
+};
+};
 }
 
-export interface GoalPageResult {
-	list: Array<GoalRecord>;
-	pagination: PagePagination;
+export interface GoalRecord {
+	id?: number;
+	employeeId?: number;
+	employeeName?: string;
+	departmentId?: number;
+	departmentName?: string;
+	title?: string;
+	description?: string;
+	targetValue?: number;
+	currentValue?: number;
+	unit?: string;
+	weight?: number;
+	startDate?: string;
+	endDate?: string;
+	progressRate?: number;
+	status?: GoalStatus;
+	createTime?: string;
+	updateTime?: string;
+	progressRecords?: Array<GoalProgressRecord>;
 }
 
 export interface GoalProgressUpdateRequest {
@@ -396,13 +465,4 @@ export interface GoalUpdateRequest {
 	weight?: number;
 	startDate?: string;
 	endDate?: string;
-}
-
-export interface GoalOpsDepartmentScopeQuery {
-	departmentId?: number;
-}
-
-export interface GoalOpsReportQuery {
-	reportDate: string;
-	departmentId?: number;
 }

@@ -5,10 +5,10 @@
 
 export interface PromotionCreatePromotionRequest {
 	id?: number;
+	employeeName?: string;
+	status?: string;
 	createTime?: string;
 	updateTime?: string;
-	status?: string;
-	employeeName?: string;
 	suggestionId?: number;
 	sourceReason?: string;
 	sponsorName?: string;
@@ -27,7 +27,7 @@ export interface PromotionReviewRecord {
 	promotionId?: number;
 	reviewerId: number;
 	reviewerName?: string;
-	decision: "rejected" | "approved";
+	decision: "approved" | "rejected";
 	comment?: string;
 	createTime?: string;
 }
@@ -37,10 +37,10 @@ export interface ApiResponse_PromotionRecord {
 	message: string;
 	data: {
   id?: number;
+  employeeName?: string;
+  status?: string;
   createTime?: string;
   updateTime?: string;
-  status?: string;
-  employeeName?: string;
   suggestionId?: number;
   sourceReason: string;
   sponsorName?: string;
@@ -89,10 +89,10 @@ export interface ApiResponse_PromotionPageResult {
 
 export type PromotionRecord = {
   id?: number;
+  employeeName?: string;
+  status?: string;
   createTime?: string;
   updateTime?: string;
-  status?: string;
-  employeeName?: string;
   suggestionId?: number;
   sourceReason: string;
   sponsorName?: string;
@@ -109,7 +109,7 @@ export type PromotionRecord = {
 
 export interface PromotionReviewRequest {
 	id: number;
-	decision: "rejected" | "approved";
+	decision: "approved" | "rejected";
 	comment?: string;
 }
 
@@ -119,10 +119,10 @@ export interface PromotionSubmitRequest {
 
 export type PromotionUpdatePayload = {
   id?: number;
+  employeeName?: string;
+  status?: string;
   createTime?: string;
   updateTime?: string;
-  status?: string;
-  employeeName?: string;
   suggestionId?: number;
   sourceReason?: string;
   sponsorName?: string;

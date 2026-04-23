@@ -23,28 +23,7 @@ import {
 	expectPerformanceServiceString,
 	expectPerformanceServiceArray
 } from './service-contract';
-
-const ASSET_STATUS = [
-	'assigned',
-	'lost',
-	'pendingInbound',
-	'available',
-	'maintenance',
-	'inTransfer',
-	'inventorying',
-	'scrapped'
-] as const;
-
-const ASSET_DASHBOARD_MODULE = [
-	'assetInfo',
-	'assetAssignment',
-	'assetMaintenance',
-	'assetProcurement',
-	'assetTransfer',
-	'assetInventory',
-	'assetDisposal',
-	'assetDepreciation'
-] as const;
+import { ASSET_DASHBOARD_MODULE, ASSET_STATUS } from '../shared/contract-enums';
 
 function decodeOptionalNullableNumber(value: unknown, field: string) {
 	if (value === undefined) {

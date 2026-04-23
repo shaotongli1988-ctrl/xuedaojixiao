@@ -15,11 +15,7 @@ const nonPerformanceContractRoots = [
 	'cool-admin-midway/src/modules/recycle/controller/admin/',
 	'cool-admin-midway/src/modules/space/controller/admin/',
 	'cool-admin-midway/src/modules/task/controller/admin/',
-	'cool-admin-midway/src/modules/user/controller/admin/',
-	'cool-admin-vue/build/cool/eps.json',
-	'cool-admin-vue/build/cool/eps.d.ts',
-	'cool-uni/src/build/cool/eps.json',
-	'cool-uni/src/build/cool/eps.d.ts'
+	'cool-admin-midway/src/modules/user/controller/admin/'
 ];
 
 const isRepositoryApiContractManagedPath = filePath => {
@@ -29,10 +25,7 @@ const isRepositoryApiContractManagedPath = filePath => {
 		filePath.startsWith('cool-admin-midway/src/modules/performance/service/') ||
 		filePath.startsWith('cool-admin-midway/src/modules/performance/entity/') ||
 		filePath.startsWith('cool-admin-vue/src/modules/performance/service/') ||
-		filePath.startsWith('cool-admin-vue/src/modules/performance/generated/') ||
 		filePath.startsWith('cool-uni/service/performance/') ||
-		filePath.startsWith('cool-uni/generated/') ||
-		filePath.startsWith('cool-uni/types/performance-') ||
 		nonPerformanceContractRoots.some(root => filePath === root || filePath.startsWith(root))
 	);
 };

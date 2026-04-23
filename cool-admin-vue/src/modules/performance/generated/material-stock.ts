@@ -10,11 +10,11 @@ export interface ApiResponse_MaterialStockRecord {
   id?: number;
   departmentId?: number;
   departmentName?: string;
+  status?: MaterialCatalogStatus;
   createTime?: string;
   updateTime?: string;
-  status?: MaterialCatalogStatus;
-  materialNo?: string;
   unit?: string;
+  materialNo?: string;
   currentQty?: number;
   availableQty: number;
   reservedQty?: number;
@@ -73,11 +73,11 @@ export type MaterialStockRecord = {
   id?: number;
   departmentId?: number;
   departmentName?: string;
+  status?: MaterialCatalogStatus;
   createTime?: string;
   updateTime?: string;
-  status?: MaterialCatalogStatus;
-  materialNo?: string;
   unit?: string;
+  materialNo?: string;
   currentQty?: number;
   availableQty: number;
   reservedQty?: number;

@@ -93,8 +93,12 @@ test("normal: local guard scripts exist", () => {
     "state_machine_guard.py",
     "component_reuse_guard.py",
     "unified_delivery_guard.py",
+    "check-environment-config-ssot.mjs",
+    "check-database-schema-ssot.mjs",
     "check-mobile-shared-contract.mjs",
     "check-shared-error-semantics.mjs",
+    "check-performance-contract-closure.mjs",
+    "check-performance-domain-model-ssot.mjs",
     "check-xuedao-ssot-conformance.mjs",
     "sync-eps-openapi-ssot.mjs",
     "check-global-domain-ssot.mjs",
@@ -134,6 +138,7 @@ test("normal: repo consistency guard runs ssot sync stages in write mode before 
   assert.equal(script.includes("script: 'sync-repo-openapi-ssot.mjs'"), true);
   assert.equal(script.includes("script: 'sync-performance-openapi-ssot.mjs'"), true);
   assert.equal(script.includes("script: 'openapi-contract-sync.mjs'"), true);
+  assert.equal(script.includes("script: 'check-performance-contract-closure.mjs'"), true);
   assert.equal(script.includes("script: 'check-global-domain-ssot.mjs'"), true);
   assert.equal(script.includes("script: 'check-base-permission-domain-ssot.mjs'"), true);
   assert.equal(script.includes("script: 'sync-eps-openapi-ssot.mjs'"), true);
@@ -149,6 +154,24 @@ test("normal: xuedao ssot manifest loader resolves repository artifact root and 
   assert.equal(
     manifest.sourceOfTruth.permissionBits.sourceFiles.includes(
       "cool-admin-midway/src/modules/base/domain/permissions/source.json"
+    ),
+    true
+  );
+  assert.equal(
+    manifest.sourceOfTruth.performanceContractSource.sourceFiles.includes(
+      "cool-admin-midway/src/modules/performance/domain/registry/contract-source.json"
+    ),
+    true
+  );
+  assert.equal(
+    manifest.sourceOfTruth.performanceContractSource.sourceFiles.includes(
+      "cool-admin-midway/src/modules/performance/domain/registry/contract-source.mjs"
+    ),
+    true
+  );
+  assert.equal(
+    manifest.sourceOfTruth.performanceContractSource.sourceFiles.includes(
+      "cool-admin-midway/src/modules/performance/domain/registry/contracts.ts"
     ),
     true
   );
@@ -173,6 +196,18 @@ test("normal: xuedao ssot manifest loader resolves repository artifact root and 
   assert.equal(
     manifest.sourceOfTruth.mobileSharedContract.sourceFile,
     "cool-uni/types/performance-mobile.ts"
+  );
+  assert.equal(
+    manifest.sourceOfTruth.environmentConfig.sourceFile,
+    "contracts/ssot/environment-config.catalog.json"
+  );
+  assert.equal(
+    manifest.sourceOfTruth.databaseSchema.sourceFile,
+    "contracts/ssot/database-schema.catalog.json"
+  );
+  assert.equal(
+    manifest.sourceOfTruth.menuRouteTopology.sourceFile,
+    "contracts/ssot/menu-route-topology.catalog.json"
   );
   assert.equal(
     manifest.sourceOfTruth.businessDictionaries.sourceFile,
@@ -219,6 +254,69 @@ test("normal: xuedao ssot conformance script passes with current repository bind
   const result = run(["node", "./scripts/check-xuedao-ssot-conformance.mjs"]);
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.match(result.stdout, /\[xuedao-ssot-conformance\] PASS/);
+});
+
+test("normal: environment config ssot script passes with current repository bindings", () => {
+  const result = run(["node", "./scripts/check-environment-config-ssot.mjs"]);
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /\[environment-config-ssot\] PASS/);
+});
+
+test("normal: database schema ssot script passes with current repository bindings", () => {
+  const result = run(["node", "./scripts/check-database-schema-ssot.mjs"]);
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /\[database-schema-ssot\] PASS/);
+});
+
+test("normal: performance contract closure script passes with current repository bindings", () => {
+  const result = run(["node", "./scripts/check-performance-contract-closure.mjs"]);
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /\[performance-contract-closure\] PASS/);
+});
+
+test("normal: performance domain model ssot script passes with current repository bindings", () => {
+  const result = run(["node", "./scripts/check-performance-domain-model-ssot.mjs"]);
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /\[performance-domain-model-ssot\] passed/);
+});
+
+test("normal: performance contract source promotes capability shared-service modules into serviceModules", () => {
+  const contractSource = JSON.parse(
+    readFileSync(
+      `${repoRoot}/cool-admin-midway/src/modules/performance/domain/registry/contract-source.json`,
+      "utf8"
+    )
+  );
+  assert.deepEqual(contractSource.producer.publishOnlyModules, []);
+  const capabilityServiceModules = contractSource.producer.serviceModules
+    .filter(item => item.serviceFile === "capability.ts")
+    .map(item => item.moduleRoot)
+    .sort();
+  assert.deepEqual(capabilityServiceModules, [
+    "capabilityItem",
+    "capabilityModel",
+    "capabilityPortrait",
+  ]);
+  for (const moduleRoot of [
+    "assessment",
+    "certificate",
+    "contract",
+    "goal",
+    "hiring",
+    "indicator",
+    "interview",
+    "jobStandard",
+    "meeting",
+    "recruitPlan",
+    "resumePool",
+    "talentAsset",
+  ]) {
+    assert.equal(
+      contractSource.producer.serviceModules.some(item => item.moduleRoot === moduleRoot),
+      true,
+      `${moduleRoot} should be promoted into serviceModules`
+    );
+  }
 });
 
 test("normal: mobile shared contract script passes with current repository bindings", () => {
@@ -368,6 +466,8 @@ test("normal: github workflow covers repo guard CI and release gate trigger path
 test("normal: ssot and delivery readmes describe conformance and worktree split report artifacts", () => {
   const ssotReadme = readFileSync(`${repoRoot}/contracts/ssot/README.md`, "utf8");
   const repoReadme = readFileSync(`${repoRoot}/README.md`, "utf8");
+  const contractsReadme = readFileSync(`${repoRoot}/contracts/README.md`, "utf8");
+  const ssotInventory = readFileSync(`${repoRoot}/contracts/ssot/xuedao-ssot-inventory.md`, "utf8");
   const deliveryReadme = readFileSync(`${repoRoot}/reports/delivery/README.md`, "utf8");
 
   assert.equal(
@@ -406,6 +506,21 @@ test("normal: ssot and delivery readmes describe conformance and worktree split 
     "contracts/ssot README should mention shared error semantics as a machine source"
   );
   assert.equal(
+    ssotReadme.includes("performanceContractSource"),
+    true,
+    "contracts/ssot README should mention performanceContractSource as an explicit machine source"
+  );
+  assert.equal(
+    ssotReadme.includes("environment-config.catalog.json"),
+    true,
+    "contracts/ssot README should list the environment config catalog"
+  );
+  assert.equal(
+    ssotReadme.includes("database-schema.catalog.json"),
+    true,
+    "contracts/ssot README should list the database schema catalog"
+  );
+  assert.equal(
     deliveryReadme.includes("strict-change"),
     true,
     "delivery README should mention strict-change record expectations"
@@ -414,6 +529,41 @@ test("normal: ssot and delivery readmes describe conformance and worktree split 
     repoReadme.includes("node ./scripts/audit-worktree-split.mjs"),
     true,
     "repo README should document the worktree split audit command"
+  );
+  assert.equal(
+    repoReadme.includes("xuedao-ssot-inventory.md"),
+    true,
+    "repo README should link the SSOT inventory"
+  );
+  assert.equal(
+    repoReadme.includes("contract-source.{json,mjs}"),
+    true,
+    "repo README should mention performance contract-source registry files"
+  );
+  assert.equal(
+    contractsReadme.includes("check-environment-config-ssot.mjs"),
+    true,
+    "contracts README should document the environment config guard"
+  );
+  assert.equal(
+    contractsReadme.includes("check-database-schema-ssot.mjs"),
+    true,
+    "contracts README should document the database schema guard"
+  );
+  assert.equal(
+    contractsReadme.includes("check-performance-contract-closure.mjs"),
+    true,
+    "contracts README should document the performance contract closure guard"
+  );
+  assert.equal(
+    contractsReadme.includes("performanceContractSource"),
+    true,
+    "contracts README should mention performanceContractSource"
+  );
+  assert.equal(
+    /^# xuedao 全域 SSOT Inventory/m.test(ssotInventory),
+    true,
+    "ssot inventory should exist as the repo-level SSOT map"
   );
   assert.equal(
     deliveryReadme.includes("worktree-split-audit.latest.json"),
@@ -6395,6 +6545,7 @@ test("normal: worktree split audit classifies dirty files into stable batches an
     ],
     ["cool-admin-midway/src/modules/performance/service/teacher-info.ts", "export const teacherInfo = 1;\n"],
     ["cool-admin-vue/src/modules/performance/views/teacher-channel/index.vue", "<template />\n"],
+    ["cool-admin-vue/.env", "VITE_APP_TITLE=baseline\n"],
     ["cool-uni/pages/index.vue", "<template />\n"],
     ["performance-management-system/docs/note.md", "# baseline\n"],
   ]) {
@@ -6426,6 +6577,7 @@ test("normal: worktree split audit classifies dirty files into stable batches an
     "cool-admin-vue/src/modules/performance/views/teacher-channel/index.vue",
     "<template><div>teacher</div></template>\n"
   );
+  writeTempFile(fixtureRoot, "cool-admin-vue/.env", "VITE_APP_TITLE=changed\n");
   writeTempFile(fixtureRoot, "cool-uni/pages/index.vue", "<template><view>uni</view></template>\n");
   writeTempFile(fixtureRoot, "performance-management-system/docs/note.md", "# changed\n");
   writeTempFile(fixtureRoot, ".tmp-captcha-ocr/result.txt", "temp\n");
@@ -6491,6 +6643,10 @@ test("normal: worktree split audit classifies dirty files into stable batches an
         item.path === "cool-admin-vue/src/modules/performance/views/teacher-channel/index.vue" &&
         item.batchId === "frontend-performance-themes"
     ),
+    true
+  );
+  assert.equal(
+    payload.files.some(item => item.path === "cool-admin-vue/.env" && item.batchId === "local-runtime-env"),
     true
   );
   assert.equal(

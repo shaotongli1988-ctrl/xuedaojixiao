@@ -5,16 +5,16 @@
 
 export interface SalaryCreateSalaryRequest {
 	id?: number;
-	createTime?: string;
-	updateTime?: string;
-	status?: string;
 	employeeName?: string;
 	periodValue?: string;
+	grade?: string;
+	status?: string;
+	createTime?: string;
+	updateTime?: string;
 	baseSalary?: number;
 	performanceBonus?: number;
 	adjustAmount?: number;
 	finalAmount?: number;
-	grade?: string;
 	effectiveDate?: string;
 	employeeId?: number;
 	assessmentId?: number;
@@ -38,16 +38,16 @@ export interface ApiResponse_SalaryRecord {
 	message: string;
 	data: {
   id?: number;
-  createTime?: string;
-  updateTime?: string;
-  status?: string;
   employeeName?: string;
   periodValue: string;
+  grade?: string;
+  status?: string;
+  createTime?: string;
+  updateTime?: string;
   baseSalary: number;
   performanceBonus: number;
   adjustAmount: number;
   finalAmount: number;
-  grade?: string;
   effectiveDate: string;
 } & {
   employeeId: number;
@@ -104,16 +104,16 @@ export interface ApiResponse_SalaryPageResult {
 
 export type SalaryRecord = {
   id?: number;
-  createTime?: string;
-  updateTime?: string;
-  status?: string;
   employeeName?: string;
   periodValue: string;
+  grade?: string;
+  status?: string;
+  createTime?: string;
+  updateTime?: string;
   baseSalary: number;
   performanceBonus: number;
   adjustAmount: number;
   finalAmount: number;
-  grade?: string;
   effectiveDate: string;
 } & {
   employeeId: number;
@@ -123,16 +123,16 @@ export type SalaryRecord = {
 
 export type SalaryUpdatePayload = {
   id?: number;
-  createTime?: string;
-  updateTime?: string;
-  status?: string;
   employeeName?: string;
   periodValue?: string;
+  grade?: string;
+  status?: string;
+  createTime?: string;
+  updateTime?: string;
   baseSalary?: number;
   performanceBonus?: number;
   adjustAmount?: number;
   finalAmount?: number;
-  grade?: string;
   effectiveDate?: string;
   employeeId?: number;
   assessmentId?: number;

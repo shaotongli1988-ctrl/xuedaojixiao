@@ -21,9 +21,10 @@ import {
 	expectPerformanceServiceRecord,
 	expectPerformanceServiceString
 } from './service-contract';
-
-const CERTIFICATE_STATUS = ['draft', 'active', 'retired'] as const;
-const CERTIFICATE_RECORD_STATUS = ['issued', 'revoked'] as const;
+import {
+	CERTIFICATE_RECORD_STATUS,
+	CERTIFICATE_STATUS
+} from '../shared/contract-enums';
 
 function decodeOptionalNullableString(value: unknown, field: string) {
 	if (value === undefined) {

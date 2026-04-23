@@ -7,13 +7,13 @@ export interface MaterialIssueCreateIssueRequest {
 	id?: number;
 	departmentId?: number;
 	departmentName?: string;
+	status?: MaterialIssueStatus;
 	createTime?: string;
 	updateTime?: string;
 	title?: string;
 	quantity?: number;
-	status?: MaterialIssueStatus;
-	materialNo?: string;
 	unit?: string;
+	materialNo?: string;
 	catalogId?: number;
 	materialId?: number;
 	materialCode?: string;
@@ -32,7 +32,7 @@ export interface MaterialIssueCreateIssueRequest {
 	remark?: string;
 }
 
-export type MaterialIssueStatus = "draft" | "issued" | "cancelled" | "submitted";
+export type MaterialIssueStatus = "draft" | "submitted" | "issued" | "cancelled";
 
 export interface ApiResponse_MaterialIssueRecord {
 	code: number;
@@ -41,13 +41,13 @@ export interface ApiResponse_MaterialIssueRecord {
   id?: number;
   departmentId?: number;
   departmentName?: string;
+  status?: MaterialIssueStatus;
   createTime?: string;
   updateTime?: string;
   title?: string;
   quantity: number;
-  status?: MaterialIssueStatus;
-  materialNo?: string;
   unit?: string;
+  materialNo?: string;
   catalogId?: number;
   materialId?: number;
   materialCode?: string;
@@ -110,13 +110,13 @@ export type MaterialIssueRecord = {
   id?: number;
   departmentId?: number;
   departmentName?: string;
+  status?: MaterialIssueStatus;
   createTime?: string;
   updateTime?: string;
   title?: string;
   quantity: number;
-  status?: MaterialIssueStatus;
-  materialNo?: string;
   unit?: string;
+  materialNo?: string;
   catalogId?: number;
   materialId?: number;
   materialCode?: string;
@@ -144,13 +144,13 @@ export type MaterialIssueUpdatePayload = {
   id?: number;
   departmentId?: number;
   departmentName?: string;
+  status?: MaterialIssueStatus;
   createTime?: string;
   updateTime?: string;
   title?: string;
   quantity?: number;
-  status?: MaterialIssueStatus;
-  materialNo?: string;
   unit?: string;
+  materialNo?: string;
   catalogId?: number;
   materialId?: number;
   materialCode?: string;

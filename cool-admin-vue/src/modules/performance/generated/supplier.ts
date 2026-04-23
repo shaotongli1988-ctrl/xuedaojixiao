@@ -5,10 +5,10 @@
 
 export interface SupplierCreateSupplierRequest {
 	id?: number;
-	name?: string;
+	status?: SupplierStatus;
 	createTime?: string;
 	updateTime?: string;
-	status?: SupplierStatus;
+	name?: string;
 	code?: string;
 	category?: string;
 	contactName?: string;
@@ -26,10 +26,10 @@ export interface ApiResponse_SupplierRecord {
 	message: string;
 	data: {
   id?: number;
-  name: string;
+  status?: SupplierStatus;
   createTime?: string;
   updateTime?: string;
-  status?: SupplierStatus;
+  name: string;
 } & {
   code?: string;
   category?: string;
@@ -74,10 +74,10 @@ export interface ApiResponse_SupplierPageResult {
 
 export type SupplierRecord = {
   id?: number;
-  name: string;
+  status?: SupplierStatus;
   createTime?: string;
   updateTime?: string;
-  status?: SupplierStatus;
+  name: string;
 } & {
   code?: string;
   category?: string;
@@ -91,10 +91,10 @@ export type SupplierRecord = {
 
 export type SupplierUpdatePayload = {
   id?: number;
-  name?: string;
+  status?: SupplierStatus;
   createTime?: string;
   updateTime?: string;
-  status?: SupplierStatus;
+  name?: string;
   code?: string;
   category?: string;
   contactName?: string;

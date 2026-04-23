@@ -7,11 +7,21 @@ import type { MeetingRecord } from "/@/generated/performance-meeting.generated";
 export type {
 	MeetingCheckInRequest,
 	MeetingPageQuery,
-	MeetingPageResult,
 	MeetingRecord,
 	MeetingSaveRequest,
 	MeetingStatus,
 } from "/@/generated/performance-meeting.generated";
+
+export interface PagePagination {
+	page: number;
+	size: number;
+	total: number;
+}
+
+export type MeetingPageResult = {
+	list: MeetingRecord[];
+	pagination: PagePagination;
+};
 
 export interface MeetingInfoQuery {
 	id: number;

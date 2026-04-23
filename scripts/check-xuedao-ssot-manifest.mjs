@@ -49,6 +49,11 @@ function getRegisteredMachineSources(manifest) {
 			requiredSourceFields: ['sourceFiles']
 		},
 		{
+			label: 'performanceContractSource',
+			entry: manifest.sourceOfTruth?.performanceContractSource,
+			requiredSourceFields: ['sourceFiles']
+		},
+		{
 			label: 'stateMachines',
 			entry: manifest.sourceOfTruth?.stateMachines,
 			requiredSourceFields: ['sourceFiles']
@@ -62,6 +67,21 @@ function getRegisteredMachineSources(manifest) {
 			label: 'runtimeConfig',
 			entry: manifest.sourceOfTruth?.runtimeConfig,
 			requiredSourceFields: ['sourceFiles']
+		},
+		{
+			label: 'environmentConfig',
+			entry: manifest.sourceOfTruth?.environmentConfig,
+			requiredSourceFields: ['sourceFile']
+		},
+		{
+			label: 'databaseSchema',
+			entry: manifest.sourceOfTruth?.databaseSchema,
+			requiredSourceFields: ['sourceFile']
+		},
+		{
+			label: 'menuRouteTopology',
+			entry: manifest.sourceOfTruth?.menuRouteTopology,
+			requiredSourceFields: ['sourceFile']
 		},
 		{
 			label: 'mobileSharedContract',

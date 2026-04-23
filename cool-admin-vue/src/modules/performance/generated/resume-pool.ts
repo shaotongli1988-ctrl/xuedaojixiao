@@ -7,54 +7,54 @@ export interface ResumePoolSaveRequest {
 	id?: number;
 	candidateName: string;
 	targetDepartmentId: number;
-	targetPosition?: string | null;
+	targetPosition?: string;
 	phone: string;
-	email?: string | null;
+	email?: string;
 	resumeText: string;
 	sourceType: ResumePoolSourceType;
-	sourceRemark?: string | null;
-	externalLink?: string | null;
+	sourceRemark?: string;
+	externalLink?: string;
 	attachmentIdList?: Array<number>;
-	recruitPlanId?: number | null;
-	jobStandardId?: number | null;
+	recruitPlanId?: number;
+	jobStandardId?: number;
 	status?: ResumePoolStatus;
 }
 
 export type ResumePoolSourceType = "manual" | "attachment" | "external" | "referral";
 
-export type ResumePoolStatus = "new" | "screening" | "interviewing" | "archived";
+export type ResumePoolStatus = "archived" | "new" | "screening" | "interviewing";
 
 export interface ApiResponse_ResumePoolRecord {
 	code: number;
 	message: string;
-	data: ResumePoolRecord;
-}
-
-export interface ResumePoolRecord {
-	id?: number;
-	candidateName: string;
-	targetDepartmentId: number;
-	targetDepartmentName?: string;
-	targetPosition?: string | null;
-	phone: string;
-	email?: string | null;
-	resumeText?: string;
-	sourceType: ResumePoolSourceType;
-	sourceRemark?: string | null;
-	externalLink?: string | null;
-	attachmentIdList?: Array<number>;
-	attachmentSummaryList?: Array<ResumePoolAttachmentSummary>;
-	status: ResumePoolStatus;
-	linkedTalentAssetId?: number | null;
-	latestInterviewId?: number | null;
-	recruitPlanId?: number | null;
-	jobStandardId?: number | null;
-	recruitPlanSummary?: ResumePoolRecruitPlanSnapshot | null;
-	recruitPlanSnapshot?: ResumePoolRecruitPlanSnapshot | null;
-	jobStandardSummary?: ResumePoolJobStandardSnapshot | null;
-	jobStandardSnapshot?: ResumePoolJobStandardSnapshot | null;
-	createTime?: string;
-	updateTime?: string;
+	data: {
+  id?: number;
+  createTime?: string;
+  updateTime?: string;
+  sourceType: ResumePoolSourceType;
+  targetDepartmentName?: string;
+  candidateName: string;
+  phone: string;
+  attachmentIdList?: Array<number>;
+  attachmentSummaryList?: Array<ResumePoolAttachmentSummary>;
+} & {
+  targetDepartmentId: number;
+  targetPosition?: string;
+  email?: string;
+  sourceRemark?: string;
+  externalLink?: string;
+  recruitPlanId?: number;
+  recruitPlanTitle?: string;
+  jobStandardId?: number;
+  jobStandardPositionName?: string;
+  linkedTalentAssetId?: number;
+  latestInterviewId?: number;
+  resumeText: string;
+  sourceSnapshot?: RecruitmentSourceSnapshot;
+  recruitPlanSnapshot?: RecruitmentSourceSnapshot;
+  jobStandardSnapshot?: RecruitmentSourceSnapshot;
+  status?: ResumePoolStatus;
+};
 }
 
 export interface ResumePoolAttachmentSummary {
@@ -64,32 +64,34 @@ export interface ResumePoolAttachmentSummary {
 	uploadTime: string;
 }
 
-export interface ResumePoolRecruitPlanSnapshot {
-	id?: number | null;
+export interface RecruitmentSourceSnapshot {
+	id?: number;
 	title?: string;
-	positionName?: string | null;
-	targetDepartmentId?: number | null;
-	targetDepartmentName?: string | null;
-	headcount?: number | null;
-	startDate?: string | null;
-	endDate?: string | null;
-	status?: RecruitPlanStatus | null;
-	jobStandardId?: number | null;
-}
-
-export type RecruitPlanStatus = "draft" | "active" | "voided" | "closed";
-
-export interface ResumePoolJobStandardSnapshot {
-	id?: number | null;
+	status?: string;
 	positionName?: string;
-	jobLevel?: string | null;
-	targetDepartmentId?: number | null;
-	targetDepartmentName?: string | null;
-	status?: JobStandardStatus | null;
-	requirementSummary?: string | null;
+	sourceResource?: RecruitmentSourceResource;
+	jobStandardId?: number;
+	jobStandardPositionName?: string;
+	jobStandardRequirementSummary?: string;
+	talentAssetId?: number;
+	recruitPlanId?: number;
+	recruitPlanTitle?: string;
+	recruitPlanStatus?: RecruitPlanStatus;
+	resumePoolId?: number;
+	interviewId?: number;
+	candidateName?: string;
+	targetDepartmentId?: number;
+	targetDepartmentName?: string;
+	targetPosition?: string;
+	interviewStatus?: InterviewStatus;
+	sourceStatusSnapshot?: string;
 }
 
-export type JobStandardStatus = "draft" | "active" | "inactive";
+export type RecruitmentSourceResource = "resumePool" | "talentAsset" | "interview" | "jobStandard" | "recruitPlan";
+
+export type RecruitPlanStatus = "draft" | "closed" | "active" | "voided";
+
+export type InterviewStatus = "cancelled" | "completed" | "scheduled";
 
 export interface ResumePoolActionRequest {
 	id: number;
@@ -98,57 +100,30 @@ export interface ResumePoolActionRequest {
 export interface ApiResponse_ResumePoolTalentAssetConvertResult {
 	code: number;
 	message: string;
-	data: ResumePoolTalentAssetConvertResult;
-}
-
-export interface ResumePoolTalentAssetConvertResult {
-	talentAssetId: number;
-	created: boolean;
+	data: {
+  talentAssetId: number;
+  created: boolean;
+};
 }
 
 export interface ApiResponse_ResumePoolCreateInterviewResult {
 	code: number;
 	message: string;
-	data: ResumePoolCreateInterviewResult;
-}
-
-export interface ResumePoolCreateInterviewResult {
-	interviewId: number;
-	status: ResumePoolStatus;
-	resumePoolId: number;
-	recruitPlanId?: number | null;
-	jobStandardId?: number | null;
-	sourceSnapshot?: ResumePoolInterviewSourceSnapshot;
-	snapshot?: ResumePoolReferenceSnapshot;
-	resumePoolSummary?: ResumePoolReferenceSnapshot;
-	resumePoolSnapshot?: ResumePoolReferenceSnapshot;
-	recruitPlanSummary?: ResumePoolRecruitPlanSnapshot | null;
-	recruitPlanSnapshot?: ResumePoolRecruitPlanSnapshot | null;
-	jobStandardSummary?: ResumePoolJobStandardSnapshot | null;
-	jobStandardSnapshot?: ResumePoolJobStandardSnapshot | null;
-}
-
-export interface ResumePoolInterviewSourceSnapshot {
-	sourceResource: "resumePool";
-	resumePoolId: number;
-	recruitPlanId?: number | null;
-	recruitPlanTitle?: string | null;
-	candidateName?: string | null;
-	targetDepartmentId: number;
-	targetPosition?: string | null;
-}
-
-export interface ResumePoolReferenceSnapshot {
-	id?: number;
-	candidateName: string;
-	targetDepartmentId: number;
-	targetDepartmentName?: string | null;
-	targetPosition?: string | null;
-	phone: string;
-	email?: string | null;
-	status: ResumePoolStatus;
-	recruitPlanId?: number | null;
-	jobStandardId?: number | null;
+	data: {
+  interviewId: number;
+  status: ResumePoolStatus;
+  resumePoolId: number;
+  recruitPlanId?: number;
+  jobStandardId?: number;
+  sourceSnapshot?: RecruitmentSourceSnapshot;
+  snapshot?: RecruitmentSourceSnapshot;
+  resumePoolSummary?: RecruitmentSourceSnapshot;
+  resumePoolSnapshot?: RecruitmentSourceSnapshot;
+  recruitPlanSummary?: RecruitmentSourceSnapshot;
+  recruitPlanSnapshot?: RecruitmentSourceSnapshot;
+  jobStandardSummary?: RecruitmentSourceSnapshot;
+  jobStandardSnapshot?: RecruitmentSourceSnapshot;
+};
 }
 
 export interface ResumePoolDownloadAttachmentRequest {
@@ -159,17 +134,15 @@ export interface ResumePoolDownloadAttachmentRequest {
 export interface ApiResponse_ResumePoolAttachmentDownloadResult {
 	code: number;
 	message: string;
-	data: ResumePoolAttachmentDownloadResult;
-}
-
-export interface ResumePoolAttachmentDownloadResult {
-	id: number;
-	name: string;
-	size: number;
-	uploadTime: string;
-	url: string;
-	downloadUrl: string;
-	fileId: string;
+	data: {
+  id: number;
+  name: string;
+  size: number;
+  uploadTime: string;
+  url: string;
+  downloadUrl: string;
+  fileId: string;
+};
 }
 
 export interface ResumePoolExportQuery {
@@ -179,29 +152,27 @@ export interface ResumePoolExportQuery {
 	sourceType?: ResumePoolSourceType;
 }
 
-export interface ApiResponse_ResumePoolExportRows {
+export interface ApiResponse_ResumePoolExportResumeResult {
 	code: number;
 	message: string;
-	data: ResumePoolExportRows;
+	data: Array<ResumePoolExportRow>;
 }
-
-export type ResumePoolExportRows = Array<ResumePoolExportRow>;
 
 export interface ResumePoolExportRow {
 	id?: number;
 	candidateName: string;
 	targetDepartmentId: number;
 	targetDepartmentName?: string;
-	targetPosition?: string | null;
+	targetPosition?: string;
 	phone: string;
-	email?: string | null;
+	email?: string;
 	resumeText: string;
 	sourceType: ResumePoolSourceType;
-	sourceRemark?: string | null;
-	externalLink?: string | null;
+	sourceRemark?: string;
+	externalLink?: string;
 	status: ResumePoolStatus;
-	linkedTalentAssetId?: number | null;
-	latestInterviewId?: number | null;
+	linkedTalentAssetId?: number;
+	latestInterviewId?: number;
 	createTime?: string;
 	updateTime?: string;
 }
@@ -226,36 +197,38 @@ export interface ResumePoolImportRow {
 	jobStandardId?: ResumePoolImportCellValue;
 }
 
-export type ResumePoolImportCellValue = string | number | null;
+export type ResumePoolImportCellValue = string | number;
 
 export interface ResumePoolImportOverwriteRow {
 	id: number;
 	candidateName?: string;
 	targetDepartmentId?: number;
-	targetPosition?: string | null;
+	targetPosition?: string;
 	phone?: string;
-	email?: string | null;
+	email?: string;
 	resumeText?: string;
 	sourceType?: ResumePoolSourceType;
-	sourceRemark?: string | null;
-	externalLink?: string | null;
+	sourceRemark?: string;
+	externalLink?: string;
 	attachmentIdList?: Array<number>;
-	recruitPlanId?: number | null;
-	jobStandardId?: number | null;
+	recruitPlanId?: number;
+	jobStandardId?: number;
 	status?: ResumePoolStatus;
 }
 
 export interface ApiResponse_ResumePoolImportResult {
 	code: number;
 	message: string;
-	data: ResumePoolImportResult;
+	data: {
+  fileId: number;
+  importedCount: number;
+  overwrittenCount: number;
+  skippedCount: number;
+};
 }
 
-export interface ResumePoolImportResult {
-	fileId: number;
-	importedCount: number;
-	overwrittenCount: number;
-	skippedCount: number;
+export interface ResumePoolInfoQuery {
+	id: number;
 }
 
 export interface ResumePoolPageQuery {
@@ -270,12 +243,11 @@ export interface ResumePoolPageQuery {
 export interface ApiResponse_ResumePoolPageResult {
 	code: number;
 	message: string;
-	data: ResumePoolPageResult;
-}
-
-export interface ResumePoolPageResult {
-	list: Array<ResumePoolRecord>;
-	pagination: PagePagination;
+	data: {
+  pagination: PagePagination;
+} & {
+  list: Array<ResumePoolRecord>;
+};
 }
 
 export interface PagePagination {
@@ -292,6 +264,39 @@ export interface PagePagination {
 	 */
 	total: number;
 }
+
+export type ResumePoolRecord = {
+  id?: number;
+  createTime?: string;
+  updateTime?: string;
+  sourceType: ResumePoolSourceType;
+  targetDepartmentName?: string;
+  candidateName: string;
+  phone: string;
+  attachmentIdList?: Array<number>;
+  attachmentSummaryList?: Array<ResumePoolAttachmentSummary>;
+} & {
+  targetDepartmentId: number;
+  targetPosition?: string;
+  email?: string;
+  sourceRemark?: string;
+  externalLink?: string;
+  recruitPlanId?: number;
+  recruitPlanTitle?: string;
+  jobStandardId?: number;
+  jobStandardPositionName?: string;
+  linkedTalentAssetId?: number;
+  latestInterviewId?: number;
+  resumeText: string;
+  sourceSnapshot?: RecruitmentSourceSnapshot;
+  recruitPlanSnapshot?: RecruitmentSourceSnapshot;
+  jobStandardSnapshot?: RecruitmentSourceSnapshot;
+  status?: ResumePoolStatus;
+};
+
+export type ResumePoolUpdateResumeRequest = ResumePoolSaveRequest & {
+  id: number;
+};
 
 export interface ResumePoolUploadAttachmentRequest {
 	id: number;

@@ -18,7 +18,7 @@ export interface ApiResponse_CourseExamSummary {
 };
 }
 
-export type CourseExamResultStatus = "locked" | "pending" | "passed" | "failed";
+export type CourseExamResultStatus = "pending" | "locked" | "passed" | "failed";
 
 export interface CourseExamFetchSummaryQuery {
 	courseId: number;

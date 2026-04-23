@@ -5,11 +5,11 @@
 
 export type FeedbackTaskRecord = {
   id?: number;
+  employeeName?: string;
+  status?: string;
   createTime?: string;
   updateTime?: string;
   title: string;
-  status?: string;
-  employeeName?: string;
   deadline?: string;
   submittedCount?: number;
   totalCount?: number;
@@ -32,11 +32,11 @@ export interface ApiResponse_FeedbackTaskRecord {
 	message: string;
 	data: {
   id?: number;
+  employeeName?: string;
+  status?: string;
   createTime?: string;
   updateTime?: string;
   title: string;
-  status?: string;
-  employeeName?: string;
   deadline?: string;
   submittedCount?: number;
   totalCount?: number;
@@ -65,8 +65,8 @@ export interface ApiResponse_FeedbackExportSummaryResult {
 }
 
 export type FeedbackExportRow = {
-  title: string;
   employeeId: number;
+  title: string;
   deadline?: string;
   submittedCount: number;
   totalCount: number;
@@ -128,14 +128,14 @@ export interface ApiResponse_FeedbackSummary {
 
 export type FeedbackRecord = {
   id?: number;
-  createTime?: string;
   status?: string;
+  submitTime?: string;
+  createTime?: string;
   taskId?: number;
-  content?: string;
   score: number;
+  content?: string;
   feedbackUserId?: number;
   feedbackUserName?: string;
-  submitTime?: string;
 } & {
   relationType: string;
 };

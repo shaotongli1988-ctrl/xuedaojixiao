@@ -5,10 +5,10 @@
 
 export interface DocumentCenterCreateDocumentRequest {
 	id?: number;
-	category?: DocumentCenterCategory;
+	status?: DocumentCenterStatus;
 	createTime?: string;
 	updateTime?: string;
-	status?: DocumentCenterStatus;
+	category?: DocumentCenterCategory;
 	fileNo?: string;
 	fileName?: string;
 	fileType?: DocumentCenterFileType;
@@ -24,9 +24,9 @@ export interface DocumentCenterCreateDocumentRequest {
 	expireDate?: string;
 }
 
-export type DocumentCenterCategory = "policy" | "process" | "template" | "contract" | "archive" | "other";
+export type DocumentCenterStatus = "draft" | "archived" | "published" | "review";
 
-export type DocumentCenterStatus = "draft" | "published" | "review" | "archived";
+export type DocumentCenterCategory = "other" | "policy" | "process" | "template" | "contract" | "archive";
 
 export type DocumentCenterFileType = "other" | "pdf" | "doc" | "xls" | "ppt" | "img" | "zip";
 
@@ -39,10 +39,10 @@ export interface ApiResponse_DocumentCenterRecord {
 	message: string;
 	data: {
   id?: number;
-  category: DocumentCenterCategory;
+  status?: DocumentCenterStatus;
   createTime?: string;
   updateTime?: string;
-  status?: DocumentCenterStatus;
+  category: DocumentCenterCategory;
   fileNo: string;
   fileName: string;
   fileType: DocumentCenterFileType;
@@ -100,10 +100,10 @@ export interface ApiResponse_DocumentCenterPageResult {
 
 export type DocumentCenterRecord = {
   id?: number;
-  category: DocumentCenterCategory;
+  status?: DocumentCenterStatus;
   createTime?: string;
   updateTime?: string;
-  status?: DocumentCenterStatus;
+  category: DocumentCenterCategory;
   fileNo: string;
   fileName: string;
   fileType: DocumentCenterFileType;
@@ -143,10 +143,10 @@ export interface DocumentCenterFetchStatsQuery {
 
 export type DocumentCenterUpdatePayload = {
   id?: number;
-  category?: DocumentCenterCategory;
+  status?: DocumentCenterStatus;
   createTime?: string;
   updateTime?: string;
-  status?: DocumentCenterStatus;
+  category?: DocumentCenterCategory;
   fileNo?: string;
   fileName?: string;
   fileType?: DocumentCenterFileType;

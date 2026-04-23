@@ -6,40 +6,41 @@
 export interface MeetingSaveRequest {
 	id?: number;
 	title: string;
-	code?: string | null;
-	type?: string | null;
-	description?: string | null;
+	code?: string;
+	type?: string;
+	description?: string;
 	startDate: string;
 	endDate: string;
-	location?: string | null;
+	location?: string;
 	organizerId: number;
 	participantIds?: Array<number>;
 	status?: MeetingStatus;
 }
 
-export type MeetingStatus = "scheduled" | "in_progress" | "completed" | "cancelled";
+export type MeetingStatus = "cancelled" | "completed" | "scheduled" | "in_progress";
 
 export interface ApiResponse_MeetingRecord {
 	code: number;
 	message: string;
-	data: MeetingRecord;
-}
-
-export interface MeetingRecord {
-	id?: number;
-	title: string;
-	code?: string | null;
-	type?: string | null;
-	description?: string | null;
-	startDate: string;
-	endDate: string;
-	location?: string | null;
-	organizerId: number;
-	organizerName?: string;
-	participantCount?: number;
-	status: MeetingStatus;
-	createTime?: string;
-	updateTime?: string;
+	data: {
+  id?: number;
+  createTime?: string;
+  updateTime?: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  participantCount?: number;
+  participantIds?: Array<number>;
+} & {
+  code?: string;
+  type?: string;
+  description?: string;
+  location?: string;
+  organizerId: number;
+  organizerName?: string;
+  participantIds?: Array<number>;
+  status?: MeetingStatus;
+};
 }
 
 export interface MeetingCheckInRequest {
@@ -50,10 +51,14 @@ export interface DeleteIdsRequest {
 	ids: Array<number>;
 }
 
-export interface ApiResponse_Void {
+export interface ApiResponse_MeetingRemoveMeetingResult {
 	code: number;
 	message: string;
-	data?: null;
+	data: Record<string, unknown>;
+}
+
+export interface MeetingInfoQuery {
+	id: number;
 }
 
 export interface MeetingPageQuery {
@@ -68,12 +73,11 @@ export interface MeetingPageQuery {
 export interface ApiResponse_MeetingPageResult {
 	code: number;
 	message: string;
-	data: MeetingPageResult;
-}
-
-export interface MeetingPageResult {
-	list: Array<MeetingRecord>;
-	pagination: PagePagination;
+	data: {
+  pagination: PagePagination;
+} & {
+  list: Array<MeetingRecord>;
+};
 }
 
 export interface PagePagination {
@@ -90,3 +94,27 @@ export interface PagePagination {
 	 */
 	total: number;
 }
+
+export type MeetingRecord = {
+  id?: number;
+  createTime?: string;
+  updateTime?: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  participantCount?: number;
+  participantIds?: Array<number>;
+} & {
+  code?: string;
+  type?: string;
+  description?: string;
+  location?: string;
+  organizerId: number;
+  organizerName?: string;
+  participantIds?: Array<number>;
+  status?: MeetingStatus;
+};
+
+export type MeetingUpdateMeetingRequest = MeetingSaveRequest & {
+  id: number;
+};

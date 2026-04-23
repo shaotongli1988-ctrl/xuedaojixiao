@@ -48,10 +48,11 @@
 1. 已迁移资源必须先更新仓库级 OpenAPI，再修改前后端实现。
 2. 运行时 Swagger 只作为调试视图，不再作为 API 事实源。
 3. `node ./scripts/sync-repo-openapi-ssot.mjs --write` 负责把当前非 `performance` admin EPS 资源回写到仓库级 OpenAPI 主源。
-4. `node ./scripts/sync-performance-openapi-ssot.mjs --write` 负责把当前 `performance` controller/service/types 反推回仓库级 OpenAPI 主源。
-5. `node ./scripts/openapi-contract-sync.mjs --write` 负责根据主源刷新 `performance` Vue / Uni 生成类型。
+4. `node ./scripts/sync-performance-openapi-ssot.mjs --write` 负责根据 `performance` backend registry source + controller/service/types 回写仓库级 OpenAPI 主源。
+5. `node ./scripts/openapi-contract-sync.mjs --write` 负责根据主源和 `performance` backend registry source 刷新 web / uni generated contract types。
 6. `node ./scripts/sync-eps-openapi-ssot.mjs --write` 负责把仓库级 OpenAPI 主源叠加到 `cool-admin-vue/build/cool/eps.ssot.d.ts`，收紧非 `performance` 动态 EPS 的消费类型。
-7. 当前仓库级 OpenAPI 已覆盖现有 `base`、`demo`、`dict`、`performance`、`plugin`、`recycle`、`space`、`task`、`user` 后台 API；其中 `performance` 是强类型 TS/source 驱动，其他模块当前保持动态 EPS 调用方式，但其 TypeScript 消费类型已通过 `eps.ssot.d.ts` 收口到主源。
+7. `node ./scripts/check-performance-contract-closure.mjs` 负责校验 `performance` registry source 是否完整闭合 producer 覆盖、generated targets、shared support adapter 与 uni wrapper 引用链。
+8. 当前仓库级 OpenAPI 已覆盖现有 `base`、`demo`、`dict`、`performance`、`plugin`、`recycle`、`space`、`task`、`user` 后台 API；其中 `performance` 现已进入“backend registry source + OpenAPI publish + web/uni generated consumers”三段式主链，其他模块当前保持动态 EPS 调用方式，但其 TypeScript 消费类型已通过 `eps.ssot.d.ts` 收口到主源。
 
 ## 仓库级 SSOT 落点
 
@@ -60,18 +61,25 @@
 - [contracts/ssot/README.md](/Users/shaotongli/Documents/xuedao/contracts/ssot/README.md)
 - [contracts/ssot/xuedao-ssot-bootstrap.yaml](/Users/shaotongli/Documents/xuedao/contracts/ssot/xuedao-ssot-bootstrap.yaml)
 - [contracts/ssot/xuedao-ssot-manifest.yaml](/Users/shaotongli/Documents/xuedao/contracts/ssot/xuedao-ssot-manifest.yaml)
+- [contracts/ssot/xuedao-ssot-inventory.md](/Users/shaotongli/Documents/xuedao/contracts/ssot/xuedao-ssot-inventory.md)
 
 当前 manifest 除仓库级 OpenAPI 外，也显式登记：
 
 1. 权限主源：`cool-admin-midway/src/modules/base/domain/permissions/source.{json,mjs}`
 2. 用户鉴权语义主源：`cool-admin-midway/src/modules/user/domain/auth/catalog.ts`
 3. 运行时配置主源：`cool-admin-midway/src/modules/{base,user,dict}/config.ts`
-4. 移动端共享契约主源：`cool-uni/types/performance-mobile.ts`
-5. `performance` 状态机主源：`cool-admin-midway/src/modules/performance/domain/states/*`
-6. `performance` 业务字典主源：`cool-admin-midway/src/modules/performance/domain/dicts/catalog.ts`
-7. `dict` 业务字典聚合主源：`cool-admin-midway/src/modules/dict/domain/dicts/catalog.ts`
-8. `base/user/dict` 共享错误语义主源：`cool-admin-midway/src/modules/{base,user,dict}/domain/errors/catalog.ts`
-9. `performance` 错误目录主源：`cool-admin-midway/src/modules/performance/domain/errors/catalog.ts`
+4. 环境变量主源：`contracts/ssot/environment-config.catalog.json`
+5. schema / migration ownership 主源：`contracts/ssot/database-schema.catalog.json`
+6. 菜单 / 路由 / view topology 主源：`contracts/ssot/menu-route-topology.catalog.json`
+7. 移动端共享契约主源：`cool-uni/types/performance-mobile.ts`
+8. `performance` 状态机主源：`cool-admin-midway/src/modules/performance/domain/states/*`
+9. `performance` 业务字典主源：`cool-admin-midway/src/modules/performance/domain/dicts/catalog.ts`
+10. `dict` 业务字典聚合主源：`cool-admin-midway/src/modules/dict/domain/dicts/catalog.ts`
+11. `base/user/dict` 共享错误语义主源：`cool-admin-midway/src/modules/{base,user,dict}/domain/errors/catalog.ts`
+12. `performance` 错误目录主源：`cool-admin-midway/src/modules/performance/domain/errors/catalog.ts`
+13. `performance` API 契约覆盖主源：`cool-admin-midway/src/modules/performance/domain/registry/contract-source.{json,mjs}`
+
+其中第 13 项已作为独立 machine source 显式登记在 `contracts/ssot/xuedao-ssot-manifest.yaml` 的 `sourceOfTruth.performanceContractSource`，不再只是附着在 `apiContract` 说明里的隐含约定。
 
 仓库级交付报告默认收敛到：
 
@@ -100,6 +108,7 @@ git config core.hooksPath .githooks
    - `scripts/sync-repo-openapi-ssot.mjs`
    - `scripts/sync-performance-openapi-ssot.mjs`
    - `scripts/openapi-contract-sync.mjs`
+   - `scripts/check-performance-contract-closure.mjs`
    - `scripts/sync-eps-openapi-ssot.mjs`
    - `scripts/check-directory-naming-conflicts.mjs`
    - `scripts/check-menu-route-viewpath-drift.mjs`

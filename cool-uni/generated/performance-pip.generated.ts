@@ -5,14 +5,14 @@
 
 export interface PipCreatePipRequest {
 	id?: number;
+	employeeName?: string;
+	status?: string;
 	createTime?: string;
 	updateTime?: string;
 	title?: string;
-	status?: string;
 	startDate?: string;
 	endDate?: string;
 	ownerName?: string;
-	employeeName?: string;
 	suggestionId?: number;
 	improvementGoal?: string;
 	sourceReason?: string;
@@ -39,14 +39,14 @@ export interface ApiResponse_PipRecord {
 	message: string;
 	data: {
   id?: number;
+  employeeName?: string;
+  status?: string;
   createTime?: string;
   updateTime?: string;
   title: string;
-  status?: string;
   startDate: string;
   endDate: string;
   ownerName?: string;
-  employeeName?: string;
   suggestionId?: number;
   improvementGoal: string;
   sourceReason: string;
@@ -89,15 +89,15 @@ export interface ApiResponse_PipExportSummaryResult {
 
 export type PipExportRow = {
   id: number;
+  employeeId: number;
+  employeeName?: string;
+  status: string;
   createTime?: string;
   updateTime?: string;
   title: string;
-  status: string;
   startDate: string;
   endDate: string;
   ownerName?: string;
-  employeeId: number;
-  employeeName?: string;
   ownerId: number;
 } & {
   assessmentId?: number;
@@ -137,14 +137,14 @@ export interface ApiResponse_PipPageResult {
 
 export type PipRecord = {
   id?: number;
+  employeeName?: string;
+  status?: string;
   createTime?: string;
   updateTime?: string;
   title: string;
-  status?: string;
   startDate: string;
   endDate: string;
   ownerName?: string;
-  employeeName?: string;
   suggestionId?: number;
   improvementGoal: string;
   sourceReason: string;
@@ -169,14 +169,14 @@ export interface PipTrackRequest {
 
 export type PipUpdatePayload = {
   id?: number;
+  employeeName?: string;
+  status?: string;
   createTime?: string;
   updateTime?: string;
   title?: string;
-  status?: string;
   startDate?: string;
   endDate?: string;
   ownerName?: string;
-  employeeName?: string;
   suggestionId?: number;
   improvementGoal?: string;
   sourceReason?: string;

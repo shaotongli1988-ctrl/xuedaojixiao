@@ -51,7 +51,7 @@ export type AssetAssignmentRequestType = "standard" | "crossDepartmentBorrow" | 
 
 export type AssetAssignmentStatus = "assigned" | "returned" | "lost";
 
-export type AssetAssignmentRequestStatus = "draft" | "inApproval" | "rejected" | "withdrawn" | "approvedPendingAssignment" | "issuing" | "issued" | "cancelled" | "manualPending";
+export type AssetAssignmentRequestStatus = "draft" | "rejected" | "inApproval" | "withdrawn" | "approvedPendingAssignment" | "issuing" | "issued" | "cancelled" | "manualPending";
 
 export interface ApiResponse_AssetAssignmentRequestRecord {
 	code: number;

@@ -21,8 +21,7 @@ import {
 	expectPerformanceServiceRecord,
 	expectPerformanceServiceString
 } from './service-contract';
-
-const ASSESSMENT_STATUS = ['draft', 'submitted', 'approved', 'rejected'] as const;
+import { ASSESSMENT_STATUS } from '../shared/contract-enums';
 
 function decodeAssessmentScoreItem(
 	value: unknown,

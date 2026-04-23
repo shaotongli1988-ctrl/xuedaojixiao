@@ -23,27 +23,12 @@ import {
 	expectPerformanceServiceString,
 	expectPerformanceServiceStringArray
 } from './service-contract';
-
-const ASSET_ASSIGNMENT_REQUEST_LEVEL = ['L1', 'L2'] as const;
-const ASSET_ASSIGNMENT_REQUEST_TYPE = [
-	'standard',
-	'crossDepartmentBorrow',
-	'lostReplacement',
-	'abnormalReissue',
-	'scrapReplacement'
-] as const;
-const ASSET_ASSIGNMENT_STATUS = ['assigned', 'returned', 'lost'] as const;
-const ASSET_ASSIGNMENT_REQUEST_STATUS = [
-	'draft',
-	'inApproval',
-	'rejected',
-	'withdrawn',
-	'approvedPendingAssignment',
-	'issuing',
-	'issued',
-	'cancelled',
-	'manualPending'
-] as const;
+import {
+	ASSET_ASSIGNMENT_REQUEST_LEVEL,
+	ASSET_ASSIGNMENT_REQUEST_STATUS,
+	ASSET_ASSIGNMENT_REQUEST_TYPE,
+	ASSET_ASSIGNMENT_STATUS
+} from '../shared/contract-enums';
 
 function decodeAssetAssignmentRequestLevel(
 	value: unknown,

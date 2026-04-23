@@ -7,6 +7,7 @@
 
 export * from './dicts/catalog';
 export * from './errors/catalog';
+export * from './registry/contracts';
 export * from './registry';
 export * from './roles/catalog';
 export * from './states/approval-flow';

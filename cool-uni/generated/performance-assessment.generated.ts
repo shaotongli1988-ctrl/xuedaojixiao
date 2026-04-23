@@ -16,44 +16,44 @@ export interface AssessmentSaveRequest {
 	scoreItems: Array<AssessmentScoreItem>;
 }
 
-export interface AssessmentScoreItem {
-	id?: number;
-	indicatorId?: number | null;
-	indicatorName: string;
-	score: number;
-	weight: number;
-	comment?: string;
-	weightedScore?: number;
-}
+export type AssessmentScoreItem = {
+  id?: number;
+  weight: number;
+  score: number;
+  indicatorName: string;
+  comment?: string;
+  weightedScore?: number;
+} & {
+  indicatorId?: number;
+};
 
 export interface ApiResponse_AssessmentRecord {
 	code: number;
 	message: string;
-	data: AssessmentRecord;
-}
-
-export interface AssessmentRecord {
-	id?: number;
-	code?: string;
-	employeeId?: number;
-	employeeName?: string;
-	assessorId?: number;
-	assessorName?: string;
-	departmentId?: number;
-	departmentName?: string;
-	periodType?: string;
-	periodValue?: string;
-	targetCompletion?: number;
-	totalScore?: number;
-	grade?: string;
-	selfEvaluation?: string;
-	managerFeedback?: string;
-	status?: AssessmentStatus;
-	submitTime?: string;
-	approveTime?: string;
-	createTime?: string;
-	updateTime?: string;
-	scoreItems?: Array<AssessmentScoreItem>;
+	data: {
+  id?: number;
+  code?: string;
+  employeeId?: number;
+  employeeName?: string;
+  assessorId?: number;
+  assessorName?: string;
+  departmentId?: number;
+  departmentName?: string;
+  periodType?: string;
+  periodValue?: string;
+  targetCompletion?: number;
+  totalScore?: number;
+  grade?: string;
+  selfEvaluation?: string;
+  managerFeedback?: string;
+  status?: AssessmentStatus;
+  submitTime?: string;
+  approveTime?: string;
+  createTime?: string;
+  updateTime?: string;
+} & {
+  scoreItems?: Array<AssessmentScoreItem>;
+};
 }
 
 export type AssessmentStatus = "draft" | "submitted" | "approved" | "rejected";
@@ -67,6 +67,12 @@ export interface DeleteIdsRequest {
 	ids: Array<number>;
 }
 
+export interface ApiResponse_AssessmentRemoveAssessmentResult {
+	code: number;
+	message: string;
+	data: Record<string, unknown>;
+}
+
 export interface AssessmentExportQuery {
 	employeeId?: number;
 	assessorId?: number;
@@ -77,10 +83,8 @@ export interface AssessmentExportQuery {
 export interface ApiResponse_AssessmentExportRows {
 	code: number;
 	message: string;
-	data: AssessmentExportRows;
+	data: Array<AssessmentExportRow>;
 }
-
-export type AssessmentExportRows = Array<AssessmentExportRow>;
 
 export interface AssessmentExportRow {
 	code: string;
@@ -95,6 +99,10 @@ export interface AssessmentExportRow {
 	grade: string;
 	submitTime?: string;
 	approveTime?: string;
+}
+
+export interface AssessmentInfoQuery {
+	id: number;
 }
 
 export interface AssessmentPageQuery {
@@ -112,29 +120,45 @@ export type AssessmentPageMode = "initiated" | "my" | "pending";
 export interface ApiResponse_AssessmentPageResult {
 	code: number;
 	message: string;
-	data: AssessmentPageResult;
+	data: {
+  list: Array<AssessmentRecord>;
+  pagination: {
+  page: number;
+  size: number;
+  total: number;
+};
+};
 }
 
-export interface AssessmentPageResult {
-	list: Array<AssessmentRecord>;
-	pagination: PagePagination;
-}
-
-export interface PagePagination {
-	/**
-	 * 页码
-	 */
-	page: number;
-	/**
-	 * 页大小
-	 */
-	size: number;
-	/**
-	 * 总数
-	 */
-	total: number;
-}
+export type AssessmentRecord = {
+  id?: number;
+  code?: string;
+  employeeId?: number;
+  employeeName?: string;
+  assessorId?: number;
+  assessorName?: string;
+  departmentId?: number;
+  departmentName?: string;
+  periodType?: string;
+  periodValue?: string;
+  targetCompletion?: number;
+  totalScore?: number;
+  grade?: string;
+  selfEvaluation?: string;
+  managerFeedback?: string;
+  status?: AssessmentStatus;
+  submitTime?: string;
+  approveTime?: string;
+  createTime?: string;
+  updateTime?: string;
+} & {
+  scoreItems?: Array<AssessmentScoreItem>;
+};
 
 export interface AssessmentActionRequest {
 	id: number;
 }
+
+export type AssessmentUpdateAssessmentRequest = AssessmentSaveRequest & {
+  id: number;
+};
