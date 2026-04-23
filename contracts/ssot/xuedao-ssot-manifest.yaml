@@ -1,0 +1,148 @@
+# xuedao repository SSOT manifest.
+# Responsible for binding current repository-wide SSOT assets to concrete
+# scripts, sources, and generated consumers.
+
+manifestVersion: "1.0"
+repository:
+  key: "xuedao"
+  root: "/Users/shaotongli/Documents/xuedao"
+
+sourceOfTruth:
+  apiContract:
+    sourceFile: "contracts/openapi/xuedao.openapi.json"
+    validators:
+      - "node ./scripts/check-doc-contract-writeback.mjs"
+    generators:
+      - "node ./scripts/openapi-contract-sync.mjs --write"
+      - "node ./scripts/sync-eps-openapi-ssot.mjs --write"
+    generatedConsumers:
+      - "cool-admin-vue/src/modules/performance/service/"
+      - "cool-uni/service/performance/"
+      - "cool-admin-vue/build/cool/eps.ssot.d.ts"
+
+  permissionBits:
+    sourceFiles:
+      - "cool-admin-midway/src/modules/base/domain/permissions/source.json"
+      - "cool-admin-midway/src/modules/base/domain/permissions/source.mjs"
+    validators:
+      - "node ./scripts/check-base-permission-domain-ssot.mjs"
+    generatedConsumers:
+      - "cool-admin-midway/src/modules/base/generated/permission-bits.generated.ts"
+      - "cool-admin-midway/src/modules/base/generated/permissions.generated.ts"
+      - "cool-admin-midway/src/modules/base/generated/route-permissions.generated.ts"
+
+  userAuthSemantics:
+    sourceFiles:
+      - "cool-admin-midway/src/modules/user/domain/auth/catalog.ts"
+      - "cool-admin-midway/src/modules/user/domain/registry/index.ts"
+    validators:
+      - "node --test ./cool-admin-midway/test/user-domain-registry.test.ts"
+      - "node --test ./cool-admin-midway/test/user-app-context-consumer.test.ts"
+    generatedConsumers:
+      - "cool-admin-midway/src/modules/base/service/sys/login.ts"
+      - "cool-admin-midway/src/modules/base/middleware/authority.ts"
+      - "cool-admin-midway/src/modules/user/service/login.ts"
+      - "cool-admin-midway/src/modules/user/middleware/app.ts"
+
+  runtimeConfig:
+    sourceFiles:
+      - "cool-admin-midway/src/modules/base/config.ts"
+      - "cool-admin-midway/src/modules/user/config.ts"
+      - "cool-admin-midway/src/modules/dict/config.ts"
+    validators:
+      - "node --test ./cool-admin-midway/test/base/base-jwt-config.test.ts"
+    generatedConsumers:
+      - "cool-admin-midway/src/modules/base/service/sys/login.ts"
+      - "cool-admin-midway/src/modules/user/service/login.ts"
+      - "cool-admin-midway/src/modules/user/middleware/app.ts"
+      - "cool-admin-vue/src/plugins/upload/hooks/index.ts"
+      - "cool-uni/cool/upload/index.ts"
+
+  mobileSharedContract:
+    sourceFile: "cool-uni/types/performance-mobile.ts"
+    validators:
+      - "node ./scripts/check-mobile-shared-contract.mjs"
+    generatedConsumers:
+      - "cool-uni/cool/store/user.ts"
+      - "cool-uni/pages/performance/"
+      - "cool-uni/service/performance/"
+
+  stateMachines:
+    sourceFiles:
+      - "cool-admin-midway/src/modules/performance/domain/states/approval-flow.ts"
+      - "cool-admin-midway/src/modules/performance/domain/states/assessment.ts"
+      - "cool-admin-midway/src/modules/performance/domain/states/types.ts"
+    validators:
+      - "node ./scripts/check-state-machine-alignment.mjs --phase batch --force"
+    generatedConsumers:
+      - "cool-admin-midway/src/modules/performance/service/"
+      - "cool-admin-midway/src/modules/performance/controller/admin/"
+      - "cool-admin-vue/src/modules/performance/views/"
+      - "performance-management-system/docs/05-状态机与流转规则.md"
+
+  businessDictionaries:
+    sourceFile: "cool-admin-midway/src/modules/performance/domain/dicts/catalog.ts"
+    validators:
+      - "node ./scripts/check-global-domain-ssot.mjs"
+    generatedConsumers:
+      - "cool-admin-midway/src/modules/performance/service/"
+      - "cool-admin-vue/src/modules/performance/types.ts"
+      - "performance-management-system/docs/04-API设计.md"
+
+  dictBusinessCatalog:
+    sourceFiles:
+      - "cool-admin-midway/src/modules/dict/domain/dicts/catalog.ts"
+      - "cool-admin-midway/src/modules/dict/service/info.ts"
+    validators:
+      - "node --test ./cool-admin-midway/test/dict/domain-registry.test.ts"
+      - "node --test ./cool-admin-midway/test/dict/info.service.test.ts"
+    generatedConsumers:
+      - "cool-admin-vue/src/modules/dict/store/dict.ts"
+      - "cool-uni/cool/store/dict.ts"
+
+  sharedErrorSemantics:
+    sourceFiles:
+      - "cool-admin-midway/src/modules/base/domain/errors/catalog.ts"
+      - "cool-admin-midway/src/modules/user/domain/errors/catalog.ts"
+      - "cool-admin-midway/src/modules/dict/domain/errors/catalog.ts"
+    validators:
+      - "node ./scripts/check-shared-error-semantics.mjs"
+      - "node --test ./cool-admin-midway/test/shared-error-semantics.test.ts"
+    generatedConsumers:
+      - "cool-admin-midway/src/modules/base/middleware/"
+      - "cool-admin-midway/src/modules/base/service/"
+      - "cool-admin-midway/src/modules/user/middleware/"
+      - "cool-admin-midway/src/modules/user/service/"
+      - "cool-admin-midway/src/modules/dict/domain/dicts/catalog.ts"
+
+  errorCatalog:
+    sourceFile: "cool-admin-midway/src/modules/performance/domain/errors/catalog.ts"
+    validators:
+      - "node ./scripts/check-global-domain-ssot.mjs"
+    generatedConsumers:
+      - "cool-admin-midway/src/modules/performance/service/"
+      - "cool-admin-vue/src/modules/performance/service/"
+      - "performance-management-system/docs/04-API设计.md"
+
+  repoConsistency:
+    guardEntry: "node ./scripts/run-repo-consistency-guards.mjs"
+    subGuards:
+      - "node ./scripts/check-xuedao-ssot-conformance.mjs"
+      - "node ./scripts/check-rbac-alignment.mjs --phase batch --force"
+      - "node ./scripts/check-state-machine-alignment.mjs --phase batch --force"
+      - "node ./scripts/check-component-reuse.mjs --phase batch --force"
+      - "node ./scripts/check-unified-delivery.mjs --phase final --all"
+
+  localPushGate:
+    hookFile: ".githooks/pre-push"
+    gateEntry: "node ./scripts/git-pre-push-gate.mjs"
+
+records:
+  changeTemplate: "contracts/ssot/records/change-record.template.yaml"
+  verificationTemplate: "contracts/ssot/records/verification-record.template.yaml"
+  artifactRoot: "reports/delivery"
+
+blockingRules:
+  - "openapi_source_drift_blocks_merge"
+  - "repo_consistency_guard_fail_blocks_push"
+  - "missing_change_or_verification_record_blocks_repo_level_delivery"

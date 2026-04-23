@@ -1,0 +1,52 @@
+# xuedao 仓库级 SSOT 映射
+
+本目录承载 `xuedao` 仓库对通用 SSOT 基座的第一层真实落地。
+
+定位：
+
+1. 定义仓库级 SSOT 映射入口。
+2. 约束仓库级 OpenAPI、权限主源、状态机、业务字典、错误目录、守卫脚本、交付记录模板的实际路径。
+3. 为后续把通用模板替换成真实项目文件提供稳定落点。
+
+当前资产：
+
+1. `xuedao-ssot-bootstrap.yaml`
+2. `xuedao-ssot-manifest.yaml`
+3. `records/change-record.template.yaml`
+4. `records/verification-record.template.yaml`
+5. `records/change-record.yaml`
+6. `records/verification-record.yaml`
+
+运行态入口：
+
+1. `node ./scripts/check-xuedao-ssot-manifest.mjs`
+   - 校验 manifest 中声明的关键路径、machine source 注册、脚本入口和报告目录是否真实存在
+2. `node ./scripts/check-xuedao-ssot-conformance.mjs`
+   - 校验当前仓库是否满足 SSOT 最小闭环，并要求 change / verification record 达到 strict-change 结构
+   - 默认报告产物：
+     - `reports/delivery/xuedao-ssot-conformance.latest.md`
+     - `reports/delivery/xuedao-ssot-conformance.latest.json`
+
+当前仓库级 machine source 已覆盖：
+
+1. 仓库级 OpenAPI 主源
+2. `base` 权限位主源
+3. `user` 鉴权语义目录
+4. `base/user/dict` 运行时配置主源
+5. `cool-uni` 移动端共享契约主源
+6. `performance` 状态机主源
+7. `performance` 业务字典主源
+8. `dict` 业务字典聚合主源
+9. `base/user/dict` 共享错误语义主源
+10. `performance` 错误目录主源
+
+当前真实记录：
+
+1. `records/change-record.yaml`
+2. `records/verification-record.yaml`
+
+不负责：
+
+1. 替代 `contracts/openapi/xuedao.openapi.json` 作为 API 契约主源。
+2. 替代项目业务文档或主题冻结文档。
+3. 直接执行发布动作。

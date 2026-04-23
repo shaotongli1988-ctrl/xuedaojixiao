@@ -37,6 +37,46 @@
 2. 再看 [17-项目执行流程（精简版）](/Users/shaotongli/Documents/xuedao/performance-management-system/docs/17-项目执行流程（精简版）.md)
 3. 再按现有基座把代码落到 `cool-admin-midway` 和 `cool-admin-vue`
 
+## API 契约主源
+
+仓库级 API 契约正在统一收敛到：
+
+- [contracts/openapi/xuedao.openapi.json](/Users/shaotongli/Documents/xuedao/contracts/openapi/xuedao.openapi.json)
+
+当前规则：
+
+1. 已迁移资源必须先更新仓库级 OpenAPI，再修改前后端实现。
+2. 运行时 Swagger 只作为调试视图，不再作为 API 事实源。
+3. `node ./scripts/sync-repo-openapi-ssot.mjs --write` 负责把当前非 `performance` admin EPS 资源回写到仓库级 OpenAPI 主源。
+4. `node ./scripts/sync-performance-openapi-ssot.mjs --write` 负责把当前 `performance` controller/service/types 反推回仓库级 OpenAPI 主源。
+5. `node ./scripts/openapi-contract-sync.mjs --write` 负责根据主源刷新 `performance` Vue / Uni 生成类型。
+6. `node ./scripts/sync-eps-openapi-ssot.mjs --write` 负责把仓库级 OpenAPI 主源叠加到 `cool-admin-vue/build/cool/eps.ssot.d.ts`，收紧非 `performance` 动态 EPS 的消费类型。
+7. 当前仓库级 OpenAPI 已覆盖现有 `base`、`demo`、`dict`、`performance`、`plugin`、`recycle`、`space`、`task`、`user` 后台 API；其中 `performance` 是强类型 TS/source 驱动，其他模块当前保持动态 EPS 调用方式，但其 TypeScript 消费类型已通过 `eps.ssot.d.ts` 收口到主源。
+
+## 仓库级 SSOT 落点
+
+仓库级 SSOT 映射已开始落到：
+
+- [contracts/ssot/README.md](/Users/shaotongli/Documents/xuedao/contracts/ssot/README.md)
+- [contracts/ssot/xuedao-ssot-bootstrap.yaml](/Users/shaotongli/Documents/xuedao/contracts/ssot/xuedao-ssot-bootstrap.yaml)
+- [contracts/ssot/xuedao-ssot-manifest.yaml](/Users/shaotongli/Documents/xuedao/contracts/ssot/xuedao-ssot-manifest.yaml)
+
+当前 manifest 除仓库级 OpenAPI 外，也显式登记：
+
+1. 权限主源：`cool-admin-midway/src/modules/base/domain/permissions/source.{json,mjs}`
+2. 用户鉴权语义主源：`cool-admin-midway/src/modules/user/domain/auth/catalog.ts`
+3. 运行时配置主源：`cool-admin-midway/src/modules/{base,user,dict}/config.ts`
+4. 移动端共享契约主源：`cool-uni/types/performance-mobile.ts`
+5. `performance` 状态机主源：`cool-admin-midway/src/modules/performance/domain/states/*`
+6. `performance` 业务字典主源：`cool-admin-midway/src/modules/performance/domain/dicts/catalog.ts`
+7. `dict` 业务字典聚合主源：`cool-admin-midway/src/modules/dict/domain/dicts/catalog.ts`
+8. `base/user/dict` 共享错误语义主源：`cool-admin-midway/src/modules/{base,user,dict}/domain/errors/catalog.ts`
+9. `performance` 错误目录主源：`cool-admin-midway/src/modules/performance/domain/errors/catalog.ts`
+
+仓库级交付报告默认收敛到：
+
+- [reports/delivery/README.md](/Users/shaotongli/Documents/xuedao/reports/delivery/README.md)
+
 ## Git Push 门禁
 
 仓库内已提供版本化 `pre-push` 门禁：
@@ -54,19 +94,103 @@ git config core.hooksPath .githooks
 
 1. 同时检查 `HEAD` 相对上游分支的待推送变更，以及当前工作区未提交/未跟踪变更。
 2. 命中临时产物或测试运行产物时，直接阻断 push。
-3. 命中菜单、权限、页面目录、自动化脚本或测试资产变更时，先跑仓库一致性守卫：
+3. 命中菜单、权限、页面目录、自动化脚本或测试资产变更时，先做仓库级 SSOT 基线检查，再跑仓库一致性守卫：
+   - `scripts/check-xuedao-ssot-manifest.mjs`
+   - `scripts/check-xuedao-ssot-conformance.mjs`
+   - `scripts/sync-repo-openapi-ssot.mjs`
+   - `scripts/sync-performance-openapi-ssot.mjs`
+   - `scripts/openapi-contract-sync.mjs`
+   - `scripts/sync-eps-openapi-ssot.mjs`
    - `scripts/check-directory-naming-conflicts.mjs`
    - `scripts/check-menu-route-viewpath-drift.mjs`
    - `scripts/check-permission-key-alignment.mjs`
    - `scripts/check-doc-contract-writeback.mjs`
+   - `scripts/check-rbac-alignment.mjs`
+   - `scripts/check-state-machine-alignment.mjs`
+   - `scripts/check-component-reuse.mjs`
    - 聚合入口：`scripts/run-repo-consistency-guards.mjs`
 4. 按变更路径触发最小验证：
-   - `cool-admin-midway` 命中主题 1-9 / 跨模块驾驶舱后端实现时，跑定向回归测试和阶段 2 smoke。
-   - `cool-admin-vue` 命中后台前端实现时，跑 `corepack pnpm run type-check` 和 `corepack pnpm run build`。
-   - `cool-uni` 命中移动端实现时，跑 `corepack pnpm exec tsc --noEmit -p tsconfig.json`。
+   - `cool-admin-midway` 命中后端实现或脚本时，本地先跑 `npm run lint`、`npm run build`、定向回归测试和阶段 2 smoke；`lint` 会先通过 `cool-admin-midway/scripts/ensure-local-lint-compat.mjs` 自动补齐本地 `.shared-deps` 兼容层，`npm run deps:local:install` 完成离线依赖安装后也会自动执行同一兼容收口。若只需修复本地 `.shared-deps` 兼容层，可直接执行 `npm run deps:local:repair`。仓库回归测试已覆盖临时工作区 + 本地 mock registry 的完整安装链路，用于降低 clean-environment 风险。
+   - `cool-admin-vue` 命中后台前端实现时，跑 `node ./scripts/check-changed-workspace-quality.mjs --workspace cool-admin-vue --tool prettier`、`node ./scripts/check-changed-workspace-quality.mjs --workspace cool-admin-vue --tool eslint`、`corepack pnpm run type-check` 和 `corepack pnpm run build`。
+   - `cool-uni` 命中移动端实现时，跑 `node ./scripts/check-changed-workspace-quality.mjs --workspace cool-uni --tool prettier`、`node ./scripts/check-changed-workspace-quality.mjs --workspace cool-uni --tool eslint` 和 `corepack pnpm run type-check`。
 
 维护要求：
 
 - 主题冻结范围或验证矩阵变化后，必须同步更新 `scripts/git-pre-push-gate.mjs` 中的阻断路径和命令映射。
 - 仓库一致性守卫的路径范围、文档映射或命名空间变化后，必须同步更新 `scripts/repo-consistency-config.mjs`。
 - 这套门禁只负责本地 push 前阻断，不替代远端分支保护或代码评审。
+
+## Repository Guard CI 与发布门禁
+
+仓库内仓库级交付守卫已经版本化，入口如下：
+
+- Python 守卫：`scripts/rbac_alignment_guard.py`
+- Python 守卫：`scripts/state_machine_guard.py`
+- Python 守卫：`scripts/component_reuse_guard.py`
+- Python 守卫：`scripts/unified_delivery_guard.py`
+- Node 包装器：`scripts/check-rbac-alignment.mjs`
+- Node 包装器：`scripts/check-state-machine-alignment.mjs`
+- Node 包装器：`scripts/check-component-reuse.mjs`
+- Node 包装器：`scripts/check-unified-delivery.mjs`
+- CI 工作流：`.github/workflows/rbac-governance.yml`
+
+默认策略：
+
+1. 本地 `pre-push` 命中敏感路径时，会通过 `scripts/run-repo-consistency-guards.mjs` 先做 `manifest + conformance` 基线检查，再串行触发 RBAC、状态机和实现层收敛守卫。
+2. PR / 手工触发时，CI 会执行 `batch` 级统一交付门禁；未显式传入报告路径时，默认把报告写到 `reports/delivery/unified-delivery-batch.latest.{md,json}`。
+3. CI 在 batch / final 两条作业里，都会先执行 `cool-admin-midway` 的 `lint/build`，以及基于 `scripts/check-changed-workspace-quality.mjs` 的 Vue / Uni 变更文件 `prettier + eslint` 检查，再进入前端 `type-check/build` 和仓库守卫。
+4. 推送到 `main/master` 时，CI 会执行 `final` 级统一交付门禁；未显式传入报告路径时，默认把报告写到 `reports/delivery/unified-delivery-final.latest.{md,json}`，作为发布前最后一道仓库级交付阻断。
+
+仓库级 SSOT 手工总校验入口：
+
+- `node ./scripts/check-xuedao-ssot-conformance.mjs`
+- `node ./scripts/audit-worktree-split.mjs`
+- 默认报告：
+  - `reports/delivery/xuedao-ssot-conformance.latest.md`
+  - `reports/delivery/xuedao-ssot-conformance.latest.json`
+  - `reports/delivery/worktree-split-audit.latest.md`
+  - `reports/delivery/worktree-split-audit.latest.json`
+
+它会从四个维度判定当前仓库是否符合 SSOT 标准：
+
+1. 主源与 manifest 绑定是否完整
+2. 运行时 guard 是否真的接入 manifest
+3. README / contracts / 自动化策略文档是否同步
+4. 变更记录、验证记录和报告产物是否具备最小留痕
+
+CI 也会执行这条检查，并把结果上传到 `reports/delivery/`。
+
+`audit-worktree-split.mjs` 用于在大工作区或多主题并行开发时，把当前 dirty worktree 按“治理 / 基础层 / 业务主题 / 视觉移动 / 文档证据”分批，并显式提示 staged、临时文件和未归类项，便于按 SSOT 规范拆提交。需要拿某一批次的文件列表时，可执行 `node ./scripts/audit-worktree-split.mjs --batch-id governance-ssot --output paths`。
+
+手工执行示例：
+
+```bash
+node ./scripts/check-rbac-alignment.mjs --phase batch --force
+node ./scripts/check-rbac-alignment.mjs --phase final --force
+node ./scripts/check-state-machine-alignment.mjs --phase batch --force
+node ./scripts/check-component-reuse.mjs --phase batch --force
+node ./scripts/check-unified-delivery.mjs --phase final --all
+```
+
+## 本地交付守卫
+
+仓库内已补齐本地统一交付守卫与两个同级子守卫：
+
+- `scripts/unified_delivery_guard.py`
+- `scripts/state_machine_guard.py`
+- `scripts/component_reuse_guard.py`
+
+默认用途：
+
+1. `unified_delivery_guard.py` 作为开发中统一入口，聚合本地交付闭环检查、RBAC 守卫、状态机守卫和实现层收敛守卫。
+2. `state_machine_guard.py` 用于检查状态集合、流转边和状态敏感改动是否缺少显式守卫。
+3. `component_reuse_guard.py` 用于检查页面越层请求、分页/查询/弹窗职责混写和共享层收敛缺口。
+
+手工执行示例：
+
+```bash
+python3 ./scripts/unified_delivery_guard.py --phase start --task "业务状态与数据字典 SSOT"
+python3 ./scripts/unified_delivery_guard.py --phase final --task "业务状态与数据字典 SSOT"
+python3 ./scripts/state_machine_guard.py --phase final --fail-on medium
+python3 ./scripts/component_reuse_guard.py --phase final --fail-on medium
+```
