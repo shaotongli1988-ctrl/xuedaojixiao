@@ -5081,6 +5081,8 @@ declare namespace Eps {
 
 	type Request = (options: RequestOptions) => Promise<any>;
 
+	type DictKey = "brand" | "occupation";
+
 	type Service = {
 		request: Request;
 
