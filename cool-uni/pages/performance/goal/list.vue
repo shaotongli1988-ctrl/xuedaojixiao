@@ -52,7 +52,10 @@
 					<view class="goal-card__actions">
 						<cl-button plain size="mini" @tap="openDetail(item.id)">查看详情</cl-button>
 						<cl-button
-							v-if="canGoalEdit(item) && user.hasPerm(PERMISSIONS.performance.goal.update)"
+							v-if="
+								canGoalEdit(item) &&
+								user.hasPerm(PERMISSIONS.performance.goal.update)
+							"
 							plain
 							size="mini"
 							@tap="openEdit(item.id)"
@@ -60,7 +63,10 @@
 							编辑
 						</cl-button>
 						<cl-button
-							v-if="canGoalProgressUpdate(item) && user.hasPerm(PERMISSIONS.performance.goal.progressUpdate)"
+							v-if="
+								canGoalProgressUpdate(item) &&
+								user.hasPerm(PERMISSIONS.performance.goal.progressUpdate)
+							"
 							type="primary"
 							size="mini"
 							@tap="openProgress(item.id)"
@@ -78,11 +84,7 @@
 import { computed, reactive } from "vue";
 import { onPullDownRefresh, onShow } from "@dcloudio/uni-app";
 import { useCool, useStore } from "/@/cool";
-import {
-	canGoalEdit,
-	canGoalProgressUpdate,
-	type GoalRecord,
-} from "/@/types/performance-goal";
+import { canGoalEdit, canGoalProgressUpdate, type GoalRecord } from "/@/types/performance-goal";
 import PageState from "/@/pages/performance/components/page-state.vue";
 import GoalStatusTag from "./components/goal-status-tag.vue";
 import { PERMISSIONS } from "/@/generated/permissions.generated";

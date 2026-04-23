@@ -3,7 +3,9 @@
 		<scroll-view class="list-page" scroll-y>
 			<view class="list-page__header">
 				<text class="list-page__title">待我审批</text>
-				<text class="list-page__subtitle">仅展示当前经理部门树范围内状态为 submitted 的记录</text>
+				<text class="list-page__subtitle"
+					>仅展示当前经理部门树范围内状态为 submitted 的记录</text
+				>
 			</view>
 
 			<page-state

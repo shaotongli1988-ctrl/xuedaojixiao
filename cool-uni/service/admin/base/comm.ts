@@ -45,7 +45,7 @@ export default class AdminBaseCommService {
 			params: activePersonaKey
 				? {
 						activePersonaKey,
-				  }
+					}
 				: undefined,
 		}) as Promise<any>;
 	}

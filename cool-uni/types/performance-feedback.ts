@@ -67,10 +67,12 @@ export interface FeedbackFetchPagePayload {
 	employeeId?: number;
 }
 
-export type FeedbackSummaryQuery = import("/@/generated/performance-feedback.generated").FeedbackFetchSummaryQuery;
-export type FeedbackSubmitPayload = import("/@/generated/performance-feedback.generated").FeedbackSubmitFeedbackRequest & {
-	relationType: FeedbackRelationType | string;
-};
+export type FeedbackSummaryQuery =
+	import("/@/generated/performance-feedback.generated").FeedbackFetchSummaryQuery;
+export type FeedbackSubmitPayload =
+	import("/@/generated/performance-feedback.generated").FeedbackSubmitFeedbackRequest & {
+		relationType: FeedbackRelationType | string;
+	};
 
 export function canFeedbackSubmit(task?: FeedbackTaskRecord) {
 	return (

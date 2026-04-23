@@ -4,7 +4,9 @@
 		<scroll-view class="resume-pool-page" scroll-y>
 			<view class="resume-pool-page__header">
 				<text class="resume-pool-page__title">简历池</text>
-				<text class="resume-pool-page__subtitle">查看候选人、来源和状态摘要，复杂维护动作仍保留桌面端</text>
+				<text class="resume-pool-page__subtitle"
+					>查看候选人、来源和状态摘要，复杂维护动作仍保留桌面端</text
+				>
 			</view>
 
 			<page-state
@@ -35,20 +37,38 @@
 				</view>
 
 				<view class="status-tabs">
-					<cl-tabs v-model="activeSourceType" :list="sourceTabs" :show-line="false" fill />
+					<cl-tabs
+						v-model="activeSourceType"
+						:list="sourceTabs"
+						:show-line="false"
+						fill
+					/>
 				</view>
 
-				<page-state v-if="error" title="加载失败" :description="error" action-text="重试" @action="load" />
+				<page-state
+					v-if="error"
+					title="加载失败"
+					:description="error"
+					action-text="重试"
+					@action="load"
+				/>
 
-				<page-state v-else-if="!loading && !rows.length" title="当前暂无简历" description="当前筛选条件下暂无数据。" />
+				<page-state
+					v-else-if="!loading && !rows.length"
+					title="当前暂无简历"
+					description="当前筛选条件下暂无数据。"
+				/>
 
 				<view v-else class="resume-pool-list">
 					<view v-for="item in rows" :key="item.id" class="resume-pool-card">
 						<view class="resume-pool-card__top">
 							<view>
-								<text class="resume-pool-card__title">{{ item.candidateName }}</text>
+								<text class="resume-pool-card__title">{{
+									item.candidateName
+								}}</text>
 								<text class="resume-pool-card__meta">
-									{{ item.targetDepartmentName || "-" }} · {{ item.targetPosition || "-" }}
+									{{ item.targetDepartmentName || "-" }} ·
+									{{ item.targetPosition || "-" }}
 								</text>
 							</view>
 							<status-pill

@@ -8,7 +8,7 @@ export type {
 	TalentAssetPageResult,
 	TalentAssetRecord,
 	TalentAssetSaveRequest,
-	TalentAssetStatus
+	TalentAssetStatus,
 } from "/@/generated/performance-talent-asset.generated";
 
 export interface TalentAssetInfoQuery {

@@ -50,7 +50,9 @@
 
 				<view class="detail-card">
 					<text class="detail-card__section">自评内容</text>
-					<text class="detail-card__paragraph">{{ detail.selfEvaluation || "未填写" }}</text>
+					<text class="detail-card__paragraph">{{
+						detail.selfEvaluation || "未填写"
+					}}</text>
 					<text v-if="detail.managerFeedback" class="detail-card__section">审批意见</text>
 					<text v-if="detail.managerFeedback" class="detail-card__paragraph">
 						{{ detail.managerFeedback }}
@@ -94,7 +96,11 @@
 					<cl-button v-if="canRejectAction(detail)" plain @tap="review('reject')">
 						驳回
 					</cl-button>
-					<cl-button v-if="canApproveAction(detail)" type="primary" @tap="review('approve')">
+					<cl-button
+						v-if="canApproveAction(detail)"
+						type="primary"
+						@tap="review('approve')"
+					>
 						通过
 					</cl-button>
 				</view>
@@ -135,8 +141,7 @@ const recordId = computed(() => Number(router.query.id || 0));
 const source = computed(() => String(router.query.source || "assessment"));
 const canEditAction = (record: AssessmentRecord | null) =>
 	record
-		? user.hasPerm(performanceAssessmentService.permission.update) &&
-			canAssessmentEdit(record)
+		? user.hasPerm(performanceAssessmentService.permission.update) && canAssessmentEdit(record)
 		: false;
 const canSubmitAction = (record: AssessmentRecord | null) =>
 	record
@@ -244,9 +249,7 @@ async function submitSelf() {
 
 async function review(action: "approve" | "reject") {
 	const allowed =
-		action === "approve"
-			? canApproveAction(detail.value)
-			: canRejectAction(detail.value);
+		action === "approve" ? canApproveAction(detail.value) : canRejectAction(detail.value);
 
 	if (!allowed) {
 		ui.showTips("当前无权执行审批动作");

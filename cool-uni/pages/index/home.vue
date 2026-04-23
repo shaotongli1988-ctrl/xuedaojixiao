@@ -5,7 +5,9 @@
 		<scroll-view class="workbench" scroll-y>
 			<view class="workbench__hero">
 				<view>
-					<text class="workbench__hello">你好，{{ user.info?.name || user.info?.username }}</text>
+					<text class="workbench__hello"
+						>你好，{{ user.info?.name || user.info?.username }}</text
+					>
 					<text class="workbench__meta">
 						{{ user.info?.departmentName || "当前账号" }} ·
 						{{ user.roleLabel }}
@@ -40,7 +42,7 @@
 					<view class="workbench-card__top">
 						<text class="workbench-card__title">{{ card.title }}</text>
 						<text class="workbench-card__count">
-							{{ countLoading[card.id] ? "..." : summary[card.id] ?? 0 }}
+							{{ countLoading[card.id] ? "..." : (summary[card.id] ?? 0) }}
 						</text>
 					</view>
 					<text class="workbench-card__desc">{{ card.description }}</text>
@@ -326,7 +328,7 @@ async function refreshSummary() {
 			} finally {
 				countLoading[card.id] = false;
 			}
-		})
+		}),
 	);
 }
 

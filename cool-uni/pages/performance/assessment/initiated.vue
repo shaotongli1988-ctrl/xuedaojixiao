@@ -4,7 +4,9 @@
 		<scroll-view class="list-page" scroll-y>
 			<view class="list-page__header">
 				<text class="list-page__title">已发起考核</text>
-				<text class="list-page__subtitle">查看当前账号发起的考核记录并进入详情页继续处理</text>
+				<text class="list-page__subtitle"
+					>查看当前账号发起的考核记录并进入详情页继续处理</text
+				>
 			</view>
 
 			<page-state
@@ -35,8 +37,12 @@
 				<view v-for="item in state.list" :key="item.id" class="record-card">
 					<view class="record-card__top">
 						<view>
-							<text class="record-card__title">{{ item.employeeName || item.periodValue }}</text>
-							<text class="record-card__meta">{{ item.departmentName || "-" }} · {{ item.periodValue }}</text>
+							<text class="record-card__title">{{
+								item.employeeName || item.periodValue
+							}}</text>
+							<text class="record-card__meta"
+								>{{ item.departmentName || "-" }} · {{ item.periodValue }}</text
+							>
 						</view>
 						<status-pill
 							:label="statusLabel(item.status)"

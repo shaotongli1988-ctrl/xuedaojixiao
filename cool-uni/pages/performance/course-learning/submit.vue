@@ -30,7 +30,9 @@
 				<view class="submit-card">
 					<text class="submit-card__title">{{ detail.title }}</text>
 					<text class="submit-card__meta">{{ detail.courseTitle || "-" }}</text>
-					<text class="submit-card__paragraph">{{ detail.promptText || "暂无任务内容" }}</text>
+					<text class="submit-card__paragraph">{{
+						detail.promptText || "暂无任务内容"
+					}}</text>
 				</view>
 
 				<view class="submit-card">
@@ -41,7 +43,9 @@
 						maxlength="5000"
 						placeholder="请输入本次学习任务提交内容"
 					/>
-					<text class="submit-card__hint">已评估任务不可再次提交；未评估任务提交后会覆盖上一次提交文本。</text>
+					<text class="submit-card__hint"
+						>已评估任务不可再次提交；未评估任务提交后会覆盖上一次提交文本。</text
+					>
 				</view>
 
 				<view class="submit-actions">
@@ -94,7 +98,7 @@ const taskType = String(router.query.type || "").trim() as "recite" | "practice"
 const allowed = computed(() =>
 	taskType === "practice"
 		? user.hasPerm(performanceCoursePracticeService.permission.submit)
-		: user.hasPerm(performanceCourseReciteService.permission.submit)
+		: user.hasPerm(performanceCourseReciteService.permission.submit),
 );
 
 function resolveMode(message?: string) {

@@ -4,7 +4,9 @@
 		<scroll-view class="todo-page" scroll-y>
 			<view class="todo-page__header">
 				<text class="todo-page__title">班主任待办</text>
-				<text class="todo-page__subtitle">只展示 today / overdue 两类派生待办，联系方式以后端返回为准</text>
+				<text class="todo-page__subtitle"
+					>只展示 today / overdue 两类派生待办，联系方式以后端返回为准</text
+				>
 			</view>
 
 			<page-state
@@ -37,16 +39,28 @@
 					</view>
 					<view class="todo-stat">
 						<text class="todo-stat__label">已逾期待跟进</text>
-						<text class="todo-stat__value todo-stat__value--danger">{{ bucketSummary.overdue }}</text>
+						<text class="todo-stat__value todo-stat__value--danger">{{
+							bucketSummary.overdue
+						}}</text>
 					</view>
 				</view>
 
 				<view class="todo-panel">
 					<cl-tabs v-model="activeBucket" :list="bucketTabs" :show-line="false" fill />
 
-					<page-state v-if="error" title="加载失败" :description="error" action-text="重试" @action="load" />
+					<page-state
+						v-if="error"
+						title="加载失败"
+						:description="error"
+						action-text="重试"
+						@action="load"
+					/>
 
-					<page-state v-else-if="!loading && !rows.length" title="当前范围内暂无待办" description="可以切换筛选条件后再试。" />
+					<page-state
+						v-else-if="!loading && !rows.length"
+						title="当前范围内暂无待办"
+						description="可以切换筛选条件后再试。"
+					/>
 
 					<view v-else class="todo-list">
 						<view v-for="item in rows" :key="item.id" class="todo-card">
@@ -54,7 +68,8 @@
 								<view>
 									<text class="todo-card__title">{{ item.teacherName }}</text>
 									<text class="todo-card__meta">
-										{{ item.schoolName || "-" }} · {{ item.ownerEmployeeName || "-" }}
+										{{ item.schoolName || "-" }} ·
+										{{ item.ownerEmployeeName || "-" }}
 									</text>
 								</view>
 								<status-pill
@@ -65,14 +80,25 @@
 
 							<view class="todo-card__grid">
 								<text>联系电话：{{ item.phone || "-" }}</text>
-								<text>合作状态：{{ teacherCooperationStatusLabel(item.cooperationStatus) }}</text>
+								<text
+									>合作状态：{{
+										teacherCooperationStatusLabel(item.cooperationStatus)
+									}}</text
+								>
 								<text>下次跟进：{{ item.nextFollowTime || "-" }}</text>
 								<text>上次跟进：{{ item.lastFollowTime || "-" }}</text>
 							</view>
 
 							<view class="todo-card__actions">
-								<cl-button plain size="mini" @tap="openDetail(item.id)">查看详情</cl-button>
-								<cl-button v-if="canFollowAdd" type="primary" size="mini" @tap="openDetail(item.id, true)">
+								<cl-button plain size="mini" @tap="openDetail(item.id)"
+									>查看详情</cl-button
+								>
+								<cl-button
+									v-if="canFollowAdd"
+									type="primary"
+									size="mini"
+									@tap="openDetail(item.id, true)"
+								>
 									去跟进
 								</cl-button>
 							</view>

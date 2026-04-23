@@ -24,4 +24,5 @@ export type {
 
 export type DashboardCrossSummary = ApiResponseData<ApiResponse_DashboardCrossSummary>;
 export type DashboardSummary = ApiResponseData<ApiResponse_DashboardFetchSummaryResult>;
-export type DashboardSummaryPayload = import("/@/generated/performance-dashboard.generated").DashboardSummaryQuery;
+export type DashboardSummaryPayload =
+	import("/@/generated/performance-dashboard.generated").DashboardSummaryQuery;

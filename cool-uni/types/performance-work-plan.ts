@@ -26,13 +26,14 @@ export type {
 } from "/@/generated/performance-work-plan.generated";
 
 export type WorkPlanPageResult = ApiResponseData<ApiResponse_WorkPlanPageResult>;
-export type WorkPlanPageQuery = import("/@/generated/performance-work-plan.generated").WorkPlanFetchPageRequest & {
-	page: number;
-	size: number;
-	keyword?: string;
-	status?: string;
-	sourceStatus?: string;
-};
+export type WorkPlanPageQuery =
+	import("/@/generated/performance-work-plan.generated").WorkPlanFetchPageRequest & {
+		page: number;
+		size: number;
+		keyword?: string;
+		status?: string;
+		sourceStatus?: string;
+	};
 export type WorkPlanSourceStatus =
 	| "none"
 	| "processing"
@@ -49,7 +50,7 @@ export function canStartWorkPlan(record?: WorkPlanRecord | null) {
 				record?.sourceType === "dingtalkApproval" &&
 				record?.sourceStatus &&
 				record.sourceStatus !== "approved"
-			)
+			),
 	);
 }
 
@@ -58,5 +59,7 @@ export function canCompleteWorkPlan(record?: WorkPlanRecord | null) {
 }
 
 export function canCancelWorkPlan(record?: WorkPlanRecord | null) {
-	return Boolean(record?.id && ["draft", "planned", "inProgress"].includes(String(record?.status || "")));
+	return Boolean(
+		record?.id && ["draft", "planned", "inProgress"].includes(String(record?.status || "")),
+	);
 }

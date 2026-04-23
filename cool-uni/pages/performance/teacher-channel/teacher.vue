@@ -4,7 +4,9 @@
 		<scroll-view class="teacher-list-page" scroll-y>
 			<view class="teacher-list-page__header">
 				<text class="teacher-list-page__title">班主任资源</text>
-				<text class="teacher-list-page__subtitle">查看资源列表，进入详情后继续跟进和查看脱敏联系人</text>
+				<text class="teacher-list-page__subtitle"
+					>查看资源列表，进入详情后继续跟进和查看脱敏联系人</text
+				>
 			</view>
 
 			<page-state
@@ -54,7 +56,8 @@
 							<view>
 								<text class="teacher-card__title">{{ item.teacherName }}</text>
 								<text class="teacher-card__meta">
-									{{ item.schoolName || "-" }} · {{ item.ownerEmployeeName || "-" }}
+									{{ item.schoolName || "-" }} ·
+									{{ item.ownerEmployeeName || "-" }}
 								</text>
 							</view>
 							<status-pill
@@ -71,7 +74,9 @@
 						</view>
 
 						<view class="teacher-card__actions">
-							<cl-button plain size="mini" @tap="openDetail(item.id)">查看详情</cl-button>
+							<cl-button plain size="mini" @tap="openDetail(item.id)"
+								>查看详情</cl-button
+							>
 							<cl-button
 								v-if="canFollowAdd"
 								type="primary"
@@ -179,7 +184,7 @@ function teacherCooperationStatusLabel(value?: string | null) {
 }
 
 function teacherCooperationStatusTone(
-	value?: string | null
+	value?: string | null,
 ): "info" | "warning" | "success" | "error" {
 	const tone = dict.getMeta(TEACHER_COOPERATION_STATUS_DICT_KEY, value)?.tone;
 	if (tone === "success" || tone === "warning") {

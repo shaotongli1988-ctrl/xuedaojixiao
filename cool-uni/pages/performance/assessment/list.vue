@@ -53,7 +53,10 @@
 					<view class="record-card__actions">
 						<cl-button plain size="mini" @tap="openDetail(item.id)">查看详情</cl-button>
 						<cl-button
-							v-if="canAssessmentEdit(item) && user.hasPerm(PERMISSIONS.performance.assessment.update)"
+							v-if="
+								canAssessmentEdit(item) &&
+								user.hasPerm(PERMISSIONS.performance.assessment.update)
+							"
 							plain
 							size="mini"
 							@tap="openEdit(item.id)"
@@ -61,7 +64,10 @@
 							编辑草稿
 						</cl-button>
 						<cl-button
-							v-if="canAssessmentSubmit(item) && user.hasPerm(PERMISSIONS.performance.assessment.submit)"
+							v-if="
+								canAssessmentSubmit(item) &&
+								user.hasPerm(PERMISSIONS.performance.assessment.submit)
+							"
 							type="primary"
 							size="mini"
 							@tap="submitItem(item.id)"

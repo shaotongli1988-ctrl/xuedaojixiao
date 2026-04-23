@@ -4,7 +4,9 @@
 		<scroll-view class="course-page" scroll-y>
 			<view class="course-page__header">
 				<text class="course-page__title">课程管理</text>
-				<text class="course-page__subtitle">查看课程列表、状态和报名人数，复杂维护动作仍保留桌面端</text>
+				<text class="course-page__subtitle"
+					>查看课程列表、状态和报名人数，复杂维护动作仍保留桌面端</text
+				>
 			</view>
 
 			<page-state
@@ -34,16 +36,28 @@
 					<cl-tabs v-model="activeStatus" :list="statusTabs" :show-line="false" fill />
 				</view>
 
-				<page-state v-if="error" title="加载失败" :description="error" action-text="重试" @action="load" />
+				<page-state
+					v-if="error"
+					title="加载失败"
+					:description="error"
+					action-text="重试"
+					@action="load"
+				/>
 
-				<page-state v-else-if="!loading && !rows.length" title="当前暂无课程" description="当前筛选条件下暂无数据。" />
+				<page-state
+					v-else-if="!loading && !rows.length"
+					title="当前暂无课程"
+					description="当前筛选条件下暂无数据。"
+				/>
 
 				<view v-else class="course-list">
 					<view v-for="item in rows" :key="item.id" class="course-card">
 						<view class="course-card__top">
 							<view>
 								<text class="course-card__title">{{ item.title }}</text>
-								<text class="course-card__meta">{{ item.code || "-" }} · {{ item.category || "-" }}</text>
+								<text class="course-card__meta"
+									>{{ item.code || "-" }} · {{ item.category || "-" }}</text
+								>
 							</view>
 							<status-pill
 								:label="statusLabel(item.status)"
@@ -52,11 +66,16 @@
 						</view>
 
 						<view class="course-card__grid">
-							<text>课程时间：{{ item.startDate || "-" }} ~ {{ item.endDate || "-" }}</text>
+							<text
+								>课程时间：{{ item.startDate || "-" }} ~
+								{{ item.endDate || "-" }}</text
+							>
 							<text>报名人数：{{ item.enrollmentCount ?? 0 }}</text>
 						</view>
 
-						<text class="course-card__summary">{{ item.description || "暂无课程描述" }}</text>
+						<text class="course-card__summary">{{
+							item.description || "暂无课程描述"
+						}}</text>
 
 						<view class="course-card__actions">
 							<cl-button

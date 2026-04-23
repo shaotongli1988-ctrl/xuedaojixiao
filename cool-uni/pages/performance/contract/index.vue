@@ -4,7 +4,9 @@
 		<scroll-view class="contract-page" scroll-y>
 			<view class="contract-page__header">
 				<text class="contract-page__title">合同管理</text>
-				<text class="contract-page__subtitle">查看合同台账、状态、员工和合同周期，复杂维护动作仍保留桌面端</text>
+				<text class="contract-page__subtitle"
+					>查看合同台账、状态、员工和合同周期，复杂维护动作仍保留桌面端</text
+				>
 			</view>
 
 			<page-state
@@ -34,17 +36,30 @@
 					<cl-tabs v-model="activeStatus" :list="statusTabs" :show-line="false" fill />
 				</view>
 
-				<page-state v-if="error" title="加载失败" :description="error" action-text="重试" @action="load" />
+				<page-state
+					v-if="error"
+					title="加载失败"
+					:description="error"
+					action-text="重试"
+					@action="load"
+				/>
 
-				<page-state v-else-if="!loading && !rows.length" title="当前暂无合同" description="当前筛选条件下暂无数据。" />
+				<page-state
+					v-else-if="!loading && !rows.length"
+					title="当前暂无合同"
+					description="当前筛选条件下暂无数据。"
+				/>
 
 				<view v-else class="contract-list">
 					<view v-for="item in rows" :key="item.id" class="contract-card">
 						<view class="contract-card__top">
 							<view>
-								<text class="contract-card__title">{{ item.title || item.contractNumber || "未命名合同" }}</text>
+								<text class="contract-card__title">{{
+									item.title || item.contractNumber || "未命名合同"
+								}}</text>
 								<text class="contract-card__meta">
-									{{ item.employeeName || "-" }} · {{ contractTypeLabel(item.type) }}
+									{{ item.employeeName || "-" }} ·
+									{{ contractTypeLabel(item.type) }}
 								</text>
 							</view>
 							<status-pill
@@ -79,10 +94,7 @@ import { useListPage } from "/@/hooks/use-list-page";
 import PageState from "/@/pages/performance/components/page-state.vue";
 import StatusPill from "/@/pages/performance/components/status-pill.vue";
 import { performanceContractService } from "/@/service/performance/contract";
-import {
-	formatContractSalary,
-	type ContractRecord,
-} from "/@/types/performance-contract";
+import { formatContractSalary, type ContractRecord } from "/@/types/performance-contract";
 
 const CONTRACT_TYPE_DICT_KEY = "performance.contract.type";
 const CONTRACT_STATUS_DICT_KEY = "performance.contract.status";

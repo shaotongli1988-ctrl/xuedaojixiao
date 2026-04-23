@@ -21,9 +21,12 @@ export type {
 	PagePagination,
 } from "/@/generated/performance-assessment.generated";
 
-export type AssessmentInfoQuery = import("/@/generated/performance-assessment.generated").AssessmentActionRequest;
-export type AssessmentSubmitRequest = import("/@/generated/performance-assessment.generated").AssessmentActionRequest;
-export type AssessmentUpdatePayload = import("/@/generated/performance-assessment.generated").AssessmentSaveRequest;
+export type AssessmentInfoQuery =
+	import("/@/generated/performance-assessment.generated").AssessmentActionRequest;
+export type AssessmentSubmitRequest =
+	import("/@/generated/performance-assessment.generated").AssessmentActionRequest;
+export type AssessmentUpdatePayload =
+	import("/@/generated/performance-assessment.generated").AssessmentSaveRequest;
 
 export function canAssessmentEdit(item?: AssessmentRecord) {
 	return ["draft", "rejected"].includes(String(item?.status || ""));

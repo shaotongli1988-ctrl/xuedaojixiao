@@ -37,9 +37,7 @@ const useDictStore = defineStore("dict", () => {
 
 	// 获取单项
 	function getItem(name: Dict.Key | any[], value: any) {
-		return (
-			(isString(name) ? get(name) : name).find((item: any) => item.value == value) || null
-		);
+		return (isString(name) ? get(name) : name).find((item: any) => item.value == value) || null;
 	}
 
 	// 获取元数据

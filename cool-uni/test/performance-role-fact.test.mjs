@@ -24,12 +24,13 @@ function transpileSource(source) {
 
 async function loadRoleFactModule() {
 	if (!roleFactModulePromise) {
-		roleFactModulePromise = readFile(roleFactPath, "utf8").then((source) =>
-			import(
-				`data:text/javascript;base64,${Buffer.from(
-					transpileSource(source)
-				).toString("base64")}`
-			)
+		roleFactModulePromise = readFile(roleFactPath, "utf8").then(
+			(source) =>
+				import(
+					`data:text/javascript;base64,${Buffer.from(transpileSource(source)).toString(
+						"base64",
+					)}`
+				),
 		);
 	}
 
@@ -44,31 +45,28 @@ test("persona fact prefers activePersonaKey over fallback roleKind", async () =>
 			activePersonaKey: "org.hrbp",
 			roleKind: "manager",
 		}).roleLabel,
-		"HRBP 视角"
+		"HRBP 视角",
 	);
 	assert.equal(
 		resolveMobilePerformanceRoleFact({
 			activePersonaKey: "fn.analysis_viewer",
 			roleKind: "readonly",
 		}).scopeLabel,
-		"分析只读视角"
+		"分析只读视角",
 	);
 	assert.equal(
 		resolveMobilePerformanceRoleFact({
 			roleKind: "manager",
 		}).roleLabel,
-		"主管 / 负责人视角"
+		"主管 / 负责人视角",
 	);
 	assert.equal(
 		resolveMobilePerformanceRoleFact({
 			roleKind: "readonly",
 		}).roleLabel,
-		"只读视角"
+		"只读视角",
 	);
-	assert.equal(
-		resolveMobilePerformanceRoleFact({}).roleLabel,
-		"未开放视角"
-	);
+	assert.equal(resolveMobilePerformanceRoleFact({}).roleLabel, "未开放视角");
 });
 
 test("cool-uni home page consumes store roleLabel instead of local roleKind switch", async () => {
@@ -77,16 +75,7 @@ test("cool-uni home page consumes store roleLabel instead of local roleKind swit
 		readFile(homePagePath, "utf8"),
 	]);
 
-	assert.equal(
-		userStoreSource.includes("resolveMobilePerformanceRoleFact"),
-		true
-	);
-	assert.equal(
-		homePageSource.includes("{{ user.roleLabel }}"),
-		true
-	);
-	assert.equal(
-		homePageSource.includes("switch (user.roleKind)"),
-		false
-	);
+	assert.equal(userStoreSource.includes("resolveMobilePerformanceRoleFact"), true);
+	assert.equal(homePageSource.includes("{{ user.roleLabel }}"), true);
+	assert.equal(homePageSource.includes("switch (user.roleKind)"), false);
 });

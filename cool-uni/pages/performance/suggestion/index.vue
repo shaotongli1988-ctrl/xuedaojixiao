@@ -4,7 +4,9 @@
 		<scroll-view class="suggestion-page" scroll-y>
 			<view class="suggestion-page__header">
 				<text class="suggestion-page__title">自动建议</text>
-				<text class="suggestion-page__subtitle">查看建议列表，并在移动端处理采用、忽略、驳回三类高频动作</text>
+				<text class="suggestion-page__subtitle"
+					>查看建议列表，并在移动端处理采用、忽略、驳回三类高频动作</text
+				>
 			</view>
 
 			<page-state
@@ -56,9 +58,12 @@
 					<view v-for="item in rows" :key="item.id" class="suggestion-card">
 						<view class="suggestion-card__top">
 							<view>
-								<text class="suggestion-card__title">{{ suggestionTypeLabel(item.suggestionType) }}</text>
+								<text class="suggestion-card__title">{{
+									suggestionTypeLabel(item.suggestionType)
+								}}</text>
 								<text class="suggestion-card__meta">
-									{{ item.employeeName || "-" }} · {{ item.departmentName || "-" }}
+									{{ item.employeeName || "-" }} ·
+									{{ item.departmentName || "-" }}
 								</text>
 							</view>
 							<status-pill
@@ -74,7 +79,9 @@
 							<text>处理人：{{ item.handlerName || "-" }}</text>
 						</view>
 
-						<text class="suggestion-card__summary">{{ item.triggerLabel || "暂无触发摘要" }}</text>
+						<text class="suggestion-card__summary">{{
+							item.triggerLabel || "暂无触发摘要"
+						}}</text>
 
 						<view class="suggestion-card__actions">
 							<cl-button

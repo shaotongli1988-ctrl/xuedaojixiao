@@ -12,7 +12,11 @@
 			<view v-else-if="form" class="edit-page__body">
 				<view class="form-card">
 					<text class="form-card__label">目标标题</text>
-					<input v-model.trim="form.title" class="form-card__input" placeholder="请输入目标标题" />
+					<input
+						v-model.trim="form.title"
+						class="form-card__input"
+						placeholder="请输入目标标题"
+					/>
 
 					<text class="form-card__label">目标说明</text>
 					<textarea
@@ -30,7 +34,11 @@
 					/>
 
 					<text class="form-card__label">单位</text>
-					<input v-model.trim="form.unit" class="form-card__input" placeholder="请输入单位" />
+					<input
+						v-model.trim="form.unit"
+						class="form-card__input"
+						placeholder="请输入单位"
+					/>
 
 					<text class="form-card__label">权重</text>
 					<input
@@ -41,10 +49,18 @@
 					/>
 
 					<text class="form-card__label">开始日期</text>
-					<input v-model.trim="form.startDate" class="form-card__input" placeholder="YYYY-MM-DD" />
+					<input
+						v-model.trim="form.startDate"
+						class="form-card__input"
+						placeholder="YYYY-MM-DD"
+					/>
 
 					<text class="form-card__label">结束日期</text>
-					<input v-model.trim="form.endDate" class="form-card__input" placeholder="YYYY-MM-DD" />
+					<input
+						v-model.trim="form.endDate"
+						class="form-card__input"
+						placeholder="YYYY-MM-DD"
+					/>
 				</view>
 
 				<view class="edit-actions">
@@ -108,7 +124,11 @@ const stateTips = computed(() => {
 });
 
 const stateAction = computed(() => {
-		return state.value.mode === "error" ? "重试" : state.value.mode === "denied" ? "返回详情" : "返回工作台";
+	return state.value.mode === "error"
+		? "重试"
+		: state.value.mode === "denied"
+			? "返回详情"
+			: "返回工作台";
 });
 
 async function load() {

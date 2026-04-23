@@ -26,7 +26,8 @@ export type {
 	ResumePoolSourceType,
 	ResumePoolStatus,
 	ResumePoolTalentAssetConvertResult,
-	ResumePoolUploadAttachmentRequest
+	ResumePoolUploadAttachmentRequest,
 } from "/@/generated/performance-resume-pool.generated";
 
-export type ResumePoolInfoQuery = import("/@/generated/performance-resume-pool.generated").ResumePoolActionRequest;
+export type ResumePoolInfoQuery =
+	import("/@/generated/performance-resume-pool.generated").ResumePoolActionRequest;

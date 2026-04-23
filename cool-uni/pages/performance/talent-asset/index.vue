@@ -4,7 +4,9 @@
 		<scroll-view class="talent-asset-page" scroll-y>
 			<view class="talent-asset-page__header">
 				<text class="talent-asset-page__title">人才资产</text>
-				<text class="talent-asset-page__subtitle">查看候选人台账、来源、标签和跟进状态摘要，复杂维护动作仍保留桌面端</text>
+				<text class="talent-asset-page__subtitle"
+					>查看候选人台账、来源、标签和跟进状态摘要，复杂维护动作仍保留桌面端</text
+				>
 			</view>
 
 			<page-state
@@ -34,17 +36,30 @@
 					<cl-tabs v-model="activeStatus" :list="statusTabs" :show-line="false" fill />
 				</view>
 
-				<page-state v-if="error" title="加载失败" :description="error" action-text="重试" @action="load" />
+				<page-state
+					v-if="error"
+					title="加载失败"
+					:description="error"
+					action-text="重试"
+					@action="load"
+				/>
 
-				<page-state v-else-if="!loading && !rows.length" title="当前暂无人才资产" description="当前筛选条件下暂无数据。" />
+				<page-state
+					v-else-if="!loading && !rows.length"
+					title="当前暂无人才资产"
+					description="当前筛选条件下暂无数据。"
+				/>
 
 				<view v-else class="talent-asset-list">
 					<view v-for="item in rows" :key="item.id" class="talent-asset-card">
 						<view class="talent-asset-card__top">
 							<view>
-								<text class="talent-asset-card__title">{{ item.candidateName }}</text>
+								<text class="talent-asset-card__title">{{
+									item.candidateName
+								}}</text>
 								<text class="talent-asset-card__meta">
-									{{ item.targetDepartmentName || "-" }} · {{ item.targetPosition || "-" }}
+									{{ item.targetDepartmentName || "-" }} ·
+									{{ item.targetPosition || "-" }}
 								</text>
 							</view>
 							<status-pill
@@ -60,7 +75,9 @@
 							<text>更新时间：{{ item.updateTime || "-" }}</text>
 						</view>
 
-						<text class="talent-asset-card__summary">{{ item.followUpSummary || "暂无跟进摘要" }}</text>
+						<text class="talent-asset-card__summary">{{
+							item.followUpSummary || "暂无跟进摘要"
+						}}</text>
 					</view>
 				</view>
 			</view>
@@ -77,10 +94,7 @@ import { useListPage } from "/@/hooks/use-list-page";
 import PageState from "/@/pages/performance/components/page-state.vue";
 import StatusPill from "/@/pages/performance/components/status-pill.vue";
 import { performanceTalentAssetService } from "/@/service/performance/talentAsset";
-import {
-	talentAssetTagsLabel,
-	type TalentAssetRecord,
-} from "/@/types/performance-talent-asset";
+import { talentAssetTagsLabel, type TalentAssetRecord } from "/@/types/performance-talent-asset";
 
 const TALENT_ASSET_STATUS_DICT_KEY = "performance.talentAsset.status";
 

@@ -9,7 +9,7 @@ import type {
 	MeetingInfoQuery,
 	MeetingPageQuery,
 	MeetingPageResult,
-	MeetingRecord
+	MeetingRecord,
 } from "/@/types/performance-meeting";
 import { PERMISSIONS } from "/@/generated/permissions.generated";
 

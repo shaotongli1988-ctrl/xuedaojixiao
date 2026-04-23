@@ -4,7 +4,9 @@
 		<scroll-view class="class-page" scroll-y>
 			<view class="class-page__header">
 				<text class="class-page__title">合作班级</text>
-				<text class="class-page__subtitle">查看班级列表、状态和班主任归属，不在移动端处理复杂运营</text>
+				<text class="class-page__subtitle"
+					>查看班级列表、状态和班主任归属，不在移动端处理复杂运营</text
+				>
 			</view>
 
 			<page-state
@@ -34,9 +36,19 @@
 					<cl-tabs v-model="activeStatus" :list="statusTabs" :show-line="false" fill />
 				</view>
 
-				<page-state v-if="error" title="加载失败" :description="error" action-text="重试" @action="load" />
+				<page-state
+					v-if="error"
+					title="加载失败"
+					:description="error"
+					action-text="重试"
+					@action="load"
+				/>
 
-				<page-state v-else-if="!loading && !rows.length" title="当前范围内暂无合作班级" description="可切换条件后重新查询。" />
+				<page-state
+					v-else-if="!loading && !rows.length"
+					title="当前范围内暂无合作班级"
+					description="可切换条件后重新查询。"
+				/>
 
 				<view v-else class="class-list">
 					<view v-for="item in rows" :key="item.id || item.classId" class="class-card">

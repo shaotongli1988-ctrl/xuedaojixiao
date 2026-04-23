@@ -54,13 +54,7 @@
 					</view>
 				</view>
 
-				<cl-button
-					type="primary"
-					fill
-					:height="88"
-					:loading="loading"
-					@tap="submit"
-				>
+				<cl-button type="primary" fill :height="88" :loading="loading" @tap="submit">
 					登录
 				</cl-button>
 

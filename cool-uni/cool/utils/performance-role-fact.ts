@@ -3,12 +3,7 @@
  * 不负责权限判断、路由裁剪或后端 access context 请求；
  * 维护重点：移动端不能只靠 roleKind 丢失 persona 语义，必须优先消费后端 activePersonaKey。
  */
-export type MobilePerformanceRoleKind =
-	| "employee"
-	| "manager"
-	| "hr"
-	| "readonly"
-	| "unsupported";
+export type MobilePerformanceRoleKind = "employee" | "manager" | "hr" | "readonly" | "unsupported";
 
 type MobilePerformanceRoleFactInput = {
 	activePersonaKey?: string | null;
@@ -21,7 +16,7 @@ export type MobilePerformanceRoleFact = {
 };
 
 export function resolveMobilePerformanceRoleFact(
-	input: MobilePerformanceRoleFactInput = {}
+	input: MobilePerformanceRoleFactInput = {},
 ): MobilePerformanceRoleFact {
 	switch (input.activePersonaKey) {
 		case "org.hrbp":

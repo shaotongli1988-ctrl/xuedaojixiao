@@ -96,7 +96,11 @@ const stateTips = computed(() => {
 });
 
 const stateAction = computed(() => {
-	return state.value.mode === "error" ? "重试" : state.value.mode === "denied" ? "返回详情" : "返回工作台";
+	return state.value.mode === "error"
+		? "重试"
+		: state.value.mode === "denied"
+			? "返回详情"
+			: "返回工作台";
 });
 
 async function load() {

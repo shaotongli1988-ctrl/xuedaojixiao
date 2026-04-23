@@ -4,7 +4,9 @@
 		<scroll-view class="job-standard-page" scroll-y>
 			<view class="job-standard-page__header">
 				<text class="job-standard-page__title">职位标准</text>
-				<text class="job-standard-page__subtitle">查看岗位画像、任职要求、技能标签和状态，复杂维护动作仍保留桌面端</text>
+				<text class="job-standard-page__subtitle"
+					>查看岗位画像、任职要求、技能标签和状态，复杂维护动作仍保留桌面端</text
+				>
 			</view>
 
 			<page-state
@@ -34,17 +36,30 @@
 					<cl-tabs v-model="activeStatus" :list="statusTabs" :show-line="false" fill />
 				</view>
 
-				<page-state v-if="error" title="加载失败" :description="error" action-text="重试" @action="load" />
+				<page-state
+					v-if="error"
+					title="加载失败"
+					:description="error"
+					action-text="重试"
+					@action="load"
+				/>
 
-				<page-state v-else-if="!loading && !rows.length" title="当前暂无职位标准" description="当前筛选条件下暂无数据。" />
+				<page-state
+					v-else-if="!loading && !rows.length"
+					title="当前暂无职位标准"
+					description="当前筛选条件下暂无数据。"
+				/>
 
 				<view v-else class="job-standard-list">
 					<view v-for="item in rows" :key="item.id" class="job-standard-card">
 						<view class="job-standard-card__top">
 							<view>
-								<text class="job-standard-card__title">{{ item.positionName }}</text>
+								<text class="job-standard-card__title">{{
+									item.positionName
+								}}</text>
 								<text class="job-standard-card__meta">
-									{{ item.targetDepartmentName || "-" }} · {{ item.jobLevel || "-" }}
+									{{ item.targetDepartmentName || "-" }} ·
+									{{ item.jobLevel || "-" }}
 								</text>
 							</view>
 							<status-pill
@@ -55,22 +70,36 @@
 
 						<view class="job-standard-card__section">
 							<text class="job-standard-card__label">岗位画像</text>
-							<text class="job-standard-card__content">{{ item.profileSummary || "暂无岗位画像摘要" }}</text>
+							<text class="job-standard-card__content">{{
+								item.profileSummary || "暂无岗位画像摘要"
+							}}</text>
 						</view>
 
 						<view class="job-standard-card__section">
 							<text class="job-standard-card__label">任职要求</text>
-							<text class="job-standard-card__content">{{ item.requirementSummary || "暂无任职要求摘要" }}</text>
+							<text class="job-standard-card__content">{{
+								item.requirementSummary || "暂无任职要求摘要"
+							}}</text>
 						</view>
 
 						<view class="job-standard-card__tags">
-							<text v-for="tag in item.skillTagList || []" :key="`${item.id}-${tag}`" class="job-standard-card__tag">
+							<text
+								v-for="tag in item.skillTagList || []"
+								:key="`${item.id}-${tag}`"
+								class="job-standard-card__tag"
+							>
 								{{ tag }}
 							</text>
-							<text v-if="!(item.skillTagList || []).length" class="job-standard-card__empty-tag">暂无技能标签</text>
+							<text
+								v-if="!(item.skillTagList || []).length"
+								class="job-standard-card__empty-tag"
+								>暂无技能标签</text
+							>
 						</view>
 
-						<text class="job-standard-card__footer">更新时间：{{ item.updateTime || "-" }}</text>
+						<text class="job-standard-card__footer"
+							>更新时间：{{ item.updateTime || "-" }}</text
+						>
 					</view>
 				</view>
 			</view>

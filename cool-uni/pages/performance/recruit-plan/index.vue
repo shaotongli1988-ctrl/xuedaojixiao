@@ -4,7 +4,9 @@
 		<scroll-view class="recruit-plan-page" scroll-y>
 			<view class="recruit-plan-page__header">
 				<text class="recruit-plan-page__title">招聘计划</text>
-				<text class="recruit-plan-page__subtitle">查看招聘计划、岗位、人头和状态摘要，复杂维护动作仍保留桌面端</text>
+				<text class="recruit-plan-page__subtitle"
+					>查看招聘计划、岗位、人头和状态摘要，复杂维护动作仍保留桌面端</text
+				>
 			</view>
 
 			<page-state
@@ -34,9 +36,19 @@
 					<cl-tabs v-model="activeStatus" :list="statusTabs" :show-line="false" fill />
 				</view>
 
-				<page-state v-if="error" title="加载失败" :description="error" action-text="重试" @action="load" />
+				<page-state
+					v-if="error"
+					title="加载失败"
+					:description="error"
+					action-text="重试"
+					@action="load"
+				/>
 
-				<page-state v-else-if="!loading && !rows.length" title="当前暂无招聘计划" description="当前筛选条件下暂无数据。" />
+				<page-state
+					v-else-if="!loading && !rows.length"
+					title="当前暂无招聘计划"
+					description="当前筛选条件下暂无数据。"
+				/>
 
 				<view v-else class="recruit-plan-list">
 					<view v-for="item in rows" :key="item.id" class="recruit-plan-card">
@@ -60,7 +72,9 @@
 							<text>更新时间：{{ item.updateTime || "-" }}</text>
 						</view>
 
-						<text class="recruit-plan-card__summary">{{ item.requirementSummary || "暂无需求摘要" }}</text>
+						<text class="recruit-plan-card__summary">{{
+							item.requirementSummary || "暂无需求摘要"
+						}}</text>
 					</view>
 				</view>
 			</view>

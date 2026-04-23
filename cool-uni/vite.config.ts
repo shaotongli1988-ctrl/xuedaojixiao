@@ -22,11 +22,10 @@ function buildLocaleModuleLiteral() {
 	}
 
 	const importLines = localeFiles.map(
-		(file, index) => `import __uniLocale${index} from "/locale/${file}";`
+		(file, index) => `import __uniLocale${index} from "/locale/${file}";`,
 	);
 	const objectLines = localeFiles.map(
-		(file, index) =>
-			`  "./locale/${file}": { default: __uniLocale${index} }`
+		(file, index) => `  "./locale/${file}": { default: __uniLocale${index} }`,
 	);
 
 	return `${importLines.join("\n")}\nconst locales = {\n${objectLines.join(",\n")}\n}`;
@@ -48,7 +47,7 @@ function patchUniGlobEagerForVite5(): Plugin {
 
 			const nextCode = code.replace(
 				/const locales = import\.meta\.glob(?:Eager)?\((["'])\.\/locale\/\*\.json\1(?:,\s*\{[^)]*\})?\)/,
-				localeModuleLiteral
+				localeModuleLiteral,
 			);
 
 			if (nextCode === code) {

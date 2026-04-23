@@ -4,7 +4,9 @@
 		<scroll-view class="work-plan-page" scroll-y>
 			<view class="work-plan-page__header">
 				<text class="work-plan-page__title">工作计划</text>
-				<text class="work-plan-page__subtitle">查看计划列表并在移动端处理开始、完成、取消三类高频动作</text>
+				<text class="work-plan-page__subtitle"
+					>查看计划列表并在移动端处理开始、完成、取消三类高频动作</text
+				>
 			</view>
 
 			<page-state
@@ -54,7 +56,8 @@
 							<view>
 								<text class="plan-card__title">{{ item.title }}</text>
 								<text class="plan-card__meta">
-									{{ item.workNo || "-" }} · {{ item.ownerName || item.ownerDepartmentName || "-" }}
+									{{ item.workNo || "-" }} ·
+									{{ item.ownerName || item.ownerDepartmentName || "-" }}
 								</text>
 							</view>
 							<status-pill
@@ -67,11 +70,20 @@
 							<text>优先级：{{ priorityLabel(item.priority) }}</text>
 							<text>来源：{{ sourceTypeLabel(item.sourceType) }}</text>
 							<text>来源审批：{{ sourceStatusLabel(item.sourceStatus) }}</text>
-							<text>计划周期：{{ item.plannedStartDate || "-" }} ~ {{ item.plannedEndDate || "-" }}</text>
+							<text
+								>计划周期：{{ item.plannedStartDate || "-" }} ~
+								{{ item.plannedEndDate || "-" }}</text
+							>
 						</view>
 
 						<text class="plan-card__summary">
-							{{ item.progressSummary || item.resultSummary || item.description || item.sourceTitle || "暂无补充说明" }}
+							{{
+								item.progressSummary ||
+								item.resultSummary ||
+								item.description ||
+								item.sourceTitle ||
+								"暂无补充说明"
+							}}
 						</text>
 
 						<view class="plan-card__actions">

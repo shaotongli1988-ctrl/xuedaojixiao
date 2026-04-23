@@ -4,7 +4,9 @@
 		<scroll-view class="salary-page" scroll-y>
 			<view class="salary-page__header">
 				<text class="salary-page__title">薪资管理</text>
-				<text class="salary-page__subtitle">查看薪资记录、期间、金额和状态摘要，复杂维护动作仍保留桌面端</text>
+				<text class="salary-page__subtitle"
+					>查看薪资记录、期间、金额和状态摘要，复杂维护动作仍保留桌面端</text
+				>
 			</view>
 
 			<page-state
@@ -52,10 +54,17 @@
 					<view v-for="item in rows" :key="item.id" class="salary-card">
 						<view class="salary-card__top">
 							<view>
-								<text class="salary-card__title">{{ item.employeeName || "未命名员工" }}</text>
-								<text class="salary-card__meta">{{ item.periodValue }} · {{ item.grade || "-" }}</text>
+								<text class="salary-card__title">{{
+									item.employeeName || "未命名员工"
+								}}</text>
+								<text class="salary-card__meta"
+									>{{ item.periodValue }} · {{ item.grade || "-" }}</text
+								>
 							</view>
-							<status-pill :label="salaryStatusLabel(item.status)" :tone="salaryStatusTone(item.status)" />
+							<status-pill
+								:label="salaryStatusLabel(item.status)"
+								:tone="salaryStatusTone(item.status)"
+							/>
 						</view>
 
 						<view class="salary-card__grid">
@@ -82,10 +91,7 @@ import { useListPage } from "/@/hooks/use-list-page";
 import PageState from "/@/pages/performance/components/page-state.vue";
 import StatusPill from "/@/pages/performance/components/status-pill.vue";
 import { performanceSalaryService } from "/@/service/performance/salary";
-import {
-	salaryAmountLabel,
-	type SalaryRecord,
-} from "/@/types/performance-salary";
+import { salaryAmountLabel, type SalaryRecord } from "/@/types/performance-salary";
 
 const SALARY_STATUS_DICT_KEY = "performance.salary.status";
 

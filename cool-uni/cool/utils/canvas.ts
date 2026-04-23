@@ -351,7 +351,7 @@ class Canvas {
 		sWidth: number,
 		sHeight: number,
 		x: number,
-		y: number
+		y: number,
 	) {
 		let cx, cy, cw, ch, sx, sy, sw, sh;
 		switch (mode) {
@@ -542,7 +542,7 @@ class Canvas {
 				options.y,
 				options.width || options.swidth,
 				options.height || options.sHeight,
-				options.radius
+				options.radius,
 			);
 			// 填充
 			this.ctx.fill();
@@ -559,7 +559,7 @@ class Canvas {
 				temp.width,
 				temp.height,
 				temp.x,
-				temp.y
+				temp.y,
 			);
 			switch (options.mode) {
 				case "aspectFit":
@@ -575,7 +575,7 @@ class Canvas {
 						temp.x,
 						temp.y,
 						temp.width,
-						temp.height
+						temp.height,
 					);
 					break;
 			}
@@ -585,7 +585,7 @@ class Canvas {
 				temp.x,
 				temp.y,
 				temp.width || temp.swidth,
-				temp.height || temp.sheight
+				temp.height || temp.sheight,
 			);
 		}
 		this.imageQueue.shift();

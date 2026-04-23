@@ -16,7 +16,8 @@ export type {
 	RecruitPlanRecord,
 	RecruitPlanSaveRequest,
 	RecruitPlanSourceSnapshot,
-	RecruitPlanStatus
+	RecruitPlanStatus,
 } from "/@/generated/performance-recruit-plan.generated";
 
-export type RecruitPlanInfoQuery = import("/@/generated/performance-recruit-plan.generated").RecruitPlanActionRequest;
+export type RecruitPlanInfoQuery =
+	import("/@/generated/performance-recruit-plan.generated").RecruitPlanActionRequest;

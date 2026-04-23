@@ -48,7 +48,9 @@
 					<view class="task-card__grid">
 						<text>截止：{{ item.deadline || "-" }}</text>
 						<text>关系：{{ item.currentUserRelationType || "-" }}</text>
-						<text>已提交：{{ item.submittedCount || 0 }}/{{ item.totalCount || 0 }}</text>
+						<text
+							>已提交：{{ item.submittedCount || 0 }}/{{ item.totalCount || 0 }}</text
+						>
 						<text>均分：{{ item.averageScore || 0 }}</text>
 					</view>
 

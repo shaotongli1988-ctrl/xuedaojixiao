@@ -312,7 +312,7 @@ const router = {
 
 	// 跳转前钩子
 	beforeEach(
-		callback: (to: any, next: () => void, redirect: (options: PushOptions) => void) => void
+		callback: (to: any, next: () => void, redirect: (options: PushOptions) => void) => void,
 	) {
 		fn.beforeEach = callback;
 	},

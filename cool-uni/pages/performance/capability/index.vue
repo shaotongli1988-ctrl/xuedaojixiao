@@ -4,7 +4,9 @@
 		<scroll-view class="capability-page" scroll-y>
 			<view class="capability-page__header">
 				<text class="capability-page__title">能力地图</text>
-				<text class="capability-page__subtitle">查看能力模型列表、分类、能力项数量和启停状态，复杂维护动作仍保留桌面端</text>
+				<text class="capability-page__subtitle"
+					>查看能力模型列表、分类、能力项数量和启停状态，复杂维护动作仍保留桌面端</text
+				>
 			</view>
 
 			<page-state
@@ -34,16 +36,28 @@
 					<cl-tabs v-model="activeStatus" :list="statusTabs" :show-line="false" fill />
 				</view>
 
-				<page-state v-if="error" title="加载失败" :description="error" action-text="重试" @action="load" />
+				<page-state
+					v-if="error"
+					title="加载失败"
+					:description="error"
+					action-text="重试"
+					@action="load"
+				/>
 
-				<page-state v-else-if="!loading && !rows.length" title="当前暂无能力模型" description="当前筛选条件下暂无数据。" />
+				<page-state
+					v-else-if="!loading && !rows.length"
+					title="当前暂无能力模型"
+					description="当前筛选条件下暂无数据。"
+				/>
 
 				<view v-else class="capability-list">
 					<view v-for="item in rows" :key="item.id" class="capability-card">
 						<view class="capability-card__top">
 							<view>
 								<text class="capability-card__title">{{ item.name }}</text>
-								<text class="capability-card__meta">{{ item.code || "-" }} · {{ item.category || "-" }}</text>
+								<text class="capability-card__meta"
+									>{{ item.code || "-" }} · {{ item.category || "-" }}</text
+								>
 							</view>
 							<status-pill
 								:label="capabilityStatusLabel(item.status)"
@@ -56,7 +70,9 @@
 							<text>更新时间：{{ item.updateTime || "-" }}</text>
 						</view>
 
-						<text class="capability-card__summary">{{ item.description || "暂无模型说明" }}</text>
+						<text class="capability-card__summary">{{
+							item.description || "暂无模型说明"
+						}}</text>
 					</view>
 				</view>
 			</view>
@@ -73,9 +89,7 @@ import { useListPage } from "/@/hooks/use-list-page";
 import PageState from "/@/pages/performance/components/page-state.vue";
 import StatusPill from "/@/pages/performance/components/status-pill.vue";
 import { performanceCapabilityService } from "/@/service/performance/capability";
-import {
-	type CapabilityModelRecord,
-} from "/@/types/performance-capability";
+import { type CapabilityModelRecord } from "/@/types/performance-capability";
 
 const CAPABILITY_STATUS_DICT_KEY = "performance.capability.status";
 

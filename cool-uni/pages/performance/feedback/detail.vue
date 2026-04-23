@@ -31,7 +31,8 @@
 						<view>
 							<text class="detail-card__title">{{ detail.title }}</text>
 							<text class="detail-card__meta">
-								{{ detail.employeeName || "-" }} · {{ detail.departmentName || "-" }}
+								{{ detail.employeeName || "-" }} ·
+								{{ detail.departmentName || "-" }}
 							</text>
 						</view>
 						<status-pill
@@ -43,7 +44,11 @@
 					<view class="detail-card__grid">
 						<text>截止：{{ detail.deadline || "-" }}</text>
 						<text>当前关系：{{ detail.currentUserRecord?.relationType || "-" }}</text>
-						<text>已提交：{{ detail.submittedCount || 0 }}/{{ detail.totalCount || 0 }}</text>
+						<text
+							>已提交：{{ detail.submittedCount || 0 }}/{{
+								detail.totalCount || 0
+							}}</text
+						>
 						<text>均分：{{ detail.averageScore || 0 }}</text>
 					</view>
 				</view>
@@ -59,7 +64,9 @@
 					<text class="detail-card__section">评价人进度</text>
 					<view v-for="item in detail.feedbackUsers" :key="item.id" class="record-row">
 						<view>
-							<text class="record-row__title">{{ item.feedbackUserName || "-" }}</text>
+							<text class="record-row__title">{{
+								item.feedbackUserName || "-"
+							}}</text>
 							<text class="record-row__meta">{{ item.relationType || "-" }}</text>
 						</view>
 						<status-pill
@@ -72,7 +79,10 @@
 				<view class="detail-actions">
 					<cl-button plain @tap="backToList">返回</cl-button>
 					<cl-button
-						v-if="canFeedbackSubmit(detail) && user.hasPerm(PERMISSIONS.performance.feedback.submit)"
+						v-if="
+							canFeedbackSubmit(detail) &&
+							user.hasPerm(PERMISSIONS.performance.feedback.submit)
+						"
 						type="primary"
 						@tap="openSubmit"
 					>
@@ -95,18 +105,11 @@
 import { ref } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { useCool, useStore } from "/@/cool";
-import {
-	canFeedbackSubmit,
-	type FeedbackTaskRecord,
-} from "/@/types/performance-feedback";
+import { canFeedbackSubmit, type FeedbackTaskRecord } from "/@/types/performance-feedback";
 import PageState from "/@/pages/performance/components/page-state.vue";
 import StatusPill from "/@/pages/performance/components/status-pill.vue";
 import { PERMISSIONS } from "/@/generated/permissions.generated";
-import {
-	buildFeedbackSubmitQuery,
-	buildFeedbackSummaryQuery,
-	isRouteSourceValid,
-} from "./utils";
+import { buildFeedbackSubmitQuery, buildFeedbackSummaryQuery, isRouteSourceValid } from "./utils";
 
 const FEEDBACK_TASK_STATUS_DICT_KEY = "performance.feedback.taskStatus";
 const FEEDBACK_RECORD_STATUS_DICT_KEY = "performance.feedback.recordStatus";

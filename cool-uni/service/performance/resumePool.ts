@@ -8,7 +8,7 @@ import type {
 	ResumePoolInfoQuery,
 	ResumePoolPageQuery,
 	ResumePoolPageResult,
-	ResumePoolRecord
+	ResumePoolRecord,
 } from "/@/types/performance-resume-pool";
 import { PERMISSIONS } from "/@/generated/permissions.generated";
 

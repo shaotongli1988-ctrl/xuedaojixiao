@@ -4,7 +4,9 @@
 		<scroll-view class="supplier-page" scroll-y>
 			<view class="supplier-page__header">
 				<text class="supplier-page__title">供应商管理</text>
-				<text class="supplier-page__subtitle">查看供应商台账、联系人和启停状态，复杂维护动作仍保留桌面端</text>
+				<text class="supplier-page__subtitle"
+					>查看供应商台账、联系人和启停状态，复杂维护动作仍保留桌面端</text
+				>
 			</view>
 
 			<page-state
@@ -53,7 +55,9 @@
 						<view class="supplier-card__top">
 							<view>
 								<text class="supplier-card__title">{{ item.name }}</text>
-								<text class="supplier-card__meta">{{ item.code || "-" }} · {{ item.category || "-" }}</text>
+								<text class="supplier-card__meta"
+									>{{ item.code || "-" }} · {{ item.category || "-" }}</text
+								>
 							</view>
 							<status-pill
 								:label="statusLabel(item.status)"
@@ -68,7 +72,9 @@
 							<text>更新时间：{{ item.updateTime || "-" }}</text>
 						</view>
 
-						<text class="supplier-card__summary">{{ item.remark || "暂无供应商备注" }}</text>
+						<text class="supplier-card__summary">{{
+							item.remark || "暂无供应商备注"
+						}}</text>
 					</view>
 				</view>
 			</view>

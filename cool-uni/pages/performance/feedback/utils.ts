@@ -48,9 +48,7 @@ export function canSubmitFeedbackTask(task?: Partial<FeedbackTaskRecord> | null)
 	}
 
 	const hasCurrentRecord = Boolean(
-		task.currentUserRecord?.id ||
-			task.currentUserRecordStatus ||
-			task.currentUserRelationType
+		task.currentUserRecord?.id || task.currentUserRecordStatus || task.currentUserRelationType,
 	);
 
 	if (!hasCurrentRecord) {
@@ -65,8 +63,7 @@ export function canSubmitFeedbackTask(task?: Partial<FeedbackTaskRecord> | null)
 		return false;
 	}
 
-	const recordStatus =
-		task.currentUserRecord?.status || task.currentUserRecordStatus || "draft";
+	const recordStatus = task.currentUserRecord?.status || task.currentUserRecordStatus || "draft";
 
 	return String(recordStatus) !== "submitted";
 }
@@ -85,9 +82,7 @@ export function getSubmitDisabledReason(task?: Partial<FeedbackTaskRecord> | nul
 	}
 
 	const hasCurrentRecord = Boolean(
-		task.currentUserRecord?.id ||
-			task.currentUserRecordStatus ||
-			task.currentUserRelationType
+		task.currentUserRecord?.id || task.currentUserRecordStatus || task.currentUserRelationType,
 	);
 
 	if (!hasCurrentRecord) {
@@ -102,8 +97,7 @@ export function getSubmitDisabledReason(task?: Partial<FeedbackTaskRecord> | nul
 		return "当前环评任务已超过截止时间";
 	}
 
-	const recordStatus =
-		task.currentUserRecord?.status || task.currentUserRecordStatus || "draft";
+	const recordStatus = task.currentUserRecord?.status || task.currentUserRecordStatus || "draft";
 
 	if (String(recordStatus) === "submitted") {
 		return "当前账号已提交过本次反馈";

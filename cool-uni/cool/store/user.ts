@@ -23,8 +23,7 @@ import { resolveMobilePerformanceRoleFact } from "../utils/performance-role-fact
 const data = storage.info();
 const storedPerms = storage.get("userPerms") || [];
 const storedWorkbenchPages = storage.get("userWorkbenchPages") || [];
-const storedPerformanceAccessContext =
-	storage.get("userPerformanceAccessContext") || null;
+const storedPerformanceAccessContext = storage.get("userPerformanceAccessContext") || null;
 
 function uniqueStrings(values: string[]) {
 	return Array.from(new Set((values || []).filter(Boolean)));
@@ -57,15 +56,13 @@ const useUserStore = defineStore("user", function () {
 	const workbenchPages = ref<string[]>(storedWorkbenchPages);
 	const performanceAccessContext = ref<any>(storedPerformanceAccessContext);
 	const roleKind = computed(
-		() =>
-			performanceAccessContext.value?.roleKind ||
-			resolveMobileRoleKind(perms.value)
+		() => performanceAccessContext.value?.roleKind || resolveMobileRoleKind(perms.value),
 	);
 	const roleFact = computed(() =>
 		resolveMobilePerformanceRoleFact({
 			activePersonaKey: performanceAccessContext.value?.activePersonaKey || null,
 			roleKind: roleKind.value,
-		})
+		}),
 	);
 	const roleLabel = computed(() => roleFact.value.roleLabel);
 	const permissionMask = computed(() => {
@@ -75,9 +72,7 @@ const useUserStore = defineStore("user", function () {
 
 	function hasPerm(value: string) {
 		const permissionBit =
-			PERMISSION_BIT_BY_KEY[
-				String(value || "").trim() as keyof typeof PERMISSION_BIT_BY_KEY
-			];
+			PERMISSION_BIT_BY_KEY[String(value || "").trim() as keyof typeof PERMISSION_BIT_BY_KEY];
 
 		if (permissionBit === undefined) {
 			return false;
@@ -96,17 +91,11 @@ const useUserStore = defineStore("user", function () {
 
 		if (value && (value as any).performanceAccessContext) {
 			performanceAccessContext.value = (value as any).performanceAccessContext;
-			storage.set(
-				"userPerformanceAccessContext",
-				(value as any).performanceAccessContext
-			);
+			storage.set("userPerformanceAccessContext", (value as any).performanceAccessContext);
 		}
 	}
 
-	function setPermContext(value: {
-		perms?: string[];
-		performanceAccessContext?: any;
-	}) {
+	function setPermContext(value: { perms?: string[]; performanceAccessContext?: any }) {
 		const nextPerms = uniqueStrings(value?.perms || []);
 		const nextPerformanceAccessContext =
 			value?.performanceAccessContext || performanceAccessContext.value || null;

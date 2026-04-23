@@ -42,7 +42,8 @@ export type {
 
 export type TeacherClassUpdateTeacherClassRequest = TeacherClassUpdatePayload;
 export type TeacherAttributionInfo = ApiResponseData<ApiResponse_TeacherAttributionInfo>;
-export type TeacherAttributionHistory = ApiResponseData<ApiResponse_TeacherInfoFetchAttributionHistoryResult>;
+export type TeacherAttributionHistory =
+	ApiResponseData<ApiResponse_TeacherInfoFetchAttributionHistoryResult>;
 export type TeacherClassPageResult = ApiResponseData<ApiResponse_TeacherClassPageResult>;
 export type TeacherDashboardSummary = ApiResponseData<ApiResponse_TeacherDashboardSummary>;
 export type TeacherFollowPageResult = ApiResponseData<ApiResponse_TeacherFollowPageResult>;

@@ -4,7 +4,9 @@
 		<scroll-view class="dashboard-page" scroll-y>
 			<view class="dashboard-page__header">
 				<text class="dashboard-page__title">绩效驾驶舱</text>
-				<text class="dashboard-page__subtitle">只展示已开放的聚合指标，不下沉复杂图表和跨模块明细</text>
+				<text class="dashboard-page__subtitle"
+					>只展示已开放的聚合指标，不下沉复杂图表和跨模块明细</text
+				>
 			</view>
 
 			<page-state
@@ -45,15 +47,26 @@
 					/>
 
 					<view v-else class="stage-list">
-						<view v-for="item in summary.stageProgress" :key="item.stageKey" class="stage-row">
+						<view
+							v-for="item in summary.stageProgress"
+							:key="item.stageKey"
+							class="stage-row"
+						>
 							<view class="stage-row__top">
 								<text class="stage-row__title">{{ item.stageLabel }}</text>
 								<text class="stage-row__value">{{ item.completionRate }}%</text>
 							</view>
 							<view class="stage-row__track">
-								<view class="stage-row__fill" :style="{ width: `${Math.min(item.completionRate || 0, 100)}%` }" />
+								<view
+									class="stage-row__fill"
+									:style="{
+										width: `${Math.min(item.completionRate || 0, 100)}%`,
+									}"
+								/>
 							</view>
-							<text class="stage-row__hint">{{ item.completedCount }} / {{ item.totalCount }}</text>
+							<text class="stage-row__hint"
+								>{{ item.completedCount }} / {{ item.totalCount }}</text
+							>
 						</view>
 					</view>
 				</view>
@@ -71,9 +84,15 @@
 							:key="item.departmentId"
 							class="distribution-row"
 						>
-							<text class="distribution-row__name">{{ item.departmentName || `部门${item.departmentId}` }}</text>
-							<text class="distribution-row__meta">均分 {{ Number(item.averageScore || 0).toFixed(1) }}</text>
-							<text class="distribution-row__meta">评估单 {{ item.assessmentCount || 0 }}</text>
+							<text class="distribution-row__name">{{
+								item.departmentName || `部门${item.departmentId}`
+							}}</text>
+							<text class="distribution-row__meta"
+								>均分 {{ Number(item.averageScore || 0).toFixed(1) }}</text
+							>
+							<text class="distribution-row__meta"
+								>评估单 {{ item.assessmentCount || 0 }}</text
+							>
 						</view>
 					</view>
 				</view>
@@ -81,10 +100,16 @@
 				<view class="panel-card">
 					<text class="panel-card__title">绩效等级分布</text>
 					<view class="grade-grid">
-						<view v-for="item in summary.gradeDistribution" :key="item.grade" class="grade-card">
+						<view
+							v-for="item in summary.gradeDistribution"
+							:key="item.grade"
+							class="grade-card"
+						>
 							<text class="grade-card__grade">{{ item.grade }}</text>
 							<text class="grade-card__count">{{ item.count || 0 }}</text>
-							<text class="grade-card__ratio">{{ Number(item.ratio || 0).toFixed(1) }}%</text>
+							<text class="grade-card__ratio"
+								>{{ Number(item.ratio || 0).toFixed(1) }}%</text
+							>
 						</view>
 					</view>
 				</view>

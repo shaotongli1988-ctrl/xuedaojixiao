@@ -8,7 +8,7 @@ import type {
 	TalentAssetInfoQuery,
 	TalentAssetPageQuery,
 	TalentAssetPageResult,
-	TalentAssetRecord
+	TalentAssetRecord,
 } from "/@/types/performance-talent-asset";
 import { PERMISSIONS } from "/@/generated/permissions.generated";
 

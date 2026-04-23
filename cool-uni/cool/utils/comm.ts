@@ -1,9 +1,11 @@
 import { orderBy } from "lodash-es";
 
 function resolvePlatform() {
-	const runtimeUni = (globalThis as typeof globalThis & {
-		uni?: { getSystemInfoSync?: () => { platform?: string } };
-	}).uni;
+	const runtimeUni = (
+		globalThis as typeof globalThis & {
+			uni?: { getSystemInfoSync?: () => { platform?: string } };
+		}
+	).uni;
 
 	if (runtimeUni && typeof runtimeUni.getSystemInfoSync === "function") {
 		return runtimeUni.getSystemInfoSync().platform;

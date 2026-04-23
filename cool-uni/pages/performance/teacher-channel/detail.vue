@@ -32,7 +32,8 @@
 						<view>
 							<text class="detail-card__title">{{ detail.teacherName }}</text>
 							<text class="detail-card__meta">
-								{{ detail.schoolName || "-" }} · {{ detail.ownerEmployeeName || "-" }}
+								{{ detail.schoolName || "-" }} ·
+								{{ detail.ownerEmployeeName || "-" }}
 							</text>
 						</view>
 						<status-pill
@@ -71,7 +72,11 @@
 
 					<view class="detail-card__picker">
 						<text class="detail-card__picker-label">下次跟进日期</text>
-						<picker mode="date" :value="followForm.nextFollowDate" @change="onNextFollowDateChange">
+						<picker
+							mode="date"
+							:value="followForm.nextFollowDate"
+							@change="onNextFollowDateChange"
+						>
 							<view class="detail-card__picker-value">
 								{{ followForm.nextFollowDate || "选择日期（可为空）" }}
 							</view>
@@ -87,7 +92,12 @@
 
 					<view class="detail-card__actions">
 						<cl-button plain size="mini" @tap="resetFollowForm">清空</cl-button>
-						<cl-button type="primary" size="mini" :loading="submitting" @tap="submitFollow">
+						<cl-button
+							type="primary"
+							size="mini"
+							:loading="submitting"
+							@tap="submitFollow"
+						>
 							提交跟进
 						</cl-button>
 					</view>
@@ -103,12 +113,16 @@
 
 					<view v-else class="follow-list">
 						<view v-for="item in followList" :key="item.id" class="follow-row">
-							<text class="follow-row__title">{{ item.followMethod || "跟进记录" }}</text>
+							<text class="follow-row__title">{{
+								item.followMethod || "跟进记录"
+							}}</text>
 							<text class="follow-row__meta">
 								{{ item.operatorName || item.creatorName || "-" }} ·
 								{{ item.followTime || item.createTime || "-" }}
 							</text>
-							<text class="follow-row__content">{{ item.followContent || item.content || "-" }}</text>
+							<text class="follow-row__content">{{
+								item.followContent || item.content || "-"
+							}}</text>
 							<text v-if="item.nextFollowTime" class="follow-row__next">
 								下次跟进：{{ item.nextFollowTime }}
 							</text>
@@ -136,7 +150,10 @@ import {
 	performanceTeacherFollowService,
 	performanceTeacherInfoService,
 } from "/@/service/performance/teacherChannel";
-import { type TeacherFollowRecord, type TeacherInfoRecord } from "/@/types/performance-teacher-channel";
+import {
+	type TeacherFollowRecord,
+	type TeacherInfoRecord,
+} from "/@/types/performance-teacher-channel";
 
 const { router } = useCool();
 const { user, dict } = useStore();
@@ -255,7 +272,7 @@ function teacherCooperationStatusLabel(value?: string | null) {
 }
 
 function teacherCooperationStatusTone(
-	value?: string | null
+	value?: string | null,
 ): "info" | "warning" | "success" | "error" {
 	const tone = dict.getMeta(TEACHER_COOPERATION_STATUS_DICT_KEY, value)?.tone;
 	if (tone === "success" || tone === "warning") {

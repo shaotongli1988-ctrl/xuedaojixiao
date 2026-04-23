@@ -102,7 +102,7 @@ const isDisabled = computed(() => countdown.value > 0 || !props.phone);
 
 // 按钮文案
 const btnText = computed(() =>
-	countdown.value > 0 ? t("{n}s后重新获取", { n: countdown.value }) : t("获取验证码")
+	countdown.value > 0 ? t("{n}s后重新获取", { n: countdown.value }) : t("获取验证码"),
 );
 
 // 表单

@@ -8,7 +8,7 @@ export type {
 	JobStandardRecord,
 	JobStandardSaveRequest,
 	JobStandardStatus,
-	JobStandardStatusUpdateRequest
+	JobStandardStatusUpdateRequest,
 } from "/@/generated/performance-job-standard.generated";
 
 export interface JobStandardInfoQuery {

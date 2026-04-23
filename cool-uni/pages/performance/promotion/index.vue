@@ -4,7 +4,9 @@
 		<scroll-view class="promotion-page" scroll-y>
 			<view class="promotion-page__header">
 				<text class="promotion-page__title">晋升管理</text>
-				<text class="promotion-page__subtitle">查看晋升单、目标岗位和评审状态摘要，复杂维护动作仍保留桌面端</text>
+				<text class="promotion-page__subtitle"
+					>查看晋升单、目标岗位和评审状态摘要，复杂维护动作仍保留桌面端</text
+				>
 			</view>
 
 			<page-state
@@ -34,16 +36,30 @@
 					<cl-tabs v-model="activeStatus" :list="statusTabs" :show-line="false" fill />
 				</view>
 
-				<page-state v-if="error" title="加载失败" :description="error" action-text="重试" @action="load" />
+				<page-state
+					v-if="error"
+					title="加载失败"
+					:description="error"
+					action-text="重试"
+					@action="load"
+				/>
 
-				<page-state v-else-if="!loading && !rows.length" title="当前暂无晋升单" description="当前筛选条件下暂无数据。" />
+				<page-state
+					v-else-if="!loading && !rows.length"
+					title="当前暂无晋升单"
+					description="当前筛选条件下暂无数据。"
+				/>
 
 				<view v-else class="promotion-list">
 					<view v-for="item in rows" :key="item.id" class="promotion-card">
 						<view class="promotion-card__top">
 							<view>
-								<text class="promotion-card__title">{{ item.employeeName || "未命名员工" }}</text>
-								<text class="promotion-card__meta">{{ item.fromPosition }} → {{ item.toPosition }}</text>
+								<text class="promotion-card__title">{{
+									item.employeeName || "未命名员工"
+								}}</text>
+								<text class="promotion-card__meta"
+									>{{ item.fromPosition }} → {{ item.toPosition }}</text
+								>
 							</view>
 							<status-pill
 								:label="statusLabel(item.status)"
@@ -58,7 +74,9 @@
 							<text>更新时间：{{ item.updateTime || "-" }}</text>
 						</view>
 
-						<text class="promotion-card__summary">{{ item.sourceReason || item.reason || "暂无原因说明" }}</text>
+						<text class="promotion-card__summary">{{
+							item.sourceReason || item.reason || "暂无原因说明"
+						}}</text>
 					</view>
 				</view>
 			</view>

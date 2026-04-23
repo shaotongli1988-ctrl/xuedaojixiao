@@ -4,7 +4,9 @@
 		<scroll-view class="meeting-page" scroll-y>
 			<view class="meeting-page__header">
 				<text class="meeting-page__title">会议管理</text>
-				<text class="meeting-page__subtitle">查看会议列表，并在移动端处理进行中会议签到</text>
+				<text class="meeting-page__subtitle"
+					>查看会议列表，并在移动端处理进行中会议签到</text
+				>
 			</view>
 
 			<page-state
@@ -34,16 +36,28 @@
 					<cl-tabs v-model="activeStatus" :list="statusTabs" :show-line="false" fill />
 				</view>
 
-				<page-state v-if="error" title="加载失败" :description="error" action-text="重试" @action="load" />
+				<page-state
+					v-if="error"
+					title="加载失败"
+					:description="error"
+					action-text="重试"
+					@action="load"
+				/>
 
-				<page-state v-else-if="!loading && !rows.length" title="当前暂无会议" description="当前筛选条件下暂无数据。" />
+				<page-state
+					v-else-if="!loading && !rows.length"
+					title="当前暂无会议"
+					description="当前筛选条件下暂无数据。"
+				/>
 
 				<view v-else class="meeting-list">
 					<view v-for="item in rows" :key="item.id" class="meeting-card">
 						<view class="meeting-card__top">
 							<view>
 								<text class="meeting-card__title">{{ item.title }}</text>
-								<text class="meeting-card__meta">{{ item.code || "-" }} · {{ item.organizerName || "-" }}</text>
+								<text class="meeting-card__meta"
+									>{{ item.code || "-" }} · {{ item.organizerName || "-" }}</text
+								>
 							</view>
 							<status-pill
 								:label="statusLabel(item.status)"
@@ -58,7 +72,9 @@
 							<text>地点：{{ item.location || "-" }}</text>
 						</view>
 
-						<text class="meeting-card__summary">{{ item.description || "暂无会议说明" }}</text>
+						<text class="meeting-card__summary">{{
+							item.description || "暂无会议说明"
+						}}</text>
 
 						<view class="meeting-card__actions">
 							<cl-button
@@ -88,10 +104,7 @@ import { useListPage } from "/@/hooks/use-list-page";
 import PageState from "/@/pages/performance/components/page-state.vue";
 import StatusPill from "/@/pages/performance/components/status-pill.vue";
 import { performanceMeetingService } from "/@/service/performance/meeting";
-import {
-	canMeetingCheckIn,
-	type MeetingRecord,
-} from "/@/types/performance-meeting";
+import { canMeetingCheckIn, type MeetingRecord } from "/@/types/performance-meeting";
 
 const MEETING_STATUS_DICT_KEY = "performance.meeting.status";
 

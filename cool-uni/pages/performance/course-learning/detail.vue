@@ -40,7 +40,11 @@
 					</view>
 
 					<view class="detail-card__grid">
-						<text>任务类型：{{ detail.taskType === "recite" ? "AI 背诵" : "AI 练习" }}</text>
+						<text
+							>任务类型：{{
+								detail.taskType === "recite" ? "AI 背诵" : "AI 练习"
+							}}</text
+						>
 						<text>最近分数：{{ detail.latestScore ?? "-" }}</text>
 						<text>提交时间：{{ detail.submittedAt || "-" }}</text>
 						<text>评估时间：{{ detail.evaluatedAt || "-" }}</text>
@@ -49,17 +53,23 @@
 
 				<view class="detail-card">
 					<text class="detail-card__section">任务内容</text>
-					<text class="detail-card__paragraph">{{ detail.promptText || "暂无内容" }}</text>
+					<text class="detail-card__paragraph">{{
+						detail.promptText || "暂无内容"
+					}}</text>
 				</view>
 
 				<view class="detail-card">
 					<text class="detail-card__section">最近反馈</text>
-					<text class="detail-card__paragraph">{{ detail.feedbackSummary || "暂无反馈摘要" }}</text>
+					<text class="detail-card__paragraph">{{
+						detail.feedbackSummary || "暂无反馈摘要"
+					}}</text>
 				</view>
 
 				<view class="detail-card">
 					<text class="detail-card__section">我的提交</text>
-					<text class="detail-card__paragraph">{{ detail.submissionText || "尚未提交" }}</text>
+					<text class="detail-card__paragraph">{{
+						detail.submissionText || "尚未提交"
+					}}</text>
 				</view>
 
 				<view class="detail-actions">

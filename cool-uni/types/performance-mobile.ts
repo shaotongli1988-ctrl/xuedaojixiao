@@ -257,9 +257,7 @@ export const workbenchCards = {
 
 function hasPermValue(perms: string[], target: string) {
 	const permissionBit =
-		PERMISSION_BIT_BY_KEY[
-			String(target || "").trim() as keyof typeof PERMISSION_BIT_BY_KEY
-		];
+		PERMISSION_BIT_BY_KEY[String(target || "").trim() as keyof typeof PERMISSION_BIT_BY_KEY];
 
 	if (permissionBit === undefined) {
 		return false;
@@ -274,7 +272,7 @@ function hasAnyPerm(perms: string[], targets: string[]) {
 			(target) =>
 				PERMISSION_BIT_BY_KEY[
 					String(target || "").trim() as keyof typeof PERMISSION_BIT_BY_KEY
-				]
+				],
 		)
 		.filter((bit): bit is bigint => bit !== undefined);
 
@@ -481,7 +479,7 @@ export function resolveMobileRoleKind(perms: string[]): MobileRoleKind {
 
 	if (
 		pages.every((pageId) =>
-			["teacher-todo", "teacher-dashboard", "teacher-list", "teacher-class"].includes(pageId)
+			["teacher-todo", "teacher-dashboard", "teacher-list", "teacher-class"].includes(pageId),
 		) &&
 		!hasPermValue(perms, PAGE_PERMS.teacherFollowAdd)
 	) {
@@ -612,11 +610,11 @@ export function resolveWorkbenchPages(perms: string[]) {
 }
 
 export function isFirstBatchRoute(path: string) {
-	return ROUTE_RULES.some(item => path.startsWith(item.prefix));
+	return ROUTE_RULES.some((item) => path.startsWith(item.prefix));
 }
 
 export function canAccessMobileRoute(path: string, perms: string[]) {
-	const match = ROUTE_RULES.find(item => path.startsWith(item.prefix));
+	const match = ROUTE_RULES.find((item) => path.startsWith(item.prefix));
 
 	if (!match) {
 		return false;

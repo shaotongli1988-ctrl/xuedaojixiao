@@ -4,7 +4,9 @@
 		<scroll-view class="course-page" scroll-y>
 			<view class="course-page__header">
 				<text class="course-page__title">课程学习</text>
-				<text class="course-page__subtitle">输入课程 ID 后查看本人背诵、练习和考试结果摘要</text>
+				<text class="course-page__subtitle"
+					>输入课程 ID 后查看本人背诵、练习和考试结果摘要</text
+				>
 			</view>
 
 			<page-state
@@ -31,12 +33,16 @@
 					</cl-form>
 
 					<view class="course-entry__actions">
-						<cl-button type="primary" size="mini" @tap="applyCourseId">进入课程</cl-button>
+						<cl-button type="primary" size="mini" @tap="applyCourseId"
+							>进入课程</cl-button
+						>
 						<cl-button plain size="mini" @tap="clearCourseId">清空</cl-button>
 					</view>
 
 					<text class="course-entry__hint">
-						当前课程 ID：{{ courseId || "-" }}。后端会再次校验该课程是否属于当前登录人的学习上下文。
+						当前课程 ID：{{
+							courseId || "-"
+						}}。后端会再次校验该课程是否属于当前登录人的学习上下文。
 					</text>
 				</view>
 
@@ -58,11 +64,15 @@
 					<view class="course-stats">
 						<view class="course-stat">
 							<text class="course-stat__label">背诵任务</text>
-							<text class="course-stat__value">{{ state.recitePagination.total }}</text>
+							<text class="course-stat__value">{{
+								state.recitePagination.total
+							}}</text>
 						</view>
 						<view class="course-stat">
 							<text class="course-stat__label">练习任务</text>
-							<text class="course-stat__value">{{ state.practicePagination.total }}</text>
+							<text class="course-stat__value">{{
+								state.practicePagination.total
+							}}</text>
 						</view>
 						<view class="course-stat">
 							<text class="course-stat__label">结果状态</text>
@@ -83,18 +93,30 @@
 							/>
 							<view v-else class="exam-card">
 								<view class="exam-card__top">
-									<text class="exam-card__title">{{ state.examSummary.courseTitle || currentCourseTitle }}</text>
+									<text class="exam-card__title">{{
+										state.examSummary.courseTitle || currentCourseTitle
+									}}</text>
 									<status-pill
-										:label="courseExamStatusLabel(state.examSummary.resultStatus)"
+										:label="
+											courseExamStatusLabel(state.examSummary.resultStatus)
+										"
 										:tone="courseExamStatusTone(state.examSummary.resultStatus)"
 									/>
 								</view>
 								<view class="exam-card__grid">
-									<text>最近分数：{{ state.examSummary.latestScore ?? "-" }}</text>
-									<text>通过阈值：{{ state.examSummary.passThreshold ?? "-" }}</text>
+									<text
+										>最近分数：{{ state.examSummary.latestScore ?? "-" }}</text
+									>
+									<text
+										>通过阈值：{{
+											state.examSummary.passThreshold ?? "-"
+										}}</text
+									>
 									<text>更新时间：{{ state.examSummary.updatedAt || "-" }}</text>
 								</view>
-								<text class="exam-card__summary">{{ state.examSummary.summaryText || "暂无摘要" }}</text>
+								<text class="exam-card__summary">{{
+									state.examSummary.summaryText || "暂无摘要"
+								}}</text>
 							</view>
 						</view>
 
@@ -114,7 +136,9 @@
 									<view class="task-card__top">
 										<view>
 											<text class="task-card__title">{{ item.title }}</text>
-											<text class="task-card__meta">{{ item.courseTitle || currentCourseTitle }}</text>
+											<text class="task-card__meta">{{
+												item.courseTitle || currentCourseTitle
+											}}</text>
 										</view>
 										<status-pill
 											:label="courseTaskStatusLabel(item.status)"
@@ -129,7 +153,9 @@
 									</view>
 
 									<view class="task-card__actions">
-										<cl-button plain size="mini" @tap="openDetail(item)">查看详情</cl-button>
+										<cl-button plain size="mini" @tap="openDetail(item)"
+											>查看详情</cl-button
+										>
 										<cl-button
 											v-if="canCourseTaskSubmit(item)"
 											type="primary"
@@ -207,7 +233,7 @@ const courseId = computed(() => {
 	return Number.isInteger(value) && value > 0 ? value : 0;
 });
 const currentTaskList = computed(() =>
-	activeTab.value === "practice" ? state.practiceList : state.reciteList
+	activeTab.value === "practice" ? state.practiceList : state.reciteList,
 );
 const currentCourseTitle = computed(() => {
 	return (

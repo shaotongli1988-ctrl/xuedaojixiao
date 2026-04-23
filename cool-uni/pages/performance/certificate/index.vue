@@ -4,7 +4,9 @@
 		<scroll-view class="certificate-page" scroll-y>
 			<view class="certificate-page__header">
 				<text class="certificate-page__title">证书管理</text>
-				<text class="certificate-page__subtitle">查看证书台账、发证机构、有效期和发放数量，复杂维护动作仍保留桌面端</text>
+				<text class="certificate-page__subtitle"
+					>查看证书台账、发证机构、有效期和发放数量，复杂维护动作仍保留桌面端</text
+				>
 			</view>
 
 			<page-state
@@ -34,22 +36,34 @@
 					<cl-tabs v-model="activeStatus" :list="statusTabs" :show-line="false" fill />
 				</view>
 
-				<page-state v-if="error" title="加载失败" :description="error" action-text="重试" @action="load" />
+				<page-state
+					v-if="error"
+					title="加载失败"
+					:description="error"
+					action-text="重试"
+					@action="load"
+				/>
 
-				<page-state v-else-if="!loading && !rows.length" title="当前暂无证书" description="当前筛选条件下暂无数据。" />
+				<page-state
+					v-else-if="!loading && !rows.length"
+					title="当前暂无证书"
+					description="当前筛选条件下暂无数据。"
+				/>
 
 				<view v-else class="certificate-list">
-						<view v-for="item in rows" :key="item.id" class="certificate-card">
-							<view class="certificate-card__top">
-								<view>
-									<text class="certificate-card__title">{{ item.name }}</text>
-									<text class="certificate-card__meta">{{ item.code || "-" }} · {{ item.category || "-" }}</text>
-								</view>
-								<status-pill
-									:label="statusLabel(item.status)"
-									:tone="statusTone(item.status)"
-								/>
+					<view v-for="item in rows" :key="item.id" class="certificate-card">
+						<view class="certificate-card__top">
+							<view>
+								<text class="certificate-card__title">{{ item.name }}</text>
+								<text class="certificate-card__meta"
+									>{{ item.code || "-" }} · {{ item.category || "-" }}</text
+								>
 							</view>
+							<status-pill
+								:label="statusLabel(item.status)"
+								:tone="statusTone(item.status)"
+							/>
+						</view>
 
 						<view class="certificate-card__grid">
 							<text>发证机构：{{ item.issuer || "-" }}</text>
@@ -58,7 +72,9 @@
 							<text>更新时间：{{ item.updateTime || "-" }}</text>
 						</view>
 
-						<text class="certificate-card__summary">{{ item.description || "暂无证书说明" }}</text>
+						<text class="certificate-card__summary">{{
+							item.description || "暂无证书说明"
+						}}</text>
 					</view>
 				</view>
 			</view>

@@ -4,7 +4,9 @@
 		<scroll-view class="pip-page" scroll-y>
 			<view class="pip-page__header">
 				<text class="pip-page__title">PIP 追踪</text>
-				<text class="pip-page__subtitle">查看 PIP 列表、负责人、时间范围和状态摘要，复杂维护动作仍保留桌面端</text>
+				<text class="pip-page__subtitle"
+					>查看 PIP 列表、负责人、时间范围和状态摘要，复杂维护动作仍保留桌面端</text
+				>
 			</view>
 
 			<page-state
@@ -34,18 +36,34 @@
 					<cl-tabs v-model="activeStatus" :list="statusTabs" :show-line="false" fill />
 				</view>
 
-				<page-state v-if="error" title="加载失败" :description="error" action-text="重试" @action="load" />
+				<page-state
+					v-if="error"
+					title="加载失败"
+					:description="error"
+					action-text="重试"
+					@action="load"
+				/>
 
-				<page-state v-else-if="!loading && !rows.length" title="当前暂无 PIP" description="当前筛选条件下暂无数据。" />
+				<page-state
+					v-else-if="!loading && !rows.length"
+					title="当前暂无 PIP"
+					description="当前筛选条件下暂无数据。"
+				/>
 
 				<view v-else class="pip-list">
 					<view v-for="item in rows" :key="item.id" class="pip-card">
 						<view class="pip-card__top">
 							<view>
 								<text class="pip-card__title">{{ item.title }}</text>
-								<text class="pip-card__meta">{{ item.employeeName || "-" }} · {{ item.ownerName || "-" }}</text>
+								<text class="pip-card__meta"
+									>{{ item.employeeName || "-" }} ·
+									{{ item.ownerName || "-" }}</text
+								>
 							</view>
-							<status-pill :label="statusLabel(item.status)" :tone="statusTone(item.status)" />
+							<status-pill
+								:label="statusLabel(item.status)"
+								:tone="statusTone(item.status)"
+							/>
 						</view>
 
 						<view class="pip-card__grid">
@@ -54,8 +72,12 @@
 							<text>更新时间：{{ item.updateTime || "-" }}</text>
 						</view>
 
-						<text class="pip-card__summary">{{ item.sourceReason || "暂无来源原因" }}</text>
-						<text v-if="item.resultSummary" class="pip-card__summary">结果总结：{{ item.resultSummary }}</text>
+						<text class="pip-card__summary">{{
+							item.sourceReason || "暂无来源原因"
+						}}</text>
+						<text v-if="item.resultSummary" class="pip-card__summary"
+							>结果总结：{{ item.resultSummary }}</text
+						>
 					</view>
 				</view>
 			</view>

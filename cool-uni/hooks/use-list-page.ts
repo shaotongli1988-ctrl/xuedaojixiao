@@ -28,7 +28,8 @@ export function useListPage<TRow>(options: UseListPageOptions<TRow>) {
 			rows.value = result?.list || [];
 			return result;
 		} catch (cause) {
-			error.value = options.resolveError?.(cause) || (cause as any)?.message || "列表加载失败";
+			error.value =
+				options.resolveError?.(cause) || (cause as any)?.message || "列表加载失败";
 		} finally {
 			loading.value = false;
 		}

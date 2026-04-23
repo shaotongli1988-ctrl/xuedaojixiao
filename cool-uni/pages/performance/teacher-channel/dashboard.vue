@@ -4,7 +4,9 @@
 		<scroll-view class="teacher-dashboard-page" scroll-y>
 			<view class="teacher-dashboard-page__header">
 				<text class="teacher-dashboard-page__title">班主任看板</text>
-				<text class="teacher-dashboard-page__subtitle">只展示资源总量、待跟进摘要和合作分布，不做复杂钻取</text>
+				<text class="teacher-dashboard-page__subtitle"
+					>只展示资源总量、待跟进摘要和合作分布，不做复杂钻取</text
+				>
 			</view>
 
 			<page-state
@@ -37,11 +39,15 @@
 					<view class="todo-grid">
 						<view class="todo-card">
 							<text class="todo-card__label">今日待跟进</text>
-							<text class="todo-card__value">{{ summary.pendingFollowCount || 0 }}</text>
+							<text class="todo-card__value">{{
+								summary.pendingFollowCount || 0
+							}}</text>
 						</view>
 						<view class="todo-card">
 							<text class="todo-card__label">已逾期待跟进</text>
-							<text class="todo-card__value todo-card__value--danger">{{ summary.overdueFollowCount || 0 }}</text>
+							<text class="todo-card__value todo-card__value--danger">{{
+								summary.overdueFollowCount || 0
+							}}</text>
 						</view>
 					</view>
 				</view>
@@ -59,8 +65,12 @@
 							:key="`${item.key || item.status || item.label || index}`"
 							class="distribution-row"
 						>
-							<text class="distribution-row__label">{{ item.label || item.name || item.status || "-" }}</text>
-							<text class="distribution-row__value">{{ Number(item.count ?? item.value ?? 0) }}</text>
+							<text class="distribution-row__label">{{
+								item.label || item.name || item.status || "-"
+							}}</text>
+							<text class="distribution-row__value">{{
+								Number(item.count ?? item.value ?? 0)
+							}}</text>
 						</view>
 					</view>
 				</view>

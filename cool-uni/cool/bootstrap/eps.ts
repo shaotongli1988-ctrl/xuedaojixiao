@@ -74,8 +74,8 @@ export function createEps() {
 					path: (e.namespace || "").replace("app/", ""),
 					value: e,
 				};
-			})
-		)
+			}),
+		),
 	);
 
 	// 提示

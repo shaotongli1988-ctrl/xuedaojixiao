@@ -8,7 +8,7 @@ import type {
 	RecruitPlanInfoQuery,
 	RecruitPlanPageQuery,
 	RecruitPlanPageResult,
-	RecruitPlanRecord
+	RecruitPlanRecord,
 } from "/@/types/performance-recruit-plan";
 import { PERMISSIONS } from "/@/generated/permissions.generated";
 

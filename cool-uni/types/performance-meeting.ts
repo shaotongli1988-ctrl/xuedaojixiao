@@ -10,7 +10,7 @@ export type {
 	MeetingPageResult,
 	MeetingRecord,
 	MeetingSaveRequest,
-	MeetingStatus
+	MeetingStatus,
 } from "/@/generated/performance-meeting.generated";
 
 export interface MeetingInfoQuery {

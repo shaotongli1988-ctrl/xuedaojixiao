@@ -8,7 +8,7 @@ import type {
 	JobStandardInfoQuery,
 	JobStandardPageQuery,
 	JobStandardPageResult,
-	JobStandardRecord
+	JobStandardRecord,
 } from "/@/types/performance-job-standard";
 import { PERMISSIONS } from "/@/generated/permissions.generated";
 
