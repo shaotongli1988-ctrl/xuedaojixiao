@@ -52,9 +52,7 @@
 		<template #footer>
 			<div class="salary-change-drawer__footer">
 				<el-button @click="emit('update:modelValue', false)">取消</el-button>
-				<el-button type="primary" :loading="loading" @click="submit">
-					保存调整
-				</el-button>
+				<el-button type="primary" :loading="loading" @click="submit"> 保存调整 </el-button>
 			</div>
 		</template>
 	</el-drawer>
@@ -73,10 +71,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
 	(e: 'update:modelValue', value: boolean): void;
-	(
-		e: 'submit',
-		payload: { salaryId: number; adjustAmount: number; changeReason: string }
-	): void;
+	(e: 'submit', payload: { salaryId: number; adjustAmount: number; changeReason: string }): void;
 }>();
 
 const formRef = ref<FormInstance>();

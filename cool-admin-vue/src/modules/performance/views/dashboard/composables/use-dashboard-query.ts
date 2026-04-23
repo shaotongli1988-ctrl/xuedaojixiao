@@ -6,7 +6,7 @@ import { resolveErrorMessage } from '../../shared/error-message';
 import type {
 	DashboardCrossSummaryResponseDto,
 	DashboardSummaryQueryDto,
-	DashboardSummaryResponseDto,
+	DashboardSummaryResponseDto
 } from '../types/dashboard.dto';
 import { createEmptyCrossSummary, createEmptyDashboardSummary } from '../types/dashboard.mapper';
 
@@ -19,7 +19,7 @@ export function useDashboardQuery(service: DashboardQueryService) {
 	const filters = reactive<DashboardSummaryQueryDto>({
 		periodType: 'quarter',
 		periodValue: `${new Date().getFullYear()}-Q${Math.ceil((new Date().getMonth() + 1) / 3)}`,
-		departmentId: undefined,
+		departmentId: undefined
 	});
 
 	const loading = ref(false);
@@ -38,7 +38,7 @@ export function useDashboardQuery(service: DashboardQueryService) {
 		try {
 			const [summaryResult, crossResult] = await Promise.all([
 				service.fetchSummary({ ...filters }),
-				service.fetchCrossSummary({ ...filters }),
+				service.fetchCrossSummary({ ...filters })
 			]);
 
 			if (currentRequestId !== requestId) {
@@ -47,7 +47,7 @@ export function useDashboardQuery(service: DashboardQueryService) {
 
 			summary.value = {
 				...summaryResult,
-				updatedAt: summaryResult.updatedAt || new Date().toISOString(),
+				updatedAt: summaryResult.updatedAt || new Date().toISOString()
 			};
 			crossSummary.value = crossResult;
 			initialized.value = true;
@@ -101,6 +101,6 @@ export function useDashboardQuery(service: DashboardQueryService) {
 		isEmpty,
 		refresh,
 		patchFilters,
-		resetFilters,
+		resetFilters
 	};
 }

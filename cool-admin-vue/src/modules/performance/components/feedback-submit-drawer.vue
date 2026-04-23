@@ -27,11 +27,7 @@
 
 			<el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
 				<el-form-item label="评价关系" prop="relationType">
-					<el-select
-						v-model="form.relationType"
-						placeholder="请选择评价关系"
-						clearable
-					>
+					<el-select v-model="form.relationType" placeholder="请选择评价关系" clearable>
 						<el-option
 							v-for="item in relationOptions"
 							:key="item.value"
@@ -89,7 +85,10 @@ const props = defineProps<{
 
 const emit = defineEmits<{
 	(e: 'update:modelValue', value: boolean): void;
-	(e: 'submit', value: { taskId: number; score: number; content?: string; relationType: string }): void;
+	(
+		e: 'submit',
+		value: { taskId: number; score: number; content?: string; relationType: string }
+	): void;
 }>();
 
 const formRef = ref<FormInstance>();

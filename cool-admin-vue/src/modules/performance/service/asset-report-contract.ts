@@ -51,12 +51,18 @@ export function decodeAssetReportRecord(
 
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
-		reportDate: expectPerformanceServiceOptionalString(record.reportDate, `${field}.reportDate`),
+		reportDate: expectPerformanceServiceOptionalString(
+			record.reportDate,
+			`${field}.reportDate`
+		),
 		assetId: expectPerformanceServiceOptionalNumber(record.assetId, `${field}.assetId`),
 		assetNo: expectPerformanceServiceOptionalString(record.assetNo, `${field}.assetNo`),
 		assetName: expectPerformanceServiceOptionalString(record.assetName, `${field}.assetName`),
 		category: expectPerformanceServiceOptionalString(record.category, `${field}.category`),
-		departmentId: expectPerformanceServiceOptionalNumber(record.departmentId, `${field}.departmentId`),
+		departmentId: expectPerformanceServiceOptionalNumber(
+			record.departmentId,
+			`${field}.departmentId`
+		),
 		departmentName: expectPerformanceServiceOptionalString(
 			record.departmentName,
 			`${field}.departmentName`
@@ -94,13 +100,22 @@ export function decodeAssetReportSummary(
 			record.totalOriginalAmount,
 			`${field}.totalOriginalAmount`
 		),
-		totalNetValue: expectPerformanceServiceNumber(record.totalNetValue, `${field}.totalNetValue`),
-		assignedCount: expectPerformanceServiceNumber(record.assignedCount, `${field}.assignedCount`),
+		totalNetValue: expectPerformanceServiceNumber(
+			record.totalNetValue,
+			`${field}.totalNetValue`
+		),
+		assignedCount: expectPerformanceServiceNumber(
+			record.assignedCount,
+			`${field}.assignedCount`
+		),
 		maintenanceCount: expectPerformanceServiceNumber(
 			record.maintenanceCount,
 			`${field}.maintenanceCount`
 		),
-		scrappedCount: expectPerformanceServiceNumber(record.scrappedCount, `${field}.scrappedCount`),
+		scrappedCount: expectPerformanceServiceNumber(
+			record.scrappedCount,
+			`${field}.scrappedCount`
+		),
 		lostCount: expectPerformanceServiceNumber(record.lostCount, `${field}.lostCount`)
 	};
 }

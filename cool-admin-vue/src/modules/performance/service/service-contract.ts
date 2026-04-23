@@ -85,10 +85,7 @@ export function expectPerformanceServiceBoolean(value: unknown, field: string) {
 	return value;
 }
 
-export function expectPerformanceServiceArray(
-	value: unknown,
-	field: string
-): unknown[] {
+export function expectPerformanceServiceArray(value: unknown, field: string): unknown[] {
 	if (!Array.isArray(value)) {
 		throw new Error(`${field} 必须为数组`);
 	}

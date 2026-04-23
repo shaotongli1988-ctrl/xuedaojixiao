@@ -4,10 +4,7 @@
  * 维护重点：供应商主记录与列表必须共享同一条结构边界，避免可空资料字段和状态字段被异常响应污染。
  */
 
-import type {
-	SupplierPageResult,
-	SupplierRecord
-} from '../types';
+import type { SupplierPageResult, SupplierRecord } from '../types';
 import {
 	decodePerformanceServicePageResult,
 	expectPerformanceServiceEnum,
@@ -31,17 +28,20 @@ function decodeOptionalNullableString(value: unknown, field: string) {
 	return expectPerformanceServiceString(value, field);
 }
 
-export function decodeSupplierRecord(
-	value: unknown,
-	field = 'supplierRecord'
-): SupplierRecord {
+export function decodeSupplierRecord(value: unknown, field = 'supplierRecord'): SupplierRecord {
 	const record = expectPerformanceServiceRecord(value, field);
 
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
 		name: expectPerformanceServiceString(record.name, `${field}.name`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
-		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
+		updateTime: expectPerformanceServiceOptionalString(
+			record.updateTime,
+			`${field}.updateTime`
+		),
 		status:
 			record.status === undefined
 				? undefined

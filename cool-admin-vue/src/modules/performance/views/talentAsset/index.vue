@@ -97,13 +97,23 @@
 						{{ row.targetPosition || '-' }}
 					</template>
 				</el-table-column>
-				<el-table-column prop="source" label="来源摘要" min-width="150" show-overflow-tooltip />
+				<el-table-column
+					prop="source"
+					label="来源摘要"
+					min-width="150"
+					show-overflow-tooltip
+				/>
 				<el-table-column label="标签" min-width="180" show-overflow-tooltip>
 					<template #default="{ row }">
 						{{ renderTagList(row.tagList) }}
 					</template>
 				</el-table-column>
-				<el-table-column prop="followUpSummary" label="跟进摘要" min-width="220" show-overflow-tooltip>
+				<el-table-column
+					prop="followUpSummary"
+					label="跟进摘要"
+					min-width="220"
+					show-overflow-tooltip
+				>
 					<template #default="{ row }">
 						{{ row.followUpSummary || '-' }}
 					</template>
@@ -115,13 +125,17 @@
 				</el-table-column>
 				<el-table-column prop="status" label="状态" width="110">
 					<template #default="{ row }">
-						<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+						<el-tag :type="statusTagType(row.status)">{{
+							statusLabel(row.status)
+						}}</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
 				<el-table-column label="操作" fixed="right" min-width="220">
 					<template #default="{ row }">
-						<el-button v-if="showInfoButton" text @click="openDetail(row)">详情</el-button>
+						<el-button v-if="showInfoButton" text @click="openDetail(row)"
+							>详情</el-button
+						>
 						<el-button v-if="canEdit(row)" text type="primary" @click="openEdit(row)">
 							编辑
 						</el-button>
@@ -149,12 +163,7 @@
 			</div>
 		</el-card>
 
-		<el-dialog
-			v-model="detailVisible"
-			title="人才资产详情"
-			width="760px"
-			destroy-on-close
-		>
+		<el-dialog v-model="detailVisible" title="人才资产详情" width="760px" destroy-on-close>
 			<div v-if="detailTalentAsset" class="talentAsset-page__detail">
 				<el-alert
 					v-if="detailTalentAsset.status === 'archived'"
@@ -171,7 +180,10 @@
 						{{ detailTalentAsset.code || '-' }}
 					</el-descriptions-item>
 					<el-descriptions-item label="目标部门">
-						{{ detailTalentAsset.targetDepartmentName || departmentLabel(detailTalentAsset.targetDepartmentId) }}
+						{{
+							detailTalentAsset.targetDepartmentName ||
+							departmentLabel(detailTalentAsset.targetDepartmentId)
+						}}
 					</el-descriptions-item>
 					<el-descriptions-item label="目标岗位">
 						{{ detailTalentAsset.targetPosition || '-' }}
@@ -222,7 +234,11 @@
 		>
 			<el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
 				<el-alert
-					:title="editingTalentAsset?.id ? '归档后不可再编辑；删除只允许 HR 对 new 状态执行。' : '新建保存后默认进入 new 状态。'"
+					:title="
+						editingTalentAsset?.id
+							? '归档后不可再编辑；删除只允许 HR 对 new 状态执行。'
+							: '新建保存后默认进入 new 状态。'
+					"
 					:type="editingTalentAsset?.id ? 'warning' : 'info'"
 					:closable="false"
 					show-icon
@@ -362,10 +378,7 @@ import { useDict } from '/$/dict';
 import { service } from '/@/cool';
 import { useRouter } from 'vue-router';
 import { useListPage } from '../../composables/use-list-page.js';
-import {
-	confirmElementAction,
-	runTrackedElementAction
-} from '../shared/action-feedback';
+import { confirmElementAction, runTrackedElementAction } from '../shared/action-feedback';
 import {
 	createElementWarningFromErrorHandler,
 	resolveErrorMessage,
@@ -695,15 +708,8 @@ function normalizeTagList(tagList?: string[]) {
 		return [];
 	}
 
-	return Array.from(
-		new Set(
-			tagList
-				.map(item => String(item || '').trim())
-				.filter(Boolean)
-		)
-	);
+	return Array.from(new Set(tagList.map(item => String(item || '').trim()).filter(Boolean)));
 }
-
 </script>
 
 <style lang="scss" scoped>

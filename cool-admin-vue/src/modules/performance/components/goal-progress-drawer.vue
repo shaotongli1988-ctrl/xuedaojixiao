@@ -38,10 +38,7 @@
 
 			<el-card shadow="never">
 				<template #header>进度记录</template>
-				<el-empty
-					v-if="!goal.progressRecords?.length"
-					description="暂无进度记录"
-				/>
+				<el-empty v-if="!goal.progressRecords?.length" description="暂无进度记录" />
 				<el-timeline v-else>
 					<el-timeline-item
 						v-for="item in goal.progressRecords"

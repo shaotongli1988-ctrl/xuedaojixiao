@@ -75,59 +75,80 @@ export default class PerformanceRecruitPlanService extends BaseService {
 	}
 
 	removeRecruitPlan(data: RecruitPlanActionRequest) {
-		return asPerformanceServicePromise<RecruitPlanDeleteResult>(this.request({
-			url: '/delete',
-			method: 'POST',
-			data
-		}), decodeRecruitPlanDeleteResult);
+		return asPerformanceServicePromise<RecruitPlanDeleteResult>(
+			this.request({
+				url: '/delete',
+				method: 'POST',
+				data
+			}),
+			decodeRecruitPlanDeleteResult
+		);
 	}
 
 	importRecruitPlan(data: RecruitPlanImportRequest) {
-		return asPerformanceServicePromise<RecruitPlanImportResult>(this.request({
-			url: '/import',
-			method: 'POST',
-			data
-		}), decodeRecruitPlanImportResult);
+		return asPerformanceServicePromise<RecruitPlanImportResult>(
+			this.request({
+				url: '/import',
+				method: 'POST',
+				data
+			}),
+			decodeRecruitPlanImportResult
+		);
 	}
 
 	exportRecruitPlanSummary(data: RecruitPlanExportQuery) {
-		return asPerformanceServicePromise<RecruitPlanExportRow[]>(this.request({
-			url: '/export',
-			method: 'POST',
-			data
-		}), decodeRecruitPlanExportRows);
+		return asPerformanceServicePromise<RecruitPlanExportRow[]>(
+			this.request({
+				url: '/export',
+				method: 'POST',
+				data
+			}),
+			decodeRecruitPlanExportRows
+		);
 	}
 
 	submitRecruitPlan(data: RecruitPlanActionRequest) {
-		return asPerformanceServicePromise<RecruitPlanRecord>(this.request({
-			url: '/submit',
-			method: 'POST',
-			data
-		}), decodeRecruitPlanRecord);
+		return asPerformanceServicePromise<RecruitPlanRecord>(
+			this.request({
+				url: '/submit',
+				method: 'POST',
+				data
+			}),
+			decodeRecruitPlanRecord
+		);
 	}
 
 	closeRecruitPlan(data: RecruitPlanActionRequest) {
-		return asPerformanceServicePromise<RecruitPlanRecord>(this.request({
-			url: '/close',
-			method: 'POST',
-			data
-		}), decodeRecruitPlanRecord);
+		return asPerformanceServicePromise<RecruitPlanRecord>(
+			this.request({
+				url: '/close',
+				method: 'POST',
+				data
+			}),
+			decodeRecruitPlanRecord
+		);
 	}
 
 	voidRecruitPlan(data: RecruitPlanActionRequest) {
-		return asPerformanceServicePromise<RecruitPlanRecord>(this.request({
-			url: '/void',
-			method: 'POST',
-			data
-		}), decodeRecruitPlanRecord);
+		return asPerformanceServicePromise<RecruitPlanRecord>(
+			this.request({
+				url: '/void',
+				method: 'POST',
+				data
+			}),
+			decodeRecruitPlanRecord
+		);
 	}
 
 	reopenRecruitPlan(data: RecruitPlanActionRequest) {
-		return asPerformanceServicePromise<RecruitPlanRecord>(this.request({
-			url: '/reopen',
-			method: 'POST',
-			data
-		}), decodeRecruitPlanRecord);
+		return asPerformanceServicePromise<RecruitPlanRecord>(
+			this.request({
+				url: '/reopen',
+				method: 'POST',
+				data
+			}),
+			decodeRecruitPlanRecord
+		);
 	}
 }
 

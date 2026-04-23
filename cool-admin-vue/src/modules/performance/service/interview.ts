@@ -1,9 +1,6 @@
 import { BaseService } from '/@/cool';
 import { asPerformanceServicePromise } from './service-contract';
-import {
-	decodeInterviewPageResult,
-	decodeInterviewRecord
-} from './interview-contract';
+import { decodeInterviewPageResult, decodeInterviewRecord } from './interview-contract';
 import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import type {
 	DeleteIdsRequest,
@@ -47,10 +44,7 @@ export default class PerformanceInterviewService extends BaseService {
 	}
 
 	createInterview(data: InterviewSaveRequest) {
-		return asPerformanceServicePromise<InterviewRecord>(
-			super.add(data),
-			decodeInterviewRecord
-		);
+		return asPerformanceServicePromise<InterviewRecord>(super.add(data), decodeInterviewRecord);
 	}
 
 	updateInterview(data: InterviewSaveRequest & { id: number }) {

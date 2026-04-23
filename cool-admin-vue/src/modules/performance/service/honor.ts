@@ -3,7 +3,10 @@
  */
 
 import type { HonorRecord, HonorStats } from '../types';
-import { createPerformanceOfficeLedgerService, PerformanceOfficeLedgerService } from './office-ledger';
+import {
+	createPerformanceOfficeLedgerService,
+	PerformanceOfficeLedgerService
+} from './office-ledger';
 import { decodeHonorRecord, decodeHonorStats } from './office-ledger-contract';
 
 const honorServiceDecoders = {
@@ -20,7 +23,7 @@ export default class PerformanceHonorService extends PerformanceOfficeLedgerServ
 	}
 }
 
-export const performanceHonorService = createPerformanceOfficeLedgerService<HonorRecord, HonorStats>(
-	'honor',
-	honorServiceDecoders
-);
+export const performanceHonorService = createPerformanceOfficeLedgerService<
+	HonorRecord,
+	HonorStats
+>('honor', honorServiceDecoders);

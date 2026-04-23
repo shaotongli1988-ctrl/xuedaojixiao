@@ -50,10 +50,7 @@ function decodeInterviewStatus(value: unknown, field: string): InterviewStatus {
 	return expectPerformanceServiceEnum(value, field, INTERVIEW_STATUS);
 }
 
-function decodeInterviewSourceSnapshot(
-	value: unknown,
-	field: string
-): RecruitmentSourceSnapshot {
+function decodeInterviewSourceSnapshot(value: unknown, field: string): RecruitmentSourceSnapshot {
 	const record = expectPerformanceServiceRecord(value, field);
 
 	return {
@@ -66,7 +63,7 @@ function decodeInterviewSourceSnapshot(
 						'resumePool',
 						'interview',
 						'talentAsset'
-				  ] as const),
+					] as const),
 		talentAssetId: decodeOptionalNullableNumber(record.talentAssetId, `${field}.talentAssetId`),
 		jobStandardId: decodeOptionalNullableNumber(record.jobStandardId, `${field}.jobStandardId`),
 		jobStandardPositionName: decodeOptionalNullableString(
@@ -89,7 +86,7 @@ function decodeInterviewSourceSnapshot(
 						record.recruitPlanStatus,
 						`${field}.recruitPlanStatus`,
 						RECRUIT_PLAN_STATUS
-				  ),
+					),
 		resumePoolId: decodeOptionalNullableNumber(record.resumePoolId, `${field}.resumePoolId`),
 		interviewId: decodeOptionalNullableNumber(record.interviewId, `${field}.interviewId`),
 		candidateName: decodeOptionalNullableString(record.candidateName, `${field}.candidateName`),
@@ -101,7 +98,10 @@ function decodeInterviewSourceSnapshot(
 			record.targetDepartmentName,
 			`${field}.targetDepartmentName`
 		),
-		targetPosition: decodeOptionalNullableString(record.targetPosition, `${field}.targetPosition`),
+		targetPosition: decodeOptionalNullableString(
+			record.targetPosition,
+			`${field}.targetPosition`
+		),
 		interviewStatus:
 			record.interviewStatus === undefined
 				? undefined
@@ -123,7 +123,10 @@ function decodeInterviewResumePoolSummary(
 		sourceResource: 'resumePool',
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
 		resumePoolId: expectPerformanceServiceOptionalNumber(record.id, `${field}.resumePoolId`),
-		candidateName: expectPerformanceServiceString(record.candidateName, `${field}.candidateName`),
+		candidateName: expectPerformanceServiceString(
+			record.candidateName,
+			`${field}.candidateName`
+		),
 		targetDepartmentId: expectPerformanceServiceNumber(
 			record.targetDepartmentId,
 			`${field}.targetDepartmentId`
@@ -132,11 +135,18 @@ function decodeInterviewResumePoolSummary(
 			record.targetDepartmentName,
 			`${field}.targetDepartmentName`
 		),
-		targetPosition: decodeOptionalNullableString(record.targetPosition, `${field}.targetPosition`),
+		targetPosition: decodeOptionalNullableString(
+			record.targetPosition,
+			`${field}.targetPosition`
+		),
 		sourceStatusSnapshot:
 			record.status === undefined
 				? undefined
-				: expectPerformanceServiceEnum(record.status, `${field}.status`, RESUME_POOL_STATUS),
+				: expectPerformanceServiceEnum(
+						record.status,
+						`${field}.status`,
+						RESUME_POOL_STATUS
+					),
 		recruitPlanId: decodeOptionalNullableNumber(record.recruitPlanId, `${field}.recruitPlanId`),
 		jobStandardId: decodeOptionalNullableNumber(record.jobStandardId, `${field}.jobStandardId`)
 	};
@@ -158,7 +168,11 @@ function decodeInterviewRecruitPlanSummary(
 		recruitPlanStatus:
 			record.status === undefined
 				? undefined
-				: expectPerformanceServiceEnum(record.status, `${field}.status`, RECRUIT_PLAN_STATUS),
+				: expectPerformanceServiceEnum(
+						record.status,
+						`${field}.status`,
+						RECRUIT_PLAN_STATUS
+					),
 		targetDepartmentId: expectPerformanceServiceNumber(
 			record.targetDepartmentId,
 			`${field}.targetDepartmentId`
@@ -167,36 +181,48 @@ function decodeInterviewRecruitPlanSummary(
 			record.targetDepartmentName,
 			`${field}.targetDepartmentName`
 		),
-		targetPosition: decodeOptionalNullableString(record.positionName, `${field}.targetPosition`),
+		targetPosition: decodeOptionalNullableString(
+			record.positionName,
+			`${field}.targetPosition`
+		),
 		jobStandardId: decodeOptionalNullableNumber(record.jobStandardId, `${field}.jobStandardId`)
 	};
 }
 
-export function decodeInterviewRecord(
-	value: unknown,
-	field = 'interviewRecord'
-): InterviewRecord {
+export function decodeInterviewRecord(value: unknown, field = 'interviewRecord'): InterviewRecord {
 	const record = expectPerformanceServiceRecord(value, field);
 
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
-		candidateName: expectPerformanceServiceString(record.candidateName, `${field}.candidateName`),
+		candidateName: expectPerformanceServiceString(
+			record.candidateName,
+			`${field}.candidateName`
+		),
 		position: expectPerformanceServiceString(record.position, `${field}.position`),
 		departmentId: decodeOptionalNullableNumber(record.departmentId, `${field}.departmentId`),
 		interviewerId:
-			expectPerformanceServiceOptionalNumber(record.interviewerId, `${field}.interviewerId`) ??
-			undefined,
+			expectPerformanceServiceOptionalNumber(
+				record.interviewerId,
+				`${field}.interviewerId`
+			) ?? undefined,
 		interviewerName: expectPerformanceServiceOptionalString(
 			record.interviewerName,
 			`${field}.interviewerName`
 		),
-		interviewDate: expectPerformanceServiceString(record.interviewDate, `${field}.interviewDate`),
+		interviewDate: expectPerformanceServiceString(
+			record.interviewDate,
+			`${field}.interviewDate`
+		),
 		interviewType:
 			record.interviewType === undefined
 				? undefined
 				: record.interviewType === null
-				? null
-				: expectPerformanceServiceEnum(record.interviewType, `${field}.interviewType`, INTERVIEW_TYPE),
+					? null
+					: expectPerformanceServiceEnum(
+							record.interviewType,
+							`${field}.interviewType`,
+							INTERVIEW_TYPE
+						),
 		score: decodeOptionalNullableNumber(record.score, `${field}.score`),
 		resumePoolId: decodeOptionalNullableNumber(record.resumePoolId, `${field}.resumePoolId`),
 		recruitPlanId: decodeOptionalNullableNumber(record.recruitPlanId, `${field}.recruitPlanId`),
@@ -210,33 +236,36 @@ export function decodeInterviewRecord(
 				: decodeInterviewResumePoolSummary(
 						record.resumePoolSummary,
 						`${field}.resumePoolSummary`
-				  ),
+					),
 		resumePoolSnapshot:
 			record.resumePoolSnapshot == null
 				? null
 				: decodeInterviewResumePoolSummary(
 						record.resumePoolSnapshot,
 						`${field}.resumePoolSnapshot`
-				  ),
+					),
 		recruitPlanSummary:
 			record.recruitPlanSummary == null
 				? null
 				: decodeInterviewRecruitPlanSummary(
 						record.recruitPlanSummary,
 						`${field}.recruitPlanSummary`
-				  ),
+					),
 		recruitPlanSnapshot:
 			record.recruitPlanSnapshot == null
 				? null
 				: decodeInterviewRecruitPlanSummary(
 						record.recruitPlanSnapshot,
 						`${field}.recruitPlanSnapshot`
-				  ),
+					),
 		status:
 			record.status === undefined
 				? undefined
 				: decodeInterviewStatus(record.status, `${field}.status`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
 		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`)
 	};
 }

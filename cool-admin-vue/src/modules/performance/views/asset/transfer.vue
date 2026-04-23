@@ -14,10 +14,18 @@
 		:form-fields="formFields"
 		:create-filters="createFilters"
 		:create-empty="createEmptyAssetTransfer"
-		:fetch-page="performanceAssetTransferService.fetchPage.bind(performanceAssetTransferService)"
-		:fetch-info="performanceAssetTransferService.fetchInfo.bind(performanceAssetTransferService)"
-		:create-item="performanceAssetTransferService.createTransfer.bind(performanceAssetTransferService)"
-		:update-item="performanceAssetTransferService.updateTransfer.bind(performanceAssetTransferService)"
+		:fetch-page="
+			performanceAssetTransferService.fetchPage.bind(performanceAssetTransferService)
+		"
+		:fetch-info="
+			performanceAssetTransferService.fetchInfo.bind(performanceAssetTransferService)
+		"
+		:create-item="
+			performanceAssetTransferService.createTransfer.bind(performanceAssetTransferService)
+		"
+		:update-item="
+			performanceAssetTransferService.updateTransfer.bind(performanceAssetTransferService)
+		"
 		:row-actions="rowActions"
 		create-label="新增调拨"
 		edit-label="编辑调拨"
@@ -28,10 +36,7 @@
 import { computed, onMounted, ref } from 'vue';
 import AssetCrudPage from './asset-crud-page.vue';
 import { performanceAssetTransferService } from '../../service/asset-transfer';
-import {
-	createEmptyAssetTransfer,
-	type AssetTransferRecord
-} from '../../types';
+import { createEmptyAssetTransfer, type AssetTransferRecord } from '../../types';
 import {
 	createElementLookupWarningHandler,
 	loadAssetDepartmentOptions,

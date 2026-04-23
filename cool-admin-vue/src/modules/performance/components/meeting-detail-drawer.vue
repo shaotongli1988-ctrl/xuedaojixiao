@@ -52,17 +52,14 @@
 
 			<el-card shadow="never">
 				<template #header>会议描述</template>
-				<div class="meeting-detail-drawer__text">{{ meeting.description || '暂无会议描述' }}</div>
+				<div class="meeting-detail-drawer__text">
+					{{ meeting.description || '暂无会议描述' }}
+				</div>
 			</el-card>
 
 			<div class="meeting-detail-drawer__footer">
 				<el-button @click="$emit('update:modelValue', false)">关闭</el-button>
-				<el-button
-					v-if="canCheckIn"
-					type="primary"
-					:loading="loading"
-					@click="emitCheckIn"
-				>
+				<el-button v-if="canCheckIn" type="primary" :loading="loading" @click="emitCheckIn">
 					会议签到
 				</el-button>
 			</div>
@@ -91,10 +88,15 @@ const emit = defineEmits<{
 }>();
 
 const statusLabel = computed(
-	() => dict.getLabel(MEETING_STATUS_DICT_KEY, props.meeting?.status) || props.meeting?.status || '已安排'
+	() =>
+		dict.getLabel(MEETING_STATUS_DICT_KEY, props.meeting?.status) ||
+		props.meeting?.status ||
+		'已安排'
 );
 
-const statusTagType = computed(() => dict.getMeta(MEETING_STATUS_DICT_KEY, props.meeting?.status)?.tone);
+const statusTagType = computed(
+	() => dict.getMeta(MEETING_STATUS_DICT_KEY, props.meeting?.status)?.tone
+);
 
 function emitCheckIn() {
 	if (!props.meeting?.id) {

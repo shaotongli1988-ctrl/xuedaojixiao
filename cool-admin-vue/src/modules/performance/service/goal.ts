@@ -94,123 +94,165 @@ export default class PerformanceGoalService extends BaseService {
 	}
 
 	progressUpdate(data: GoalProgressUpdateRequest) {
-		return asPerformanceServicePromise<GoalRecord>(this.request({
-			url: '/progressUpdate',
-			method: 'POST',
-			data
-		}));
+		return asPerformanceServicePromise<GoalRecord>(
+			this.request({
+				url: '/progressUpdate',
+				method: 'POST',
+				data
+			})
+		);
 	}
 
 	exportSummary(data: GoalExportQuery) {
-		return asPerformanceServicePromise<GoalExportRow[]>(this.request({
-			url: '/export',
-			method: 'POST',
-			data
-		}));
+		return asPerformanceServicePromise<GoalExportRow[]>(
+			this.request({
+				url: '/export',
+				method: 'POST',
+				data
+			})
+		);
 	}
 
 	fetchOpsDepartmentConfig(params?: GoalOpsDepartmentScopeQuery) {
-		return asPerformanceServicePromise<GoalOpsDepartmentConfig>(this.request({
-			url: '/opsDepartmentConfig',
-			method: 'GET',
-			params
-		}), decodeGoalOpsDepartmentConfig);
+		return asPerformanceServicePromise<GoalOpsDepartmentConfig>(
+			this.request({
+				url: '/opsDepartmentConfig',
+				method: 'GET',
+				params
+			}),
+			decodeGoalOpsDepartmentConfig
+		);
 	}
 
 	fetchOpsAccessProfile(params?: GoalOpsDepartmentScopeQuery) {
-		return asPerformanceServicePromise<GoalOpsAccessProfile>(this.request({
-			url: '/opsAccessProfile',
-			method: 'GET',
-			params
-		}), decodeGoalOpsAccessProfile);
+		return asPerformanceServicePromise<GoalOpsAccessProfile>(
+			this.request({
+				url: '/opsAccessProfile',
+				method: 'GET',
+				params
+			}),
+			decodeGoalOpsAccessProfile
+		);
 	}
 
 	saveOpsDepartmentConfig(data: GoalOpsDepartmentConfig) {
-		return asPerformanceServicePromise<GoalOpsDepartmentConfig>(this.request({
-			url: '/opsDepartmentConfigSave',
-			method: 'POST',
-			data
-		}), decodeGoalOpsDepartmentConfig);
+		return asPerformanceServicePromise<GoalOpsDepartmentConfig>(
+			this.request({
+				url: '/opsDepartmentConfigSave',
+				method: 'POST',
+				data
+			}),
+			decodeGoalOpsDepartmentConfig
+		);
 	}
 
 	fetchOpsPlanPage(data: GoalOpsPlanPageQuery) {
-		return asPerformanceServicePromise<GoalOpsPlanPageResult>(this.request({
-			url: '/opsPlanPage',
-			method: 'POST',
-			data
-		}), decodeGoalOpsPlanPageResult);
+		return asPerformanceServicePromise<GoalOpsPlanPageResult>(
+			this.request({
+				url: '/opsPlanPage',
+				method: 'POST',
+				data
+			}),
+			decodeGoalOpsPlanPageResult
+		);
 	}
 
 	fetchOpsPlanInfo(params: GoalOpsPlanInfoQuery) {
-		return asPerformanceServicePromise<GoalOpsPlanRecord>(this.request({
-			url: '/opsPlanInfo',
-			method: 'GET',
-			params
-		}), decodeGoalOpsPlanRecord);
+		return asPerformanceServicePromise<GoalOpsPlanRecord>(
+			this.request({
+				url: '/opsPlanInfo',
+				method: 'GET',
+				params
+			}),
+			decodeGoalOpsPlanRecord
+		);
 	}
 
 	saveOpsPlan(data: GoalOpsPlanSaveRequest) {
-		return asPerformanceServicePromise<GoalOpsPlanRecord>(this.request({
-			url: '/opsPlanSave',
-			method: 'POST',
-			data
-		}), decodeGoalOpsPlanRecord);
+		return asPerformanceServicePromise<GoalOpsPlanRecord>(
+			this.request({
+				url: '/opsPlanSave',
+				method: 'POST',
+				data
+			}),
+			decodeGoalOpsPlanRecord
+		);
 	}
 
 	deleteOpsPlan(data: DeleteIdsRequest) {
-		return asPerformanceServicePromise<void>(this.request({
-			url: '/opsPlanDelete',
-			method: 'POST',
-			data
-		}));
+		return asPerformanceServicePromise<void>(
+			this.request({
+				url: '/opsPlanDelete',
+				method: 'POST',
+				data
+			})
+		);
 	}
 
 	submitOpsDailyResults(data: GoalOpsDailySubmitRequest) {
-		return asPerformanceServicePromise<GoalOpsOverview>(this.request({
-			url: '/opsDailySubmit',
-			method: 'POST',
-			data
-		}), decodeGoalOpsOverview);
+		return asPerformanceServicePromise<GoalOpsOverview>(
+			this.request({
+				url: '/opsDailySubmit',
+				method: 'POST',
+				data
+			}),
+			decodeGoalOpsOverview
+		);
 	}
 
 	finalizeOpsDailyResults(data: GoalOpsDailyFinalizeRequest) {
-		return asPerformanceServicePromise<GoalOpsDailyFinalizeResult>(this.request({
-			url: '/opsDailyFinalize',
-			method: 'POST',
-			data
-		}), decodeGoalOpsDailyFinalizeResult);
+		return asPerformanceServicePromise<GoalOpsDailyFinalizeResult>(
+			this.request({
+				url: '/opsDailyFinalize',
+				method: 'POST',
+				data
+			}),
+			decodeGoalOpsDailyFinalizeResult
+		);
 	}
 
 	fetchOpsOverview(data: GoalOpsOverviewQuery) {
-		return asPerformanceServicePromise<GoalOpsOverview>(this.request({
-			url: '/opsOverview',
-			method: 'POST',
-			data
-		}), decodeGoalOpsOverview);
+		return asPerformanceServicePromise<GoalOpsOverview>(
+			this.request({
+				url: '/opsOverview',
+				method: 'POST',
+				data
+			}),
+			decodeGoalOpsOverview
+		);
 	}
 
 	fetchOpsReportInfo(params: GoalOpsReportQuery) {
-		return asPerformanceServicePromise<GoalOpsReportInfo>(this.request({
-			url: '/opsReportInfo',
-			method: 'GET',
-			params
-		}), decodeGoalOpsReportInfo);
+		return asPerformanceServicePromise<GoalOpsReportInfo>(
+			this.request({
+				url: '/opsReportInfo',
+				method: 'GET',
+				params
+			}),
+			decodeGoalOpsReportInfo
+		);
 	}
 
 	generateOpsReport(data: GoalOpsReportGenerateRequest) {
-		return asPerformanceServicePromise<GoalOpsReportInfo>(this.request({
-			url: '/opsReportGenerate',
-			method: 'POST',
-			data
-		}), decodeGoalOpsReportInfo);
+		return asPerformanceServicePromise<GoalOpsReportInfo>(
+			this.request({
+				url: '/opsReportGenerate',
+				method: 'POST',
+				data
+			}),
+			decodeGoalOpsReportInfo
+		);
 	}
 
 	updateOpsReportStatus(data: GoalOpsReportStatusUpdateRequest) {
-		return asPerformanceServicePromise<GoalOpsReportInfo>(this.request({
-			url: '/opsReportStatusUpdate',
-			method: 'POST',
-			data
-		}), decodeGoalOpsReportInfo);
+		return asPerformanceServicePromise<GoalOpsReportInfo>(
+			this.request({
+				url: '/opsReportStatusUpdate',
+				method: 'POST',
+				data
+			}),
+			decodeGoalOpsReportInfo
+		);
 	}
 }
 

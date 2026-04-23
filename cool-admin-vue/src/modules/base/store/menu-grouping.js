@@ -254,10 +254,7 @@ function buildSystemGroup(groups, options = {}) {
 
 	const template =
 		candidates.find(item => getMenuLabel(item) === SYSTEM_GROUP_LABEL) || candidates[0];
-	const baseOrder = Math.max(
-		0,
-		...candidates.map(item => Number(item.orderNum || 0))
-	);
+	const baseOrder = Math.max(0, ...candidates.map(item => Number(item.orderNum || 0)));
 	const syntheticIdBase = Number(template.id || 0) * 1000 || 990000;
 	let nextSyntheticId = syntheticIdBase;
 
@@ -337,9 +334,7 @@ function collectUniquePagesByPath(groups) {
 }
 
 export function buildMenuGroups(groups, options = {}) {
-	const performanceGroups = groups.filter(
-		e => e.type == 0 && e.path === PERFORMANCE_ROOT_PATH
-	);
+	const performanceGroups = groups.filter(e => e.type == 0 && e.path === PERFORMANCE_ROOT_PATH);
 	const performanceGroup = performanceGroups[0];
 	const systemGroup = buildSystemGroup(groups, options);
 
@@ -401,7 +396,9 @@ export function buildMenuGroups(groups, options = {}) {
 
 						if (Array.isArray(childConfig.paths)) {
 							subgroupChildren.push(
-								...performanceChildren.filter(child => childConfig.paths.includes(child.path))
+								...performanceChildren.filter(child =>
+									childConfig.paths.includes(child.path)
+								)
 							);
 						}
 
@@ -425,7 +422,10 @@ export function buildMenuGroups(groups, options = {}) {
 									icon: normalizeMenuIcon(grandchildConfig.icon || source.icon),
 									meta: {
 										...source.meta,
-										label: grandchildConfig.label || source.meta?.label || source.name
+										label:
+											grandchildConfig.label ||
+											source.meta?.label ||
+											source.name
 									}
 								});
 							});
@@ -499,10 +499,7 @@ export function buildMenuGroups(groups, options = {}) {
 			return domainGroups;
 		}
 
-		if (
-			systemGroup &&
-			systemGroup.children.some(child => child.path === item.path)
-		) {
+		if (systemGroup && systemGroup.children.some(child => child.path === item.path)) {
 			return [];
 		}
 

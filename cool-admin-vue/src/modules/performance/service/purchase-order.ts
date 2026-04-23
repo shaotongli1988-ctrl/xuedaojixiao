@@ -78,51 +78,69 @@ export default class PerformancePurchaseOrderService extends BaseService {
 	}
 
 	submitInquiry(data: PurchaseOrderSubmitInquiryPayload) {
-		return asPerformanceServicePromise<PurchaseOrderRecord>(this.request({
-			url: '/submitInquiry',
-			method: 'POST',
-			data
-		}), decodePurchaseOrderRecord);
+		return asPerformanceServicePromise<PurchaseOrderRecord>(
+			this.request({
+				url: '/submitInquiry',
+				method: 'POST',
+				data
+			}),
+			decodePurchaseOrderRecord
+		);
 	}
 
 	submitApproval(data: PurchaseOrderSubmitApprovalPayload) {
-		return asPerformanceServicePromise<PurchaseOrderRecord>(this.request({
-			url: '/submitApproval',
-			method: 'POST',
-			data
-		}), decodePurchaseOrderRecord);
+		return asPerformanceServicePromise<PurchaseOrderRecord>(
+			this.request({
+				url: '/submitApproval',
+				method: 'POST',
+				data
+			}),
+			decodePurchaseOrderRecord
+		);
 	}
 
 	approve(data: PurchaseOrderApprovePayload) {
-		return asPerformanceServicePromise<PurchaseOrderRecord>(this.request({
-			url: '/approve',
-			method: 'POST',
-			data
-		}), decodePurchaseOrderRecord);
+		return asPerformanceServicePromise<PurchaseOrderRecord>(
+			this.request({
+				url: '/approve',
+				method: 'POST',
+				data
+			}),
+			decodePurchaseOrderRecord
+		);
 	}
 
 	reject(data: PurchaseOrderRejectPayload) {
-		return asPerformanceServicePromise<PurchaseOrderRecord>(this.request({
-			url: '/reject',
-			method: 'POST',
-			data
-		}), decodePurchaseOrderRecord);
+		return asPerformanceServicePromise<PurchaseOrderRecord>(
+			this.request({
+				url: '/reject',
+				method: 'POST',
+				data
+			}),
+			decodePurchaseOrderRecord
+		);
 	}
 
 	receive(data: PurchaseOrderReceivePayload) {
-		return asPerformanceServicePromise<PurchaseOrderRecord>(this.request({
-			url: '/receive',
-			method: 'POST',
-			data
-		}), decodePurchaseOrderRecord);
+		return asPerformanceServicePromise<PurchaseOrderRecord>(
+			this.request({
+				url: '/receive',
+				method: 'POST',
+				data
+			}),
+			decodePurchaseOrderRecord
+		);
 	}
 
 	close(data: PurchaseOrderClosePayload) {
-		return asPerformanceServicePromise<PurchaseOrderRecord>(this.request({
-			url: '/close',
-			method: 'POST',
-			data
-		}), decodePurchaseOrderRecord);
+		return asPerformanceServicePromise<PurchaseOrderRecord>(
+			this.request({
+				url: '/close',
+				method: 'POST',
+				data
+			}),
+			decodePurchaseOrderRecord
+		);
 	}
 }
 

@@ -112,7 +112,9 @@
 				<el-table-column prop="toPosition" label="目标岗位" min-width="140" />
 				<el-table-column prop="status" label="状态" width="110">
 					<template #default="{ row }">
-						<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+						<el-tag :type="statusTagType(row.status)">{{
+							statusLabel(row.status)
+						}}</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column prop="reviewTime" label="评审时间" min-width="170">
@@ -269,20 +271,13 @@ import { useBase } from '/$/base';
 import PromotionReviewDrawer from '../../components/promotion-review-drawer.vue';
 import { useListPage } from '../../composables/use-list-page.js';
 import { performanceAssessmentService } from '../../service/assessment';
-import {
-	confirmElementAction,
-	runTrackedElementAction
-} from '../shared/action-feedback';
+import { confirmElementAction, runTrackedElementAction } from '../shared/action-feedback';
 import {
 	createElementWarningFromErrorHandler,
 	resolveErrorMessage,
 	showElementErrorFromError
 } from '../shared/error-message';
-import {
-	type PromotionRecord,
-	type UserOption,
-	createEmptyPromotion
-} from '../../types';
+import { type PromotionRecord, type UserOption, createEmptyPromotion } from '../../types';
 import { performancePromotionService } from '../../service/promotion';
 import { loadUserOptions } from '../../utils/lookup-options.js';
 import { clearRoutePresetQuery } from '../../utils/route-preset.js';

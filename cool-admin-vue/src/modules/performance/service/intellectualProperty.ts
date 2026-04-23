@@ -3,7 +3,10 @@
  */
 
 import type { IntellectualPropertyRecord, IntellectualPropertyStats } from '../types';
-import { createPerformanceOfficeLedgerService, PerformanceOfficeLedgerService } from './office-ledger';
+import {
+	createPerformanceOfficeLedgerService,
+	PerformanceOfficeLedgerService
+} from './office-ledger';
 import {
 	decodeIntellectualPropertyRecord,
 	decodeIntellectualPropertyStats
@@ -23,8 +26,7 @@ export default class PerformanceIntellectualPropertyService extends PerformanceO
 	}
 }
 
-export const performanceIntellectualPropertyService =
-	createPerformanceOfficeLedgerService<
-		IntellectualPropertyRecord,
-		IntellectualPropertyStats
-	>('intellectualProperty', intellectualPropertyServiceDecoders);
+export const performanceIntellectualPropertyService = createPerformanceOfficeLedgerService<
+	IntellectualPropertyRecord,
+	IntellectualPropertyStats
+>('intellectualProperty', intellectualPropertyServiceDecoders);

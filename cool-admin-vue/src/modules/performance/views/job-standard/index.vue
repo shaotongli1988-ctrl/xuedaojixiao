@@ -79,7 +79,12 @@
 						{{ row.jobLevel || '-' }}
 					</template>
 				</el-table-column>
-				<el-table-column prop="profileSummary" label="岗位画像摘要" min-width="220" show-overflow-tooltip>
+				<el-table-column
+					prop="profileSummary"
+					label="岗位画像摘要"
+					min-width="220"
+					show-overflow-tooltip
+				>
 					<template #default="{ row }">
 						{{ row.profileSummary || '-' }}
 					</template>
@@ -128,7 +133,9 @@
 				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
 				<el-table-column label="操作" fixed="right" min-width="260">
 					<template #default="{ row }">
-						<el-button v-if="showInfoButton" text @click="openDetail(row)">详情</el-button>
+						<el-button v-if="showInfoButton" text @click="openDetail(row)"
+							>详情</el-button
+						>
 						<el-button v-if="canEdit(row)" text type="primary" @click="openEdit(row)">
 							编辑
 						</el-button>
@@ -185,7 +192,10 @@
 						</el-tag>
 					</el-descriptions-item>
 					<el-descriptions-item label="目标部门">
-						{{ detailRecord.targetDepartmentName || departmentLabel(detailRecord.targetDepartmentId) }}
+						{{
+							detailRecord.targetDepartmentName ||
+							departmentLabel(detailRecord.targetDepartmentId)
+						}}
 					</el-descriptions-item>
 					<el-descriptions-item label="岗位级别">
 						{{ detailRecord.jobLevel || '-' }}
@@ -254,7 +264,11 @@
 		>
 			<el-form ref="formRef" :model="form" :rules="rules" label-width="130px">
 				<el-alert
-					:title="editingRecord?.id ? 'draft/active 可编辑，inactive 仅允许通过状态动作重新启用。' : '新建职位标准默认保存为 draft。'"
+					:title="
+						editingRecord?.id
+							? 'draft/active 可编辑，inactive 仅允许通过状态动作重新启用。'
+							: '新建职位标准默认保存为 draft。'
+					"
 					:type="editingRecord?.id ? 'warning' : 'info'"
 					:closable="false"
 					show-icon
@@ -386,10 +400,7 @@ import { useDict } from '/$/dict';
 import { service } from '/@/cool';
 import { useRoute, useRouter } from 'vue-router';
 import { useListPage } from '../../composables/use-list-page.js';
-import {
-	confirmElementAction,
-	runTrackedElementAction
-} from '../shared/action-feedback';
+import { confirmElementAction, runTrackedElementAction } from '../shared/action-feedback';
 import { performanceAccessContextService } from '../../service/access-context';
 import { performanceRecruitPlanService } from '../../service/recruit-plan';
 import { resolvePerformanceRoleFact } from '../../service/role-fact';
@@ -441,15 +452,16 @@ const rules: FormRules = {
 	jobLevel: [{ max: 50, message: '岗位级别长度不能超过 50', trigger: 'blur' }],
 	profileSummary: [{ max: 2000, message: '岗位画像摘要长度不能超过 2000', trigger: 'blur' }],
 	requirementSummary: [{ max: 3000, message: '任职要求摘要长度不能超过 3000', trigger: 'blur' }],
-	interviewTemplateSummary: [{ max: 2000, message: '面试模板摘要长度不能超过 2000', trigger: 'blur' }]
+	interviewTemplateSummary: [
+		{ max: 2000, message: '面试模板摘要长度不能超过 2000', trigger: 'blur' }
+	]
 };
 
-const jobStandardStatusOptions = computed<Array<{ label: string; value: JobStandardStatus }>>(
-	() =>
-		dict.get(JOB_STANDARD_STATUS_DICT_KEY).value.map(item => ({
-			label: item.label,
-			value: item.value as JobStandardStatus
-		}))
+const jobStandardStatusOptions = computed<Array<{ label: string; value: JobStandardStatus }>>(() =>
+	dict.get(JOB_STANDARD_STATUS_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as JobStandardStatus
+	}))
 );
 
 const canAccess = computed(() => checkPerm(performanceJobStandardService.permission.page));
@@ -773,11 +785,7 @@ function normalizeOptionalText(value?: string | null) {
 
 function normalizeTagList(list?: string[]) {
 	const deduplicated = Array.from(
-		new Set(
-			(list || [])
-				.map(item => String(item || '').trim())
-				.filter(Boolean)
-		)
+		new Set((list || []).map(item => String(item || '').trim()).filter(Boolean))
 	);
 
 	return deduplicated.length ? deduplicated : undefined;
@@ -820,7 +828,9 @@ async function goCreateRecruitPlan(record?: JobStandardRecord | null) {
 		path: '/performance/recruit-plan',
 		query: {
 			openCreate: '1',
-			targetDepartmentId: record.targetDepartmentId ? String(record.targetDepartmentId) : undefined,
+			targetDepartmentId: record.targetDepartmentId
+				? String(record.targetDepartmentId)
+				: undefined,
 			positionName: record.positionName || undefined,
 			requirementSummary: record.requirementSummary || undefined,
 			jobStandardId: String(record.id),
@@ -840,7 +850,9 @@ async function goCreateResumePool(record?: JobStandardRecord | null) {
 		path: '/performance/resumePool',
 		query: {
 			openCreate: '1',
-			targetDepartmentId: record.targetDepartmentId ? String(record.targetDepartmentId) : undefined,
+			targetDepartmentId: record.targetDepartmentId
+				? String(record.targetDepartmentId)
+				: undefined,
 			targetPosition: record.positionName || undefined,
 			jobStandardId: String(record.id),
 			jobStandardPositionName: record.positionName || undefined,

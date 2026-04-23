@@ -5,10 +5,7 @@
  */
 import { BaseService } from '/@/cool';
 import { asPerformanceServicePromise } from './service-contract';
-import {
-	decodeMeetingPageResult,
-	decodeMeetingRecord
-} from './meeting-contract';
+import { decodeMeetingPageResult, decodeMeetingRecord } from './meeting-contract';
 import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import type {
 	MeetingCheckInRequest,
@@ -42,24 +39,15 @@ export default class PerformanceMeetingService extends BaseService {
 	}
 
 	fetchInfo(params: MeetingInfoQuery) {
-		return asPerformanceServicePromise<MeetingRecord>(
-			super.info(params),
-			decodeMeetingRecord
-		);
+		return asPerformanceServicePromise<MeetingRecord>(super.info(params), decodeMeetingRecord);
 	}
 
 	createMeeting(data: MeetingSaveRequest) {
-		return asPerformanceServicePromise<MeetingRecord>(
-			super.add(data),
-			decodeMeetingRecord
-		);
+		return asPerformanceServicePromise<MeetingRecord>(super.add(data), decodeMeetingRecord);
 	}
 
 	updateMeeting(data: MeetingSaveRequest & { id: number }) {
-		return asPerformanceServicePromise<MeetingRecord>(
-			super.update(data),
-			decodeMeetingRecord
-		);
+		return asPerformanceServicePromise<MeetingRecord>(super.update(data), decodeMeetingRecord);
 	}
 
 	removeMeeting(data: MeetingRemovePayload) {
@@ -67,11 +55,14 @@ export default class PerformanceMeetingService extends BaseService {
 	}
 
 	checkIn(data: MeetingCheckInRequest) {
-		return asPerformanceServicePromise<MeetingRecord>(this.request({
-			url: '/checkIn',
-			method: 'POST',
-			data
-		}), decodeMeetingRecord);
+		return asPerformanceServicePromise<MeetingRecord>(
+			this.request({
+				url: '/checkIn',
+				method: 'POST',
+				data
+			}),
+			decodeMeetingRecord
+		);
 	}
 }
 

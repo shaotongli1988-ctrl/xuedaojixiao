@@ -17,7 +17,7 @@ const props = withDefaults(
 		helper: '',
 		trend: '',
 		tone: 'brand',
-		variant: 'default',
+		variant: 'default'
 	}
 );
 </script>
@@ -26,10 +26,7 @@ const props = withDefaults(
 	<el-card
 		shadow="never"
 		class="dashboard-stat-card"
-		:class="[
-			`dashboard-stat-card--${props.tone}`,
-			`dashboard-stat-card--${props.variant}`,
-		]"
+		:class="[`dashboard-stat-card--${props.tone}`, `dashboard-stat-card--${props.variant}`]"
 	>
 		<div class="dashboard-stat-card__label">{{ props.label }}</div>
 

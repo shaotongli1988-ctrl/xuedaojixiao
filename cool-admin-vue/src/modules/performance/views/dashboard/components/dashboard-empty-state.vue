@@ -8,37 +8,34 @@ const props = withDefaults(
 		description?: string;
 	}>(),
 	{
-		description: '',
+		description: ''
 	}
 );
 
 const configMap = {
 	loading: {
 		title: '数据加载中',
-		description: '正在同步驾驶舱汇总，请稍候',
+		description: '正在同步驾驶舱汇总，请稍候'
 	},
 	'no-data': {
 		title: '当前暂无数据',
-		description: '当前筛选条件下没有可展示的聚合结果',
+		description: '当前筛选条件下没有可展示的聚合结果'
 	},
 	unavailable: {
 		title: '数据暂不可用',
-		description: '接口异常或聚合链路未完成，请稍后重试',
+		description: '接口异常或聚合链路未完成，请稍后重试'
 	},
 	'no-permission': {
 		title: '当前账号无权限',
-		description: '你没有查看该驾驶舱的权限',
-	},
+		description: '你没有查看该驾驶舱的权限'
+	}
 } as const;
 </script>
 
 <template>
 	<el-card shadow="never" class="dashboard-empty-state">
 		<el-skeleton v-if="props.kind === 'loading'" :rows="6" animated />
-		<el-empty
-			v-else
-			:description="props.description || configMap[props.kind].description"
-		>
+		<el-empty v-else :description="props.description || configMap[props.kind].description">
 			<template #image>
 				<div class="dashboard-empty-state__icon">{{ configMap[props.kind].title }}</div>
 			</template>

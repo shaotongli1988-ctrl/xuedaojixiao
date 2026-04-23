@@ -38,10 +38,7 @@ function decodeOptionalNullableNumber(value: unknown, field: string) {
 	return expectPerformanceServiceNullableNumber(value, field);
 }
 
-function decodeMaterialInboundStatus(
-	value: unknown,
-	field: string
-): MaterialInboundStatus {
+function decodeMaterialInboundStatus(value: unknown, field: string): MaterialInboundStatus {
 	return expectPerformanceServiceEnum(value, field, MATERIAL_INBOUND_STATUS);
 }
 
@@ -53,13 +50,22 @@ export function decodeMaterialInboundRecord(
 
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
-		departmentId: expectPerformanceServiceOptionalNumber(record.departmentId, `${field}.departmentId`),
+		departmentId: expectPerformanceServiceOptionalNumber(
+			record.departmentId,
+			`${field}.departmentId`
+		),
 		departmentName: expectPerformanceServiceOptionalString(
 			record.departmentName,
 			`${field}.departmentName`
 		),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
-		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
+		updateTime: expectPerformanceServiceOptionalString(
+			record.updateTime,
+			`${field}.updateTime`
+		),
 		title: expectPerformanceServiceOptionalString(record.title, `${field}.title`),
 		quantity: expectPerformanceServiceNumber(record.quantity, `${field}.quantity`),
 		amount: expectPerformanceServiceOptionalNumber(record.amount, `${field}.amount`),
@@ -67,13 +73,25 @@ export function decodeMaterialInboundRecord(
 			record.status === undefined
 				? undefined
 				: decodeMaterialInboundStatus(record.status, `${field}.status`),
-		materialNo: expectPerformanceServiceOptionalString(record.materialNo, `${field}.materialNo`),
+		materialNo: expectPerformanceServiceOptionalString(
+			record.materialNo,
+			`${field}.materialNo`
+		),
 		unit: expectPerformanceServiceOptionalString(record.unit, `${field}.unit`),
 		inboundNo: expectPerformanceServiceOptionalString(record.inboundNo, `${field}.inboundNo`),
 		catalogId: expectPerformanceServiceOptionalNumber(record.catalogId, `${field}.catalogId`),
-		materialId: expectPerformanceServiceOptionalNumber(record.materialId, `${field}.materialId`),
-		materialCode: expectPerformanceServiceOptionalString(record.materialCode, `${field}.materialCode`),
-		materialName: expectPerformanceServiceOptionalString(record.materialName, `${field}.materialName`),
+		materialId: expectPerformanceServiceOptionalNumber(
+			record.materialId,
+			`${field}.materialId`
+		),
+		materialCode: expectPerformanceServiceOptionalString(
+			record.materialCode,
+			`${field}.materialCode`
+		),
+		materialName: expectPerformanceServiceOptionalString(
+			record.materialName,
+			`${field}.materialName`
+		),
 		unitCost: expectPerformanceServiceOptionalNumber(record.unitCost, `${field}.unitCost`),
 		unitPrice: expectPerformanceServiceOptionalNumber(record.unitPrice, `${field}.unitPrice`),
 		totalAmount: expectPerformanceServiceNumber(record.totalAmount, `${field}.totalAmount`),

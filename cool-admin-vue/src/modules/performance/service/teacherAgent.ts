@@ -4,10 +4,7 @@
  */
 import { BaseService } from '/@/cool';
 import { asPerformanceServicePromise } from './service-contract';
-import {
-	decodeTeacherAgentPageResult,
-	decodeTeacherAgentRecord
-} from './teacher-contract';
+import { decodeTeacherAgentPageResult, decodeTeacherAgentRecord } from './teacher-contract';
 import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import type {
 	TeacherAgentBlacklistPayload,
@@ -57,27 +54,36 @@ export default class PerformanceTeacherAgentService extends BaseService {
 	}
 
 	updateStatus(data: TeacherAgentUpdateStatusPayload) {
-		return asPerformanceServicePromise<TeacherAgentRecord>(this.request({
-			url: '/updateStatus',
-			method: 'POST',
-			data
-		}), decodeTeacherAgentRecord);
+		return asPerformanceServicePromise<TeacherAgentRecord>(
+			this.request({
+				url: '/updateStatus',
+				method: 'POST',
+				data
+			}),
+			decodeTeacherAgentRecord
+		);
 	}
 
 	blacklist(data: TeacherAgentBlacklistPayload) {
-		return asPerformanceServicePromise<TeacherAgentRecord>(this.request({
-			url: '/blacklist',
-			method: 'POST',
-			data
-		}), decodeTeacherAgentRecord);
+		return asPerformanceServicePromise<TeacherAgentRecord>(
+			this.request({
+				url: '/blacklist',
+				method: 'POST',
+				data
+			}),
+			decodeTeacherAgentRecord
+		);
 	}
 
 	unblacklist(data: TeacherAgentUnblacklistPayload) {
-		return asPerformanceServicePromise<TeacherAgentRecord>(this.request({
-			url: '/unblacklist',
-			method: 'POST',
-			data
-		}), decodeTeacherAgentRecord);
+		return asPerformanceServicePromise<TeacherAgentRecord>(
+			this.request({
+				url: '/unblacklist',
+				method: 'POST',
+				data
+			}),
+			decodeTeacherAgentRecord
+		);
 	}
 }
 

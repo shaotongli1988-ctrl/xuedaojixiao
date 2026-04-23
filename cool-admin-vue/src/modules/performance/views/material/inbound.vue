@@ -15,10 +15,18 @@
 		:form-fields="formFields"
 		:create-filters="createFilters"
 		:create-empty="createEmptyMaterialInbound"
-		:fetch-page="performanceMaterialInboundService.fetchPage.bind(performanceMaterialInboundService)"
-		:fetch-info="performanceMaterialInboundService.fetchInfo.bind(performanceMaterialInboundService)"
-		:create-item="performanceMaterialInboundService.createInbound.bind(performanceMaterialInboundService)"
-		:update-item="performanceMaterialInboundService.updateInbound.bind(performanceMaterialInboundService)"
+		:fetch-page="
+			performanceMaterialInboundService.fetchPage.bind(performanceMaterialInboundService)
+		"
+		:fetch-info="
+			performanceMaterialInboundService.fetchInfo.bind(performanceMaterialInboundService)
+		"
+		:create-item="
+			performanceMaterialInboundService.createInbound.bind(performanceMaterialInboundService)
+		"
+		:update-item="
+			performanceMaterialInboundService.updateInbound.bind(performanceMaterialInboundService)
+		"
 		:row-actions="rowActions"
 		create-label="新增入库单"
 		edit-label="编辑入库单"
@@ -29,10 +37,7 @@
 import { computed, onMounted, ref } from 'vue';
 import MaterialCrudPage from './material-crud-page.vue';
 import { performanceMaterialInboundService } from '../../service/material-inbound';
-import {
-	createEmptyMaterialInbound,
-	type MaterialInboundRecord
-} from '../../types';
+import { createEmptyMaterialInbound, type MaterialInboundRecord } from '../../types';
 import { PERMISSIONS } from '../../../base/generated/permissions.generated';
 import {
 	createElementLookupWarningHandler,
@@ -42,12 +47,7 @@ import {
 	toSelectOptions,
 	type DepartmentOption
 } from './lookups';
-import {
-	enumOptions,
-	formatMoney,
-	formatQuantity,
-	materialInboundStatusTagMap
-} from './shared';
+import { enumOptions, formatMoney, formatQuantity, materialInboundStatusTagMap } from './shared';
 import type { CrudRowAction, CrudSelectOption } from '../shared/crud-page-shell';
 
 const columns = [
@@ -79,7 +79,12 @@ const materialOptions = ref<CrudSelectOption[]>([]);
 const departmentOptions = ref<CrudSelectOption[]>([]);
 
 const filters = computed(() => [
-	{ prop: 'keyword', label: '关键词', type: 'text', placeholder: '单号 / 标题 / 物资 / 部门 / 来源' },
+	{
+		prop: 'keyword',
+		label: '关键词',
+		type: 'text',
+		placeholder: '单号 / 标题 / 物资 / 部门 / 来源'
+	},
 	{
 		prop: 'departmentId',
 		label: '入库部门',

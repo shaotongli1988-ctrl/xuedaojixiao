@@ -58,11 +58,14 @@ export default class PerformanceKnowledgeBaseService extends BaseService {
 	}
 
 	fetchStats(params?: KnowledgeBaseStatsQuery) {
-		return asPerformanceServicePromise<KnowledgeBaseStats>(this.request({
-			url: '/stats',
-			method: 'GET',
-			params
-		}), decodeKnowledgeBaseStats);
+		return asPerformanceServicePromise<KnowledgeBaseStats>(
+			this.request({
+				url: '/stats',
+				method: 'GET',
+				params
+			}),
+			decodeKnowledgeBaseStats
+		);
 	}
 
 	createKnowledge(data: KnowledgeBaseCreatePayload) {
@@ -84,34 +87,46 @@ export default class PerformanceKnowledgeBaseService extends BaseService {
 	}
 
 	fetchGraph() {
-		return asPerformanceServicePromise<KnowledgeGraphSummary>(this.request({
-			url: '/graph',
-			method: 'GET'
-		}), decodeKnowledgeGraphSummary);
+		return asPerformanceServicePromise<KnowledgeGraphSummary>(
+			this.request({
+				url: '/graph',
+				method: 'GET'
+			}),
+			decodeKnowledgeGraphSummary
+		);
 	}
 
 	fetchSearch(params: KnowledgeSearchQuery) {
-		return asPerformanceServicePromise<KnowledgeSearchResult>(this.request({
-			url: '/search',
-			method: 'GET',
-			params
-		}), decodeKnowledgeSearchResult);
+		return asPerformanceServicePromise<KnowledgeSearchResult>(
+			this.request({
+				url: '/search',
+				method: 'GET',
+				params
+			}),
+			decodeKnowledgeSearchResult
+		);
 	}
 
 	fetchQaList(params?: KnowledgeQaListQuery) {
-		return asPerformanceServicePromise<KnowledgeQaListResult>(this.request({
-			url: '/qaList',
-			method: 'GET',
-			params
-		}), decodeKnowledgeQaListResult);
+		return asPerformanceServicePromise<KnowledgeQaListResult>(
+			this.request({
+				url: '/qaList',
+				method: 'GET',
+				params
+			}),
+			decodeKnowledgeQaListResult
+		);
 	}
 
 	createQa(data: KnowledgeQaCreatePayload) {
-		return asPerformanceServicePromise<KnowledgeQaRecord>(this.request({
-			url: '/qaAdd',
-			method: 'POST',
-			data
-		}), decodeKnowledgeQaRecord);
+		return asPerformanceServicePromise<KnowledgeQaRecord>(
+			this.request({
+				url: '/qaAdd',
+				method: 'POST',
+				data
+			}),
+			decodeKnowledgeQaRecord
+		);
 	}
 }
 

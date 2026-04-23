@@ -42,10 +42,7 @@ function expectStringArray(value: unknown, field: string) {
 	return value;
 }
 
-function decodePerformancePersonaOption(
-	value: unknown,
-	index: number
-): PerformancePersonaOption {
+function decodePerformancePersonaOption(value: unknown, index: number): PerformancePersonaOption {
 	if (!isRecord(value)) {
 		throw new Error(`availablePersonas[${index}] 必须为对象`);
 	}

@@ -50,10 +50,7 @@ function decodeRecruitPlanStatus(value: unknown, field: string): RecruitPlanStat
 	return expectPerformanceServiceEnum(value, field, RECRUIT_PLAN_STATUS);
 }
 
-function decodeRecruitPlanSourceSnapshot(
-	value: unknown,
-	field: string
-): RecruitmentSourceSnapshot {
+function decodeRecruitPlanSourceSnapshot(value: unknown, field: string): RecruitmentSourceSnapshot {
 	const record = expectPerformanceServiceRecord(value, field);
 
 	return {
@@ -77,11 +74,18 @@ function decodeRecruitPlanSourceSnapshot(
 			record.targetDepartmentName,
 			`${field}.targetDepartmentName`
 		),
-		targetPosition: decodeOptionalNullableString(record.positionName, `${field}.targetPosition`),
+		targetPosition: decodeOptionalNullableString(
+			record.positionName,
+			`${field}.targetPosition`
+		),
 		status:
 			record.status === undefined
 				? undefined
-				: expectPerformanceServiceEnum(record.status, `${field}.status`, JOB_STANDARD_STATUS)
+				: expectPerformanceServiceEnum(
+						record.status,
+						`${field}.status`,
+						JOB_STANDARD_STATUS
+					)
 	};
 }
 
@@ -120,14 +124,17 @@ export function decodeRecruitPlanRecord(
 		jobStandardSummary:
 			record.jobStandardSummary == null
 				? null
-				: decodeRecruitPlanSourceSnapshot(record.jobStandardSummary, `${field}.jobStandardSummary`),
+				: decodeRecruitPlanSourceSnapshot(
+						record.jobStandardSummary,
+						`${field}.jobStandardSummary`
+					),
 		jobStandardSnapshot:
 			record.jobStandardSnapshot == null
 				? null
 				: decodeRecruitPlanSourceSnapshot(
 						record.jobStandardSnapshot,
 						`${field}.jobStandardSnapshot`
-				  ),
+					),
 		sourceSnapshot:
 			record.sourceSnapshot == null
 				? null
@@ -136,7 +143,10 @@ export function decodeRecruitPlanRecord(
 			record.status === undefined
 				? undefined
 				: decodeRecruitPlanStatus(record.status, `${field}.status`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
 		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`)
 	};
 }
@@ -168,7 +178,10 @@ export function decodeRecruitPlanImportResult(
 
 	return {
 		fileId: expectPerformanceServiceNumber(record.fileId, `${field}.fileId`),
-		importedCount: expectPerformanceServiceNumber(record.importedCount, `${field}.importedCount`),
+		importedCount: expectPerformanceServiceNumber(
+			record.importedCount,
+			`${field}.importedCount`
+		),
 		skippedCount: expectPerformanceServiceNumber(record.skippedCount, `${field}.skippedCount`)
 	};
 }
@@ -189,7 +202,7 @@ export function decodeRecruitPlanExportRows(
 					: expectPerformanceServiceNullableNumber(
 							row.targetDepartmentId,
 							`${field}[${index}].targetDepartmentId`
-					  ),
+						),
 			targetDepartmentName: decodeOptionalNullableString(
 				row.targetDepartmentName,
 				`${field}[${index}].targetDepartmentName`
@@ -198,8 +211,14 @@ export function decodeRecruitPlanExportRows(
 				row.positionName,
 				`${field}[${index}].positionName`
 			),
-			headcount: expectPerformanceServiceNumber(row.headcount, `${field}[${index}].headcount`),
-			startDate: expectPerformanceServiceString(row.startDate, `${field}[${index}].startDate`),
+			headcount: expectPerformanceServiceNumber(
+				row.headcount,
+				`${field}[${index}].headcount`
+			),
+			startDate: expectPerformanceServiceString(
+				row.startDate,
+				`${field}[${index}].startDate`
+			),
 			endDate: expectPerformanceServiceString(row.endDate, `${field}[${index}].endDate`),
 			recruiterId:
 				row.recruiterId === undefined
@@ -207,7 +226,7 @@ export function decodeRecruitPlanExportRows(
 					: expectPerformanceServiceNullableNumber(
 							row.recruiterId,
 							`${field}[${index}].recruiterId`
-					  ),
+						),
 			recruiterName: decodeOptionalNullableString(
 				row.recruiterName,
 				`${field}[${index}].recruiterName`

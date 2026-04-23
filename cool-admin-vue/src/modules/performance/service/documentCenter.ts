@@ -52,11 +52,14 @@ export default class PerformanceDocumentCenterService extends BaseService {
 	}
 
 	fetchStats(params?: DocumentCenterStatsQuery) {
-		return asPerformanceServicePromise<DocumentCenterStats>(this.request({
-			url: '/stats',
-			method: 'GET',
-			params
-		}), decodeDocumentCenterStats);
+		return asPerformanceServicePromise<DocumentCenterStats>(
+			this.request({
+				url: '/stats',
+				method: 'GET',
+				params
+			}),
+			decodeDocumentCenterStats
+		);
 	}
 
 	createDocument(data: DocumentCenterCreatePayload) {

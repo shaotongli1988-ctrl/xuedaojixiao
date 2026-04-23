@@ -30,27 +30,36 @@ export default class PerformancePurchaseReportService extends BaseService {
 	}
 
 	fetchSummary(params?: PurchaseReportQuery) {
-		return asPerformanceServicePromise<PurchaseReportSummary>(this.request({
-			url: '/summary',
-			method: 'GET',
-			params
-		}), decodePurchaseReportSummary);
+		return asPerformanceServicePromise<PurchaseReportSummary>(
+			this.request({
+				url: '/summary',
+				method: 'GET',
+				params
+			}),
+			decodePurchaseReportSummary
+		);
 	}
 
 	fetchTrend(params?: PurchaseReportQuery) {
-		return asPerformanceServicePromise<PurchaseReportTrendPoint[]>(this.request({
-			url: '/trend',
-			method: 'GET',
-			params
-		}), decodePurchaseReportTrendPoints);
+		return asPerformanceServicePromise<PurchaseReportTrendPoint[]>(
+			this.request({
+				url: '/trend',
+				method: 'GET',
+				params
+			}),
+			decodePurchaseReportTrendPoints
+		);
 	}
 
 	fetchSupplierStats(params?: PurchaseReportQuery) {
-		return asPerformanceServicePromise<PurchaseReportSupplierStat[]>(this.request({
-			url: '/supplierStats',
-			method: 'GET',
-			params
-		}), decodePurchaseReportSupplierStats);
+		return asPerformanceServicePromise<PurchaseReportSupplierStat[]>(
+			this.request({
+				url: '/supplierStats',
+				method: 'GET',
+				params
+			}),
+			decodePurchaseReportSupplierStats
+		);
 	}
 }
 

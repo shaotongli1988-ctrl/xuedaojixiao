@@ -11,7 +11,11 @@
 		:detail-fields="detailFields"
 		:filters="filters"
 		:create-filters="createFilters"
-		:fetch-page="performanceAssetAssignmentRequestService.fetchPage.bind(performanceAssetAssignmentRequestService)"
+		:fetch-page="
+			performanceAssetAssignmentRequestService.fetchPage.bind(
+				performanceAssetAssignmentRequestService
+			)
+		"
 		:fetch-info="fetchInfo"
 		:row-actions="rowActions"
 	/>
@@ -74,11 +78,7 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import AssetCrudPage from './asset-crud-page.vue';
 import { performanceAssetAssignmentRequestService } from '../../service/asset-assignment-request';
-import {
-	createElementLookupWarningHandler,
-	loadAssetOptions,
-	type AssetOption
-} from './lookups';
+import { createElementLookupWarningHandler, loadAssetOptions, type AssetOption } from './lookups';
 import { PERMISSIONS } from '../../../base/generated/permissions.generated';
 import type { AssetAssignmentRequestRecord } from '../../types';
 import {
@@ -88,10 +88,7 @@ import {
 	enumOptions
 } from './shared';
 import type { CrudRowAction } from '../shared/crud-page-shell';
-import {
-	ELEMENT_ACTION_SKIPPED,
-	promptElementAction
-} from '../shared/action-feedback';
+import { ELEMENT_ACTION_SKIPPED, promptElementAction } from '../shared/action-feedback';
 import { resolveErrorMessage, showElementErrorFromError } from '../shared/error-message';
 
 const columns = [
@@ -115,8 +112,18 @@ const detailFields = [
 ];
 
 const filters = [
-	{ prop: 'requestLevel', label: '层级', type: 'select', options: enumOptions(assignmentRequestLevelTagMap) },
-	{ prop: 'requestType', label: '类型', type: 'select', options: enumOptions(assignmentRequestTypeTagMap) }
+	{
+		prop: 'requestLevel',
+		label: '层级',
+		type: 'select',
+		options: enumOptions(assignmentRequestLevelTagMap)
+	},
+	{
+		prop: 'requestType',
+		label: '类型',
+		type: 'select',
+		options: enumOptions(assignmentRequestTypeTagMap)
+	}
 ];
 
 type AssignOutcome = 'idle' | 'pending' | 'resolved';

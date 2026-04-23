@@ -5,10 +5,7 @@
  */
 import { BaseService } from '/@/cool';
 import { asPerformanceServicePromise } from './service-contract';
-import {
-	decodeSupplierPageResult,
-	decodeSupplierRecord
-} from './supplier-contract';
+import { decodeSupplierPageResult, decodeSupplierRecord } from './supplier-contract';
 import type {
 	SupplierCreatePayload,
 	SupplierInfoQuery,
@@ -48,10 +45,7 @@ export default class PerformanceSupplierService extends BaseService {
 	}
 
 	createSupplier(data: SupplierCreatePayload) {
-		return asPerformanceServicePromise<SupplierRecord>(
-			super.add(data),
-			decodeSupplierRecord
-		);
+		return asPerformanceServicePromise<SupplierRecord>(super.add(data), decodeSupplierRecord);
 	}
 
 	updateSupplier(data: SupplierUpdatePayload) {

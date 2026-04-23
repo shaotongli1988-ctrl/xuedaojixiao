@@ -30,20 +30,20 @@ const palette = computed(() => [
 	resolveTokenValue(brandToken.value, '--app-chart-series-brand'),
 	resolveTokenValue(successToken.value, '--app-chart-series-success'),
 	resolveTokenValue(warningToken.value, '--app-chart-series-warning'),
-	resolveTokenValue(dangerToken.value, '--app-chart-series-danger'),
+	resolveTokenValue(dangerToken.value, '--app-chart-series-danger')
 ]);
 
 const chartOption = computed(() => ({
 	color: palette.value,
 	tooltip: {
 		trigger: 'item',
-		formatter: '{b}<br/>数量：{c}<br/>占比：{d}%',
+		formatter: '{b}<br/>数量：{c}<br/>占比：{d}%'
 	},
 	legend: {
 		top: 'bottom',
 		textStyle: {
-			color: labelColor.value,
-		},
+			color: labelColor.value
+		}
 	},
 	series: [
 		{
@@ -52,18 +52,18 @@ const chartOption = computed(() => ({
 			radius: ['45%', '68%'],
 			center: ['50%', '42%'],
 			itemStyle: {
-				borderRadius: 8,
+				borderRadius: 8
 			},
 			label: {
 				color: labelColor.value,
-				formatter: '{b}\n{d}%',
+				formatter: '{b}\n{d}%'
 			},
 			data: props.items.map(item => ({
 				name: item.grade,
-				value: item.count,
-			})),
-		},
-	],
+				value: item.count
+			}))
+		}
+	]
 }));
 </script>
 

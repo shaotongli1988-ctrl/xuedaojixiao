@@ -75,7 +75,11 @@
 				<el-card shadow="never">
 					<div class="meeting-page__stat-label">已结束/已取消</div>
 					<div class="meeting-page__stat-value">
-						{{ rows.filter(item => ['completed', 'cancelled'].includes(item.status || '')).length }}
+						{{
+							rows.filter(item =>
+								['completed', 'cancelled'].includes(item.status || '')
+							).length
+						}}
 					</div>
 				</el-card>
 			</el-col>
@@ -126,13 +130,17 @@
 				</el-table-column>
 				<el-table-column prop="status" label="状态" width="110">
 					<template #default="{ row }">
-						<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+						<el-tag :type="statusTagType(row.status)">{{
+							statusLabel(row.status)
+						}}</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
 				<el-table-column label="操作" fixed="right" min-width="220">
 					<template #default="{ row }">
-						<el-button v-if="showInfoButton" text @click="openDetail(row)">详情</el-button>
+						<el-button v-if="showInfoButton" text @click="openDetail(row)"
+							>详情</el-button
+						>
 						<el-button v-if="canEdit(row)" text type="primary" @click="openEdit(row)">
 							编辑
 						</el-button>
@@ -209,10 +217,7 @@ import { useListPage } from '../../composables/use-list-page.js';
 import MeetingDetailDrawer from '../../components/meeting-detail-drawer.vue';
 import MeetingForm from '../../components/meeting-form.vue';
 import { performanceMeetingService } from '../../service/meeting';
-import {
-	confirmElementAction,
-	runTrackedElementAction
-} from '../shared/action-feedback';
+import { confirmElementAction, runTrackedElementAction } from '../shared/action-feedback';
 import {
 	createElementWarningFromErrorHandler,
 	isUserCancelledError,
@@ -280,7 +285,9 @@ const pagination = meetingList.pager;
 const participantSelectionUnknown = computed(
 	() => Boolean(editingMeeting.value?.id) && !editParticipantIdsProvided.value
 );
-const detailCanCheckIn = computed(() => (detailMeeting.value ? canCheckIn(detailMeeting.value) : false));
+const detailCanCheckIn = computed(() =>
+	detailMeeting.value ? canCheckIn(detailMeeting.value) : false
+);
 const formStatusOptions = computed(() => {
 	const currentStatus = editingMeeting.value?.status || 'scheduled';
 	const createOption = (value: MeetingStatus) => ({
@@ -294,7 +301,11 @@ const formStatusOptions = computed(() => {
 
 	switch (currentStatus) {
 		case 'scheduled':
-			return [createOption('scheduled'), createOption('in_progress'), createOption('cancelled')];
+			return [
+				createOption('scheduled'),
+				createOption('in_progress'),
+				createOption('cancelled')
+			];
 		case 'in_progress':
 			return [createOption('in_progress'), createOption('completed')];
 		case 'completed':
@@ -316,8 +327,8 @@ async function loadUsers() {
 	userOptions.value = await loadUserOptions(
 		() =>
 			service.base.sys.user.page({
-			page: 1,
-			size: 200
+				page: 1,
+				size: 200
 			}),
 		createElementWarningFromErrorHandler('用户选项加载失败')
 	);
@@ -464,7 +475,11 @@ function normalizePayload(payload: MeetingRecord): MeetingSaveRequest {
 		new Set((payload.participantIds || []).map(item => Number(item)).filter(Boolean))
 	);
 
-	if (!editingMeeting.value?.id || editParticipantIdsProvided.value || participantSelectionTouched.value) {
+	if (
+		!editingMeeting.value?.id ||
+		editParticipantIdsProvided.value ||
+		participantSelectionTouched.value
+	) {
 		nextPayload.participantIds = normalizedParticipantIds;
 	}
 
@@ -479,10 +494,7 @@ function canEdit(row: MeetingRecord) {
 }
 
 function canCheckIn(row: MeetingRecord) {
-	return (
-		checkPerm(performanceMeetingService.permission.checkIn) &&
-		row.status === 'in_progress'
-	);
+	return checkPerm(performanceMeetingService.permission.checkIn) && row.status === 'in_progress';
 }
 
 function statusLabel(status?: MeetingStatus) {

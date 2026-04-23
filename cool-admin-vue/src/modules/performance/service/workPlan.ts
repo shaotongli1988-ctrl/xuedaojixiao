@@ -5,10 +5,7 @@
  */
 import { BaseService } from '/@/cool';
 import { asPerformanceServicePromise } from './service-contract';
-import {
-	decodeWorkPlanPageResult,
-	decodeWorkPlanRecord
-} from './work-plan-contract';
+import { decodeWorkPlanPageResult, decodeWorkPlanRecord } from './work-plan-contract';
 import type {
 	WorkPlanCancelPayload,
 	WorkPlanCreatePayload,
@@ -56,10 +53,7 @@ export default class PerformanceWorkPlanService extends BaseService {
 	}
 
 	createWorkPlan(data: WorkPlanCreatePayload) {
-		return asPerformanceServicePromise<WorkPlanRecord>(
-			super.add(data),
-			decodeWorkPlanRecord
-		);
+		return asPerformanceServicePromise<WorkPlanRecord>(super.add(data), decodeWorkPlanRecord);
 	}
 
 	updateWorkPlan(data: WorkPlanUpdatePayload) {
@@ -74,35 +68,47 @@ export default class PerformanceWorkPlanService extends BaseService {
 	}
 
 	start(data: WorkPlanStartPayload) {
-		return asPerformanceServicePromise<WorkPlanRecord>(this.request({
-			url: '/start',
-			method: 'POST',
-			data
-		}), decodeWorkPlanRecord);
+		return asPerformanceServicePromise<WorkPlanRecord>(
+			this.request({
+				url: '/start',
+				method: 'POST',
+				data
+			}),
+			decodeWorkPlanRecord
+		);
 	}
 
 	complete(data: WorkPlanCompletePayload) {
-		return asPerformanceServicePromise<WorkPlanRecord>(this.request({
-			url: '/complete',
-			method: 'POST',
-			data
-		}), decodeWorkPlanRecord);
+		return asPerformanceServicePromise<WorkPlanRecord>(
+			this.request({
+				url: '/complete',
+				method: 'POST',
+				data
+			}),
+			decodeWorkPlanRecord
+		);
 	}
 
 	cancel(data: WorkPlanCancelPayload) {
-		return asPerformanceServicePromise<WorkPlanRecord>(this.request({
-			url: '/cancel',
-			method: 'POST',
-			data
-		}), decodeWorkPlanRecord);
+		return asPerformanceServicePromise<WorkPlanRecord>(
+			this.request({
+				url: '/cancel',
+				method: 'POST',
+				data
+			}),
+			decodeWorkPlanRecord
+		);
 	}
 
 	syncDingtalkApproval(data: WorkPlanSyncPayload) {
-		return asPerformanceServicePromise<WorkPlanRecord>(this.request({
-			url: '/syncDingtalkApproval',
-			method: 'POST',
-			data
-		}), decodeWorkPlanRecord);
+		return asPerformanceServicePromise<WorkPlanRecord>(
+			this.request({
+				url: '/syncDingtalkApproval',
+				method: 'POST',
+				data
+			}),
+			decodeWorkPlanRecord
+		);
 	}
 }
 

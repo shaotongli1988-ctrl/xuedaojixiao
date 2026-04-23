@@ -14,10 +14,24 @@
 		:form-fields="formFields"
 		:create-filters="createFilters"
 		:create-empty="createEmptyAssetAssignment"
-		:fetch-page="performanceAssetAssignmentService.fetchPage.bind(performanceAssetAssignmentService)"
-		:create-item="performanceAssetAssignmentService.createAssignment.bind(performanceAssetAssignmentService)"
-		:update-item="performanceAssetAssignmentService.updateAssignment.bind(performanceAssetAssignmentService)"
-		:remove-item="performanceAssetAssignmentService.removeAssignment.bind(performanceAssetAssignmentService)"
+		:fetch-page="
+			performanceAssetAssignmentService.fetchPage.bind(performanceAssetAssignmentService)
+		"
+		:create-item="
+			performanceAssetAssignmentService.createAssignment.bind(
+				performanceAssetAssignmentService
+			)
+		"
+		:update-item="
+			performanceAssetAssignmentService.updateAssignment.bind(
+				performanceAssetAssignmentService
+			)
+		"
+		:remove-item="
+			performanceAssetAssignmentService.removeAssignment.bind(
+				performanceAssetAssignmentService
+			)
+		"
 		:row-actions="rowActions"
 		create-label="新增固定资产领用"
 		edit-label="编辑固定资产领用"
@@ -28,10 +42,7 @@
 import { computed, onMounted, ref } from 'vue';
 import AssetCrudPage from './asset-crud-page.vue';
 import { performanceAssetAssignmentService } from '../../service/asset-assignment';
-import {
-	createEmptyAssetAssignment,
-	type AssetAssignmentRecord
-} from '../../types';
+import { createEmptyAssetAssignment, type AssetAssignmentRecord } from '../../types';
 import {
 	createElementLookupWarningHandler,
 	loadAssetDepartmentOptions,

@@ -87,7 +87,11 @@ function decodeRecruitPlanSnapshot(value: unknown, field: string): RecruitmentSo
 		status:
 			record.status === undefined
 				? undefined
-				: expectPerformanceServiceEnum(record.status, `${field}.status`, RECRUIT_PLAN_STATUS),
+				: expectPerformanceServiceEnum(
+						record.status,
+						`${field}.status`,
+						RECRUIT_PLAN_STATUS
+					),
 		positionName: decodeOptionalNullableString(record.positionName, `${field}.positionName`),
 		sourceResource: 'recruitPlan',
 		jobStandardId: decodeOptionalNullableNumber(record.jobStandardId, `${field}.jobStandardId`),
@@ -100,7 +104,7 @@ function decodeRecruitPlanSnapshot(value: unknown, field: string): RecruitmentSo
 						record.status,
 						`${field}.recruitPlanStatus`,
 						RECRUIT_PLAN_STATUS
-				  ),
+					),
 		targetDepartmentId: decodeOptionalNullableNumber(
 			record.targetDepartmentId,
 			`${field}.targetDepartmentId`
@@ -121,7 +125,11 @@ function decodeJobStandardSnapshot(value: unknown, field: string): RecruitmentSo
 		status:
 			record.status === undefined
 				? undefined
-				: expectPerformanceServiceEnum(record.status, `${field}.status`, JOB_STANDARD_STATUS),
+				: expectPerformanceServiceEnum(
+						record.status,
+						`${field}.status`,
+						JOB_STANDARD_STATUS
+					),
 		positionName: decodeOptionalNullableString(record.positionName, `${field}.positionName`),
 		sourceResource: 'jobStandard',
 		jobStandardId: decodeOptionalNullableNumber(record.id, `${field}.jobStandardId`),
@@ -161,7 +169,10 @@ function decodeInterviewSourceSnapshot(value: unknown, field: string): Recruitme
 			record.targetDepartmentId,
 			`${field}.targetDepartmentId`
 		),
-		targetPosition: decodeOptionalNullableString(record.targetPosition, `${field}.targetPosition`)
+		targetPosition: decodeOptionalNullableString(
+			record.targetPosition,
+			`${field}.targetPosition`
+		)
 	};
 }
 
@@ -170,7 +181,10 @@ function decodeReferenceSnapshot(value: unknown, field: string): RecruitmentSour
 
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
-		candidateName: expectPerformanceServiceString(record.candidateName, `${field}.candidateName`),
+		candidateName: expectPerformanceServiceString(
+			record.candidateName,
+			`${field}.candidateName`
+		),
 		targetDepartmentId: expectPerformanceServiceNumber(
 			record.targetDepartmentId,
 			`${field}.targetDepartmentId`
@@ -179,7 +193,10 @@ function decodeReferenceSnapshot(value: unknown, field: string): RecruitmentSour
 			record.targetDepartmentName,
 			`${field}.targetDepartmentName`
 		),
-		targetPosition: decodeOptionalNullableString(record.targetPosition, `${field}.targetPosition`),
+		targetPosition: decodeOptionalNullableString(
+			record.targetPosition,
+			`${field}.targetPosition`
+		),
 		status: decodeResumePoolStatus(record.status, `${field}.status`),
 		recruitPlanId: decodeOptionalNullableNumber(record.recruitPlanId, `${field}.recruitPlanId`),
 		jobStandardId: decodeOptionalNullableNumber(record.jobStandardId, `${field}.jobStandardId`)
@@ -205,7 +222,10 @@ function decodeGeneratedInterviewSourceSnapshot(
 			record.targetDepartmentId,
 			`${field}.targetDepartmentId`
 		),
-		targetPosition: decodeOptionalNullableString(record.targetPosition, `${field}.targetPosition`)
+		targetPosition: decodeOptionalNullableString(
+			record.targetPosition,
+			`${field}.targetPosition`
+		)
 	};
 }
 
@@ -217,7 +237,10 @@ function decodeGeneratedReferenceSnapshot(
 
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
-		candidateName: expectPerformanceServiceString(record.candidateName, `${field}.candidateName`),
+		candidateName: expectPerformanceServiceString(
+			record.candidateName,
+			`${field}.candidateName`
+		),
 		targetDepartmentId: expectPerformanceServiceNumber(
 			record.targetDepartmentId,
 			`${field}.targetDepartmentId`
@@ -226,7 +249,10 @@ function decodeGeneratedReferenceSnapshot(
 			record.targetDepartmentName,
 			`${field}.targetDepartmentName`
 		),
-		targetPosition: decodeOptionalNullableString(record.targetPosition, `${field}.targetPosition`),
+		targetPosition: decodeOptionalNullableString(
+			record.targetPosition,
+			`${field}.targetPosition`
+		),
 		phone: expectPerformanceServiceString(record.phone, `${field}.phone`),
 		email: decodeOptionalNullableString(record.email, `${field}.email`),
 		status: decodeResumePoolStatus(record.status, `${field}.status`),
@@ -258,8 +284,12 @@ function decodeGeneratedRecruitPlanSnapshot(
 		endDate: decodeOptionalNullableString(record.endDate, `${field}.endDate`),
 		status:
 			record.status == null
-				? record.status ?? undefined
-				: expectPerformanceServiceEnum(record.status, `${field}.status`, RECRUIT_PLAN_STATUS),
+				? (record.status ?? undefined)
+				: expectPerformanceServiceEnum(
+						record.status,
+						`${field}.status`,
+						RECRUIT_PLAN_STATUS
+					),
 		jobStandardId: decodeOptionalNullableNumber(record.jobStandardId, `${field}.jobStandardId`)
 	};
 }
@@ -272,7 +302,10 @@ function decodeGeneratedJobStandardSnapshot(
 
 	return {
 		id: decodeOptionalNullableNumber(record.id, `${field}.id`),
-		positionName: expectPerformanceServiceOptionalString(record.positionName, `${field}.positionName`),
+		positionName: expectPerformanceServiceOptionalString(
+			record.positionName,
+			`${field}.positionName`
+		),
 		jobLevel: decodeOptionalNullableString(record.jobLevel, `${field}.jobLevel`),
 		targetDepartmentId: decodeOptionalNullableNumber(
 			record.targetDepartmentId,
@@ -284,8 +317,12 @@ function decodeGeneratedJobStandardSnapshot(
 		),
 		status:
 			record.status == null
-				? record.status ?? undefined
-				: expectPerformanceServiceEnum(record.status, `${field}.status`, JOB_STANDARD_STATUS),
+				? (record.status ?? undefined)
+				: expectPerformanceServiceEnum(
+						record.status,
+						`${field}.status`,
+						JOB_STANDARD_STATUS
+					),
 		requirementSummary: decodeOptionalNullableString(
 			record.requirementSummary,
 			`${field}.requirementSummary`
@@ -301,7 +338,10 @@ export function decodeResumePoolRecord(
 
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
-		candidateName: expectPerformanceServiceString(record.candidateName, `${field}.candidateName`),
+		candidateName: expectPerformanceServiceString(
+			record.candidateName,
+			`${field}.candidateName`
+		),
 		targetDepartmentId: expectPerformanceServiceNumber(
 			record.targetDepartmentId,
 			`${field}.targetDepartmentId`
@@ -310,11 +350,13 @@ export function decodeResumePoolRecord(
 			record.targetDepartmentName,
 			`${field}.targetDepartmentName`
 		),
-		targetPosition: decodeOptionalNullableString(record.targetPosition, `${field}.targetPosition`),
+		targetPosition: decodeOptionalNullableString(
+			record.targetPosition,
+			`${field}.targetPosition`
+		),
 		phone: expectPerformanceServiceString(record.phone, `${field}.phone`),
 		email: decodeOptionalNullableString(record.email, `${field}.email`),
-		resumeText:
-			typeof record.resumeText === 'string' ? record.resumeText : '',
+		resumeText: typeof record.resumeText === 'string' ? record.resumeText : '',
 		sourceType: decodeResumePoolSourceType(record.sourceType, `${field}.sourceType`),
 		sourceRemark: decodeOptionalNullableString(record.sourceRemark, `${field}.sourceRemark`),
 		externalLink: decodeOptionalNullableString(record.externalLink, `${field}.externalLink`),
@@ -334,7 +376,10 @@ export function decodeResumePoolRecord(
 						record.attachmentSummaryList,
 						`${field}.attachmentSummaryList`
 					).map((item, index) =>
-						decodeResumePoolAttachmentSummary(item, `${field}.attachmentSummaryList[${index}]`)
+						decodeResumePoolAttachmentSummary(
+							item,
+							`${field}.attachmentSummaryList[${index}]`
+						)
 					),
 		status: decodeResumePoolStatus(record.status, `${field}.status`),
 		linkedTalentAssetId: decodeOptionalNullableNumber(
@@ -347,7 +392,10 @@ export function decodeResumePoolRecord(
 		),
 		recruitPlanId: decodeOptionalNullableNumber(record.recruitPlanId, `${field}.recruitPlanId`),
 		jobStandardId: decodeOptionalNullableNumber(record.jobStandardId, `${field}.jobStandardId`),
-		recruitPlanTitle: decodeOptionalNullableString(record.recruitPlanTitle, `${field}.recruitPlanTitle`),
+		recruitPlanTitle: decodeOptionalNullableString(
+			record.recruitPlanTitle,
+			`${field}.recruitPlanTitle`
+		),
 		jobStandardPositionName: decodeOptionalNullableString(
 			record.jobStandardPositionName,
 			`${field}.jobStandardPositionName`
@@ -359,12 +407,21 @@ export function decodeResumePoolRecord(
 		recruitPlanSnapshot:
 			record.recruitPlanSnapshot == null
 				? null
-				: decodeRecruitPlanSnapshot(record.recruitPlanSnapshot, `${field}.recruitPlanSnapshot`),
+				: decodeRecruitPlanSnapshot(
+						record.recruitPlanSnapshot,
+						`${field}.recruitPlanSnapshot`
+					),
 		jobStandardSnapshot:
 			record.jobStandardSnapshot == null
 				? null
-				: decodeJobStandardSnapshot(record.jobStandardSnapshot, `${field}.jobStandardSnapshot`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
+				: decodeJobStandardSnapshot(
+						record.jobStandardSnapshot,
+						`${field}.jobStandardSnapshot`
+					),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
 		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`)
 	};
 }
@@ -384,7 +441,10 @@ export function decodeResumePoolImportResult(
 
 	return {
 		fileId: expectPerformanceServiceNumber(record.fileId, `${field}.fileId`),
-		importedCount: expectPerformanceServiceNumber(record.importedCount, `${field}.importedCount`),
+		importedCount: expectPerformanceServiceNumber(
+			record.importedCount,
+			`${field}.importedCount`
+		),
 		overwrittenCount: expectPerformanceServiceNumber(
 			record.overwrittenCount,
 			`${field}.overwrittenCount`
@@ -420,7 +480,10 @@ export function decodeResumePoolExportRows(
 			),
 			phone: expectPerformanceServiceString(row.phone, `${field}[${index}].phone`),
 			email: decodeOptionalNullableString(row.email, `${field}[${index}].email`),
-			resumeText: expectPerformanceServiceString(row.resumeText, `${field}[${index}].resumeText`),
+			resumeText: expectPerformanceServiceString(
+				row.resumeText,
+				`${field}[${index}].resumeText`
+			),
 			sourceType: decodeResumePoolSourceType(row.sourceType, `${field}[${index}].sourceType`),
 			sourceRemark: decodeOptionalNullableString(
 				row.sourceRemark,
@@ -475,7 +538,10 @@ export function decodeResumePoolTalentAssetConvertResult(
 	const record = expectPerformanceServiceRecord(value, field);
 
 	return {
-		talentAssetId: expectPerformanceServiceNumber(record.talentAssetId, `${field}.talentAssetId`),
+		talentAssetId: expectPerformanceServiceNumber(
+			record.talentAssetId,
+			`${field}.talentAssetId`
+		),
 		created: expectPerformanceServiceBoolean(record.created, `${field}.created`)
 	};
 }
@@ -498,7 +564,7 @@ export function decodeResumePoolCreateInterviewResult(
 				: decodeGeneratedInterviewSourceSnapshot(
 						record.sourceSnapshot,
 						`${field}.sourceSnapshot`
-				  ),
+					),
 		snapshot:
 			record.snapshot == null
 				? undefined
@@ -509,41 +575,41 @@ export function decodeResumePoolCreateInterviewResult(
 				: decodeGeneratedReferenceSnapshot(
 						record.resumePoolSummary,
 						`${field}.resumePoolSummary`
-				  ),
+					),
 		resumePoolSnapshot:
 			record.resumePoolSnapshot == null
 				? undefined
 				: decodeGeneratedReferenceSnapshot(
 						record.resumePoolSnapshot,
 						`${field}.resumePoolSnapshot`
-				  ),
+					),
 		recruitPlanSummary:
 			record.recruitPlanSummary == null
 				? null
 				: decodeGeneratedRecruitPlanSnapshot(
 						record.recruitPlanSummary,
 						`${field}.recruitPlanSummary`
-				  ),
+					),
 		recruitPlanSnapshot:
 			record.recruitPlanSnapshot == null
 				? null
 				: decodeGeneratedRecruitPlanSnapshot(
 						record.recruitPlanSnapshot,
 						`${field}.recruitPlanSnapshot`
-				  ),
+					),
 		jobStandardSummary:
 			record.jobStandardSummary == null
 				? null
 				: decodeGeneratedJobStandardSnapshot(
 						record.jobStandardSummary,
 						`${field}.jobStandardSummary`
-				  ),
+					),
 		jobStandardSnapshot:
 			record.jobStandardSnapshot == null
 				? null
 				: decodeGeneratedJobStandardSnapshot(
 						record.jobStandardSnapshot,
 						`${field}.jobStandardSnapshot`
-				  )
+					)
 	};
 }

@@ -115,22 +115,33 @@
 				</el-table-column>
 				<el-table-column prop="status" label="状态" width="110">
 					<template #default="{ row }">
-						<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+						<el-tag :type="statusTagType(row.status)">{{
+							statusLabel(row.status)
+						}}</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
 				<el-table-column label="操作" fixed="right" min-width="420">
 					<template #default="{ row }">
 						<div class="recruit-plan-page__actions">
-							<el-button v-if="showInfoButton" text @click="openDetail(row)">详情</el-button>
-							<el-button v-if="canEdit(row)" text type="primary" @click="openEdit(row)">
+							<el-button v-if="showInfoButton" text @click="openDetail(row)"
+								>详情</el-button
+							>
+							<el-button
+								v-if="canEdit(row)"
+								text
+								type="primary"
+								@click="openEdit(row)"
+							>
 								编辑
 							</el-button>
 							<el-button
 								v-if="canDelete(row)"
 								text
 								type="danger"
-								:loading="actionLoadingId === row.id && actionLoadingType === 'delete'"
+								:loading="
+									actionLoadingId === row.id && actionLoadingType === 'delete'
+								"
 								@click="handleDelete(row)"
 							>
 								删除
@@ -139,7 +150,9 @@
 								v-if="canSubmit(row)"
 								text
 								type="success"
-								:loading="actionLoadingId === row.id && actionLoadingType === 'submit'"
+								:loading="
+									actionLoadingId === row.id && actionLoadingType === 'submit'
+								"
 								@click="handleSubmit(row)"
 							>
 								提交
@@ -148,7 +161,9 @@
 								v-if="canClose(row)"
 								text
 								type="warning"
-								:loading="actionLoadingId === row.id && actionLoadingType === 'close'"
+								:loading="
+									actionLoadingId === row.id && actionLoadingType === 'close'
+								"
 								@click="handleClose(row)"
 							>
 								关闭
@@ -157,7 +172,9 @@
 								v-if="canVoid(row)"
 								text
 								type="danger"
-								:loading="actionLoadingId === row.id && actionLoadingType === 'void'"
+								:loading="
+									actionLoadingId === row.id && actionLoadingType === 'void'
+								"
 								@click="handleVoid(row)"
 							>
 								作废
@@ -166,7 +183,9 @@
 								v-if="canReopen(row)"
 								text
 								type="primary"
-								:loading="actionLoadingId === row.id && actionLoadingType === 'reopen'"
+								:loading="
+									actionLoadingId === row.id && actionLoadingType === 'reopen'
+								"
 								@click="handleReopen(row)"
 							>
 								重新开启
@@ -188,12 +207,7 @@
 			</div>
 		</el-card>
 
-		<el-dialog
-			v-model="detailVisible"
-			title="招聘计划详情"
-			width="900px"
-			destroy-on-close
-		>
+		<el-dialog v-model="detailVisible" title="招聘计划详情" width="900px" destroy-on-close>
 			<div v-if="detailRecord" class="recruit-plan-page__detail">
 				<el-alert
 					v-if="detailRecord.status !== 'draft'"
@@ -212,7 +226,10 @@
 						</el-tag>
 					</el-descriptions-item>
 					<el-descriptions-item label="目标部门">
-						{{ detailRecord.targetDepartmentName || departmentLabel(detailRecord.targetDepartmentId) }}
+						{{
+							detailRecord.targetDepartmentName ||
+							departmentLabel(detailRecord.targetDepartmentId)
+						}}
 					</el-descriptions-item>
 					<el-descriptions-item label="目标岗位">
 						{{ detailRecord.positionName }}
@@ -278,7 +295,11 @@
 		>
 			<el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
 				<el-alert
-					:title="editingRecord?.id ? '仅 draft 招聘计划可编辑；状态流转请使用提交 / 关闭 / 作废 / 重新开启动作。' : '新建保存后默认进入 draft 状态。'"
+					:title="
+						editingRecord?.id
+							? '仅 draft 招聘计划可编辑；状态流转请使用提交 / 关闭 / 作废 / 重新开启动作。'
+							: '新建保存后默认进入 draft 状态。'
+					"
 					:type="editingRecord?.id ? 'warning' : 'info'"
 					:closable="false"
 					show-icon
@@ -442,17 +463,11 @@ import {
 	createElementWarningFromErrorHandler,
 	showElementErrorFromError
 } from '../shared/error-message';
-import {
-	confirmElementAction,
-	runTrackedElementAction
-} from '../shared/action-feedback';
+import { confirmElementAction, runTrackedElementAction } from '../shared/action-feedback';
 import { performanceRecruitPlanService } from '../../service/recruit-plan';
 import type { RecruitPlanSaveRequest } from '../../types';
 import { performanceResumePoolService } from '../../service/resumePool';
-import {
-	loadDepartmentOptions,
-	loadUserOptions
-} from '../../utils/lookup-options.js';
+import { loadDepartmentOptions, loadUserOptions } from '../../utils/lookup-options.js';
 import {
 	consumeRoutePreset,
 	firstQueryValue,
@@ -543,9 +558,7 @@ const rules: FormRules = {
 			trigger: 'change'
 		}
 	],
-	requirementSummary: [
-		{ max: 2000, message: '需求摘要长度不能超过 2000', trigger: 'blur' }
-	]
+	requirementSummary: [{ max: 2000, message: '需求摘要长度不能超过 2000', trigger: 'blur' }]
 };
 
 const statusOptions = computed<Array<{ label: string; value: RecruitPlanStatus }>>(() =>
@@ -1144,7 +1157,7 @@ function openCreateWithPrefill(prefill?: {
 					jobStandardPositionName:
 						prefill.jobStandardPositionName || prefill.positionName || null,
 					jobStandardRequirementSummary: prefill.requirementSummary || null
-			  }
+				}
 			: null
 	});
 	editingRecord.value = null;
@@ -1161,7 +1174,8 @@ function recruitPlanSourceLabel(record?: RecruitPlanRecord | null) {
 		return '-';
 	}
 
-	const positionName = snapshot.jobStandardPositionName || record?.jobStandardPositionName || '职位标准';
+	const positionName =
+		snapshot.jobStandardPositionName || record?.jobStandardPositionName || '职位标准';
 	return `${positionName} #${snapshot.jobStandardId}`;
 }
 
@@ -1178,9 +1192,7 @@ function recruitPlanSourceSummary(record?: RecruitPlanRecord | null) {
 		return label;
 	}
 
-	return label === '-'
-		? `要求：${requirementSummary}`
-		: `${label}；要求：${requirementSummary}`;
+	return label === '-' ? `要求：${requirementSummary}` : `${label}；要求：${requirementSummary}`;
 }
 
 async function goToJobStandardSource(record?: RecruitPlanRecord | null) {
@@ -1208,7 +1220,9 @@ async function goCreateResumePool(record?: RecruitPlanRecord | null) {
 		path: '/performance/resumePool',
 		query: {
 			openCreate: '1',
-			targetDepartmentId: record.targetDepartmentId ? String(record.targetDepartmentId) : undefined,
+			targetDepartmentId: record.targetDepartmentId
+				? String(record.targetDepartmentId)
+				: undefined,
 			targetPosition: record.positionName || undefined,
 			recruitPlanId: String(record.id),
 			recruitPlanTitle: record.title || undefined,
@@ -1290,9 +1304,7 @@ function parseWorkbookRows(workbook: XLSX.WorkBook) {
 			defval: ''
 		});
 
-		parsedRows.push(
-			...sheetRows.map(sanitizeImportRow).filter(item => hasImportContent(item))
-		);
+		parsedRows.push(...sheetRows.map(sanitizeImportRow).filter(item => hasImportContent(item)));
 	}
 
 	return parsedRows;
@@ -1407,7 +1419,9 @@ function extractExportRows(response: RecruitPlanExportRow[] | unknown): RecruitP
 }
 
 function toRecord(value: unknown): Record<string, unknown> | undefined {
-	return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : undefined;
+	return typeof value === 'object' && value !== null
+		? (value as Record<string, unknown>)
+		: undefined;
 }
 </script>
 

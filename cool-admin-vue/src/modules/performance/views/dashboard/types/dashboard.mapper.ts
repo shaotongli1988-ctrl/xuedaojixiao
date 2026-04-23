@@ -4,13 +4,13 @@ import dayjs from 'dayjs';
 import type {
 	DashboardCrossMetricCardDto,
 	DashboardCrossSummaryResponseDto,
-	DashboardSummaryResponseDto,
+	DashboardSummaryResponseDto
 } from './dashboard.dto';
 import type {
 	DashboardCardTone,
 	DashboardCrossMetricViewModel,
 	DashboardPageViewModel,
-	DashboardStatCardViewModel,
+	DashboardStatCardViewModel
 } from './dashboard.view-model';
 
 export function createEmptyDashboardSummary(): DashboardSummaryResponseDto {
@@ -21,13 +21,13 @@ export function createEmptyDashboardSummary(): DashboardSummaryResponseDto {
 		stageProgress: [],
 		departmentDistribution: [],
 		gradeDistribution: [],
-		updatedAt: null,
+		updatedAt: null
 	};
 }
 
 export function createEmptyCrossSummary(): DashboardCrossSummaryResponseDto {
 	return {
-		metricCards: [],
+		metricCards: []
 	};
 }
 
@@ -47,7 +47,7 @@ export function mapDashboardPageViewModel(params: {
 				? dayjs(summary.updatedAt).format('YYYY-MM-DD HH:mm:ss')
 				: '暂无刷新记录',
 			refreshing,
-			scopeLabel: resolveScopeLabelFromSummary(summary),
+			scopeLabel: resolveScopeLabelFromSummary(summary)
 		},
 		stats: mapStatCards(summary),
 		stageProgress: summary.stageProgress
@@ -60,21 +60,21 @@ export function mapDashboardPageViewModel(params: {
 				totalCount: item.totalCount,
 				completionRate: item.completionRate,
 				sort: item.sort,
-				displayText: `${item.completedCount} / ${item.totalCount}`,
+				displayText: `${item.completedCount} / ${item.totalCount}`
 			})),
 		departmentBars: summary.departmentDistribution.map(item => ({
 			departmentId: item.departmentId,
 			departmentName: item.departmentName,
 			averageScore: item.averageScore,
-			assessmentCount: item.assessmentCount,
+			assessmentCount: item.assessmentCount
 		})),
 		gradeSlices: summary.gradeDistribution.map(item => ({
 			grade: item.grade,
 			count: item.count,
-			ratio: item.ratio,
+			ratio: item.ratio
 		})),
 		crossMetrics: (crossSummary.metricCards || []).map(mapCrossMetricCard),
-		errorMessage,
+		errorMessage
 	};
 }
 
@@ -86,7 +86,7 @@ function mapStatCards(summary: DashboardSummaryResponseDto): DashboardStatCardVi
 			value: formatDecimal(summary.averageScore),
 			helper: '按已审批评估单汇总',
 			tone: 'brand',
-			variant: 'featured',
+			variant: 'featured'
 		},
 		{
 			key: 'pendingApprovalCount',
@@ -94,7 +94,7 @@ function mapStatCards(summary: DashboardSummaryResponseDto): DashboardStatCardVi
 			value: String(summary.pendingApprovalCount || 0),
 			helper: '当前权限范围内待处理',
 			tone: 'warning',
-			variant: 'featured',
+			variant: 'featured'
 		},
 		{
 			key: 'goalCompletionRate',
@@ -102,7 +102,7 @@ function mapStatCards(summary: DashboardSummaryResponseDto): DashboardStatCardVi
 			value: formatDecimal(summary.goalCompletionRate),
 			unit: '%',
 			helper: '当前周期目标完成进度',
-			tone: 'success',
+			tone: 'success'
 		},
 		{
 			key: 'departmentCoverage',
@@ -110,8 +110,8 @@ function mapStatCards(summary: DashboardSummaryResponseDto): DashboardStatCardVi
 			value: String(summary.departmentDistribution.length),
 			unit: '个',
 			helper: '当前筛选范围内已产出统计',
-			tone: 'neutral',
-		},
+			tone: 'neutral'
+		}
 	];
 }
 
@@ -127,7 +127,7 @@ function mapCrossMetricCard(item: DashboardCrossMetricCardDto): DashboardCrossMe
 		statusLabel: resolveStatusLabel(item),
 		status: item.dataStatus,
 		updatedAtLabel: item.updatedAt ? dayjs(item.updatedAt).format('YYYY-MM-DD HH:mm:ss') : '--',
-		tone: resolveTone(item.dataStatus),
+		tone: resolveTone(item.dataStatus)
 	};
 }
 
@@ -147,7 +147,8 @@ function resolvePeriodTypeLabel(periodType: string) {
 
 function resolveScopeLabel(scopeType: string, departmentId: number | null) {
 	if (scopeType === 'global') return '全局口径';
-	if (scopeType === 'department_tree') return departmentId ? `部门树 #${departmentId}` : '部门树范围';
+	if (scopeType === 'department_tree')
+		return departmentId ? `部门树 #${departmentId}` : '部门树范围';
 	return '--';
 }
 

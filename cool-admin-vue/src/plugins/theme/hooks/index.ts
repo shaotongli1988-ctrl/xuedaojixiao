@@ -63,12 +63,27 @@ export const useTheme = defineStore('theme', () => {
 			const lineColor = mix(nextColor, lightMixTarget, isDark.value ? 0.52 : 0.7);
 			const emphasisColor = mix(nextColor, darkMixTarget, isDark.value ? 0.18 : 0.12);
 
-			setRootVar('--foundation-color-brand-100', mix(nextColor, lightMixTarget, isDark.value ? 0.86 : 0.92));
-			setRootVar('--foundation-color-brand-200', mix(nextColor, lightMixTarget, isDark.value ? 0.78 : 0.82));
-			setRootVar('--foundation-color-brand-300', mix(nextColor, lightMixTarget, isDark.value ? 0.68 : 0.68));
+			setRootVar(
+				'--foundation-color-brand-100',
+				mix(nextColor, lightMixTarget, isDark.value ? 0.86 : 0.92)
+			);
+			setRootVar(
+				'--foundation-color-brand-200',
+				mix(nextColor, lightMixTarget, isDark.value ? 0.78 : 0.82)
+			);
+			setRootVar(
+				'--foundation-color-brand-300',
+				mix(nextColor, lightMixTarget, isDark.value ? 0.68 : 0.68)
+			);
 			setRootVar('--foundation-color-brand-500', nextColor);
-			setRootVar('--foundation-color-brand-700', mix(nextColor, darkMixTarget, isDark.value ? 0.16 : 0.1));
-			setRootVar('--foundation-color-brand-900', mix(nextColor, darkMixTarget, isDark.value ? 0.56 : 0.54));
+			setRootVar(
+				'--foundation-color-brand-700',
+				mix(nextColor, darkMixTarget, isDark.value ? 0.16 : 0.1)
+			);
+			setRootVar(
+				'--foundation-color-brand-900',
+				mix(nextColor, darkMixTarget, isDark.value ? 0.56 : 0.54)
+			);
 			setRootVar('--foundation-color-brand-soft', softColor);
 
 			setRootVar('--app-accent-brand', nextColor);

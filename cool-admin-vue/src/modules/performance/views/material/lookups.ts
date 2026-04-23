@@ -11,22 +11,13 @@ import {
 	createLookupWarningHandler,
 	resolveLookupErrorMessage
 } from '../shared/lookup-warning';
-import type {
-	DepartmentOption,
-	LookupErrorHandler,
-	MaterialOption,
-	UserOption
-} from '../../types';
+import type { DepartmentOption, LookupErrorHandler, MaterialOption, UserOption } from '../../types';
 import type { CrudSelectOption } from '../shared/crud-page-shell';
 
 export type { DepartmentOption } from '../../types';
 export type { LookupErrorHandler } from '../../types';
 export type { MaterialOption } from '../../types';
-export {
-	createElementLookupWarningHandler,
-	createLookupWarningHandler,
-	resolveLookupErrorMessage
-};
+export { createElementLookupWarningHandler, createLookupWarningHandler, resolveLookupErrorMessage };
 
 export function toSelectOptions<T extends { id: number; label: string }>(
 	list: T[]

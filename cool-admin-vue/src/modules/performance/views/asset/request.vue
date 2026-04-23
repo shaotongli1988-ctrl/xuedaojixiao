@@ -16,10 +16,22 @@
 		:form-fields="formFields"
 		:create-filters="createFilters"
 		:create-empty="createEmptyAssetAssignmentRequest"
-		:fetch-page="performanceAssetAssignmentRequestService.fetchPage.bind(performanceAssetAssignmentRequestService)"
+		:fetch-page="
+			performanceAssetAssignmentRequestService.fetchPage.bind(
+				performanceAssetAssignmentRequestService
+			)
+		"
 		:fetch-info="fetchInfo"
-		:create-item="performanceAssetAssignmentRequestService.createDraft.bind(performanceAssetAssignmentRequestService)"
-		:update-item="performanceAssetAssignmentRequestService.updateDraft.bind(performanceAssetAssignmentRequestService)"
+		:create-item="
+			performanceAssetAssignmentRequestService.createDraft.bind(
+				performanceAssetAssignmentRequestService
+			)
+		"
+		:update-item="
+			performanceAssetAssignmentRequestService.updateDraft.bind(
+				performanceAssetAssignmentRequestService
+			)
+		"
 		:row-actions="rowActions"
 		create-label="新建申请"
 		edit-label="编辑草稿"
@@ -30,10 +42,7 @@
 import { computed, onMounted, ref } from 'vue';
 import AssetCrudPage from './asset-crud-page.vue';
 import { performanceAssetAssignmentRequestService } from '../../service/asset-assignment-request';
-import {
-	createEmptyAssetAssignmentRequest,
-	type AssetAssignmentRequestRecord
-} from '../../types';
+import { createEmptyAssetAssignmentRequest, type AssetAssignmentRequestRecord } from '../../types';
 import {
 	createElementLookupWarningHandler,
 	loadAssetDepartmentOptions,
@@ -56,7 +65,12 @@ const columns = [
 	{ prop: 'requestType', label: '类型', minWidth: 140, tagMap: assignmentRequestTypeTagMap },
 	{ prop: 'assetCategory', label: '资产分类', minWidth: 140 },
 	{ prop: 'assetModelRequest', label: '型号需求', minWidth: 160 },
-	{ prop: 'unitPriceEstimate', label: '预估单价', minWidth: 120, formatter: value => formatMoney(value) },
+	{
+		prop: 'unitPriceEstimate',
+		label: '预估单价',
+		minWidth: 120,
+		formatter: value => formatMoney(value)
+	},
 	{ prop: 'currentApproverName', label: '当前审批人', minWidth: 140 },
 	{ prop: 'status', label: '状态', minWidth: 140, tagMap: assignmentRequestStatusTagMap }
 ];
@@ -74,7 +88,8 @@ const detailFields = [
 		label: '命中规则',
 		minWidth: 220,
 		span: 2,
-		formatter: (value: string[]) => (Array.isArray(value) && value.length ? value.join(' / ') : '-')
+		formatter: (value: string[]) =>
+			Array.isArray(value) && value.length ? value.join(' / ') : '-'
 	},
 	{ prop: 'assignedAssetNo', label: '已配发资产编号', minWidth: 180 },
 	{ prop: 'assignedAt', label: '配发时间', minWidth: 160 },
@@ -82,21 +97,46 @@ const detailFields = [
 ];
 
 const filters = [
-	{ prop: 'status', label: '状态', type: 'select', options: enumOptions(assignmentRequestStatusTagMap) },
-	{ prop: 'requestLevel', label: '层级', type: 'select', options: enumOptions(assignmentRequestLevelTagMap) },
-	{ prop: 'requestType', label: '类型', type: 'select', options: enumOptions(assignmentRequestTypeTagMap) }
+	{
+		prop: 'status',
+		label: '状态',
+		type: 'select',
+		options: enumOptions(assignmentRequestStatusTagMap)
+	},
+	{
+		prop: 'requestLevel',
+		label: '层级',
+		type: 'select',
+		options: enumOptions(assignmentRequestLevelTagMap)
+	},
+	{
+		prop: 'requestType',
+		label: '类型',
+		type: 'select',
+		options: enumOptions(assignmentRequestTypeTagMap)
+	}
 ];
 
 const departmentOptions = ref<CrudSelectOption[]>([]);
 
 const formFields = computed(() => [
-	{ prop: 'requestType', label: '申请类型', type: 'select', options: enumOptions(assignmentRequestTypeTagMap) },
+	{
+		prop: 'requestType',
+		label: '申请类型',
+		type: 'select',
+		options: enumOptions(assignmentRequestTypeTagMap)
+	},
 	{ prop: 'assetCategory', label: '资产分类', type: 'text' },
 	{ prop: 'assetModelRequest', label: '型号需求', type: 'text' },
 	{ prop: 'quantity', label: '数量', type: 'number', min: 1 },
 	{ prop: 'unitPriceEstimate', label: '预估单价', type: 'number', min: 0, precision: 2 },
 	{ prop: 'expectedUseStartDate', label: '预期使用日期', type: 'date' },
-	{ prop: 'targetDepartmentId', label: '目标部门', type: 'select', options: departmentOptions.value },
+	{
+		prop: 'targetDepartmentId',
+		label: '目标部门',
+		type: 'select',
+		options: departmentOptions.value
+	},
 	{ prop: 'originalAssetId', label: '原资产ID', type: 'number', min: 0 },
 	{ prop: 'originalAssignmentId', label: '原领用记录ID', type: 'number', min: 0 },
 	{ prop: 'usageReason', label: '用途说明', type: 'textarea', span: 24 },

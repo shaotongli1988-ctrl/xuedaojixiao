@@ -57,7 +57,9 @@ export type OfficeLedgerUpdatePayload<TRecord extends OfficeLedgerBaseRecord> = 
 	id: number;
 };
 
-export interface OfficeLedgerPageResult<TRecord extends OfficeLedgerBaseRecord = OfficeLedgerBaseRecord> {
+export interface OfficeLedgerPageResult<
+	TRecord extends OfficeLedgerBaseRecord = OfficeLedgerBaseRecord
+> {
 	list: TRecord[];
 	pagination?: {
 		page?: number;
@@ -89,7 +91,8 @@ export class PerformanceOfficeLedgerService<
 		super(buildOfficeLedgerEndpoint(moduleKey));
 		this.permission = buildOfficeLedgerPermissions(moduleKey) as OfficeLedgerServicePermission;
 		this.decodeRecord =
-			decoders?.decodeRecord ?? (decodeOfficeLedgerBaseRecord as OfficeLedgerRecordDecoder<TRecord>);
+			decoders?.decodeRecord ??
+			(decodeOfficeLedgerBaseRecord as OfficeLedgerRecordDecoder<TRecord>);
 		this.decodeStats =
 			decoders?.decodeStats ?? (decodeOfficeLedgerStats as OfficeLedgerStatsDecoder<TStats>);
 	}
@@ -97,7 +100,8 @@ export class PerformanceOfficeLedgerService<
 	fetchPage(data: OfficeLedgerPageParams) {
 		return asPerformanceServicePromise<OfficeLedgerPageResult<TRecord>>(
 			super.page(data),
-			value => decodeOfficeLedgerPageResult(value, 'officeLedgerPageResult', this.decodeRecord)
+			value =>
+				decodeOfficeLedgerPageResult(value, 'officeLedgerPageResult', this.decodeRecord)
 		);
 	}
 

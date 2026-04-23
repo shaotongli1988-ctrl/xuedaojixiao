@@ -80,51 +80,69 @@ export default class PerformanceResumePoolService extends BaseService {
 	}
 
 	importResume(data: ResumePoolImportRequest) {
-		return asPerformanceServicePromise<ResumePoolImportResult>(this.request({
-			url: '/import',
-			method: 'POST',
-			data
-		}), decodeResumePoolImportResult);
+		return asPerformanceServicePromise<ResumePoolImportResult>(
+			this.request({
+				url: '/import',
+				method: 'POST',
+				data
+			}),
+			decodeResumePoolImportResult
+		);
 	}
 
 	exportResume(data: ResumePoolExportQuery) {
-		return asPerformanceServicePromise<ResumePoolExportRow[]>(this.request({
-			url: '/export',
-			method: 'POST',
-			data
-		}), decodeResumePoolExportRows);
+		return asPerformanceServicePromise<ResumePoolExportRow[]>(
+			this.request({
+				url: '/export',
+				method: 'POST',
+				data
+			}),
+			decodeResumePoolExportRows
+		);
 	}
 
 	uploadAttachment(data: ResumePoolUploadAttachmentRequest) {
-		return asPerformanceServicePromise<ResumePoolRecord>(this.request({
-			url: '/uploadAttachment',
-			method: 'POST',
-			data
-		}), decodeResumePoolRecord);
+		return asPerformanceServicePromise<ResumePoolRecord>(
+			this.request({
+				url: '/uploadAttachment',
+				method: 'POST',
+				data
+			}),
+			decodeResumePoolRecord
+		);
 	}
 
 	downloadAttachment(data: ResumePoolDownloadAttachmentRequest) {
-		return asPerformanceServicePromise<ResumePoolAttachmentDownloadResult>(this.request({
-			url: '/downloadAttachment',
-			method: 'POST',
-			data
-		}), decodeResumePoolAttachmentDownloadResult);
+		return asPerformanceServicePromise<ResumePoolAttachmentDownloadResult>(
+			this.request({
+				url: '/downloadAttachment',
+				method: 'POST',
+				data
+			}),
+			decodeResumePoolAttachmentDownloadResult
+		);
 	}
 
 	convertToTalentAsset(data: ResumePoolActionRequest) {
-		return asPerformanceServicePromise<ResumePoolTalentAssetConvertResult>(this.request({
-			url: '/convertToTalentAsset',
-			method: 'POST',
-			data
-		}), decodeResumePoolTalentAssetConvertResult);
+		return asPerformanceServicePromise<ResumePoolTalentAssetConvertResult>(
+			this.request({
+				url: '/convertToTalentAsset',
+				method: 'POST',
+				data
+			}),
+			decodeResumePoolTalentAssetConvertResult
+		);
 	}
 
 	createInterview(data: ResumePoolActionRequest) {
-		return asPerformanceServicePromise<ResumePoolCreateInterviewResult>(this.request({
-			url: '/createInterview',
-			method: 'POST',
-			data
-		}), decodeResumePoolCreateInterviewResult);
+		return asPerformanceServicePromise<ResumePoolCreateInterviewResult>(
+			this.request({
+				url: '/createInterview',
+				method: 'POST',
+				data
+			}),
+			decodeResumePoolCreateInterviewResult
+		);
 	}
 }
 

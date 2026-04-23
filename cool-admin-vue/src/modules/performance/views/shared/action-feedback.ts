@@ -42,11 +42,7 @@ export async function confirmElementAction(
 	}
 }
 
-export async function promptElementAction(
-	message: string,
-	title: string,
-	options?: PromptOptions
-) {
+export async function promptElementAction(message: string, title: string, options?: PromptOptions) {
 	try {
 		return (await ElMessageBox.prompt(message, title, options)) as PromptResult;
 	} catch (error: unknown) {

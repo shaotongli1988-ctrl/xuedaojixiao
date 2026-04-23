@@ -12,12 +12,7 @@
 					</div>
 					<p>{{ config.description }}</p>
 				</div>
-				<el-alert
-					:title="config.notice"
-					type="info"
-					:closable="false"
-					show-icon
-				/>
+				<el-alert :title="config.notice" type="info" :closable="false" show-icon />
 			</div>
 		</el-card>
 
@@ -63,17 +58,13 @@
 		</el-card>
 
 		<el-row v-if="showStatsSection" :gutter="16">
-			<el-col
-				v-for="card in config.statsCards"
-				:key="card.key"
-				:xs="24"
-				:sm="12"
-				:lg="6"
-			>
+			<el-col v-for="card in config.statsCards" :key="card.key" :xs="24" :sm="12" :lg="6">
 				<el-card shadow="never">
 					<div class="office-ledger-page__metric-label">{{ card.label }}</div>
 					<div class="office-ledger-page__metric-value">
-						{{ config.formatStatsValue?.(stats[card.key], card) ?? stats[card.key] ?? 0 }}
+						{{
+							config.formatStatsValue?.(stats[card.key], card) ?? stats[card.key] ?? 0
+						}}
 					</div>
 					<div class="office-ledger-page__metric-helper">{{ card.helper }}</div>
 				</el-card>
@@ -105,7 +96,9 @@
 				</el-table-column>
 				<el-table-column label="操作" fixed="right" min-width="220">
 					<template #default="{ row }">
-						<el-button v-if="showInfoButton" text @click="openDetail(row)">详情</el-button>
+						<el-button v-if="showInfoButton" text @click="openDetail(row)"
+							>详情</el-button
+						>
 						<el-button
 							v-if="showEditButton && canEditRecord(row)"
 							text
@@ -173,7 +166,11 @@
 		>
 			<el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
 				<el-alert
-					:title="editingRecord?.id ? `编辑 ${config.entityLabel} 元数据；归档记录不可继续维护。` : `新建记录默认只维护元数据，不触发真实上传、物流同步或外部发布。`"
+					:title="
+						editingRecord?.id
+							? `编辑 ${config.entityLabel} 元数据；归档记录不可继续维护。`
+							: `新建记录默认只维护元数据，不触发真实上传、物流同步或外部发布。`
+					"
 					:type="editingRecord?.id ? 'warning' : 'info'"
 					:closable="false"
 					show-icon
@@ -274,30 +271,26 @@
 	</el-card>
 </template>
 
-<script lang="ts" setup generic="TRecord extends OfficeLedgerBaseRecord, TStats extends OfficeLedgerStats">
+<script
+	lang="ts"
+	setup
+	generic="TRecord extends OfficeLedgerBaseRecord, TStats extends OfficeLedgerStats"
+>
 import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
 import { useListPage } from '../../composables/use-list-page.js';
-import {
-	performanceAccessContextService
-} from '../../service/access-context';
+import { performanceAccessContextService } from '../../service/access-context';
 import { performanceDocumentCenterService } from '../../service/documentCenter';
 import { resolvePerformanceRoleFact } from '../../service/role-fact';
-import {
-	confirmElementAction,
-	runTrackedElementAction
-} from '../shared/action-feedback';
+import { confirmElementAction, runTrackedElementAction } from '../shared/action-feedback';
 import {
 	resolveErrorMessage,
 	showElementErrorFromError,
 	showElementWarningFromError
 } from '../shared/error-message';
 import type { PerformanceAccessContext } from '../../types';
-import type {
-	OfficeLedgerBaseRecord,
-	OfficeLedgerStats,
-} from '../../service/office-ledger';
+import type { OfficeLedgerBaseRecord, OfficeLedgerStats } from '../../service/office-ledger';
 import type {
 	OfficeLedgerConfig,
 	OfficeLedgerCrudService,
@@ -368,9 +361,12 @@ const rules = computed<FormRules>(() => {
 			{
 				required: true,
 				message: `请输入${field.label}`,
-				trigger: field.type === 'select' || field.type === 'date' || field.type === 'document-multi'
-					? 'change'
-					: 'blur'
+				trigger:
+					field.type === 'select' ||
+					field.type === 'date' ||
+					field.type === 'document-multi'
+						? 'change'
+						: 'blur'
 			}
 		];
 		return result;
@@ -385,7 +381,12 @@ onMounted(() => {
 });
 
 async function initializePage() {
-	await Promise.all([loadAccessContext(), pageState.reload(), loadStats(), loadDocumentReferences()]);
+	await Promise.all([
+		loadAccessContext(),
+		pageState.reload(),
+		loadStats(),
+		loadDocumentReferences()
+	]);
 }
 
 async function loadAccessContext() {
@@ -403,7 +404,9 @@ async function loadStats() {
 		return;
 	}
 	try {
-		stats.value = normalizeStats(await props.service.fetchStats(props.config.normalizeFilters({ ...filters })));
+		stats.value = normalizeStats(
+			await props.service.fetchStats(props.config.normalizeFilters({ ...filters }))
+		);
 	} catch (error: unknown) {
 		showElementErrorFromError(error, `${props.config.entityLabel}统计加载失败`);
 	}
@@ -503,7 +506,9 @@ function setFormNumberValue(prop: string, value: number | undefined) {
 
 function getFormDocumentIds(prop: string) {
 	const value = form[prop];
-	return Array.isArray(value) ? value.map(item => Number(item)).filter(item => Number.isFinite(item)) : [];
+	return Array.isArray(value)
+		? value.map(item => Number(item)).filter(item => Number.isFinite(item))
+		: [];
 }
 
 function setFormDocumentIds(prop: string, value: number[]) {
@@ -524,9 +529,11 @@ function resolveOptionsByProp(prop?: string) {
 	if (!prop) {
 		return [];
 	}
-	const field = [...props.config.filters, ...props.config.formFields, ...props.config.tableColumns].find(
-		item => item.prop === prop
-	);
+	const field = [
+		...props.config.filters,
+		...props.config.formFields,
+		...props.config.tableColumns
+	].find(item => item.prop === prop);
 	return field?.options || [];
 }
 
@@ -542,9 +549,11 @@ function resolveTagType(
 	const value = row?.[field.prop];
 	const options = field.options || resolveOptionsByProp(field.optionsProp);
 	const matched = options.find(item => String(item.value) === String(value));
-	return (matched?.type as OfficeLedgerTagType) ||
+	return (
+		(matched?.type as OfficeLedgerTagType) ||
 		(props.config.statusMap?.[String(value)]?.type as OfficeLedgerTagType) ||
-		'info';
+		'info'
+	);
 }
 
 function renderDocumentLabels(value: unknown) {
@@ -553,7 +562,9 @@ function renderDocumentLabels(value: unknown) {
 		return '-';
 	}
 	return ids
-		.map(id => documentOptions.value.find(item => item.id === Number(id))?.label || `资料#${id}`)
+		.map(
+			id => documentOptions.value.find(item => item.id === Number(id))?.label || `资料#${id}`
+		)
 		.join('，');
 }
 
@@ -604,7 +615,8 @@ function openCreate() {
 async function openEdit(row: TRecord) {
 	try {
 		const rowId = resolveNumericId(row.id);
-		const source = showInfoButton.value && rowId ? await props.service.fetchInfo({ id: rowId }) : row;
+		const source =
+			showInfoButton.value && rowId ? await props.service.fetchInfo({ id: rowId }) : row;
 		editingRecord.value = row;
 		assignForm({
 			...props.config.createEmptyForm(),
@@ -689,7 +701,12 @@ function resolveNumericId(value: unknown) {
 
 function normalizeStats(value: TStats): OfficeLedgerStatsView {
 	return Object.entries(value || {}).reduce<OfficeLedgerStatsView>((result, [key, item]) => {
-		if (typeof item === 'string' || typeof item === 'number' || item === null || item === undefined) {
+		if (
+			typeof item === 'string' ||
+			typeof item === 'number' ||
+			item === null ||
+			item === undefined
+		) {
 			result[key] = item;
 		}
 		return result;

@@ -75,12 +75,18 @@
 
 				<div v-if="primaryPendingCard" class="performance-workbench__focus-card">
 					<div class="performance-workbench__focus-kicker">现在先做</div>
-					<div class="performance-workbench__focus-title">{{ primaryPendingCard.title }}</div>
+					<div class="performance-workbench__focus-title">
+						{{ primaryPendingCard.title }}
+					</div>
 					<div class="performance-workbench__focus-description">
 						{{ primaryPendingCard.description }}
 					</div>
 					<div class="performance-workbench__focus-meta">
-						<el-tag v-if="primaryPendingCard.count !== undefined" effect="plain" type="warning">
+						<el-tag
+							v-if="primaryPendingCard.count !== undefined"
+							effect="plain"
+							type="warning"
+						>
 							{{ primaryPendingCard.count }}
 							{{ primaryPendingCard.countLabel || '项待处理' }}
 						</el-tag>
@@ -135,9 +141,13 @@
 					<div class="performance-workbench__section-main">
 						<div class="performance-workbench__section-kicker">
 							<span class="performance-workbench__section-index">01</span>
-							<span class="performance-workbench__section-tip">{{ pendingSection.tip }}</span>
+							<span class="performance-workbench__section-tip">{{
+								pendingSection.tip
+							}}</span>
 						</div>
-						<div class="performance-workbench__section-title">{{ pendingSection.title }}</div>
+						<div class="performance-workbench__section-title">
+							{{ pendingSection.title }}
+						</div>
 						<div class="performance-workbench__section-description">
 							{{ pendingSection.description }}
 						</div>
@@ -148,7 +158,9 @@
 							<span class="performance-workbench__section-count-value">
 								{{ pendingSection.cards.length }}
 							</span>
-							<span class="performance-workbench__section-count-label">个待办入口</span>
+							<span class="performance-workbench__section-count-label"
+								>个待办入口</span
+							>
 						</div>
 					</div>
 				</div>
@@ -171,7 +183,9 @@
 						<div class="performance-workbench__section-main">
 							<div class="performance-workbench__section-kicker">
 								<span class="performance-workbench__section-index">02</span>
-								<span class="performance-workbench__section-tip">{{ shortcutSection.tip }}</span>
+								<span class="performance-workbench__section-tip">{{
+									shortcutSection.tip
+								}}</span>
 							</div>
 							<div class="performance-workbench__section-title">
 								{{ shortcutSection.title }}
@@ -196,9 +210,13 @@
 						<div class="performance-workbench__section-main">
 							<div class="performance-workbench__section-kicker">
 								<span class="performance-workbench__section-index">03</span>
-								<span class="performance-workbench__section-tip">{{ riskSection.tip }}</span>
+								<span class="performance-workbench__section-tip">{{
+									riskSection.tip
+								}}</span>
 							</div>
-							<div class="performance-workbench__section-title">{{ riskSection.title }}</div>
+							<div class="performance-workbench__section-title">
+								{{ riskSection.title }}
+							</div>
 						</div>
 					</div>
 
@@ -226,7 +244,9 @@
 							<span class="performance-workbench__section-index">
 								{{ formatSectionIndex(index + 3) }}
 							</span>
-							<span class="performance-workbench__section-tip">{{ section.tip }}</span>
+							<span class="performance-workbench__section-tip">{{
+								section.tip
+							}}</span>
 						</div>
 						<div class="performance-workbench__section-title">{{ section.title }}</div>
 						<div class="performance-workbench__section-description">
@@ -302,7 +322,13 @@ import type {
 	WorkbenchTaskCardModel
 } from '../../workbench/types';
 
-const PRIMARY_SECTION_ORDER: WorkbenchSectionKey[] = ['pending', 'shortcuts', 'risks', 'mine', 'zone'];
+const PRIMARY_SECTION_ORDER: WorkbenchSectionKey[] = [
+	'pending',
+	'shortcuts',
+	'risks',
+	'mine',
+	'zone'
+];
 
 const user = useUserStore();
 const router = useRouter();
@@ -366,7 +392,7 @@ const primaryPendingCard = computed(() => pendingSection.value?.cards?.[0]);
 const bannerActionCards = computed(() => {
 	const actions = [
 		...(pendingSection.value?.cards?.slice(1, 2) || []),
-		...(shortcutSection.value?.cards?.slice(0, 2) || []),
+		...(shortcutSection.value?.cards?.slice(0, 2) || [])
 	];
 
 	return actions.filter(card => Boolean(card.path)).slice(0, 3);
@@ -397,7 +423,7 @@ async function goToCard(card?: WorkbenchTaskCardModel | null) {
 
 	await router.push({
 		path: card.path,
-		query: card.query,
+		query: card.query
 	});
 }
 
@@ -406,7 +432,9 @@ async function refreshWorkbench() {
 	pageError.value = '';
 
 	try {
-		const context = await performanceAccessContextService.fetchContext(activePersonaKey.value || null);
+		const context = await performanceAccessContextService.fetchContext(
+			activePersonaKey.value || null
+		);
 		await applyWorkbenchContext(context);
 	} catch (error: unknown) {
 		pageError.value = resolveErrorMessage(error, '角色工作台占位数据加载失败');

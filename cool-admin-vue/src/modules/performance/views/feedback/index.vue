@@ -87,24 +87,26 @@
 					</el-table-column>
 					<el-table-column prop="status" label="状态" width="120">
 						<template #default="{ row }">
-							<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+							<el-tag :type="statusTagType(row.status)">{{
+								statusLabel(row.status)
+							}}</el-tag>
 						</template>
 					</el-table-column>
 					<el-table-column prop="updateTime" label="更新时间" min-width="170" />
 					<el-table-column label="操作" fixed="right" min-width="340">
-					<template #default="{ row }">
-						<el-button text @click="inspectTask(row)">查看任务</el-button>
-						<el-button
-							v-if="canViewSourceAssessment(row)"
-							text
-							type="primary"
-							@click="goSourceAssessment(row.assessmentId!)"
-						>
-							来源评估单
-						</el-button>
-						<el-button
-							v-if="canSubmitFeedback(row)"
-							text
+						<template #default="{ row }">
+							<el-button text @click="inspectTask(row)">查看任务</el-button>
+							<el-button
+								v-if="canViewSourceAssessment(row)"
+								text
+								type="primary"
+								@click="goSourceAssessment(row.assessmentId!)"
+							>
+								来源评估单
+							</el-button>
+							<el-button
+								v-if="canSubmitFeedback(row)"
+								text
 								type="primary"
 								@click="openSubmit(row)"
 							>
@@ -152,10 +154,7 @@
 					</div>
 				</template>
 
-				<el-empty
-					v-if="!selectedTask"
-					description="请选择一条环评任务查看后端汇总结果"
-				/>
+				<el-empty v-if="!selectedTask" description="请选择一条环评任务查看后端汇总结果" />
 
 				<div v-else class="feedback-page__summary-panel" v-loading="summaryLoading">
 					<el-descriptions :column="1" border>
@@ -186,7 +185,11 @@
 							<el-card shadow="never">
 								<div class="feedback-page__metric-label">已提交</div>
 								<div class="feedback-page__metric-value">
-									{{ selectedSummary?.submittedCount ?? selectedTask.submittedCount ?? 0 }}
+									{{
+										selectedSummary?.submittedCount ??
+										selectedTask.submittedCount ??
+										0
+									}}
 								</div>
 							</el-card>
 						</el-col>
@@ -194,7 +197,9 @@
 							<el-card shadow="never">
 								<div class="feedback-page__metric-label">应提交</div>
 								<div class="feedback-page__metric-value">
-									{{ selectedSummary?.totalCount ?? selectedTask.totalCount ?? 0 }}
+									{{
+										selectedSummary?.totalCount ?? selectedTask.totalCount ?? 0
+									}}
 								</div>
 							</el-card>
 						</el-col>
@@ -233,12 +238,7 @@
 			</el-card>
 		</div>
 
-		<el-dialog
-			v-model="formVisible"
-			title="发起环评任务"
-			width="860px"
-			destroy-on-close
-		>
+		<el-dialog v-model="formVisible" title="发起环评任务" width="860px" destroy-on-close>
 			<feedback-task-form
 				:model-value="form"
 				:users="userOptions"

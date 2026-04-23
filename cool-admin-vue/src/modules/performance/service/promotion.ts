@@ -5,10 +5,7 @@
  */
 import { BaseService } from '/@/cool';
 import { asPerformanceServicePromise } from './service-contract';
-import {
-	decodePromotionPageResult,
-	decodePromotionRecord
-} from './promotion-contract';
+import { decodePromotionPageResult, decodePromotionRecord } from './promotion-contract';
 import type {
 	PromotionCreatePayload,
 	PromotionInfoQuery,
@@ -49,10 +46,7 @@ export default class PerformancePromotionService extends BaseService {
 	}
 
 	createPromotion(data: PromotionCreatePayload) {
-		return asPerformanceServicePromise<PromotionRecord>(
-			super.add(data),
-			decodePromotionRecord
-		);
+		return asPerformanceServicePromise<PromotionRecord>(super.add(data), decodePromotionRecord);
 	}
 
 	updatePromotion(data: PromotionUpdatePayload) {

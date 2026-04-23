@@ -29,7 +29,13 @@ const ASSET_STATUS = [
 	'scrapped'
 ] as const;
 
-const ASSET_TRANSFER_STATUS = ['draft', 'cancelled', 'submitted', 'completed', 'inTransit'] as const;
+const ASSET_TRANSFER_STATUS = [
+	'draft',
+	'cancelled',
+	'submitted',
+	'completed',
+	'inTransit'
+] as const;
 
 function decodeAssetStatus(value: unknown, field: string): AssetStatus {
 	return expectPerformanceServiceEnum(value, field, ASSET_STATUS);
@@ -47,7 +53,10 @@ export function decodeAssetTransferRecord(
 
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
-		transferNo: expectPerformanceServiceOptionalString(record.transferNo, `${field}.transferNo`),
+		transferNo: expectPerformanceServiceOptionalString(
+			record.transferNo,
+			`${field}.transferNo`
+		),
 		assetId: expectPerformanceServiceOptionalNumber(record.assetId, `${field}.assetId`),
 		assetNo: expectPerformanceServiceOptionalString(record.assetNo, `${field}.assetNo`),
 		assetName: expectPerformanceServiceOptionalString(record.assetName, `${field}.assetName`),
@@ -75,20 +84,35 @@ export function decodeAssetTransferRecord(
 			record.fromLocation,
 			`${field}.fromLocation`
 		),
-		toLocation: expectPerformanceServiceOptionalString(record.toLocation, `${field}.toLocation`),
-		applicantId: expectPerformanceServiceOptionalNumber(record.applicantId, `${field}.applicantId`),
+		toLocation: expectPerformanceServiceOptionalString(
+			record.toLocation,
+			`${field}.toLocation`
+		),
+		applicantId: expectPerformanceServiceOptionalNumber(
+			record.applicantId,
+			`${field}.applicantId`
+		),
 		applicantName: expectPerformanceServiceOptionalString(
 			record.applicantName,
 			`${field}.applicantName`
 		),
-		submitTime: expectPerformanceServiceOptionalString(record.submitTime, `${field}.submitTime`),
-		completeTime: expectPerformanceServiceOptionalString(record.completeTime, `${field}.completeTime`),
+		submitTime: expectPerformanceServiceOptionalString(
+			record.submitTime,
+			`${field}.submitTime`
+		),
+		completeTime: expectPerformanceServiceOptionalString(
+			record.completeTime,
+			`${field}.completeTime`
+		),
 		remark: expectPerformanceServiceOptionalString(record.remark, `${field}.remark`),
 		status:
 			record.status === undefined
 				? undefined
 				: decodeAssetTransferStatus(record.status, `${field}.status`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
 		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`)
 	};
 }

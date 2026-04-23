@@ -31,7 +31,10 @@ test('resumePool page consumes openDetail preset for deep-linked source navigati
 	assert.match(source, /keys:\s*\['openDetail', 'resumePoolId'\]/);
 	assert.match(source, /detailRecord\.value = record;/);
 	assert.match(source, /performanceResumePoolService\.createInterview\(\{\s*id:\s*rowId\s*\}\)/);
-	assert.match(source, /path:\s*'\/performance\/interview',[\s\S]*openDetail:\s*'1'[\s\S]*interviewId:\s*String\(interviewId\)/);
+	assert.match(
+		source,
+		/path:\s*'\/performance\/interview',[\s\S]*openDetail:\s*'1'[\s\S]*interviewId:\s*String\(interviewId\)/
+	);
 });
 
 test('interview page keeps deep-link detail consumer and source back-links', async () => {
@@ -40,16 +43,28 @@ test('interview page keeps deep-link detail consumer and source back-links', asy
 	assert.match(source, /keys:\s*\['openDetail', 'interviewId'\]/);
 	assert.match(source, /'sourceResource',\s*'talentAssetId',/);
 	assert.match(source, /detailInterview\.value = record;/);
-	assert.match(source, /sourceResource:\s*'talentAsset',[\s\S]*talentAssetId:\s*prefill\.talentAssetId/);
+	assert.match(
+		source,
+		/sourceResource:\s*'talentAsset',[\s\S]*talentAssetId:\s*prefill\.talentAssetId/
+	);
 	assert.match(source, /function interviewTalentAssetLabel/);
-	assert.match(source, /path:\s*'\/performance\/resumePool',[\s\S]*openDetail:\s*'1'[\s\S]*resumePoolId:\s*String\(record\.resumePoolId\)/);
-	assert.match(source, /path:\s*'\/performance\/recruit-plan',[\s\S]*openDetail:\s*'1'[\s\S]*recruitPlanId:\s*String\(record\.recruitPlanId\)/);
+	assert.match(
+		source,
+		/path:\s*'\/performance\/resumePool',[\s\S]*openDetail:\s*'1'[\s\S]*resumePoolId:\s*String\(record\.resumePoolId\)/
+	);
+	assert.match(
+		source,
+		/path:\s*'\/performance\/recruit-plan',[\s\S]*openDetail:\s*'1'[\s\S]*recruitPlanId:\s*String\(record\.recruitPlanId\)/
+	);
 });
 
 test('hiring page links back to interview detail instead of plain list page', async () => {
 	const source = await readFile(hiringViewPath, 'utf8');
 
-	assert.match(source, /path:\s*'\/performance\/interview',[\s\S]*openDetail:\s*'1'[\s\S]*interviewId:\s*String\(record\.sourceSnapshot\.interviewId\)/);
+	assert.match(
+		source,
+		/path:\s*'\/performance\/interview',[\s\S]*openDetail:\s*'1'[\s\S]*interviewId:\s*String\(record\.sourceSnapshot\.interviewId\)/
+	);
 });
 
 test('talentAsset page carries source context into interview prefill', async () => {

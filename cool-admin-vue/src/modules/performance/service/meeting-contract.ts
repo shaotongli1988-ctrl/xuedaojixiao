@@ -4,11 +4,7 @@
  * 维护重点：会议主记录与分页结果必须共享同一条结构边界，避免终态和人员字段被异常响应污染。
  */
 
-import type {
-	MeetingPageResult,
-	MeetingRecord,
-	MeetingStatus
-} from '../types';
+import type { MeetingPageResult, MeetingRecord, MeetingStatus } from '../types';
 import {
 	decodePerformanceServicePageResult,
 	expectPerformanceServiceEnum,
@@ -25,10 +21,7 @@ function decodeMeetingStatus(value: unknown, field: string): MeetingStatus {
 	return expectPerformanceServiceEnum(value, field, MEETING_STATUS);
 }
 
-export function decodeMeetingRecord(
-	value: unknown,
-	field = 'meetingRecord'
-): MeetingRecord {
+export function decodeMeetingRecord(value: unknown, field = 'meetingRecord'): MeetingRecord {
 	const record = expectPerformanceServiceRecord(value, field);
 
 	return {
@@ -45,7 +38,10 @@ export function decodeMeetingRecord(
 		description:
 			record.description === undefined
 				? undefined
-				: expectPerformanceServiceNullableString(record.description, `${field}.description`),
+				: expectPerformanceServiceNullableString(
+						record.description,
+						`${field}.description`
+					),
 		startDate: expectPerformanceServiceString(record.startDate, `${field}.startDate`),
 		endDate: expectPerformanceServiceString(record.endDate, `${field}.endDate`),
 		location:
@@ -67,7 +63,10 @@ export function decodeMeetingRecord(
 			record.status === undefined
 				? undefined
 				: decodeMeetingStatus(record.status, `${field}.status`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
 		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`)
 	};
 }

@@ -14,9 +14,7 @@
 
 				<div class="goal-ops-page__hero-tags">
 					<el-tag effect="plain" type="info">{{ roleLabel }}</el-tag>
-					<el-tag effect="plain">
-						日期 {{ filters.planDate }}
-					</el-tag>
+					<el-tag effect="plain"> 日期 {{ filters.planDate }} </el-tag>
 					<el-tag effect="plain" type="success">
 						{{ scopedDepartmentLabel }}
 					</el-tag>
@@ -76,7 +74,11 @@
 					<el-button v-if="canCreatePersonalPlan" @click="openCreatePlan('personal')">
 						新增个人补充目标
 					</el-button>
-					<el-button v-if="canManageDepartmentView" type="primary" @click="openCreatePlan('public')">
+					<el-button
+						v-if="canManageDepartmentView"
+						type="primary"
+						@click="openCreatePlan('public')"
+					>
 						下发公共目标
 					</el-button>
 					<el-button
@@ -101,7 +103,10 @@
 
 		<el-row :gutter="16" class="goal-ops-page__summary">
 			<el-col :xs="24" :sm="12" :lg="6">
-				<el-card shadow="never" class="goal-ops-page__metric goal-ops-page__metric--primary">
+				<el-card
+					shadow="never"
+					class="goal-ops-page__metric goal-ops-page__metric--primary"
+				>
 					<div class="goal-ops-page__metric-label">团队完成率</div>
 					<div class="goal-ops-page__metric-value">
 						{{ formatPercent(overviewSummary.completionRate) }}
@@ -162,16 +167,20 @@
 
 			<el-row :gutter="16">
 				<el-col :xs="24" :xl="15">
-					<el-card shadow="hover" class="goal-ops-page__panel" v-loading="todayPlansLoading">
+					<el-card
+						shadow="hover"
+						class="goal-ops-page__panel"
+						v-loading="todayPlansLoading"
+					>
 						<template #header>
 							<div class="goal-ops-page__panel-header">
 								<div>
 									<h3>我的待回填目标</h3>
-									<p>员工只维护自己的个人补充目标，但能同时看到公共目标分摊与实际完成值。</p>
+									<p>
+										员工只维护自己的个人补充目标，但能同时看到公共目标分摊与实际完成值。
+									</p>
 								</div>
-								<el-tag effect="plain">
-									{{ myTodayPlans.length }} 条
-								</el-tag>
+								<el-tag effect="plain"> {{ myTodayPlans.length }} 条 </el-tag>
 							</div>
 						</template>
 
@@ -185,7 +194,12 @@
 								<el-table-column prop="title" label="目标项" min-width="180" />
 								<el-table-column label="来源" width="120">
 									<template #default="{ row }">
-										<el-tag :type="row.sourceType === 'public' ? 'primary' : 'success'" effect="plain">
+										<el-tag
+											:type="
+												row.sourceType === 'public' ? 'primary' : 'success'
+											"
+											effect="plain"
+										>
 											{{ sourceTypeLabel(row.sourceType) }}
 										</el-tag>
 									</template>
@@ -205,12 +219,17 @@
 											controls-position="right"
 											style="width: 140px"
 										/>
-										<span class="goal-ops-page__inline-unit">{{ row.unit || '' }}</span>
+										<span class="goal-ops-page__inline-unit">{{
+											row.unit || ''
+										}}</span>
 									</template>
 								</el-table-column>
 								<el-table-column label="状态" width="120">
 									<template #default="{ row }">
-										<el-tag :type="planStatusTagType(row.status)" effect="plain">
+										<el-tag
+											:type="planStatusTagType(row.status)"
+											effect="plain"
+										>
 											{{ planStatusLabel(row.status) }}
 										</el-tag>
 									</template>
@@ -253,7 +272,9 @@
 								</div>
 								<div class="goal-ops-page__mini-stat">
 									<span>我的完成率</span>
-									<strong>{{ formatPercent(currentUserSummary?.completionRate || 0) }}</strong>
+									<strong>{{
+										formatPercent(currentUserSummary?.completionRate || 0)
+									}}</strong>
 								</div>
 							</div>
 
@@ -266,11 +287,15 @@
 							<div class="goal-ops-page__summary-grid">
 								<div>
 									<label>公共贡献</label>
-									<strong>{{ formatNumber(currentUserSummary?.publicActualValue || 0) }}</strong>
+									<strong>{{
+										formatNumber(currentUserSummary?.publicActualValue || 0)
+									}}</strong>
 								</div>
 								<div>
 									<label>个人贡献</label>
-									<strong>{{ formatNumber(currentUserSummary?.personalActualValue || 0) }}</strong>
+									<strong>{{
+										formatNumber(currentUserSummary?.personalActualValue || 0)
+									}}</strong>
 								</div>
 							</div>
 						</el-card>
@@ -282,7 +307,10 @@
 										<h3>日报状态</h3>
 										<p>系统内留痕为主，发送状态按真实结果回写。</p>
 									</div>
-									<el-tag :type="reportStatusTagType(reportInfo?.status)" effect="plain">
+									<el-tag
+										:type="reportStatusTagType(reportInfo?.status)"
+										effect="plain"
+									>
 										{{ reportStatusLabel(reportInfo?.status) }}
 									</el-tag>
 								</div>
@@ -299,7 +327,9 @@
 								</div>
 								<div>
 									<span>推送方式</span>
-									<strong>{{ reportInfo?.pushMode || departmentConfig.reportPushMode }}</strong>
+									<strong>{{
+										reportInfo?.pushMode || departmentConfig.reportPushMode
+									}}</strong>
 								</div>
 							</div>
 
@@ -402,7 +432,8 @@
 							</el-table-column>
 							<el-table-column label="公共/个人" min-width="170">
 								<template #default="{ row }">
-									{{ formatNumber(row.publicActualValue) }} / {{ formatNumber(row.personalActualValue) }}
+									{{ formatNumber(row.publicActualValue) }} /
+									{{ formatNumber(row.personalActualValue) }}
 								</template>
 							</el-table-column>
 						</el-table>
@@ -436,7 +467,8 @@
 							</el-table-column>
 							<el-table-column label="公共/个人" min-width="150">
 								<template #default="{ row }">
-									{{ formatNumber(row.publicActualValue) }} / {{ formatNumber(row.personalActualValue) }}
+									{{ formatNumber(row.publicActualValue) }} /
+									{{ formatNumber(row.personalActualValue) }}
 								</template>
 							</el-table-column>
 							<el-table-column label="完成率" width="110">
@@ -454,7 +486,9 @@
 							<div class="goal-ops-page__panel-header">
 								<div>
 									<h3>贡献拆维度明细</h3>
-									<p>公共目标贡献与个人补充目标贡献永久拆栏展示，避免统计口径混淆。</p>
+									<p>
+										公共目标贡献与个人补充目标贡献永久拆栏展示，避免统计口径混淆。
+									</p>
 								</div>
 							</div>
 						</template>
@@ -463,12 +497,14 @@
 							<el-table-column prop="employeeName" label="员工" min-width="120" />
 							<el-table-column label="公共贡献" min-width="130">
 								<template #default="{ row }">
-									{{ formatNumber(row.publicActualValue) }} / {{ formatNumber(row.publicTargetValue) }}
+									{{ formatNumber(row.publicActualValue) }} /
+									{{ formatNumber(row.publicTargetValue) }}
 								</template>
 							</el-table-column>
 							<el-table-column label="个人贡献" min-width="130">
 								<template #default="{ row }">
-									{{ formatNumber(row.personalActualValue) }} / {{ formatNumber(row.personalTargetValue) }}
+									{{ formatNumber(row.personalActualValue) }} /
+									{{ formatNumber(row.personalTargetValue) }}
 								</template>
 							</el-table-column>
 							<el-table-column label="完成率" width="110">
@@ -492,7 +528,9 @@
 				<div class="goal-ops-page__section-header">
 					<div>
 						<h2>目标配置区</h2>
-						<p>HR/管理员维护基础规则，主管维护本部门参数和计划池，员工只保留个人补充目标入口。</p>
+						<p>
+							HR/管理员维护基础规则，主管维护本部门参数和计划池，员工只保留个人补充目标入口。
+						</p>
 					</div>
 				</div>
 			</template>
@@ -545,7 +583,10 @@
 								/>
 							</el-form-item>
 							<el-form-item label="推送方式">
-								<el-select v-model="departmentConfig.reportPushMode" style="width: 100%">
+								<el-select
+									v-model="departmentConfig.reportPushMode"
+									style="width: 100%"
+								>
 									<el-option label="系统内+群推送" value="system_and_group" />
 									<el-option label="仅系统内" value="system_only" />
 									<el-option label="仅群推送" value="group_only" />
@@ -571,16 +612,18 @@
 				</el-col>
 
 				<el-col v-if="canManageDepartmentView" :xs="24" :xl="15">
-					<el-card shadow="hover" class="goal-ops-page__panel" v-loading="planPageLoading">
+					<el-card
+						shadow="hover"
+						class="goal-ops-page__panel"
+						v-loading="planPageLoading"
+					>
 						<template #header>
 							<div class="goal-ops-page__panel-header">
 								<div>
 									<h3>计划池</h3>
 									<p>主管管理公共目标，员工只可维护自己的个人补充目标。</p>
 								</div>
-								<el-tag effect="plain">
-									{{ planPagination.total }} 条
-								</el-tag>
+								<el-tag effect="plain"> {{ planPagination.total }} 条 </el-tag>
 							</div>
 						</template>
 
@@ -631,14 +674,18 @@
 							</el-table-column>
 							<el-table-column label="来源" width="110">
 								<template #default="{ row }">
-									<el-tag :type="row.sourceType === 'public' ? 'primary' : 'success'" effect="plain">
+									<el-tag
+										:type="row.sourceType === 'public' ? 'primary' : 'success'"
+										effect="plain"
+									>
 										{{ sourceTypeLabel(row.sourceType) }}
 									</el-tag>
 								</template>
 							</el-table-column>
 							<el-table-column label="目标 / 实际" min-width="140">
 								<template #default="{ row }">
-									{{ formatNumber(row.targetValue) }} / {{ formatNumber(row.actualValue) }}
+									{{ formatNumber(row.targetValue) }} /
+									{{ formatNumber(row.actualValue) }}
 								</template>
 							</el-table-column>
 							<el-table-column label="周期范围" min-width="180">
@@ -655,7 +702,12 @@
 							</el-table-column>
 							<el-table-column label="操作" min-width="180" fixed="right">
 								<template #default="{ row }">
-									<el-button v-if="canEditPlan(row)" text type="primary" @click="openEditPlan(row)">
+									<el-button
+										v-if="canEditPlan(row)"
+										text
+										type="primary"
+										@click="openEditPlan(row)"
+									>
 										编辑
 									</el-button>
 									<el-button
@@ -689,7 +741,9 @@
 							<div class="goal-ops-page__panel-header">
 								<div>
 									<h3>个人补充目标说明</h3>
-									<p>员工侧只保留个人补充目标入口，不展示部门计划池与部门规则编辑能力。</p>
+									<p>
+										员工侧只保留个人补充目标入口，不展示部门计划池与部门规则编辑能力。
+									</p>
 								</div>
 							</div>
 						</template>
@@ -748,18 +802,35 @@
 							<div class="goal-ops-page__report-kpis">
 								<div>
 									<label>部门完成率</label>
-									<strong>{{ formatPercent(reportInfo.summary.departmentSummary.completionRate) }}</strong>
+									<strong>{{
+										formatPercent(
+											reportInfo.summary.departmentSummary.completionRate
+										)
+									}}</strong>
 								</div>
 								<div>
 									<label>实际/目标</label>
 									<strong>
-										{{ formatNumber(reportInfo.summary.departmentSummary.totalActualValue) }} /
-										{{ formatNumber(reportInfo.summary.departmentSummary.totalTargetValue) }}
+										{{
+											formatNumber(
+												reportInfo.summary.departmentSummary
+													.totalActualValue
+											)
+										}}
+										/
+										{{
+											formatNumber(
+												reportInfo.summary.departmentSummary
+													.totalTargetValue
+											)
+										}}
 									</strong>
 								</div>
 								<div>
 									<label>自动补零</label>
-									<strong>{{ reportInfo.summary.departmentSummary.autoZeroCount }}</strong>
+									<strong>{{
+										reportInfo.summary.departmentSummary.autoZeroCount
+									}}</strong>
 								</div>
 							</div>
 
@@ -767,18 +838,29 @@
 								<el-col :xs="24" :md="12">
 									<h4 class="goal-ops-page__subheading">完成率榜 Top5</h4>
 									<ol class="goal-ops-page__rank-list">
-										<li v-for="item in reportInfo.summary.topCompletionEmployees" :key="`completion-${item.employeeId}`">
+										<li
+											v-for="item in reportInfo.summary
+												.topCompletionEmployees"
+											:key="`completion-${item.employeeId}`"
+										>
 											<span>{{ item.employeeName }}</span>
-											<strong>{{ formatPercent(item.completionRate) }}</strong>
+											<strong>{{
+												formatPercent(item.completionRate)
+											}}</strong>
 										</li>
 									</ol>
 								</el-col>
 								<el-col :xs="24" :md="12">
 									<h4 class="goal-ops-page__subheading">绝对产出榜 Top5</h4>
 									<ol class="goal-ops-page__rank-list">
-										<li v-for="item in reportInfo.summary.topOutputEmployees" :key="`output-${item.employeeId}`">
+										<li
+											v-for="item in reportInfo.summary.topOutputEmployees"
+											:key="`output-${item.employeeId}`"
+										>
 											<span>{{ item.employeeName }}</span>
-											<strong>{{ formatNumber(item.totalActualValue) }}</strong>
+											<strong>{{
+												formatNumber(item.totalActualValue)
+											}}</strong>
 										</li>
 									</ol>
 								</el-col>
@@ -804,7 +886,10 @@
 						/>
 
 						<ul v-else class="goal-ops-page__zero-list">
-							<li v-for="item in reportInfo.summary.autoZeroEmployees" :key="item.employeeId">
+							<li
+								v-for="item in reportInfo.summary.autoZeroEmployees"
+								:key="item.employeeId"
+							>
 								<span>{{ item.employeeName }}</span>
 								<strong>{{ item.autoZeroCount }} 项</strong>
 							</li>
@@ -828,7 +913,10 @@
 				<el-row :gutter="16">
 					<el-col :span="12">
 						<el-form-item label="目标来源" prop="sourceType">
-							<el-radio-group v-model="planForm.sourceType" :disabled="Boolean(editingPlanId)">
+							<el-radio-group
+								v-model="planForm.sourceType"
+								:disabled="Boolean(editingPlanId)"
+							>
 								<el-radio
 									v-for="item in sourceTypeOptions"
 									:key="item.value"
@@ -856,7 +944,9 @@
 							<el-select
 								v-model="planForm.employeeId"
 								filterable
-								:disabled="planForm.sourceType === 'personal' && !hasCompanyGoalScope"
+								:disabled="
+									planForm.sourceType === 'personal' && !hasCompanyGoalScope
+								"
 							>
 								<el-option
 									v-for="item in scopedUserOptions"
@@ -898,7 +988,10 @@
 					</el-col>
 					<el-col :span="24">
 						<el-form-item label="目标标题" prop="title">
-							<el-input v-model="planForm.title" placeholder="例如：电话量 / 课程回访 / 自拓客户" />
+							<el-input
+								v-model="planForm.title"
+								placeholder="例如：电话量 / 课程回访 / 自拓客户"
+							/>
 						</el-form-item>
 					</el-col>
 					<el-col :span="12">
@@ -1163,10 +1256,14 @@ const pendingAssignedCount = computed(() => {
 	return Math.max(overviewSummary.value.assignedCount - overviewSummary.value.submittedCount, 0);
 });
 const currentUserSummary = computed(() => {
-	return overview.value?.rows.find(item => Number(item.employeeId) === Number(currentUserId.value || 0));
+	return overview.value?.rows.find(
+		item => Number(item.employeeId) === Number(currentUserId.value || 0)
+	);
 });
 const myTodayPlans = computed(() => {
-	return todayPlans.value.filter(item => Number(item.employeeId) === Number(currentUserId.value || 0));
+	return todayPlans.value.filter(
+		item => Number(item.employeeId) === Number(currentUserId.value || 0)
+	);
 });
 const completionLeaderboard = computed(() => overview.value?.leaderboard?.completionRate || []);
 const outputLeaderboard = computed(() => overview.value?.leaderboard?.output || []);
@@ -1175,11 +1272,7 @@ const contributionRows = computed(() => {
 		return [];
 	}
 
-	if (
-		!canManageDepartmentView.value &&
-		!hasCompanyGoalScope.value &&
-		currentUserSummary.value
-	) {
+	if (!canManageDepartmentView.value && !hasCompanyGoalScope.value && currentUserSummary.value) {
 		return [currentUserSummary.value];
 	}
 
@@ -1352,7 +1445,10 @@ async function loadAccessProfile() {
 			Array.isArray(result.manageableDepartmentIds) &&
 			result.manageableDepartmentIds.length
 		) {
-			if (!filters.departmentId || !result.manageableDepartmentIds.includes(Number(filters.departmentId))) {
+			if (
+				!filters.departmentId ||
+				!result.manageableDepartmentIds.includes(Number(filters.departmentId))
+			) {
 				filters.departmentId = Number(result.manageableDepartmentIds[0]);
 			}
 			return;
@@ -1575,7 +1671,12 @@ async function handleFinalizeDaily() {
 			reportActionLoading.value = rowId ? 'finalize' : '';
 		},
 		refresh: async () => {
-			await Promise.all([loadOverview(), loadTodayPlans(), loadTrendPlans(), loadReportInfo()]);
+			await Promise.all([
+				loadOverview(),
+				loadTodayPlans(),
+				loadTrendPlans(),
+				loadReportInfo()
+			]);
 		}
 	});
 }
@@ -1657,7 +1758,8 @@ function openCreatePlan(sourceType: GoalOpsSourceType) {
 	editingPlanId.value = null;
 	Object.assign(planForm, createEmptyGoalOpsPlan(currentUserId.value), {
 		departmentId: scopedDepartmentId.value,
-		employeeId: sourceType === 'personal' ? currentUserId.value : filters.employeeId || undefined,
+		employeeId:
+			sourceType === 'personal' ? currentUserId.value : filters.employeeId || undefined,
 		sourceType,
 		periodType: 'day',
 		planDate: filters.planDate,
@@ -1752,7 +1854,8 @@ function canDeletePlan(row: GoalOpsPlanRecord) {
 		return canManageDepartmentView.value || hasCompanyGoalScope.value;
 	}
 	return (
-		(canCreatePersonalPlan.value && Number(row.employeeId) === Number(currentUserId.value || 0)) ||
+		(canCreatePersonalPlan.value &&
+			Number(row.employeeId) === Number(currentUserId.value || 0)) ||
 		hasCompanyGoalScope.value
 	);
 }
@@ -1762,7 +1865,8 @@ function canEditPlan(row: GoalOpsPlanRecord) {
 		return canManageDepartmentView.value || hasCompanyGoalScope.value;
 	}
 	return (
-		(canCreatePersonalPlan.value && Number(row.employeeId) === Number(currentUserId.value || 0)) ||
+		(canCreatePersonalPlan.value &&
+			Number(row.employeeId) === Number(currentUserId.value || 0)) ||
 		hasCompanyGoalScope.value
 	);
 }
@@ -1810,15 +1914,14 @@ function buildTrendRows(list: GoalOpsPlanRecord[]): GoalOpsTrendRow[] {
 			continue;
 		}
 
-		const current =
-			grouped.get(planDate) || {
-				planDate,
-				publicActualValue: 0,
-				personalActualValue: 0,
-				totalActualValue: 0,
-				totalTargetValue: 0,
-				completionRate: 0
-			};
+		const current = grouped.get(planDate) || {
+			planDate,
+			publicActualValue: 0,
+			personalActualValue: 0,
+			totalActualValue: 0,
+			totalTargetValue: 0,
+			completionRate: 0
+		};
 
 		const targetValue = Number(item.targetValue || 0);
 		const actualValue = Number(item.actualValue || 0);
@@ -1834,13 +1937,20 @@ function buildTrendRows(list: GoalOpsPlanRecord[]): GoalOpsTrendRow[] {
 
 		current.completionRate =
 			current.totalTargetValue > 0
-				? Number(Math.min((current.totalActualValue / current.totalTargetValue) * 100, 100).toFixed(2))
+				? Number(
+						Math.min(
+							(current.totalActualValue / current.totalTargetValue) * 100,
+							100
+						).toFixed(2)
+					)
 				: 0;
 
 		grouped.set(planDate, current);
 	}
 
-	return Array.from(grouped.values()).sort((left, right) => left.planDate.localeCompare(right.planDate));
+	return Array.from(grouped.values()).sort((left, right) =>
+		left.planDate.localeCompare(right.planDate)
+	);
 }
 
 function sourceTypeLabel(value?: GoalOpsSourceType) {

@@ -23,7 +23,9 @@
 							clearable
 							:style="{ width: field.width || '220px' }"
 							:data-testid="resolveFilterTestId(field.prop)"
-							@update:model-value="value => writeField(filtersModel, field.prop, value)"
+							@update:model-value="
+								value => writeField(filtersModel, field.prop, value)
+							"
 							@keyup.enter="search"
 						/>
 						<el-select
@@ -34,7 +36,9 @@
 							filterable
 							:style="{ width: field.width || '180px' }"
 							:data-testid="resolveFilterTestId(field.prop)"
-							@update:model-value="value => writeField(filtersModel, field.prop, value)"
+							@update:model-value="
+								value => writeField(filtersModel, field.prop, value)
+							"
 						>
 							<el-option
 								v-for="item in field.options || []"
@@ -51,7 +55,9 @@
 							:placeholder="field.placeholder || field.label"
 							:style="{ width: field.width || '180px' }"
 							:data-testid="resolveFilterTestId(field.prop)"
-							@update:model-value="value => writeField(filtersModel, field.prop, value)"
+							@update:model-value="
+								value => writeField(filtersModel, field.prop, value)
+							"
 						/>
 					</template>
 				</div>
@@ -93,13 +99,19 @@
 					<template #default="{ row }">
 						<el-tag
 							v-if="column.tagMap"
-							:type="resolveTagType(column.tagMap, readField(row, column.prop), 'info')"
+							:type="
+								resolveTagType(column.tagMap, readField(row, column.prop), 'info')
+							"
 							effect="plain"
 						>
 							{{ resolveTagLabel(column.tagMap, readField(row, column.prop)) }}
 						</el-tag>
 						<span v-else>
-							{{ column.formatter ? column.formatter(readField(row, column.prop), row) : readField(row, column.prop) || '-' }}
+							{{
+								column.formatter
+									? column.formatter(readField(row, column.prop), row)
+									: readField(row, column.prop) || '-'
+							}}
 						</span>
 					</template>
 				</el-table-column>
@@ -126,7 +138,10 @@
 						</el-button>
 						<template v-for="action in rowActions" :key="action.key">
 							<el-button
-								v-if="checkPerm(action.permission) && (!action.visible || action.visible(row))"
+								v-if="
+									checkPerm(action.permission) &&
+									(!action.visible || action.visible(row))
+								"
 								text
 								:type="resolveButtonType(action.type, 'primary')"
 								:data-testid="resolveRowActionTestId(action.key, row.id)"
@@ -161,13 +176,19 @@
 				>
 					<el-tag
 						v-if="field.tagMap"
-						:type="resolveTagType(field.tagMap, readField(detailRow, field.prop), 'info')"
+						:type="
+							resolveTagType(field.tagMap, readField(detailRow, field.prop), 'info')
+						"
 						effect="plain"
 					>
 						{{ resolveTagLabel(field.tagMap, readField(detailRow, field.prop)) }}
 					</el-tag>
 					<span v-else>
-						{{ field.formatter ? field.formatter(readField(detailRow, field.prop), detailRow) : readField(detailRow, field.prop) || '-' }}
+						{{
+							field.formatter
+								? field.formatter(readField(detailRow, field.prop), detailRow)
+								: readField(detailRow, field.prop) || '-'
+						}}
 					</span>
 				</el-descriptions-item>
 			</el-descriptions>
@@ -289,10 +310,7 @@ import {
 	resolveTagType,
 	writeField
 } from '../shared/crud-page-shell';
-import {
-	confirmElementAction,
-	runTrackedElementAction
-} from '../shared/action-feedback';
+import { confirmElementAction, runTrackedElementAction } from '../shared/action-feedback';
 import { showElementErrorFromError } from '../shared/error-message';
 
 const props = withDefaults(
@@ -311,7 +329,9 @@ const props = withDefaults(
 		formFields?: CrudFormFieldConfig[];
 		createFilters: () => CrudFilters;
 		createEmpty?: () => object;
-		fetchPage: (params: CrudFilters & { page: number; size: number }) => Promise<CrudPageResult>;
+		fetchPage: (
+			params: CrudFilters & { page: number; size: number }
+		) => Promise<CrudPageResult>;
 		fetchInfo?: (params: { id: number }) => Promise<object>;
 		createItem?: CrudMutationHandler;
 		updateItem?: CrudMutationHandler;

@@ -5,10 +5,7 @@
  */
 import { BaseService } from '/@/cool';
 import { asPerformanceServicePromise } from './service-contract';
-import {
-	decodeTeacherClassPageResult,
-	decodeTeacherClassRecord
-} from './teacher-contract';
+import { decodeTeacherClassPageResult, decodeTeacherClassRecord } from './teacher-contract';
 import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import type {
 	TeacherClassCreatePayload,

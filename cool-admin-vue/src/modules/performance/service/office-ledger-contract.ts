@@ -89,7 +89,11 @@ function decodeOfficeLedgerString(value: unknown, field: string) {
 	return expectPerformanceServiceString(value, field);
 }
 
-function decodeOptionalRecord<T>(value: unknown, field: string, decoder: (value: unknown, field: string) => T) {
+function decodeOptionalRecord<T>(
+	value: unknown,
+	field: string,
+	decoder: (value: unknown, field: string) => T
+) {
 	if (value === undefined) {
 		return undefined;
 	}
@@ -141,10 +145,7 @@ function decodeExpressCollabStatus(value: unknown, field: string): ExpressCollab
 	return expectPerformanceServiceEnum(value, field, EXPRESS_COLLAB_STATUS_VALUES);
 }
 
-function decodeExpressCollabServiceLevel(
-	value: unknown,
-	field: string
-): ExpressCollabServiceLevel {
+function decodeExpressCollabServiceLevel(value: unknown, field: string): ExpressCollabServiceLevel {
 	return expectPerformanceServiceEnum(value, field, EXPRESS_COLLAB_SERVICE_LEVEL_VALUES);
 }
 
@@ -160,10 +161,7 @@ function decodeVehicleStatus(value: unknown, field: string): VehicleStatus {
 	return expectPerformanceServiceEnum(value, field, VEHICLE_STATUS_VALUES);
 }
 
-function decodeIntellectualPropertyType(
-	value: unknown,
-	field: string
-): IntellectualPropertyType {
+function decodeIntellectualPropertyType(value: unknown, field: string): IntellectualPropertyType {
 	return expectPerformanceServiceEnum(value, field, INTELLECTUAL_PROPERTY_TYPE_VALUES);
 }
 
@@ -271,7 +269,10 @@ export function decodeHonorRecord(value: unknown, field = 'honorRecord'): HonorR
 		awardedAt: decodeOfficeLedgerString(record.awardedAt, `${field}.awardedAt`),
 		issuer: decodeOfficeLedgerString(record.issuer, `${field}.issuer`),
 		impactScore: expectPerformanceServiceNumber(record.impactScore, `${field}.impactScore`),
-		evidenceUrl: expectPerformanceServiceNullableString(record.evidenceUrl, `${field}.evidenceUrl`)
+		evidenceUrl: expectPerformanceServiceNullableString(
+			record.evidenceUrl,
+			`${field}.evidenceUrl`
+		)
 	};
 }
 
@@ -421,7 +422,10 @@ export function decodeVehicleRecord(value: unknown, field = 'vehicleRecord'): Ve
 		brand: decodeOfficeLedgerString(record.brand, `${field}.brand`),
 		model: decodeOfficeLedgerString(record.model, `${field}.model`),
 		vehicleType: decodeVehicleType(record.vehicleType, `${field}.vehicleType`),
-		ownerDepartment: decodeOfficeLedgerString(record.ownerDepartment, `${field}.ownerDepartment`),
+		ownerDepartment: decodeOfficeLedgerString(
+			record.ownerDepartment,
+			`${field}.ownerDepartment`
+		),
 		managerName: decodeOfficeLedgerString(record.managerName, `${field}.managerName`),
 		seats: expectPerformanceServiceNumber(record.seats, `${field}.seats`),
 		registerDate: decodeOfficeLedgerString(record.registerDate, `${field}.registerDate`),
@@ -434,7 +438,10 @@ export function decodeVehicleRecord(value: unknown, field = 'vehicleRecord'): Ve
 			`${field}.insuranceDueDate`
 		),
 		status: decodeVehicleStatus(record.status, `${field}.status`),
-		usageScope: expectPerformanceServiceNullableString(record.usageScope, `${field}.usageScope`),
+		usageScope: expectPerformanceServiceNullableString(
+			record.usageScope,
+			`${field}.usageScope`
+		),
 		notes: expectPerformanceServiceNullableString(record.notes, `${field}.notes`),
 		createTime: decodeOfficeLedgerString(record.createTime, `${field}.createTime`),
 		updateTime: decodeOfficeLedgerString(record.updateTime, `${field}.updateTime`)
@@ -461,15 +468,27 @@ export function decodeIntellectualPropertyRecord(
 		ipNo: decodeOfficeLedgerString(record.ipNo, `${field}.ipNo`),
 		title: decodeOfficeLedgerString(record.title, `${field}.title`),
 		ipType: decodeIntellectualPropertyType(record.ipType, `${field}.ipType`),
-		ownerDepartment: decodeOfficeLedgerString(record.ownerDepartment, `${field}.ownerDepartment`),
+		ownerDepartment: decodeOfficeLedgerString(
+			record.ownerDepartment,
+			`${field}.ownerDepartment`
+		),
 		ownerName: decodeOfficeLedgerString(record.ownerName, `${field}.ownerName`),
 		applicantName: decodeOfficeLedgerString(record.applicantName, `${field}.applicantName`),
 		applyDate: decodeOfficeLedgerString(record.applyDate, `${field}.applyDate`),
 		grantDate: expectPerformanceServiceNullableString(record.grantDate, `${field}.grantDate`),
-		expiryDate: expectPerformanceServiceNullableString(record.expiryDate, `${field}.expiryDate`),
+		expiryDate: expectPerformanceServiceNullableString(
+			record.expiryDate,
+			`${field}.expiryDate`
+		),
 		status: decodeIntellectualPropertyStatus(record.status, `${field}.status`),
-		registryNo: expectPerformanceServiceNullableString(record.registryNo, `${field}.registryNo`),
-		usageScope: expectPerformanceServiceNullableString(record.usageScope, `${field}.usageScope`),
+		registryNo: expectPerformanceServiceNullableString(
+			record.registryNo,
+			`${field}.registryNo`
+		),
+		usageScope: expectPerformanceServiceNullableString(
+			record.usageScope,
+			`${field}.usageScope`
+		),
 		riskLevel: decodeNullableIntellectualPropertyRiskLevel(
 			record.riskLevel,
 			`${field}.riskLevel`
@@ -534,6 +553,6 @@ export function decodeOfficeLedgerPageResult<TRecord extends OfficeLedgerBaseRec
 								`${field}.pagination.total`
 							)
 						};
-				  })()
+					})()
 	};
 }

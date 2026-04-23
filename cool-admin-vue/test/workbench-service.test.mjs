@@ -14,7 +14,10 @@ const snapshotConfigPath = new URL(
 	import.meta.url
 );
 const roleFactPath = new URL('../src/modules/performance/service/role-fact.ts', import.meta.url);
-const workbenchPagePath = new URL('../src/modules/performance/views/workbench/index.vue', import.meta.url);
+const workbenchPagePath = new URL(
+	'../src/modules/performance/views/workbench/index.vue',
+	import.meta.url
+);
 const purchaseReportPagePath = new URL(
 	'../src/modules/performance/views/purchase-report/index.vue',
 	import.meta.url
@@ -28,7 +31,10 @@ const capabilityPagePath = new URL(
 	'../src/modules/performance/views/capability/index.vue',
 	import.meta.url
 );
-const coursePagePath = new URL('../src/modules/performance/views/course/index.vue', import.meta.url);
+const coursePagePath = new URL(
+	'../src/modules/performance/views/course/index.vue',
+	import.meta.url
+);
 const certificatePagePath = new URL(
 	'../src/modules/performance/views/certificate/index.vue',
 	import.meta.url
@@ -53,7 +59,10 @@ const officeLedgerPagePath = new URL(
 	'../src/modules/performance/views/office/office-ledger-page.vue',
 	import.meta.url
 );
-const salaryPagePath = new URL('../src/modules/performance/views/salary/index.vue', import.meta.url);
+const salaryPagePath = new URL(
+	'../src/modules/performance/views/salary/index.vue',
+	import.meta.url
+);
 const teacherChannelDashboardPagePath = new URL(
 	'../src/modules/performance/views/teacher-channel/dashboard.vue',
 	import.meta.url
@@ -76,10 +85,7 @@ const processComponentPath = new URL(
 	'../src/modules/base/pages/main/components/process.vue',
 	import.meta.url
 );
-const menuPath = new URL(
-	'../../cool-admin-midway/src/modules/base/menu.json',
-	import.meta.url
-);
+const menuPath = new URL('../../cool-admin-midway/src/modules/base/menu.json', import.meta.url);
 
 let workbenchModulePromise;
 
@@ -109,7 +115,9 @@ async function loadWorkbenchModule() {
 				.replace("'./workbench-snapshot-config'", `'${snapshotConfigModuleUrl}'`)
 				.replace("'./role-fact'", `'${roleFactModuleUrl}'`);
 
-			return import(`data:text/javascript;base64,${Buffer.from(transpiled).toString('base64')}`);
+			return import(
+				`data:text/javascript;base64,${Buffer.from(transpiled).toString('base64')}`
+			);
 		});
 	}
 
@@ -183,10 +191,7 @@ test('persona key from backend context overrides local role-name guessing', asyn
 test('permission signal guard keeps shared goal page out of manager-only role inference', async () => {
 	const workbenchPageSource = await readFile(workbenchPagePath, 'utf8');
 
-	assert.equal(
-		workbenchPageSource.includes('performanceGoalService.permission.page'),
-		false
-	);
+	assert.equal(workbenchPageSource.includes('performanceGoalService.permission.page'), false);
 	assert.equal(
 		workbenchPageSource.includes('performanceAssessmentService.permission.pendingPage'),
 		false
@@ -314,7 +319,10 @@ test('home entry points prioritize role workbench before falling back to other p
 		readFile(processComponentPath, 'utf8')
 	]);
 
-	assert.equal(menuStoreSource.includes("const HOME_ROUTE_PRIORITY = ['/performance/workbench'];"), true);
+	assert.equal(
+		menuStoreSource.includes("const HOME_ROUTE_PRIORITY = ['/performance/workbench'];"),
+		true
+	);
 	assert.equal(loginPageSource.includes("router.push('/performance/workbench')"), true);
 	assert.equal(processComponentSource.includes("router.push('/performance/workbench')"), true);
 });
@@ -324,7 +332,7 @@ test('workbench page passes backend workbench context into local snapshot builde
 
 	assert.equal(
 		workbenchPageSource.includes(
-			"workbenchPages: (context.workbenchPages || []) as WorkbenchPageId[]"
+			'workbenchPages: (context.workbenchPages || []) as WorkbenchPageId[]'
 		),
 		true
 	);
@@ -358,8 +366,16 @@ test('purchase pages consume access context instead of guessing hr role from sup
 test('goal ops page consumes scopeKey instead of legacy isHr aliases', async () => {
 	const goalsPageSource = await readFile(goalsPagePath, 'utf8');
 
-	assert.equal(goalsPageSource.includes('const hasCompanyGoalScope = computed(() => accessProfile.scopeKey === \'company\')'), true);
-	assert.equal(goalsPageSource.includes('const isHrRole = computed(() => accessProfile.isHr)'), false);
+	assert.equal(
+		goalsPageSource.includes(
+			"const hasCompanyGoalScope = computed(() => accessProfile.scopeKey === 'company')"
+		),
+		true
+	);
+	assert.equal(
+		goalsPageSource.includes('const isHrRole = computed(() => accessProfile.isHr)'),
+		false
+	);
 	assert.equal(goalsPageSource.includes('result.isHr'), false);
 });
 
@@ -379,11 +395,15 @@ test('capability course certificate job-standard and supplier pages consume shar
 	}
 
 	assert.equal(
-		pageSources[3].includes('title="当前账号为经理只读角色，仅可查看本人部门树范围内摘要字段。"'),
+		pageSources[3].includes(
+			'title="当前账号为经理只读角色，仅可查看本人部门树范围内摘要字段。"'
+		),
 		false
 	);
 	assert.equal(
-		pageSources[4].includes('title="当前账号为经理只读角色，敏感字段仅展示后端返回的脱敏摘要。"'),
+		pageSources[4].includes(
+			'title="当前账号为经理只读角色，敏感字段仅展示后端返回的脱敏摘要。"'
+		),
 		false
 	);
 });
@@ -441,7 +461,10 @@ test('teacher-channel pages show ssot role tag separately from readonly capabili
 		false
 	);
 	assert.equal(dashboardSource.includes("isReadOnlyRole.value ? '只读能力' : '可写能力'"), true);
-	assert.equal(teacherListSource.includes("isReadOnlyRole.value ? '只读能力' : '可写能力'"), true);
+	assert.equal(
+		teacherListSource.includes("isReadOnlyRole.value ? '只读能力' : '可写能力'"),
+		true
+	);
 });
 
 test('shared permission overlay and office config avoid stale role-account copy', async () => {
@@ -452,8 +475,18 @@ test('shared permission overlay and office config avoid stale role-account copy'
 			readFile(officeLedgerPagePath, 'utf8')
 		]);
 
-	assert.equal(permissionOverlaySource.includes("const readonlyText = profile.isReadonly ? '只读账号' : '可写账号';"), false);
-	assert.equal(permissionOverlaySource.includes("const readonlyText = profile.isReadonly ? '只读能力' : '可写能力';"), true);
+	assert.equal(
+		permissionOverlaySource.includes(
+			"const readonlyText = profile.isReadonly ? '只读账号' : '可写账号';"
+		),
+		false
+	);
+	assert.equal(
+		permissionOverlaySource.includes(
+			"const readonlyText = profile.isReadonly ? '只读能力' : '可写能力';"
+		),
+		true
+	);
 	assert.equal(officeLedgerConfigSource.includes("audienceLabel: 'HR 管理员'"), false);
 	assert.equal(officeLedgerPageSource.includes('audienceLabel: string;'), false);
 });

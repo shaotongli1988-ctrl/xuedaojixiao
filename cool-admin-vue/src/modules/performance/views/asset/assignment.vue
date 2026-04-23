@@ -6,7 +6,9 @@
 				<div>
 					<div class="asset-unified-page__eyebrow">采购&资产 / 统一入口</div>
 					<h2>资产作业</h2>
-					<p>固定资产领用归还、物资入库和物资领用统一从这里处理，物资不再单独占左栏菜单。</p>
+					<p>
+						固定资产领用归还、物资入库和物资领用统一从这里处理，物资不再单独占左栏菜单。
+					</p>
 				</div>
 				<el-alert
 					title="旧的物资入库、物资领用地址仍可访问，但会自动跳回当前统一入口。"
@@ -21,14 +23,20 @@
 			<el-card shadow="never">
 				<div class="asset-unified-page__overview-card">
 					<div class="asset-unified-page__overview-label">作业边界</div>
-					<div class="asset-unified-page__overview-title">所有领用和入库动作都从这里处理</div>
-					<p>固定资产领用归还、物资入库、物资领用统一归到资产作业，不再拆成多张左栏页面。</p>
+					<div class="asset-unified-page__overview-title">
+						所有领用和入库动作都从这里处理
+					</div>
+					<p>
+						固定资产领用归还、物资入库、物资领用统一归到资产作业，不再拆成多张左栏页面。
+					</p>
 				</div>
 			</el-card>
 			<el-card shadow="never">
 				<div class="asset-unified-page__overview-card">
 					<div class="asset-unified-page__overview-label">固定资产</div>
-					<div class="asset-unified-page__overview-title">关注单件资产的领用、归还和丢失</div>
+					<div class="asset-unified-page__overview-title">
+						关注单件资产的领用、归还和丢失
+					</div>
 					<p>适合电脑、投影仪等单件资产，围绕资产编号和领用责任人流转。</p>
 				</div>
 			</el-card>
@@ -45,7 +53,9 @@
 			<div class="asset-unified-page__flow-head">
 				<div>
 					<h3>采购&资产主链路</h3>
-					<p>从采购转资产开始，经过台账沉淀、作业执行，再进入分析复盘。点击任一步可直接跳转。</p>
+					<p>
+						从采购转资产开始，经过台账沉淀、作业执行，再进入分析复盘。点击任一步可直接跳转。
+					</p>
 				</div>
 				<el-tag type="warning" effect="plain">当前阶段：作业</el-tag>
 			</div>
@@ -69,7 +79,9 @@
 			<div class="asset-unified-page__focus">
 				<span class="asset-unified-page__focus-label">当前作业视图</span>
 				<el-tag effect="plain" type="warning">{{ currentViewMeta.label }}</el-tag>
-				<span class="asset-unified-page__focus-text">{{ currentViewMeta.description }}</span>
+				<span class="asset-unified-page__focus-text">{{
+					currentViewMeta.description
+				}}</span>
 			</div>
 		</el-card>
 
@@ -213,8 +225,11 @@ function goFlowStep(step: FlowStep) {
 	--flow-entry-accent-soft: var(--app-accent-warm-soft);
 	--flow-entry-accent-text: var(--app-accent-warm-text);
 	--flow-entry-step-bg: var(--app-surface-warm-muted);
-	--flow-entry-step-active-bg:
-		color-mix(in srgb, var(--app-accent-warm-soft) 58%, var(--app-surface-card));
+	--flow-entry-step-active-bg: color-mix(
+		in srgb,
+		var(--app-accent-warm-soft) 58%,
+		var(--app-surface-card)
+	);
 
 	@include flowEntry.flow-entry-page;
 }

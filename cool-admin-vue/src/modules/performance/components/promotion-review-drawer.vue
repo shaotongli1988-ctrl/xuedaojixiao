@@ -46,10 +46,7 @@
 
 			<el-card shadow="never">
 				<template #header>评审记录</template>
-				<el-empty
-					v-if="!promotion.reviewRecords?.length"
-					description="暂无评审记录"
-				/>
+				<el-empty v-if="!promotion.reviewRecords?.length" description="暂无评审记录" />
 				<el-timeline v-else>
 					<el-timeline-item
 						v-for="item in promotion.reviewRecords"
@@ -140,7 +137,10 @@ const router = useRouter();
 const { dict } = useDict();
 
 const statusLabel = computed(
-	() => dict.getLabel(PROMOTION_STATUS_DICT_KEY, props.promotion?.status) || props.promotion?.status || '草稿'
+	() =>
+		dict.getLabel(PROMOTION_STATUS_DICT_KEY, props.promotion?.status) ||
+		props.promotion?.status ||
+		'草稿'
 );
 
 const showSourceAssessmentButton = computed(() => {

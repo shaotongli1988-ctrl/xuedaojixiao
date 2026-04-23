@@ -24,8 +24,12 @@ const props = defineProps<{
 			>
 				<div class="dashboard-stage-progress__item-head">
 					<div>
-						<div class="dashboard-stage-progress__item-title">{{ item.stageLabel }}</div>
-						<div class="dashboard-stage-progress__item-meta">{{ item.displayText }}</div>
+						<div class="dashboard-stage-progress__item-title">
+							{{ item.stageLabel }}
+						</div>
+						<div class="dashboard-stage-progress__item-meta">
+							{{ item.displayText }}
+						</div>
 					</div>
 					<div class="dashboard-stage-progress__item-rate">
 						{{ item.completionRate }}%

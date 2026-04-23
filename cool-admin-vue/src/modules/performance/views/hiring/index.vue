@@ -95,7 +95,10 @@
 					<template #default="{ row }">
 						<div class="hiring-page__source-cell">
 							<span>{{ sourceTypeLabel(row.sourceType) }}</span>
-							<span v-if="hiringSourceSummary(row) !== '-'" class="hiring-page__source-meta">
+							<span
+								v-if="hiringSourceSummary(row) !== '-'"
+								class="hiring-page__source-meta"
+							>
 								{{ hiringSourceSummary(row) }}
 							</span>
 						</div>
@@ -106,20 +109,29 @@
 						{{ row.sourceId ?? '-' }}
 					</template>
 				</el-table-column>
-				<el-table-column prop="sourceStatusSnapshot" label="来源状态快照" min-width="180" show-overflow-tooltip>
+				<el-table-column
+					prop="sourceStatusSnapshot"
+					label="来源状态快照"
+					min-width="180"
+					show-overflow-tooltip
+				>
 					<template #default="{ row }">
 						{{ row.sourceStatusSnapshot || '-' }}
 					</template>
 				</el-table-column>
 				<el-table-column prop="status" label="状态" width="110">
 					<template #default="{ row }">
-						<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+						<el-tag :type="statusTagType(row.status)">{{
+							statusLabel(row.status)
+						}}</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
 				<el-table-column label="操作" fixed="right" min-width="300">
 					<template #default="{ row }">
-						<el-button v-if="showInfoButton" text @click="openDetail(row)">详情</el-button>
+						<el-button v-if="showInfoButton" text @click="openDetail(row)"
+							>详情</el-button
+						>
 						<el-button
 							v-if="canAccept(row)"
 							text
@@ -163,12 +175,7 @@
 			</div>
 		</el-card>
 
-		<el-dialog
-			v-model="detailVisible"
-			title="录用详情"
-			width="900px"
-			destroy-on-close
-		>
+		<el-dialog v-model="detailVisible" title="录用详情" width="900px" destroy-on-close>
 			<div v-if="detailRecord" class="hiring-page__detail">
 				<el-alert
 					v-if="detailRecord.status && detailRecord.status !== 'offered'"
@@ -187,7 +194,10 @@
 						</el-tag>
 					</el-descriptions-item>
 					<el-descriptions-item label="目标部门">
-						{{ detailRecord.targetDepartmentName || departmentLabel(detailRecord.targetDepartmentId) }}
+						{{
+							detailRecord.targetDepartmentName ||
+							departmentLabel(detailRecord.targetDepartmentId)
+						}}
 					</el-descriptions-item>
 					<el-descriptions-item label="目标岗位">
 						{{ detailRecord.targetPosition || '-' }}
@@ -252,12 +262,7 @@
 			</template>
 		</el-dialog>
 
-		<el-dialog
-			v-model="formVisible"
-			title="新建录用"
-			width="900px"
-			destroy-on-close
-		>
+		<el-dialog v-model="formVisible" title="新建录用" width="900px" destroy-on-close>
 			<el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
 				<el-alert
 					title="新建保存后默认进入 offered；首批不开放正文编辑页面，后续请通过接受/拒绝/关闭推进状态。"
@@ -578,7 +583,9 @@ async function openDetail(row: HiringRecord) {
 
 async function loadDetail(id: number, next: (record: HiringRecord) => void) {
 	try {
-		const record = normalizeHiringDomainRecord(await performanceHiringService.fetchInfo({ id }));
+		const record = normalizeHiringDomainRecord(
+			await performanceHiringService.fetchInfo({ id })
+		);
 		next(record);
 	} catch (error: unknown) {
 		showElementErrorFromError(error, '录用详情加载失败');
@@ -743,7 +750,9 @@ function normalizeOptionalText(value: string | null | undefined) {
 	return text || undefined;
 }
 
-function normalizeSourceType(value: HiringSourceType | string | null | undefined): HiringSourceType {
+function normalizeSourceType(
+	value: HiringSourceType | string | null | undefined
+): HiringSourceType {
 	const normalized = String(value || '').trim();
 	const matched = sourceTypeOptions.value.find(item => item.value === normalized)?.value;
 	return matched || 'manual';
@@ -840,7 +849,7 @@ function openCreateWithPrefill(prefill?: {
 						targetPosition: prefill?.targetPosition || null,
 						interviewStatus: normalizeInterviewStatus(prefill?.interviewStatus),
 						sourceStatusSnapshot: prefill?.interviewStatus || null
-				  }
+					}
 				: null
 	});
 	formVisible.value = true;
@@ -858,7 +867,9 @@ function hiringSourceSummary(record?: HiringSourceCarrier | null) {
 	const summaryParts = [
 		snapshot.interviewId ? `面试 #${snapshot.interviewId}` : null,
 		snapshot.resumePoolId ? `简历 #${snapshot.resumePoolId}` : null,
-		snapshot.recruitPlanId ? `${snapshot.recruitPlanTitle || '招聘计划'} #${snapshot.recruitPlanId}` : null
+		snapshot.recruitPlanId
+			? `${snapshot.recruitPlanTitle || '招聘计划'} #${snapshot.recruitPlanId}`
+			: null
 	].filter(Boolean);
 
 	return summaryParts.length ? summaryParts.join(' / ') : '-';

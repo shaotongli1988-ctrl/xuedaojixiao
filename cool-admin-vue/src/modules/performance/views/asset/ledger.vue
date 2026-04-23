@@ -6,7 +6,9 @@
 				<div>
 					<div class="asset-unified-page__eyebrow">采购&资产 / 统一入口</div>
 					<h2>资产台账</h2>
-					<p>固定资产与物资台账统一从这里进入，物资作为资产分类的一部分承接，不再单独占左栏菜单。</p>
+					<p>
+						固定资产与物资台账统一从这里进入，物资作为资产分类的一部分承接，不再单独占左栏菜单。
+					</p>
 				</div>
 				<el-alert
 					title="旧的物资台账、物资库存地址仍可访问，但会自动跳回当前统一入口。"
@@ -21,7 +23,9 @@
 			<el-card shadow="never">
 				<div class="asset-unified-page__overview-card">
 					<div class="asset-unified-page__overview-label">域模型</div>
-					<div class="asset-unified-page__overview-title">物资属于采购&资产域内的资产分类</div>
+					<div class="asset-unified-page__overview-title">
+						物资属于采购&资产域内的资产分类
+					</div>
 					<p>固定资产与物资共享同一资产入口，不再拆成左栏并列模块。</p>
 				</div>
 			</el-card>
@@ -35,7 +39,9 @@
 			<el-card shadow="never">
 				<div class="asset-unified-page__overview-card">
 					<div class="asset-unified-page__overview-label">上下游关系</div>
-					<div class="asset-unified-page__overview-title">采购入库后沉淀台账，再进入资产作业</div>
+					<div class="asset-unified-page__overview-title">
+						采购入库后沉淀台账，再进入资产作业
+					</div>
 					<p>采购转资产承接固定资产入账；物资入库、物资领用统一在资产作业处理。</p>
 				</div>
 			</el-card>
@@ -45,7 +51,9 @@
 			<div class="asset-unified-page__flow-head">
 				<div>
 					<h3>采购&资产主链路</h3>
-					<p>从采购转资产开始，经过台账沉淀、作业执行，再进入分析复盘。点击任一步可直接跳转。</p>
+					<p>
+						从采购转资产开始，经过台账沉淀、作业执行，再进入分析复盘。点击任一步可直接跳转。
+					</p>
 				</div>
 				<el-tag type="success" effect="plain">当前阶段：台账</el-tag>
 			</div>
@@ -69,7 +77,9 @@
 			<div class="asset-unified-page__focus">
 				<span class="asset-unified-page__focus-label">当前台账视图</span>
 				<el-tag effect="plain" type="primary">{{ currentViewMeta.label }}</el-tag>
-				<span class="asset-unified-page__focus-text">{{ currentViewMeta.description }}</span>
+				<span class="asset-unified-page__focus-text">{{
+					currentViewMeta.description
+				}}</span>
 			</div>
 		</el-card>
 
@@ -213,8 +223,11 @@ function goFlowStep(step: FlowStep) {
 	--flow-entry-accent-soft: var(--app-accent-brand-soft);
 	--flow-entry-accent-text: var(--app-accent-brand);
 	--flow-entry-step-bg: var(--app-surface-primary);
-	--flow-entry-step-active-bg:
-		color-mix(in srgb, var(--app-accent-brand-soft) 56%, var(--app-surface-card));
+	--flow-entry-step-active-bg: color-mix(
+		in srgb,
+		var(--app-accent-brand-soft) 56%,
+		var(--app-surface-card)
+	);
 
 	@include flowEntry.flow-entry-page;
 }

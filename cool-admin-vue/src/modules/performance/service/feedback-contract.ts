@@ -30,7 +30,10 @@ function decodeFeedbackTaskRelationItem(
 
 	return {
 		feedbackUserId:
-			expectPerformanceServiceOptionalNumber(record.feedbackUserId, `${field}.feedbackUserId`) ?? 0,
+			expectPerformanceServiceOptionalNumber(
+				record.feedbackUserId,
+				`${field}.feedbackUserId`
+			) ?? 0,
 		feedbackUserName: expectPerformanceServiceOptionalString(
 			record.feedbackUserName,
 			`${field}.feedbackUserName`
@@ -39,21 +42,23 @@ function decodeFeedbackTaskRelationItem(
 	};
 }
 
-function decodeFeedbackRecord(
-	value: unknown,
-	field = 'feedbackRecord'
-): FeedbackRecord {
+function decodeFeedbackRecord(value: unknown, field = 'feedbackRecord'): FeedbackRecord {
 	const record = expectPerformanceServiceRecord(value, field);
 
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
 		status: expectPerformanceServiceOptionalString(record.status, `${field}.status`),
 		taskId: expectPerformanceServiceOptionalNumber(record.taskId, `${field}.taskId`),
 		content: expectPerformanceServiceOptionalString(record.content, `${field}.content`),
-		submitTime: expectPerformanceServiceOptionalString(record.submitTime, `${field}.submitTime`),
-		score:
-			expectPerformanceServiceOptionalNumber(record.score, `${field}.score`) ?? 0,
+		submitTime: expectPerformanceServiceOptionalString(
+			record.submitTime,
+			`${field}.submitTime`
+		),
+		score: expectPerformanceServiceOptionalNumber(record.score, `${field}.score`) ?? 0,
 		feedbackUserId: expectPerformanceServiceOptionalNumber(
 			record.feedbackUserId,
 			`${field}.feedbackUserId`
@@ -74,8 +79,14 @@ export function decodeFeedbackTaskRecord(
 
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
-		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
+		updateTime: expectPerformanceServiceOptionalString(
+			record.updateTime,
+			`${field}.updateTime`
+		),
 		title: expectPerformanceServiceString(record.title, `${field}.title`),
 		status: expectPerformanceServiceOptionalString(record.status, `${field}.status`),
 		employeeName: expectPerformanceServiceOptionalString(
@@ -87,21 +98,30 @@ export function decodeFeedbackTaskRecord(
 			record.submittedCount,
 			`${field}.submittedCount`
 		),
-		totalCount: expectPerformanceServiceOptionalNumber(record.totalCount, `${field}.totalCount`),
+		totalCount: expectPerformanceServiceOptionalNumber(
+			record.totalCount,
+			`${field}.totalCount`
+		),
 		feedbackUserIds:
 			record.feedbackUserIds === undefined
 				? undefined
-				: expectPerformanceServiceArray(record.feedbackUserIds, `${field}.feedbackUserIds`).map(
+				: expectPerformanceServiceArray(
+						record.feedbackUserIds,
+						`${field}.feedbackUserIds`
+					).map(
 						(item, index) =>
 							expectPerformanceServiceOptionalNumber(
 								item,
 								`${field}.feedbackUserIds[${index}]`
 							) ?? 0
-				  ),
+					),
 		assessmentId:
 			record.assessmentId === undefined
 				? undefined
-				: expectPerformanceServiceNullableNumber(record.assessmentId, `${field}.assessmentId`),
+				: expectPerformanceServiceNullableNumber(
+						record.assessmentId,
+						`${field}.assessmentId`
+					),
 		employeeId:
 			expectPerformanceServiceOptionalNumber(record.employeeId, `${field}.employeeId`) ??
 			undefined,
@@ -111,7 +131,7 @@ export function decodeFeedbackTaskRecord(
 				: expectPerformanceServiceArray(record.relationTypes, `${field}.relationTypes`).map(
 						(item, index) =>
 							decodeFeedbackTaskRelationItem(item, `${field}.relationTypes[${index}]`)
-				  )
+					)
 	};
 }
 
@@ -122,21 +142,23 @@ export function decodeFeedbackPageResult(
 	return decodePerformanceServicePageResult(value, field, decodeFeedbackTaskRecord);
 }
 
-export function decodeFeedbackSummary(
-	value: unknown,
-	field = 'feedbackSummary'
-): FeedbackSummary {
+export function decodeFeedbackSummary(value: unknown, field = 'feedbackSummary'): FeedbackSummary {
 	const record = expectPerformanceServiceRecord(value, field);
 
 	return {
 		submittedCount:
-			expectPerformanceServiceOptionalNumber(record.submittedCount, `${field}.submittedCount`) ?? 0,
-		totalCount: expectPerformanceServiceOptionalNumber(record.totalCount, `${field}.totalCount`) ?? 0,
+			expectPerformanceServiceOptionalNumber(
+				record.submittedCount,
+				`${field}.submittedCount`
+			) ?? 0,
+		totalCount:
+			expectPerformanceServiceOptionalNumber(record.totalCount, `${field}.totalCount`) ?? 0,
 		taskId: expectPerformanceServiceOptionalNumber(record.taskId, `${field}.taskId`) ?? 0,
 		averageScore:
-			expectPerformanceServiceOptionalNumber(record.averageScore, `${field}.averageScore`) ?? 0,
-		records: expectPerformanceServiceArray(record.records, `${field}.records`).map((item, index) =>
-			decodeFeedbackRecord(item, `${field}.records[${index}]`)
+			expectPerformanceServiceOptionalNumber(record.averageScore, `${field}.averageScore`) ??
+			0,
+		records: expectPerformanceServiceArray(record.records, `${field}.records`).map(
+			(item, index) => decodeFeedbackRecord(item, `${field}.records[${index}]`)
 		)
 	};
 }
@@ -151,18 +173,27 @@ export function decodeFeedbackExportRows(
 		return {
 			title: expectPerformanceServiceString(row.title, `${field}[${index}].title`),
 			employeeId:
-				expectPerformanceServiceOptionalNumber(row.employeeId, `${field}[${index}].employeeId`) ??
-				0,
-			deadline: expectPerformanceServiceOptionalString(row.deadline, `${field}[${index}].deadline`),
+				expectPerformanceServiceOptionalNumber(
+					row.employeeId,
+					`${field}[${index}].employeeId`
+				) ?? 0,
+			deadline: expectPerformanceServiceOptionalString(
+				row.deadline,
+				`${field}[${index}].deadline`
+			),
 			submittedCount:
 				expectPerformanceServiceOptionalNumber(
 					row.submittedCount,
 					`${field}[${index}].submittedCount`
 				) ?? 0,
 			totalCount:
-				expectPerformanceServiceOptionalNumber(row.totalCount, `${field}[${index}].totalCount`) ??
+				expectPerformanceServiceOptionalNumber(
+					row.totalCount,
+					`${field}[${index}].totalCount`
+				) ?? 0,
+			taskId:
+				expectPerformanceServiceOptionalNumber(row.taskId, `${field}[${index}].taskId`) ??
 				0,
-			taskId: expectPerformanceServiceOptionalNumber(row.taskId, `${field}[${index}].taskId`) ?? 0,
 			averageScore:
 				expectPerformanceServiceOptionalNumber(
 					row.averageScore,
@@ -174,7 +205,7 @@ export function decodeFeedbackExportRows(
 					: expectPerformanceServiceNullableNumber(
 							row.assessmentId,
 							`${field}[${index}].assessmentId`
-					  )
+						)
 		};
 	});
 }

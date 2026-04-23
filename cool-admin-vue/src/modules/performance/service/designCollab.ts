@@ -3,11 +3,11 @@
  */
 
 import type { DesignCollabRecord, DesignCollabStats } from '../types';
-import { createPerformanceOfficeLedgerService, PerformanceOfficeLedgerService } from './office-ledger';
 import {
-	decodeDesignCollabRecord,
-	decodeDesignCollabStats
-} from './office-ledger-contract';
+	createPerformanceOfficeLedgerService,
+	PerformanceOfficeLedgerService
+} from './office-ledger';
+import { decodeDesignCollabRecord, decodeDesignCollabStats } from './office-ledger-contract';
 
 const designCollabServiceDecoders = {
 	decodeRecord: decodeDesignCollabRecord,
@@ -23,8 +23,7 @@ export default class PerformanceDesignCollabService extends PerformanceOfficeLed
 	}
 }
 
-export const performanceDesignCollabService =
-	createPerformanceOfficeLedgerService<DesignCollabRecord, DesignCollabStats>(
-		'designCollab',
-		designCollabServiceDecoders
-	);
+export const performanceDesignCollabService = createPerformanceOfficeLedgerService<
+	DesignCollabRecord,
+	DesignCollabStats
+>('designCollab', designCollabServiceDecoders);

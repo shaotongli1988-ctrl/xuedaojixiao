@@ -5,10 +5,7 @@
  */
 import { BaseService } from '/@/cool';
 import { asPerformanceServicePromise } from './service-contract';
-import {
-	decodeDashboardCrossSummary,
-	decodeDashboardSummary
-} from './dashboard-contract';
+import { decodeDashboardCrossSummary, decodeDashboardSummary } from './dashboard-contract';
 import type {
 	DashboardCrossSummary,
 	DashboardCrossSummaryQuery,
@@ -32,19 +29,25 @@ export default class PerformanceDashboardService extends BaseService {
 	}
 
 	fetchSummary(params: DashboardSummaryQuery) {
-		return asPerformanceServicePromise<DashboardSummary>(this.request({
-			url: '/summary',
-			method: 'GET',
-			params
-		}), decodeDashboardSummary);
+		return asPerformanceServicePromise<DashboardSummary>(
+			this.request({
+				url: '/summary',
+				method: 'GET',
+				params
+			}),
+			decodeDashboardSummary
+		);
 	}
 
 	fetchCrossSummary(params: DashboardCrossSummaryQuery) {
-		return asPerformanceServicePromise<DashboardCrossSummary>(this.request({
-			url: '/crossSummary',
-			method: 'GET',
-			params
-		}), decodeDashboardCrossSummary);
+		return asPerformanceServicePromise<DashboardCrossSummary>(
+			this.request({
+				url: '/crossSummary',
+				method: 'GET',
+				params
+			}),
+			decodeDashboardCrossSummary
+		);
 	}
 }
 

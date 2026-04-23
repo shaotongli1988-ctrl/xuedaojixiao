@@ -96,10 +96,7 @@ export interface CrudToolbarActionContext<
 	pager: CrudPager;
 }
 
-export interface CrudToolbarAction<
-	TFilter extends CrudFilters = CrudFilters,
-	TRow = CrudRowShape
-> {
+export interface CrudToolbarAction<TFilter extends CrudFilters = CrudFilters, TRow = CrudRowShape> {
 	key: string;
 	label: string;
 	permission: string;

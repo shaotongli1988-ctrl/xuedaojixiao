@@ -129,7 +129,10 @@ const props = defineProps<{
 
 const emit = defineEmits<{
 	(e: 'update:modelValue', value: boolean): void;
-	(e: 'submit', value: { id: number; recordDate: string; progress: string; nextPlan?: string }): void;
+	(
+		e: 'submit',
+		value: { id: number; recordDate: string; progress: string; nextPlan?: string }
+	): void;
 }>();
 
 const recordDate = ref('');

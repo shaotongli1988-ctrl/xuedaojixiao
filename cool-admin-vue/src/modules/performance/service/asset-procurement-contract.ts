@@ -30,10 +30,7 @@ function decodeOptionalNullableNumber(value: unknown, field: string) {
 	return expectPerformanceServiceNullableNumber(value, field);
 }
 
-function decodeAssetProcurementStatus(
-	value: unknown,
-	field: string
-): AssetProcurementStatus {
+function decodeAssetProcurementStatus(value: unknown, field: string): AssetProcurementStatus {
 	return expectPerformanceServiceEnum(value, field, ASSET_PROCUREMENT_STATUS);
 }
 
@@ -45,7 +42,10 @@ export function decodeAssetProcurementRecord(
 
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
-		departmentId: expectPerformanceServiceOptionalNumber(record.departmentId, `${field}.departmentId`),
+		departmentId: expectPerformanceServiceOptionalNumber(
+			record.departmentId,
+			`${field}.departmentId`
+		),
 		departmentName: expectPerformanceServiceOptionalString(
 			record.departmentName,
 			`${field}.departmentName`
@@ -55,17 +55,29 @@ export function decodeAssetProcurementRecord(
 			`${field}.supplierName`
 		),
 		remark: expectPerformanceServiceOptionalString(record.remark, `${field}.remark`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
-		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
+		updateTime: expectPerformanceServiceOptionalString(
+			record.updateTime,
+			`${field}.updateTime`
+		),
 		procurementNo: expectPerformanceServiceOptionalString(
 			record.procurementNo,
 			`${field}.procurementNo`
 		),
 		title: expectPerformanceServiceString(record.title, `${field}.title`),
-		assetCategory: expectPerformanceServiceString(record.assetCategory, `${field}.assetCategory`),
+		assetCategory: expectPerformanceServiceString(
+			record.assetCategory,
+			`${field}.assetCategory`
+		),
 		quantity: expectPerformanceServiceNumber(record.quantity, `${field}.quantity`),
 		amount: expectPerformanceServiceNumber(record.amount, `${field}.amount`),
-		requesterId: expectPerformanceServiceOptionalNumber(record.requesterId, `${field}.requesterId`),
+		requesterId: expectPerformanceServiceOptionalNumber(
+			record.requesterId,
+			`${field}.requesterId`
+		),
 		requesterName: expectPerformanceServiceOptionalString(
 			record.requesterName,
 			`${field}.requesterName`
@@ -74,7 +86,10 @@ export function decodeAssetProcurementRecord(
 			record.expectedArrivalDate,
 			`${field}.expectedArrivalDate`
 		),
-		receiveDate: expectPerformanceServiceOptionalString(record.receiveDate, `${field}.receiveDate`),
+		receiveDate: expectPerformanceServiceOptionalString(
+			record.receiveDate,
+			`${field}.receiveDate`
+		),
 		status:
 			record.status === undefined
 				? undefined

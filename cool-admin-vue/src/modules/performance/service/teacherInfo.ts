@@ -64,42 +64,57 @@ export default class PerformanceTeacherInfoService extends BaseService {
 	}
 
 	assign(data: TeacherInfoAssignPayload) {
-		return asPerformanceServicePromise<TeacherInfoRecord>(this.request({
-			url: '/assign',
-			method: 'POST',
-			data
-		}), decodeTeacherInfoRecord);
+		return asPerformanceServicePromise<TeacherInfoRecord>(
+			this.request({
+				url: '/assign',
+				method: 'POST',
+				data
+			}),
+			decodeTeacherInfoRecord
+		);
 	}
 
 	updateStatus(data: TeacherInfoUpdateStatusPayload) {
-		return asPerformanceServicePromise<TeacherInfoRecord>(this.request({
-			url: '/updateStatus',
-			method: 'POST',
-			data
-		}), decodeTeacherInfoRecord);
+		return asPerformanceServicePromise<TeacherInfoRecord>(
+			this.request({
+				url: '/updateStatus',
+				method: 'POST',
+				data
+			}),
+			decodeTeacherInfoRecord
+		);
 	}
 
 	fetchAttributionInfo(params: TeacherInfoAttributionInfoQuery) {
-		return asPerformanceServicePromise<TeacherAttributionInfo>(this.request({
-			url: '/attributionInfo',
-			method: 'GET',
-			params
-		}), decodeTeacherAttributionInfo);
+		return asPerformanceServicePromise<TeacherAttributionInfo>(
+			this.request({
+				url: '/attributionInfo',
+				method: 'GET',
+				params
+			}),
+			decodeTeacherAttributionInfo
+		);
 	}
 
 	fetchAttributionHistory(params: TeacherInfoAttributionHistoryQuery) {
-		return asPerformanceServicePromise<TeacherAttributionRecord[]>(this.request({
-			url: '/attributionHistory',
-			method: 'GET',
-			params
-		}), value =>
-			Array.isArray(value)
-				? value.map((item, index) =>
-						decodeTeacherAttributionRecord(item, `teacherAttributionHistory[${index}]`)
-				  )
-				: (() => {
-						throw new Error('teacherAttributionHistory 必须为数组');
-				  })());
+		return asPerformanceServicePromise<TeacherAttributionRecord[]>(
+			this.request({
+				url: '/attributionHistory',
+				method: 'GET',
+				params
+			}),
+			value =>
+				Array.isArray(value)
+					? value.map((item, index) =>
+							decodeTeacherAttributionRecord(
+								item,
+								`teacherAttributionHistory[${index}]`
+							)
+						)
+					: (() => {
+							throw new Error('teacherAttributionHistory 必须为数组');
+						})()
+		);
 	}
 }
 

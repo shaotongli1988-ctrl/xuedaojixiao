@@ -4,11 +4,7 @@
  * 维护重点：薪资主记录与调整记录必须共享同一条结构边界，避免金额和员工关联字段被异常响应污染。
  */
 
-import type {
-	SalaryChangeRecord,
-	SalaryPageResult,
-	SalaryRecord
-} from '../types';
+import type { SalaryChangeRecord, SalaryPageResult, SalaryRecord } from '../types';
 import {
 	decodePerformanceServicePageResult,
 	expectPerformanceServiceNullableNumber,
@@ -36,13 +32,18 @@ function decodeSalaryChangeRecord(
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
 		salaryId: expectPerformanceServiceOptionalNumber(record.salaryId, `${field}.salaryId`),
 		beforeAmount:
-			expectPerformanceServiceOptionalNumber(record.beforeAmount, `${field}.beforeAmount`) ?? 0,
+			expectPerformanceServiceOptionalNumber(record.beforeAmount, `${field}.beforeAmount`) ??
+			0,
 		adjustAmount:
-			expectPerformanceServiceOptionalNumber(record.adjustAmount, `${field}.adjustAmount`) ?? 0,
+			expectPerformanceServiceOptionalNumber(record.adjustAmount, `${field}.adjustAmount`) ??
+			0,
 		afterAmount:
 			expectPerformanceServiceOptionalNumber(record.afterAmount, `${field}.afterAmount`) ?? 0,
 		changeReason: expectPerformanceServiceString(record.changeReason, `${field}.changeReason`),
-		operatorId: expectPerformanceServiceOptionalNumber(record.operatorId, `${field}.operatorId`),
+		operatorId: expectPerformanceServiceOptionalNumber(
+			record.operatorId,
+			`${field}.operatorId`
+		),
 		operatorName: expectPerformanceServiceOptionalString(
 			record.operatorName,
 			`${field}.operatorName`
@@ -51,18 +52,24 @@ function decodeSalaryChangeRecord(
 	};
 }
 
-export function decodeSalaryRecord(
-	value: unknown,
-	field = 'salaryRecord'
-): SalaryRecord {
+export function decodeSalaryRecord(value: unknown, field = 'salaryRecord'): SalaryRecord {
 	const record = expectPerformanceServiceRecord(value, field);
 
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
-		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
+		updateTime: expectPerformanceServiceOptionalString(
+			record.updateTime,
+			`${field}.updateTime`
+		),
 		status: expectPerformanceServiceOptionalString(record.status, `${field}.status`),
-		employeeName: expectPerformanceServiceOptionalString(record.employeeName, `${field}.employeeName`),
+		employeeName: expectPerformanceServiceOptionalString(
+			record.employeeName,
+			`${field}.employeeName`
+		),
 		periodValue: expectPerformanceServiceString(record.periodValue, `${field}.periodValue`),
 		baseSalary:
 			expectPerformanceServiceOptionalNumber(record.baseSalary, `${field}.baseSalary`) ?? 0,
@@ -72,11 +79,15 @@ export function decodeSalaryRecord(
 				`${field}.performanceBonus`
 			) ?? 0,
 		adjustAmount:
-			expectPerformanceServiceOptionalNumber(record.adjustAmount, `${field}.adjustAmount`) ?? 0,
+			expectPerformanceServiceOptionalNumber(record.adjustAmount, `${field}.adjustAmount`) ??
+			0,
 		finalAmount:
 			expectPerformanceServiceOptionalNumber(record.finalAmount, `${field}.finalAmount`) ?? 0,
 		grade: expectPerformanceServiceOptionalString(record.grade, `${field}.grade`),
-		effectiveDate: expectPerformanceServiceString(record.effectiveDate, `${field}.effectiveDate`),
+		effectiveDate: expectPerformanceServiceString(
+			record.effectiveDate,
+			`${field}.effectiveDate`
+		),
 		employeeId:
 			expectPerformanceServiceOptionalNumber(record.employeeId, `${field}.employeeId`) ??
 			undefined,
@@ -85,12 +96,12 @@ export function decodeSalaryRecord(
 			record.changeRecords === undefined
 				? undefined
 				: record.changeRecords === null
-				? undefined
-				: Array.isArray(record.changeRecords)
-				? record.changeRecords.map((item, index) =>
-						decodeSalaryChangeRecord(item, `${field}.changeRecords[${index}]`)
-				  )
-				: undefined
+					? undefined
+					: Array.isArray(record.changeRecords)
+						? record.changeRecords.map((item, index) =>
+								decodeSalaryChangeRecord(item, `${field}.changeRecords[${index}]`)
+							)
+						: undefined
 	};
 }
 

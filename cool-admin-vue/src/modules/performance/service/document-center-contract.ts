@@ -40,10 +40,7 @@ const DOCUMENT_CENTER_FILE_TYPE = ['other', 'pdf', 'doc', 'xls', 'ppt', 'img', '
 const DOCUMENT_CENTER_STORAGE = ['local', 'cloud', 'hybrid'] as const;
 const DOCUMENT_CENTER_CONFIDENTIALITY = ['public', 'internal', 'secret'] as const;
 
-function decodeDocumentCenterCategory(
-	value: unknown,
-	field: string
-): DocumentCenterCategory {
+function decodeDocumentCenterCategory(value: unknown, field: string): DocumentCenterCategory {
 	return expectPerformanceServiceEnum(value, field, DOCUMENT_CENTER_CATEGORY);
 }
 
@@ -51,10 +48,7 @@ function decodeDocumentCenterStatus(value: unknown, field: string): DocumentCent
 	return expectPerformanceServiceEnum(value, field, DOCUMENT_CENTER_STATUS);
 }
 
-function decodeDocumentCenterFileType(
-	value: unknown,
-	field: string
-): DocumentCenterFileType {
+function decodeDocumentCenterFileType(value: unknown, field: string): DocumentCenterFileType {
 	return expectPerformanceServiceEnum(value, field, DOCUMENT_CENTER_FILE_TYPE);
 }
 
@@ -78,8 +72,14 @@ export function decodeDocumentCenterRecord(
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
 		category: decodeDocumentCenterCategory(record.category, `${field}.category`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
-		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
+		updateTime: expectPerformanceServiceOptionalString(
+			record.updateTime,
+			`${field}.updateTime`
+		),
 		status:
 			record.status === undefined
 				? undefined
@@ -135,7 +135,10 @@ export function decodeDocumentCenterStats(
 			`${field}.publishedCount`
 		),
 		reviewCount: expectPerformanceServiceNumber(record.reviewCount, `${field}.reviewCount`),
-		archivedCount: expectPerformanceServiceNumber(record.archivedCount, `${field}.archivedCount`),
+		archivedCount: expectPerformanceServiceNumber(
+			record.archivedCount,
+			`${field}.archivedCount`
+		),
 		totalSizeMb: expectPerformanceServiceNumber(record.totalSizeMb, `${field}.totalSizeMb`),
 		totalDownloads: expectPerformanceServiceNumber(
 			record.totalDownloads,

@@ -4,11 +4,7 @@
  * 维护重点：资产主记录与列表必须共享同一条结构边界，避免状态和关联采购字段被异常响应污染。
  */
 
-import type {
-	AssetInfoPageResult,
-	AssetInfoRecord,
-	AssetStatus
-} from '../types';
+import type { AssetInfoPageResult, AssetInfoRecord, AssetStatus } from '../types';
 import {
 	decodePerformanceServicePageResult,
 	expectPerformanceServiceEnum,
@@ -42,10 +38,7 @@ function decodeAssetStatus(value: unknown, field: string): AssetStatus {
 	return expectPerformanceServiceEnum(value, field, ASSET_STATUS);
 }
 
-export function decodeAssetInfoRecord(
-	value: unknown,
-	field = 'assetInfoRecord'
-): AssetInfoRecord {
+export function decodeAssetInfoRecord(value: unknown, field = 'assetInfoRecord'): AssetInfoRecord {
 	const record = expectPerformanceServiceRecord(value, field);
 
 	return {
@@ -62,14 +55,23 @@ export function decodeAssetInfoRecord(
 		model: expectPerformanceServiceOptionalString(record.model, `${field}.model`),
 		serialNo: expectPerformanceServiceOptionalString(record.serialNo, `${field}.serialNo`),
 		location: expectPerformanceServiceOptionalString(record.location, `${field}.location`),
-		departmentId: expectPerformanceServiceOptionalNumber(record.departmentId, `${field}.departmentId`),
+		departmentId: expectPerformanceServiceOptionalNumber(
+			record.departmentId,
+			`${field}.departmentId`
+		),
 		departmentName: expectPerformanceServiceOptionalString(
 			record.departmentName,
 			`${field}.departmentName`
 		),
 		managerId: expectPerformanceServiceOptionalNumber(record.managerId, `${field}.managerId`),
-		managerName: expectPerformanceServiceOptionalString(record.managerName, `${field}.managerName`),
-		purchaseDate: expectPerformanceServiceOptionalString(record.purchaseDate, `${field}.purchaseDate`),
+		managerName: expectPerformanceServiceOptionalString(
+			record.managerName,
+			`${field}.managerName`
+		),
+		purchaseDate: expectPerformanceServiceOptionalString(
+			record.purchaseDate,
+			`${field}.purchaseDate`
+		),
 		purchaseAmount: expectPerformanceServiceOptionalNumber(
 			record.purchaseAmount,
 			`${field}.purchaseAmount`
@@ -95,8 +97,14 @@ export function decodeAssetInfoRecord(
 			`${field}.depreciationStartMonth`
 		),
 		remark: expectPerformanceServiceOptionalString(record.remark, `${field}.remark`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
-		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
+		updateTime: expectPerformanceServiceOptionalString(
+			record.updateTime,
+			`${field}.updateTime`
+		),
 		supplierId: decodeOptionalNullableNumber(record.supplierId, `${field}.supplierId`),
 		purchaseOrderId: decodeOptionalNullableNumber(
 			record.purchaseOrderId,

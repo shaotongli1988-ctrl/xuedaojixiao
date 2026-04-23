@@ -4,11 +4,7 @@
  * 维护重点：领用单主记录与列表必须共享同一条结构边界，避免状态和可空领用字段被异常响应污染。
  */
 
-import type {
-	MaterialIssuePageResult,
-	MaterialIssueRecord,
-	MaterialIssueStatus
-} from '../types';
+import type { MaterialIssuePageResult, MaterialIssueRecord, MaterialIssueStatus } from '../types';
 import {
 	decodePerformanceServicePageResult,
 	expectPerformanceServiceEnum,
@@ -50,27 +46,51 @@ export function decodeMaterialIssueRecord(
 
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
-		departmentId: expectPerformanceServiceOptionalNumber(record.departmentId, `${field}.departmentId`),
+		departmentId: expectPerformanceServiceOptionalNumber(
+			record.departmentId,
+			`${field}.departmentId`
+		),
 		departmentName: expectPerformanceServiceOptionalString(
 			record.departmentName,
 			`${field}.departmentName`
 		),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
-		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
+		updateTime: expectPerformanceServiceOptionalString(
+			record.updateTime,
+			`${field}.updateTime`
+		),
 		title: expectPerformanceServiceOptionalString(record.title, `${field}.title`),
 		quantity: expectPerformanceServiceNumber(record.quantity, `${field}.quantity`),
 		status:
 			record.status === undefined
 				? undefined
 				: decodeMaterialIssueStatus(record.status, `${field}.status`),
-		materialNo: expectPerformanceServiceOptionalString(record.materialNo, `${field}.materialNo`),
+		materialNo: expectPerformanceServiceOptionalString(
+			record.materialNo,
+			`${field}.materialNo`
+		),
 		unit: expectPerformanceServiceOptionalString(record.unit, `${field}.unit`),
 		catalogId: expectPerformanceServiceOptionalNumber(record.catalogId, `${field}.catalogId`),
-		materialId: expectPerformanceServiceOptionalNumber(record.materialId, `${field}.materialId`),
-		materialCode: expectPerformanceServiceOptionalString(record.materialCode, `${field}.materialCode`),
-		materialName: expectPerformanceServiceOptionalString(record.materialName, `${field}.materialName`),
+		materialId: expectPerformanceServiceOptionalNumber(
+			record.materialId,
+			`${field}.materialId`
+		),
+		materialCode: expectPerformanceServiceOptionalString(
+			record.materialCode,
+			`${field}.materialCode`
+		),
+		materialName: expectPerformanceServiceOptionalString(
+			record.materialName,
+			`${field}.materialName`
+		),
 		issueNo: expectPerformanceServiceOptionalString(record.issueNo, `${field}.issueNo`),
-		assigneeId: expectPerformanceServiceOptionalNumber(record.assigneeId, `${field}.assigneeId`),
+		assigneeId: expectPerformanceServiceOptionalNumber(
+			record.assigneeId,
+			`${field}.assigneeId`
+		),
 		assigneeName: expectPerformanceServiceOptionalString(
 			record.assigneeName,
 			`${field}.assigneeName`

@@ -5,10 +5,7 @@
  */
 import { BaseService } from '/@/cool';
 import { asPerformanceServicePromise } from './service-contract';
-import {
-	decodeHiringPageResult,
-	decodeHiringTransportRecord
-} from './hiring-contract';
+import { decodeHiringPageResult, decodeHiringTransportRecord } from './hiring-contract';
 import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import type {
 	HiringCloseRequest,
@@ -55,19 +52,25 @@ export default class PerformanceHiringService extends BaseService {
 	}
 
 	updateStatus(data: HiringStatusUpdateRequest) {
-		return asPerformanceServicePromise<HiringTransportRecord>(this.request({
-			url: '/updateStatus',
-			method: 'POST',
-			data
-		}), decodeHiringTransportRecord);
+		return asPerformanceServicePromise<HiringTransportRecord>(
+			this.request({
+				url: '/updateStatus',
+				method: 'POST',
+				data
+			}),
+			decodeHiringTransportRecord
+		);
 	}
 
 	close(data: HiringCloseRequest) {
-		return asPerformanceServicePromise<HiringTransportRecord>(this.request({
-			url: '/close',
-			method: 'POST',
-			data
-		}), decodeHiringTransportRecord);
+		return asPerformanceServicePromise<HiringTransportRecord>(
+			this.request({
+				url: '/close',
+				method: 'POST',
+				data
+			}),
+			decodeHiringTransportRecord
+		);
 	}
 }
 

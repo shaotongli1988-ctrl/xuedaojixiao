@@ -43,7 +43,7 @@ test('frontend normal web pages consume business dict keys instead of local stat
 		salaryPage,
 		capabilityPage,
 		contractPage,
-		interviewPage,
+		interviewPage
 	] = await Promise.all([
 		readRepoFile('cool-admin-vue/src/modules/performance/views/job-standard/index.vue'),
 		readRepoFile('cool-admin-vue/src/modules/performance/components/assessment-page.vue'),
@@ -51,7 +51,9 @@ test('frontend normal web pages consume business dict keys instead of local stat
 		readRepoFile('cool-admin-vue/src/modules/performance/views/course/index.vue'),
 		readRepoFile('cool-admin-vue/src/modules/performance/views/hiring/index.vue'),
 		readRepoFile('cool-admin-vue/src/modules/performance/views/promotion/index.vue'),
-		readRepoFile('cool-admin-vue/src/modules/performance/components/promotion-review-drawer.vue'),
+		readRepoFile(
+			'cool-admin-vue/src/modules/performance/components/promotion-review-drawer.vue'
+		),
 		readRepoFile('cool-admin-vue/src/modules/performance/views/talentAsset/index.vue'),
 		readRepoFile('cool-admin-vue/src/modules/performance/views/work-plan/index.vue'),
 		readRepoFile('cool-admin-vue/src/modules/performance/views/recruit-plan/index.vue'),
@@ -61,18 +63,27 @@ test('frontend normal web pages consume business dict keys instead of local stat
 		readRepoFile('cool-admin-vue/src/modules/performance/components/meeting-detail-drawer.vue'),
 		readRepoFile('cool-admin-vue/src/modules/performance/views/pip/index.vue'),
 		readRepoFile('cool-admin-vue/src/modules/performance/views/feedback/index.vue'),
-		readRepoFile('cool-admin-vue/src/modules/performance/components/feedback-summary-drawer.vue'),
-		readRepoFile('cool-admin-vue/src/modules/performance/components/feedback-submit-drawer.vue'),
+		readRepoFile(
+			'cool-admin-vue/src/modules/performance/components/feedback-summary-drawer.vue'
+		),
+		readRepoFile(
+			'cool-admin-vue/src/modules/performance/components/feedback-submit-drawer.vue'
+		),
 		readRepoFile('cool-admin-vue/src/modules/performance/components/feedback-task-form.vue'),
 		readRepoFile('cool-admin-vue/src/modules/performance/views/suggestion/index.vue'),
-		readRepoFile('cool-admin-vue/src/modules/performance/components/suggestion-detail-drawer.vue'),
+		readRepoFile(
+			'cool-admin-vue/src/modules/performance/components/suggestion-detail-drawer.vue'
+		),
 		readRepoFile('cool-admin-vue/src/modules/performance/views/salary/index.vue'),
 		readRepoFile('cool-admin-vue/src/modules/performance/views/capability/index.vue'),
 		readRepoFile('cool-admin-vue/src/modules/performance/views/contract/index.vue'),
-		readRepoFile('cool-admin-vue/src/modules/performance/views/interview/index.vue'),
+		readRepoFile('cool-admin-vue/src/modules/performance/views/interview/index.vue')
 	]);
 
-	assert.match(jobStandardPage, /const JOB_STANDARD_STATUS_DICT_KEY = 'performance\.jobStandard\.status'/);
+	assert.match(
+		jobStandardPage,
+		/const JOB_STANDARD_STATUS_DICT_KEY = 'performance\.jobStandard\.status'/
+	);
 	assert.match(jobStandardPage, /dict\.getLabel\(JOB_STANDARD_STATUS_DICT_KEY, status\)/);
 	assert.match(jobStandardPage, /dict\.getMeta\(JOB_STANDARD_STATUS_DICT_KEY, status\)\?\.tone/);
 	assert.doesNotMatch(jobStandardPage, /const statusOptions:\s*Array/);
@@ -85,16 +96,16 @@ test('frontend normal web pages consume business dict keys instead of local stat
 	assert.match(assessmentPage, /dict\.getMeta\(ASSESSMENT_STATUS_DICT_KEY, status\)\?\.tone/);
 	assert.doesNotMatch(assessmentPage, /const statusOptions = \[/);
 
-	assert.match(certificatePage, /const CERTIFICATE_STATUS_DICT_KEY = 'performance\.certificate\.status'/);
+	assert.match(
+		certificatePage,
+		/const CERTIFICATE_STATUS_DICT_KEY = 'performance\.certificate\.status'/
+	);
 	assert.match(
 		certificatePage,
 		/const CERTIFICATE_RECORD_STATUS_DICT_KEY = 'performance\.certificate\.recordStatus'/
 	);
 	assert.match(certificatePage, /dict\.getLabel\(CERTIFICATE_STATUS_DICT_KEY, status\)/);
-	assert.match(
-		certificatePage,
-		/dict\.getLabel\(CERTIFICATE_RECORD_STATUS_DICT_KEY, status\)/
-	);
+	assert.match(certificatePage, /dict\.getLabel\(CERTIFICATE_RECORD_STATUS_DICT_KEY, status\)/);
 	assert.doesNotMatch(certificatePage, /const filterStatusOptions:/);
 	assert.doesNotMatch(certificatePage, /const recordStatusOptions:/);
 
@@ -104,7 +115,10 @@ test('frontend normal web pages consume business dict keys instead of local stat
 	assert.doesNotMatch(coursePage, /const courseStatusOptions:\s*Array/);
 
 	assert.match(hiringPage, /const HIRING_STATUS_DICT_KEY = 'performance\.hiring\.status'/);
-	assert.match(hiringPage, /const HIRING_SOURCE_TYPE_DICT_KEY = 'performance\.hiring\.sourceType'/);
+	assert.match(
+		hiringPage,
+		/const HIRING_SOURCE_TYPE_DICT_KEY = 'performance\.hiring\.sourceType'/
+	);
 	assert.match(hiringPage, /dict\.getLabel\(HIRING_STATUS_DICT_KEY, status\)/);
 	assert.match(hiringPage, /dict\.getMeta\(HIRING_STATUS_DICT_KEY, status\)\?\.tone/);
 	assert.match(hiringPage, /dict\.getLabel\(HIRING_SOURCE_TYPE_DICT_KEY, value\)/);
@@ -140,8 +154,14 @@ test('frontend normal web pages consume business dict keys instead of local stat
 		workPlanPage,
 		/const WORK_PLAN_SOURCE_STATUS_DICT_KEY = 'performance\.workPlan\.sourceStatus'/
 	);
-	assert.match(workPlanPage, /const WORK_PLAN_PRIORITY_DICT_KEY = 'performance\.workPlan\.priority'/);
-	assert.match(workPlanPage, /const WORK_PLAN_SOURCE_TYPE_DICT_KEY = 'performance\.workPlan\.sourceType'/);
+	assert.match(
+		workPlanPage,
+		/const WORK_PLAN_PRIORITY_DICT_KEY = 'performance\.workPlan\.priority'/
+	);
+	assert.match(
+		workPlanPage,
+		/const WORK_PLAN_SOURCE_TYPE_DICT_KEY = 'performance\.workPlan\.sourceType'/
+	);
 	assert.match(workPlanPage, /dict\.getLabel\(WORK_PLAN_STATUS_DICT_KEY, status\)/);
 	assert.match(workPlanPage, /dict\.getLabel\(WORK_PLAN_SOURCE_STATUS_DICT_KEY, status\)/);
 	assert.match(workPlanPage, /dict\.getLabel\(WORK_PLAN_PRIORITY_DICT_KEY, priority\)/);
@@ -150,12 +170,18 @@ test('frontend normal web pages consume business dict keys instead of local stat
 	assert.doesNotMatch(workPlanPage, /const sourceStatusOptions:\s*Array/);
 	assert.doesNotMatch(workPlanPage, /const priorityOptions:\s*Array/);
 
-	assert.match(recruitPlanPage, /const RECRUIT_PLAN_STATUS_DICT_KEY = 'performance\.recruitPlan\.status'/);
+	assert.match(
+		recruitPlanPage,
+		/const RECRUIT_PLAN_STATUS_DICT_KEY = 'performance\.recruitPlan\.status'/
+	);
 	assert.match(recruitPlanPage, /dict\.getLabel\(RECRUIT_PLAN_STATUS_DICT_KEY, status\)/);
 	assert.match(recruitPlanPage, /dict\.getMeta\(RECRUIT_PLAN_STATUS_DICT_KEY, status\)\?\.tone/);
 	assert.doesNotMatch(recruitPlanPage, /const statusOptions:\s*Array/);
 
-	assert.match(resumePoolPage, /const RESUME_POOL_STATUS_DICT_KEY = 'performance\.resumePool\.status'/);
+	assert.match(
+		resumePoolPage,
+		/const RESUME_POOL_STATUS_DICT_KEY = 'performance\.resumePool\.status'/
+	);
 	assert.match(
 		resumePoolPage,
 		/const RESUME_POOL_SOURCE_TYPE_DICT_KEY = 'performance\.resumePool\.sourceType'/
@@ -175,8 +201,14 @@ test('frontend normal web pages consume business dict keys instead of local stat
 	assert.match(meetingPage, /dict\.getLabel\(MEETING_STATUS_DICT_KEY, status\)/);
 	assert.match(meetingPage, /dict\.getMeta\(MEETING_STATUS_DICT_KEY, status\)\?\.tone/);
 	assert.doesNotMatch(meetingPage, /const filterStatusOptions:\s*Array/);
-	assert.match(meetingDetailDrawer, /const MEETING_STATUS_DICT_KEY = 'performance\.meeting\.status'/);
-	assert.match(meetingDetailDrawer, /dict\.getLabel\(MEETING_STATUS_DICT_KEY, props\.meeting\?\.status\)/);
+	assert.match(
+		meetingDetailDrawer,
+		/const MEETING_STATUS_DICT_KEY = 'performance\.meeting\.status'/
+	);
+	assert.match(
+		meetingDetailDrawer,
+		/dict\.getLabel\(MEETING_STATUS_DICT_KEY, props\.meeting\?\.status\)/
+	);
 
 	assert.match(pipPage, /const PIP_STATUS_DICT_KEY = 'performance\.pip\.status'/);
 	assert.match(pipPage, /dict\.getLabel\(PIP_STATUS_DICT_KEY, status\)/);
@@ -198,35 +230,26 @@ test('frontend normal web pages consume business dict keys instead of local stat
 		feedbackSummaryDrawer,
 		/const FEEDBACK_RELATION_TYPE_DICT_KEY = 'performance\.feedback\.relationType'/
 	);
-	assert.match(
-		feedbackSummaryDrawer,
-		/dict\.getLabel\(FEEDBACK_RECORD_STATUS_DICT_KEY, value\)/
-	);
-	assert.match(
-		feedbackSummaryDrawer,
-		/dict\.getLabel\(FEEDBACK_RELATION_TYPE_DICT_KEY, value\)/
-	);
+	assert.match(feedbackSummaryDrawer, /dict\.getLabel\(FEEDBACK_RECORD_STATUS_DICT_KEY, value\)/);
+	assert.match(feedbackSummaryDrawer, /dict\.getLabel\(FEEDBACK_RELATION_TYPE_DICT_KEY, value\)/);
 	assert.doesNotMatch(feedbackSummaryDrawer, /row\.status === 'submitted'/);
 	assert.match(
 		feedbackSubmitDrawer,
 		/const FEEDBACK_RELATION_TYPE_DICT_KEY = 'performance\.feedback\.relationType'/
 	);
-	assert.match(
-		feedbackSubmitDrawer,
-		/dict\.get\(FEEDBACK_RELATION_TYPE_DICT_KEY\)\.value\.map/
-	);
+	assert.match(feedbackSubmitDrawer, /dict\.get\(FEEDBACK_RELATION_TYPE_DICT_KEY\)\.value\.map/);
 	assert.doesNotMatch(feedbackSubmitDrawer, /const relationOptions = \[/);
 	assert.match(
 		feedbackTaskForm,
 		/const FEEDBACK_RELATION_TYPE_DICT_KEY = 'performance\.feedback\.relationType'/
 	);
-	assert.match(
-		feedbackTaskForm,
-		/dict\.get\(FEEDBACK_RELATION_TYPE_DICT_KEY\)\.value\.map/
-	);
+	assert.match(feedbackTaskForm, /dict\.get\(FEEDBACK_RELATION_TYPE_DICT_KEY\)\.value\.map/);
 	assert.doesNotMatch(feedbackTaskForm, /const relationOptions: Array/);
 
-	assert.match(suggestionPage, /const SUGGESTION_TYPE_DICT_KEY = 'performance\.suggestion\.type'/);
+	assert.match(
+		suggestionPage,
+		/const SUGGESTION_TYPE_DICT_KEY = 'performance\.suggestion\.type'/
+	);
 	assert.match(
 		suggestionPage,
 		/const SUGGESTION_STATUS_DICT_KEY = 'performance\.suggestion\.status'/
@@ -260,7 +283,10 @@ test('frontend normal web pages consume business dict keys instead of local stat
 	assert.match(salaryPage, /dict\.getMeta\(SALARY_STATUS_DICT_KEY, status\)\?\.tone/);
 	assert.doesNotMatch(salaryPage, /const statusOptions = \[/);
 
-	assert.match(capabilityPage, /const CAPABILITY_STATUS_DICT_KEY = 'performance\.capability\.status'/);
+	assert.match(
+		capabilityPage,
+		/const CAPABILITY_STATUS_DICT_KEY = 'performance\.capability\.status'/
+	);
 	assert.match(capabilityPage, /dict\.getLabel\(CAPABILITY_STATUS_DICT_KEY, status\)/);
 	assert.match(capabilityPage, /dict\.getMeta\(CAPABILITY_STATUS_DICT_KEY, status\)\?\.tone/);
 	assert.doesNotMatch(capabilityPage, /const filterStatusOptions:\s*Array/);
@@ -274,7 +300,10 @@ test('frontend normal web pages consume business dict keys instead of local stat
 	assert.doesNotMatch(contractPage, /const filterStatusOptions:\s*Array/);
 	assert.doesNotMatch(contractPage, /const editableStatusOptions:\s*Array/);
 
-	assert.match(interviewPage, /const INTERVIEW_STATUS_DICT_KEY = 'performance\.interview\.status'/);
+	assert.match(
+		interviewPage,
+		/const INTERVIEW_STATUS_DICT_KEY = 'performance\.interview\.status'/
+	);
 	assert.match(interviewPage, /const INTERVIEW_TYPE_DICT_KEY = 'performance\.interview\.type'/);
 	assert.match(interviewPage, /dict\.getLabel\(INTERVIEW_STATUS_DICT_KEY, status\)/);
 	assert.match(interviewPage, /dict\.getMeta\(INTERVIEW_STATUS_DICT_KEY, status\)\?\.tone/);
@@ -324,7 +353,7 @@ test('frontend boundary uni pages and types no longer carry local business statu
 		suggestionTypes,
 		salaryTypes,
 		capabilityTypes,
-		contractTypes,
+		contractTypes
 	] = await Promise.all([
 		readRepoFile('cool-uni/pages/performance/job-standard/index.vue'),
 		readRepoFile('cool-uni/pages/performance/assessment/list.vue'),
@@ -365,10 +394,13 @@ test('frontend boundary uni pages and types no longer carry local business statu
 		readRepoFile('cool-uni/types/performance-suggestion.ts'),
 		readRepoFile('cool-uni/types/performance-salary.ts'),
 		readRepoFile('cool-uni/types/performance-capability.ts'),
-		readRepoFile('cool-uni/types/performance-contract.ts'),
+		readRepoFile('cool-uni/types/performance-contract.ts')
 	]);
 
-	assert.match(jobStandardPage, /const JOB_STANDARD_STATUS_DICT_KEY = "performance\.jobStandard\.status"/);
+	assert.match(
+		jobStandardPage,
+		/const JOB_STANDARD_STATUS_DICT_KEY = "performance\.jobStandard\.status"/
+	);
 	assert.match(jobStandardPage, /dict\.getLabel\(JOB_STANDARD_STATUS_DICT_KEY, value\)/);
 	assert.doesNotMatch(jobStandardTypes, /jobStandardStatusLabel|jobStandardStatusTone/);
 
@@ -394,7 +426,10 @@ test('frontend boundary uni pages and types no longer carry local business statu
 	assert.match(approvalListPage, /dict\.getLabel\(ASSESSMENT_STATUS_DICT_KEY, value\)/);
 	assert.doesNotMatch(assessmentTypes, /assessmentStatusLabel|assessmentStatusTone/);
 
-	assert.match(certificatePage, /const CERTIFICATE_STATUS_DICT_KEY = "performance\.certificate\.status"/);
+	assert.match(
+		certificatePage,
+		/const CERTIFICATE_STATUS_DICT_KEY = "performance\.certificate\.status"/
+	);
 	assert.match(certificatePage, /dict\.getLabel\(CERTIFICATE_STATUS_DICT_KEY, value\)/);
 	assert.doesNotMatch(certificatePage, /certificateStatusLabel|certificateStatusTone/);
 	assert.doesNotMatch(certificateTypes, /export function certificateStatusLabel/);
@@ -404,14 +439,26 @@ test('frontend boundary uni pages and types no longer carry local business statu
 	assert.match(coursePage, /dict\.getLabel\(COURSE_STATUS_DICT_KEY, value\)/);
 	assert.doesNotMatch(courseTypes, /courseStatusLabel|courseStatusTone/);
 
-	assert.match(promotionPage, /const PROMOTION_STATUS_DICT_KEY = "performance\.promotion\.status"/);
+	assert.match(
+		promotionPage,
+		/const PROMOTION_STATUS_DICT_KEY = "performance\.promotion\.status"/
+	);
 	assert.match(promotionPage, /dict\.getLabel\(PROMOTION_STATUS_DICT_KEY, value\)/);
 	assert.doesNotMatch(promotionTypes, /promotionStatusLabel|promotionStatusTone/);
 
 	assert.match(workPlanPage, /const WORK_PLAN_STATUS_DICT_KEY = "performance\.workPlan\.status"/);
-	assert.match(workPlanPage, /const WORK_PLAN_SOURCE_STATUS_DICT_KEY = "performance\.workPlan\.sourceStatus"/);
-	assert.match(workPlanPage, /const WORK_PLAN_PRIORITY_DICT_KEY = "performance\.workPlan\.priority"/);
-	assert.match(workPlanPage, /const WORK_PLAN_SOURCE_TYPE_DICT_KEY = "performance\.workPlan\.sourceType"/);
+	assert.match(
+		workPlanPage,
+		/const WORK_PLAN_SOURCE_STATUS_DICT_KEY = "performance\.workPlan\.sourceStatus"/
+	);
+	assert.match(
+		workPlanPage,
+		/const WORK_PLAN_PRIORITY_DICT_KEY = "performance\.workPlan\.priority"/
+	);
+	assert.match(
+		workPlanPage,
+		/const WORK_PLAN_SOURCE_TYPE_DICT_KEY = "performance\.workPlan\.sourceType"/
+	);
 	assert.match(workPlanPage, /dict\.getLabel\(WORK_PLAN_STATUS_DICT_KEY, value\)/);
 	assert.match(workPlanPage, /dict\.getLabel\(WORK_PLAN_SOURCE_STATUS_DICT_KEY, value\)/);
 	assert.match(workPlanPage, /dict\.getLabel\(WORK_PLAN_PRIORITY_DICT_KEY, value\)/);
@@ -421,11 +468,17 @@ test('frontend boundary uni pages and types no longer carry local business statu
 		/workPlanStatusLabel|workPlanStatusTone|workPlanSourceStatusLabel|workPlanPriorityLabel|workPlanSourceTypeLabel/
 	);
 
-	assert.match(recruitPlanPage, /const RECRUIT_PLAN_STATUS_DICT_KEY = "performance\.recruitPlan\.status"/);
+	assert.match(
+		recruitPlanPage,
+		/const RECRUIT_PLAN_STATUS_DICT_KEY = "performance\.recruitPlan\.status"/
+	);
 	assert.match(recruitPlanPage, /dict\.getLabel\(RECRUIT_PLAN_STATUS_DICT_KEY, value\)/);
 	assert.doesNotMatch(recruitPlanTypes, /recruitPlanStatusLabel|recruitPlanStatusTone/);
 
-	assert.match(resumePoolPage, /const RESUME_POOL_STATUS_DICT_KEY = "performance\.resumePool\.status"/);
+	assert.match(
+		resumePoolPage,
+		/const RESUME_POOL_STATUS_DICT_KEY = "performance\.resumePool\.status"/
+	);
 	assert.match(
 		resumePoolPage,
 		/const RESUME_POOL_SOURCE_TYPE_DICT_KEY = "performance\.resumePool\.sourceType"/
@@ -475,11 +528,17 @@ test('frontend boundary uni pages and types no longer carry local business statu
 		feedbackStatusTag,
 		/const FEEDBACK_TASK_STATUS_DICT_KEY = "performance\.feedback\.taskStatus"/
 	);
-	assert.match(feedbackStatusTag, /dict\.getLabel\(FEEDBACK_TASK_STATUS_DICT_KEY, props\.status\)/);
+	assert.match(
+		feedbackStatusTag,
+		/dict\.getLabel\(FEEDBACK_TASK_STATUS_DICT_KEY, props\.status\)/
+	);
 	assert.doesNotMatch(feedbackTypes, /feedbackStatusLabel|feedbackStatusTone/);
 	assert.doesNotMatch(feedbackUtils, /FEEDBACK_RELATION_OPTIONS/);
 
-	assert.match(suggestionPage, /const SUGGESTION_TYPE_DICT_KEY = "performance\.suggestion\.type"/);
+	assert.match(
+		suggestionPage,
+		/const SUGGESTION_TYPE_DICT_KEY = "performance\.suggestion\.type"/
+	);
 	assert.match(
 		suggestionPage,
 		/const SUGGESTION_STATUS_DICT_KEY = "performance\.suggestion\.status"/
@@ -498,7 +557,10 @@ test('frontend boundary uni pages and types no longer carry local business statu
 	assert.match(salaryPage, /dict\.get\(SALARY_STATUS_DICT_KEY\)\.map/);
 	assert.doesNotMatch(salaryTypes, /salaryStatusLabel|salaryStatusTone/);
 
-	assert.match(capabilityPage, /const CAPABILITY_STATUS_DICT_KEY = "performance\.capability\.status"/);
+	assert.match(
+		capabilityPage,
+		/const CAPABILITY_STATUS_DICT_KEY = "performance\.capability\.status"/
+	);
 	assert.match(capabilityPage, /dict\.getLabel\(CAPABILITY_STATUS_DICT_KEY, value\)/);
 	assert.match(capabilityPage, /dict\.get\(CAPABILITY_STATUS_DICT_KEY\)\.map/);
 	assert.doesNotMatch(capabilityTypes, /capabilityStatusLabel|capabilityStatusTone/);
@@ -506,15 +568,12 @@ test('frontend boundary uni pages and types no longer carry local business statu
 	assert.match(contractPage, /const CONTRACT_TYPE_DICT_KEY = "performance\.contract\.type"/);
 	assert.match(contractPage, /const CONTRACT_STATUS_DICT_KEY = "performance\.contract\.status"/);
 	assert.match(contractPage, /dict\.getLabel\(CONTRACT_TYPE_DICT_KEY, value\)/);
-assert.match(contractPage, /dict\.getLabel\(CONTRACT_STATUS_DICT_KEY, value\)/);
-assert.match(contractPage, /dict\.get\(CONTRACT_STATUS_DICT_KEY\)\.map/);
-assert.doesNotMatch(
-	contractTypes,
-	/contractStatusLabel|contractStatusTone|contractTypeLabel/
-);
+	assert.match(contractPage, /dict\.getLabel\(CONTRACT_STATUS_DICT_KEY, value\)/);
+	assert.match(contractPage, /dict\.get\(CONTRACT_STATUS_DICT_KEY\)\.map/);
+	assert.doesNotMatch(contractTypes, /contractStatusLabel|contractStatusTone|contractTypeLabel/);
 });
 
-test("frontend remaining business pages consume dict store instead of local business constants", async () => {
+test('frontend remaining business pages consume dict store instead of local business constants', async () => {
 	const [
 		goalPage,
 		courseLearningPage,
@@ -524,17 +583,19 @@ test("frontend remaining business pages consume dict store instead of local busi
 		purchaseWorkspacePage,
 		documentCenterPage,
 		knowledgeBasePage,
-		indicatorLibraryPage,
+		indicatorLibraryPage
 	] = await Promise.all([
-		readRepoFile("cool-admin-vue/src/modules/performance/views/goals/index.vue"),
-		readRepoFile("cool-admin-vue/src/modules/performance/views/course-learning/index.vue"),
-		readRepoFile("cool-admin-vue/src/modules/performance/views/teacher-channel/teacher-list.vue"),
-		readRepoFile("cool-admin-vue/src/modules/performance/views/teacher-channel/class-list.vue"),
-		readRepoFile("cool-admin-vue/src/modules/performance/views/teacher-channel/todo-list.vue"),
-		readRepoFile("cool-admin-vue/src/modules/performance/views/purchase-order/workspace.vue"),
-		readRepoFile("cool-admin-vue/src/modules/performance/views/office/documentCenter.vue"),
-		readRepoFile("cool-admin-vue/src/modules/performance/views/office/knowledgeBase.vue"),
-		readRepoFile("cool-admin-vue/src/modules/performance/views/indicator-library/index.vue"),
+		readRepoFile('cool-admin-vue/src/modules/performance/views/goals/index.vue'),
+		readRepoFile('cool-admin-vue/src/modules/performance/views/course-learning/index.vue'),
+		readRepoFile(
+			'cool-admin-vue/src/modules/performance/views/teacher-channel/teacher-list.vue'
+		),
+		readRepoFile('cool-admin-vue/src/modules/performance/views/teacher-channel/class-list.vue'),
+		readRepoFile('cool-admin-vue/src/modules/performance/views/teacher-channel/todo-list.vue'),
+		readRepoFile('cool-admin-vue/src/modules/performance/views/purchase-order/workspace.vue'),
+		readRepoFile('cool-admin-vue/src/modules/performance/views/office/documentCenter.vue'),
+		readRepoFile('cool-admin-vue/src/modules/performance/views/office/knowledgeBase.vue'),
+		readRepoFile('cool-admin-vue/src/modules/performance/views/indicator-library/index.vue')
 	]);
 
 	assert.match(goalPage, /const GOAL_SOURCE_TYPE_DICT_KEY = 'performance\.goal\.sourceType'/);
@@ -553,7 +614,10 @@ test("frontend remaining business pages consume dict store instead of local busi
 		courseLearningPage,
 		/const COURSE_LEARNING_EXAM_STATUS_DICT_KEY = 'performance\.courseLearning\.examStatus'/
 	);
-	assert.match(courseLearningPage, /dict\.getLabel\(COURSE_LEARNING_TASK_STATUS_DICT_KEY, status\)/);
+	assert.match(
+		courseLearningPage,
+		/dict\.getLabel\(COURSE_LEARNING_TASK_STATUS_DICT_KEY, status\)/
+	);
 	assert.match(
 		courseLearningPage,
 		/dict\.getMeta\(COURSE_LEARNING_EXAM_STATUS_DICT_KEY, status\)\?\.tone/
@@ -564,10 +628,7 @@ test("frontend remaining business pages consume dict store instead of local busi
 		teacherListPage,
 		/const TEACHER_COOPERATION_STATUS_DICT_KEY = 'performance\.teacherChannel\.cooperationStatus'/
 	);
-	assert.match(
-		teacherListPage,
-		/dict\.getLabel\(TEACHER_COOPERATION_STATUS_DICT_KEY, value\)/
-	);
+	assert.match(teacherListPage, /dict\.getLabel\(TEACHER_COOPERATION_STATUS_DICT_KEY, value\)/);
 	assert.match(
 		teacherListPage,
 		/dict\.getMeta\(TEACHER_COOPERATION_STATUS_DICT_KEY, value\)\?\.tone/
@@ -658,7 +719,7 @@ test("frontend remaining business pages consume dict store instead of local busi
 	assert.doesNotMatch(indicatorLibraryPage, /const categoryOptions: Array/);
 });
 
-test("frontend remaining uni pages consume dict store and types no longer export business label helpers", async () => {
+test('frontend remaining uni pages consume dict store and types no longer export business label helpers', async () => {
 	const [
 		goalListPage,
 		goalDetailPage,
@@ -673,22 +734,22 @@ test("frontend remaining uni pages consume dict store and types no longer export
 		goalTypes,
 		courseLearningTypes,
 		teacherTypes,
-		indicatorTypes,
+		indicatorTypes
 	] = await Promise.all([
-		readRepoFile("cool-uni/pages/performance/goal/list.vue"),
-		readRepoFile("cool-uni/pages/performance/goal/detail.vue"),
-		readRepoFile("cool-uni/pages/performance/goal/components/goal-status-tag.vue"),
-		readRepoFile("cool-uni/pages/performance/course-learning/index.vue"),
-		readRepoFile("cool-uni/pages/performance/course-learning/detail.vue"),
-		readRepoFile("cool-uni/pages/performance/teacher-channel/teacher.vue"),
-		readRepoFile("cool-uni/pages/performance/teacher-channel/detail.vue"),
-		readRepoFile("cool-uni/pages/performance/teacher-channel/class.vue"),
-		readRepoFile("cool-uni/pages/performance/teacher-channel/todo.vue"),
-		readRepoFile("cool-uni/pages/performance/indicator-library/index.vue"),
-		readRepoFile("cool-uni/types/performance-goal.ts"),
-		readRepoFile("cool-uni/types/performance-course-learning.ts"),
-		readRepoFile("cool-uni/types/performance-teacher-channel.ts"),
-		readRepoFile("cool-uni/types/performance-indicator.ts"),
+		readRepoFile('cool-uni/pages/performance/goal/list.vue'),
+		readRepoFile('cool-uni/pages/performance/goal/detail.vue'),
+		readRepoFile('cool-uni/pages/performance/goal/components/goal-status-tag.vue'),
+		readRepoFile('cool-uni/pages/performance/course-learning/index.vue'),
+		readRepoFile('cool-uni/pages/performance/course-learning/detail.vue'),
+		readRepoFile('cool-uni/pages/performance/teacher-channel/teacher.vue'),
+		readRepoFile('cool-uni/pages/performance/teacher-channel/detail.vue'),
+		readRepoFile('cool-uni/pages/performance/teacher-channel/class.vue'),
+		readRepoFile('cool-uni/pages/performance/teacher-channel/todo.vue'),
+		readRepoFile('cool-uni/pages/performance/indicator-library/index.vue'),
+		readRepoFile('cool-uni/types/performance-goal.ts'),
+		readRepoFile('cool-uni/types/performance-course-learning.ts'),
+		readRepoFile('cool-uni/types/performance-teacher-channel.ts'),
+		readRepoFile('cool-uni/types/performance-indicator.ts')
 	]);
 
 	assert.match(goalListPage, /const GOAL_STATUS_DICT_KEY = "performance\.goal\.status"/);

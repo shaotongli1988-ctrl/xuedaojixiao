@@ -95,12 +95,18 @@ function decodeGoalOpsOverviewRow(
 			record.completionRate,
 			`${field}.completionRate`
 		),
-		assignedCount: expectPerformanceServiceNumber(record.assignedCount, `${field}.assignedCount`),
+		assignedCount: expectPerformanceServiceNumber(
+			record.assignedCount,
+			`${field}.assignedCount`
+		),
 		submittedCount: expectPerformanceServiceNumber(
 			record.submittedCount,
 			`${field}.submittedCount`
 		),
-		autoZeroCount: expectPerformanceServiceNumber(record.autoZeroCount, `${field}.autoZeroCount`)
+		autoZeroCount: expectPerformanceServiceNumber(
+			record.autoZeroCount,
+			`${field}.autoZeroCount`
+		)
 	};
 }
 
@@ -113,7 +119,10 @@ function decodeGoalOpsDepartmentSummary(
 	return {
 		planDate: expectPerformanceServiceString(record.planDate, `${field}.planDate`),
 		departmentId: expectPerformanceServiceNumber(record.departmentId, `${field}.departmentId`),
-		employeeCount: expectPerformanceServiceNumber(record.employeeCount, `${field}.employeeCount`),
+		employeeCount: expectPerformanceServiceNumber(
+			record.employeeCount,
+			`${field}.employeeCount`
+		),
 		publicTargetValue: expectPerformanceServiceNumber(
 			record.publicTargetValue,
 			`${field}.publicTargetValue`
@@ -142,16 +151,25 @@ function decodeGoalOpsDepartmentSummary(
 			record.completionRate,
 			`${field}.completionRate`
 		),
-		assignedCount: expectPerformanceServiceNumber(record.assignedCount, `${field}.assignedCount`),
+		assignedCount: expectPerformanceServiceNumber(
+			record.assignedCount,
+			`${field}.assignedCount`
+		),
 		submittedCount: expectPerformanceServiceNumber(
 			record.submittedCount,
 			`${field}.submittedCount`
 		),
-		autoZeroCount: expectPerformanceServiceNumber(record.autoZeroCount, `${field}.autoZeroCount`)
+		autoZeroCount: expectPerformanceServiceNumber(
+			record.autoZeroCount,
+			`${field}.autoZeroCount`
+		)
 	};
 }
 
-function decodeGoalOpsLeaderboard(value: unknown, field = 'goalOpsLeaderboard'): GoalOpsLeaderboard {
+function decodeGoalOpsLeaderboard(
+	value: unknown,
+	field = 'goalOpsLeaderboard'
+): GoalOpsLeaderboard {
 	const record = expectPerformanceServiceRecord(value, field);
 
 	return {
@@ -174,7 +192,10 @@ function decodeGoalOpsReportAutoZeroEmployee(
 	return {
 		employeeId: expectPerformanceServiceNumber(record.employeeId, `${field}.employeeId`),
 		employeeName: expectPerformanceServiceString(record.employeeName, `${field}.employeeName`),
-		autoZeroCount: expectPerformanceServiceNumber(record.autoZeroCount, `${field}.autoZeroCount`)
+		autoZeroCount: expectPerformanceServiceNumber(
+			record.autoZeroCount,
+			`${field}.autoZeroCount`
+		)
 	};
 }
 
@@ -227,8 +248,16 @@ export function decodeGoalOpsAccessProfile(
 			record.activePersonaKey,
 			`${field}.activePersonaKey`
 		),
-		roleKind: expectPerformanceServiceEnum(record.roleKind, `${field}.roleKind`, GOAL_OPS_ROLE_KIND),
-		scopeKey: expectPerformanceServiceEnum(record.scopeKey, `${field}.scopeKey`, GOAL_OPS_SCOPE_KEY),
+		roleKind: expectPerformanceServiceEnum(
+			record.roleKind,
+			`${field}.roleKind`,
+			GOAL_OPS_ROLE_KIND
+		),
+		scopeKey: expectPerformanceServiceEnum(
+			record.scopeKey,
+			`${field}.scopeKey`,
+			GOAL_OPS_SCOPE_KEY
+		),
 		isHr: expectPerformanceServiceBoolean(record.isHr, `${field}.isHr`),
 		canManageDepartment: expectPerformanceServiceBoolean(
 			record.canManageDepartment,
@@ -254,7 +283,10 @@ export function decodeGoalOpsDailyFinalizeResult(
 	return {
 		departmentId: expectPerformanceServiceNumber(record.departmentId, `${field}.departmentId`),
 		planDate: expectPerformanceServiceString(record.planDate, `${field}.planDate`),
-		autoZeroCount: expectPerformanceServiceNumber(record.autoZeroCount, `${field}.autoZeroCount`)
+		autoZeroCount: expectPerformanceServiceNumber(
+			record.autoZeroCount,
+			`${field}.autoZeroCount`
+		)
 	};
 }
 
@@ -282,7 +314,10 @@ export function decodeGoalOpsDepartmentConfig(
 	const record = expectPerformanceServiceRecord(value, field);
 
 	return {
-		departmentId: expectPerformanceServiceOptionalNumber(record.departmentId, `${field}.departmentId`),
+		departmentId: expectPerformanceServiceOptionalNumber(
+			record.departmentId,
+			`${field}.departmentId`
+		),
 		departmentName: expectPerformanceServiceOptionalString(
 			record.departmentName,
 			`${field}.departmentName`
@@ -292,8 +327,14 @@ export function decodeGoalOpsDepartmentConfig(
 			record.submitDeadline,
 			`${field}.submitDeadline`
 		),
-		reportSendTime: expectPerformanceServiceString(record.reportSendTime, `${field}.reportSendTime`),
-		reportPushMode: expectPerformanceServiceString(record.reportPushMode, `${field}.reportPushMode`),
+		reportSendTime: expectPerformanceServiceString(
+			record.reportSendTime,
+			`${field}.reportSendTime`
+		),
+		reportPushMode: expectPerformanceServiceString(
+			record.reportPushMode,
+			`${field}.reportPushMode`
+		),
 		reportPushTarget: decodeOptionalNullableString(
 			record.reportPushTarget,
 			`${field}.reportPushTarget`
@@ -311,13 +352,22 @@ export function decodeGoalOpsPlanRecord(
 
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
-		departmentId: expectPerformanceServiceOptionalNumber(record.departmentId, `${field}.departmentId`),
+		departmentId: expectPerformanceServiceOptionalNumber(
+			record.departmentId,
+			`${field}.departmentId`
+		),
 		departmentName: expectPerformanceServiceOptionalString(
 			record.departmentName,
 			`${field}.departmentName`
 		),
-		employeeId: expectPerformanceServiceOptionalNumber(record.employeeId, `${field}.employeeId`),
-		employeeName: expectPerformanceServiceOptionalString(record.employeeName, `${field}.employeeName`),
+		employeeId: expectPerformanceServiceOptionalNumber(
+			record.employeeId,
+			`${field}.employeeId`
+		),
+		employeeName: expectPerformanceServiceOptionalString(
+			record.employeeName,
+			`${field}.employeeName`
+		),
 		periodType: expectPerformanceServiceEnum(
 			record.periodType,
 			`${field}.periodType`,
@@ -328,7 +378,10 @@ export function decodeGoalOpsPlanRecord(
 			record.periodStartDate,
 			`${field}.periodStartDate`
 		),
-		periodEndDate: expectPerformanceServiceString(record.periodEndDate, `${field}.periodEndDate`),
+		periodEndDate: expectPerformanceServiceString(
+			record.periodEndDate,
+			`${field}.periodEndDate`
+		),
 		sourceType: expectPerformanceServiceEnum(
 			record.sourceType,
 			`${field}.sourceType`,
@@ -337,7 +390,10 @@ export function decodeGoalOpsPlanRecord(
 		title: expectPerformanceServiceString(record.title, `${field}.title`),
 		description: decodeOptionalNullableString(record.description, `${field}.description`),
 		targetValue: expectPerformanceServiceNumber(record.targetValue, `${field}.targetValue`),
-		actualValue: expectPerformanceServiceOptionalNumber(record.actualValue, `${field}.actualValue`),
+		actualValue: expectPerformanceServiceOptionalNumber(
+			record.actualValue,
+			`${field}.actualValue`
+		),
 		completionRate: expectPerformanceServiceOptionalNumber(
 			record.completionRate,
 			`${field}.completionRate`
@@ -352,11 +408,17 @@ export function decodeGoalOpsPlanRecord(
 		isSystemGenerated:
 			record.isSystemGenerated === undefined
 				? undefined
-				: expectPerformanceServiceBoolean(record.isSystemGenerated, `${field}.isSystemGenerated`),
+				: expectPerformanceServiceBoolean(
+						record.isSystemGenerated,
+						`${field}.isSystemGenerated`
+					),
 		assignedBy: decodeOptionalNullableNumber(record.assignedBy, `${field}.assignedBy`),
 		submittedBy: decodeOptionalNullableNumber(record.submittedBy, `${field}.submittedBy`),
 		submittedAt: decodeOptionalNullableString(record.submittedAt, `${field}.submittedAt`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
 		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`)
 	};
 }
@@ -397,7 +459,10 @@ export function decodeGoalOpsReportInfo(
 			record.operationRemark,
 			`${field}.operationRemark`
 		),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
 		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`)
 	};
 }

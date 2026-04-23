@@ -4,11 +4,7 @@
  * 维护重点：人才资产主记录与列表必须共享同一条结构边界，避免状态和标签字段被异常响应污染。
  */
 
-import type {
-	TalentAssetPageResult,
-	TalentAssetRecord,
-	TalentAssetStatus
-} from '../types';
+import type { TalentAssetPageResult, TalentAssetRecord, TalentAssetStatus } from '../types';
 import {
 	decodePerformanceServicePageResult,
 	expectPerformanceServiceEnum,
@@ -45,7 +41,10 @@ export function decodeTalentAssetRecord(
 
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
-		candidateName: expectPerformanceServiceString(record.candidateName, `${field}.candidateName`),
+		candidateName: expectPerformanceServiceString(
+			record.candidateName,
+			`${field}.candidateName`
+		),
 		code: decodeOptionalNullableString(record.code, `${field}.code`),
 		targetDepartmentId:
 			expectPerformanceServiceOptionalNumber(
@@ -56,7 +55,10 @@ export function decodeTalentAssetRecord(
 			record.targetDepartmentName,
 			`${field}.targetDepartmentName`
 		),
-		targetPosition: decodeOptionalNullableString(record.targetPosition, `${field}.targetPosition`),
+		targetPosition: decodeOptionalNullableString(
+			record.targetPosition,
+			`${field}.targetPosition`
+		),
 		source: expectPerformanceServiceString(record.source, `${field}.source`),
 		tagList:
 			record.tagList === undefined
@@ -74,7 +76,10 @@ export function decodeTalentAssetRecord(
 			record.status === undefined
 				? undefined
 				: decodeTalentAssetStatus(record.status, `${field}.status`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
 		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`)
 	};
 }

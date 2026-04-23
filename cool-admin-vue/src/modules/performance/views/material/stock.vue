@@ -11,8 +11,12 @@
 		:detail-fields="detailFields"
 		:filters="filters"
 		:create-filters="createFilters"
-		:fetch-page="performanceMaterialStockService.fetchPage.bind(performanceMaterialStockService)"
-		:fetch-info="performanceMaterialStockService.fetchInfo.bind(performanceMaterialStockService)"
+		:fetch-page="
+			performanceMaterialStockService.fetchPage.bind(performanceMaterialStockService)
+		"
+		:fetch-info="
+			performanceMaterialStockService.fetchInfo.bind(performanceMaterialStockService)
+		"
 	/>
 </template>
 

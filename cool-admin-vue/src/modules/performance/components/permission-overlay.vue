@@ -18,7 +18,9 @@
 				</el-tag>
 
 				<div class="permission-overlay__actions">
-					<el-button type="primary" plain @click="copyRequestText">复制申请信息</el-button>
+					<el-button type="primary" plain @click="copyRequestText"
+						>复制申请信息</el-button
+					>
 				</div>
 
 				<div class="permission-overlay__meta">
@@ -131,15 +133,24 @@ async function copyRequestText() {
 			color-mix(in srgb, var(--app-surface-card) 78%, transparent),
 			color-mix(in srgb, var(--app-surface-muted) 92%, transparent)
 		),
-		radial-gradient(circle at top right, color-mix(in srgb, var(--app-accent-brand-soft) 56%, transparent), transparent 52%);
-	--permission-overlay-panel-border:
-		color-mix(in srgb, var(--app-accent-brand-soft) 48%, var(--app-border-strong));
-	--permission-overlay-panel-bg:
-		color-mix(in srgb, var(--app-surface-card) 88%, transparent);
+		radial-gradient(
+			circle at top right,
+			color-mix(in srgb, var(--app-accent-brand-soft) 56%, transparent),
+			transparent 52%
+		);
+	--permission-overlay-panel-border: color-mix(
+		in srgb,
+		var(--app-accent-brand-soft) 48%,
+		var(--app-border-strong)
+	);
+	--permission-overlay-panel-bg: color-mix(in srgb, var(--app-surface-card) 88%, transparent);
 	--permission-overlay-panel-shadow: var(--app-shadow-surface);
 	--permission-overlay-panel-text: var(--app-text-secondary);
-	--permission-overlay-icon-bg:
-		color-mix(in srgb, var(--app-accent-brand-soft) 86%, var(--app-surface-card));
+	--permission-overlay-icon-bg: color-mix(
+		in srgb,
+		var(--app-accent-brand-soft) 86%,
+		var(--app-surface-card)
+	);
 	--permission-overlay-icon-color: var(--app-accent-brand);
 
 	&__content {

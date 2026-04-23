@@ -77,14 +77,26 @@ export function decodeKnowledgeBaseRecord(
 		relatedFileIds:
 			record.relatedFileIds === undefined
 				? undefined
-				: expectPerformanceServiceNumberArray(record.relatedFileIds, `${field}.relatedFileIds`),
+				: expectPerformanceServiceNumberArray(
+						record.relatedFileIds,
+						`${field}.relatedFileIds`
+					),
 		relatedTopics:
 			record.relatedTopics === undefined
 				? undefined
-				: expectPerformanceServiceStringArray(record.relatedTopics, `${field}.relatedTopics`),
-		importance: expectPerformanceServiceOptionalNumber(record.importance, `${field}.importance`),
+				: expectPerformanceServiceStringArray(
+						record.relatedTopics,
+						`${field}.relatedTopics`
+					),
+		importance: expectPerformanceServiceOptionalNumber(
+			record.importance,
+			`${field}.importance`
+		),
 		viewCount: expectPerformanceServiceOptionalNumber(record.viewCount, `${field}.viewCount`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
 		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`)
 	};
 }
@@ -113,7 +125,10 @@ export function decodeKnowledgeBaseStats(
 			record.fileLinkedCount,
 			`${field}.fileLinkedCount`
 		),
-		avgImportance: expectPerformanceServiceNumber(record.avgImportance, `${field}.avgImportance`),
+		avgImportance: expectPerformanceServiceNumber(
+			record.avgImportance,
+			`${field}.avgImportance`
+		),
 		topicCount: expectPerformanceServiceNumber(record.topicCount, `${field}.topicCount`)
 	};
 }
@@ -169,7 +184,7 @@ export function decodeKnowledgeGraphSummary(
 								)
 							};
 						}
-				  ),
+					),
 		nodes: expectPerformanceServiceArray(record.nodes, `${field}.nodes`).map((item, index) =>
 			decodeKnowledgeGraphNode(item, `${field}.nodes[${index}]`)
 		),
@@ -195,12 +210,18 @@ export function decodeKnowledgeQaRecord(
 				: expectPerformanceServiceNumberArray(
 						record.relatedKnowledgeIds,
 						`${field}.relatedKnowledgeIds`
-				  ),
+					),
 		relatedFileIds:
 			record.relatedFileIds === undefined
 				? undefined
-				: expectPerformanceServiceNumberArray(record.relatedFileIds, `${field}.relatedFileIds`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
+				: expectPerformanceServiceNumberArray(
+						record.relatedFileIds,
+						`${field}.relatedFileIds`
+					),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
 		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`)
 	};
 }
@@ -221,7 +242,7 @@ export function decodeKnowledgeQaListResult(
 				? undefined
 				: expectPerformanceServiceArray(record.list, `${field}.list`).map((item, index) =>
 						decodeKnowledgeQaRecord(item, `${field}.list[${index}]`)
-				  )
+					)
 	};
 }
 
@@ -238,8 +259,14 @@ function decodeKnowledgeSearchDocumentRecord(
 			`${field}.category`,
 			DOCUMENT_CENTER_CATEGORY
 		),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
-		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
+		updateTime: expectPerformanceServiceOptionalString(
+			record.updateTime,
+			`${field}.updateTime`
+		),
 		status:
 			record.status === undefined
 				? undefined

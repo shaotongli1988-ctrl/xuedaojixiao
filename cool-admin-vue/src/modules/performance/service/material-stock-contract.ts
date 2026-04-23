@@ -48,42 +48,81 @@ export function decodeMaterialStockRecord(
 
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
-		departmentId: expectPerformanceServiceOptionalNumber(record.departmentId, `${field}.departmentId`),
+		departmentId: expectPerformanceServiceOptionalNumber(
+			record.departmentId,
+			`${field}.departmentId`
+		),
 		departmentName: expectPerformanceServiceOptionalString(
 			record.departmentName,
 			`${field}.departmentName`
 		),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
-		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
+		updateTime: expectPerformanceServiceOptionalString(
+			record.updateTime,
+			`${field}.updateTime`
+		),
 		status:
 			record.status === undefined
 				? undefined
 				: decodeMaterialCatalogStatus(record.status, `${field}.status`),
-		materialNo: expectPerformanceServiceOptionalString(record.materialNo, `${field}.materialNo`),
+		materialNo: expectPerformanceServiceOptionalString(
+			record.materialNo,
+			`${field}.materialNo`
+		),
 		unit: expectPerformanceServiceOptionalString(record.unit, `${field}.unit`),
-		currentQty: expectPerformanceServiceOptionalNumber(record.currentQty, `${field}.currentQty`),
+		currentQty: expectPerformanceServiceOptionalNumber(
+			record.currentQty,
+			`${field}.currentQty`
+		),
 		availableQty: expectPerformanceServiceNumber(record.availableQty, `${field}.availableQty`),
-		reservedQty: expectPerformanceServiceOptionalNumber(record.reservedQty, `${field}.reservedQty`),
+		reservedQty: expectPerformanceServiceOptionalNumber(
+			record.reservedQty,
+			`${field}.reservedQty`
+		),
 		issuedQty: expectPerformanceServiceOptionalNumber(record.issuedQty, `${field}.issuedQty`),
-		safetyStock: expectPerformanceServiceOptionalNumber(record.safetyStock, `${field}.safetyStock`),
+		safetyStock: expectPerformanceServiceOptionalNumber(
+			record.safetyStock,
+			`${field}.safetyStock`
+		),
 		catalogId: expectPerformanceServiceOptionalNumber(record.catalogId, `${field}.catalogId`),
-		materialId: expectPerformanceServiceOptionalNumber(record.materialId, `${field}.materialId`),
-		materialCode: expectPerformanceServiceOptionalString(record.materialCode, `${field}.materialCode`),
-		materialName: expectPerformanceServiceOptionalString(record.materialName, `${field}.materialName`),
+		materialId: expectPerformanceServiceOptionalNumber(
+			record.materialId,
+			`${field}.materialId`
+		),
+		materialCode: expectPerformanceServiceOptionalString(
+			record.materialCode,
+			`${field}.materialCode`
+		),
+		materialName: expectPerformanceServiceOptionalString(
+			record.materialName,
+			`${field}.materialName`
+		),
 		stockId: expectPerformanceServiceOptionalNumber(record.stockId, `${field}.stockId`),
 		stockStatus:
 			record.stockStatus === undefined
 				? undefined
 				: decodeMaterialStockStatus(record.stockStatus, `${field}.stockStatus`),
-		lastUnitCost: expectPerformanceServiceOptionalNumber(record.lastUnitCost, `${field}.lastUnitCost`),
-		stockAmount: expectPerformanceServiceOptionalNumber(record.stockAmount, `${field}.stockAmount`),
+		lastUnitCost: expectPerformanceServiceOptionalNumber(
+			record.lastUnitCost,
+			`${field}.lastUnitCost`
+		),
+		stockAmount: expectPerformanceServiceOptionalNumber(
+			record.stockAmount,
+			`${field}.stockAmount`
+		),
 		isLowStock:
 			record.isLowStock === undefined
 				? undefined
 				: expectPerformanceServiceBoolean(record.isLowStock, `${field}.isLowStock`),
 		category: decodeOptionalNullableString(record.category, `${field}.category`),
 		specification: decodeOptionalNullableString(record.specification, `${field}.specification`),
-		lastInboundTime: decodeOptionalNullableString(record.lastInboundTime, `${field}.lastInboundTime`),
+		lastInboundTime: decodeOptionalNullableString(
+			record.lastInboundTime,
+			`${field}.lastInboundTime`
+		),
 		lastIssueTime: decodeOptionalNullableString(record.lastIssueTime, `${field}.lastIssueTime`)
 	};
 }

@@ -73,7 +73,9 @@
 				</el-table-column>
 				<el-table-column prop="status" label="状态" width="110">
 					<template #default="{ row }">
-						<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+						<el-tag :type="statusTagType(row.status)">{{
+							statusLabel(row.status)
+						}}</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column prop="enrollmentCount" label="报名人数" width="100">
@@ -84,7 +86,9 @@
 				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
 				<el-table-column label="操作" fixed="right" min-width="360">
 					<template #default="{ row }">
-						<el-button v-if="showInfoButton" text @click="openDetail(row)">详情</el-button>
+						<el-button v-if="showInfoButton" text @click="openDetail(row)"
+							>详情</el-button
+						>
 						<el-button
 							v-if="canEnterCourseLearning(row)"
 							text
@@ -101,12 +105,7 @@
 						>
 							新建证书
 						</el-button>
-						<el-button
-							v-if="canEdit(row)"
-							text
-							type="primary"
-							@click="openEdit(row)"
-						>
+						<el-button v-if="canEdit(row)" text type="primary" @click="openEdit(row)">
 							编辑
 						</el-button>
 						<el-button
@@ -225,12 +224,7 @@
 					</el-row>
 				</template>
 
-				<el-descriptions
-					v-else
-					:column="2"
-					border
-					class="course-page__locked-summary"
-				>
+				<el-descriptions v-else :column="2" border class="course-page__locked-summary">
 					<el-descriptions-item label="课程标题">
 						{{ editingCourse?.title || '-' }}
 					</el-descriptions-item>
@@ -301,12 +295,7 @@
 			</template>
 		</el-dialog>
 
-		<el-drawer
-			v-model="detailVisible"
-			title="课程详情"
-			size="720px"
-			destroy-on-close
-		>
+		<el-drawer v-model="detailVisible" title="课程详情" size="720px" destroy-on-close>
 			<el-descriptions v-if="detailCourse" :column="2" border>
 				<el-descriptions-item label="课程标题">
 					{{ detailCourse.title }}
@@ -357,12 +346,7 @@
 			</template>
 		</el-drawer>
 
-		<el-drawer
-			v-model="enrollmentVisible"
-			title="课程报名摘要"
-			size="860px"
-			destroy-on-close
-		>
+		<el-drawer v-model="enrollmentVisible" title="课程报名摘要" size="860px" destroy-on-close>
 			<template v-if="enrollmentCourse">
 				<div class="course-page__enrollment-toolbar">
 					<div class="course-page__enrollment-title">
@@ -438,10 +422,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useListPage } from '../../composables/use-list-page.js';
 import { performanceAccessContextService } from '../../service/access-context';
 import { performanceCertificateService } from '../../service/certificate';
-import {
-	confirmElementAction,
-	runTrackedElementAction
-} from '../shared/action-feedback';
+import { confirmElementAction, runTrackedElementAction } from '../shared/action-feedback';
 import {
 	showElementErrorFromError,
 	showElementWarningFromError,
@@ -553,7 +534,9 @@ const roleFact = computed(() =>
 		roleKind: accessContext.value?.roleKind || null
 	})
 );
-const isReadOnlyRole = computed(() => canAccess.value && !showAddButton.value && !showEditButton.value);
+const isReadOnlyRole = computed(
+	() => canAccess.value && !showAddButton.value && !showEditButton.value
+);
 const isPublishedEditing = computed(() => editingCourse.value?.status === 'published');
 const courseList = useListPage({
 	createFilters: () => ({
@@ -875,8 +858,8 @@ function canCreateCertificate(row: CourseRecord) {
 function canEnterCourseLearning(row: CourseRecord | null) {
 	return Boolean(
 		row?.id &&
-		showCourseLearningButton.value &&
-		(row.status === 'published' || row.status === 'closed')
+			showCourseLearningButton.value &&
+			(row.status === 'published' || row.status === 'closed')
 	);
 }
 

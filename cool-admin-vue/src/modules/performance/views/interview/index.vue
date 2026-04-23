@@ -129,13 +129,17 @@
 				</el-table-column>
 				<el-table-column prop="status" label="状态" width="110">
 					<template #default="{ row }">
-						<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+						<el-tag :type="statusTagType(row.status)">{{
+							statusLabel(row.status)
+						}}</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
 				<el-table-column label="操作" fixed="right" min-width="260">
 					<template #default="{ row }">
-						<el-button v-if="showInfoButton" text @click="openDetail(row)">详情</el-button>
+						<el-button v-if="showInfoButton" text @click="openDetail(row)"
+							>详情</el-button
+						>
 						<el-button v-if="canEdit(row)" text type="primary" @click="openEdit(row)">
 							编辑
 						</el-button>
@@ -163,12 +167,7 @@
 			</div>
 		</el-card>
 
-		<el-dialog
-			v-model="detailVisible"
-			title="面试详情"
-			width="760px"
-			destroy-on-close
-		>
+		<el-dialog v-model="detailVisible" title="面试详情" width="760px" destroy-on-close>
 			<div v-if="detailInterview" class="interview-page__detail">
 				<el-alert
 					v-if="isTerminal(detailInterview.status)"
@@ -188,7 +187,10 @@
 						{{ departmentLabel(detailInterview.departmentId) }}
 					</el-descriptions-item>
 					<el-descriptions-item label="面试官">
-						{{ detailInterview.interviewerName || interviewerLabel(detailInterview.interviewerId) }}
+						{{
+							detailInterview.interviewerName ||
+							interviewerLabel(detailInterview.interviewerId)
+						}}
 					</el-descriptions-item>
 					<el-descriptions-item label="面试时间">
 						{{ detailInterview.interviewDate || '-' }}
@@ -261,7 +263,11 @@
 		>
 			<el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
 				<el-alert
-					:title="editingInterview?.id ? '仅 scheduled 记录可编辑；切换为已完成/已取消后将进入终态。' : '新建保存后默认进入 scheduled 状态。'"
+					:title="
+						editingInterview?.id
+							? '仅 scheduled 记录可编辑；切换为已完成/已取消后将进入终态。'
+							: '新建保存后默认进入 scheduled 状态。'
+					"
 					:type="editingInterview?.id ? 'warning' : 'info'"
 					:closable="false"
 					show-icon
@@ -296,11 +302,11 @@
 					</el-col>
 					<el-col :span="12">
 						<el-form-item label="所属部门">
-								<el-select
-									v-model="departmentIdModel"
-									placeholder="可选"
-									clearable
-									filterable
+							<el-select
+								v-model="departmentIdModel"
+								placeholder="可选"
+								clearable
+								filterable
 							>
 								<el-option
 									v-for="item in departmentOptions"
@@ -341,10 +347,10 @@
 					</el-col>
 					<el-col :span="12">
 						<el-form-item label="面试类型">
-								<el-select
-									v-model="interviewTypeModel"
-									placeholder="请选择面试类型"
-									clearable
+							<el-select
+								v-model="interviewTypeModel"
+								placeholder="请选择面试类型"
+								clearable
 							>
 								<el-option
 									v-for="item in interviewTypeOptions"
@@ -357,10 +363,10 @@
 					</el-col>
 					<el-col :span="12">
 						<el-form-item label="分数摘要">
-								<el-input-number
-									v-model="scoreModel"
-									:min="0"
-									:max="100"
+							<el-input-number
+								v-model="scoreModel"
+								:min="0"
+								:max="100"
 								:precision="2"
 								:step="1"
 								controls-position="right"
@@ -409,19 +415,13 @@ import { useDict } from '/$/dict';
 import { service } from '/@/cool';
 import { useRoute, useRouter } from 'vue-router';
 import { useListPage } from '../../composables/use-list-page.js';
-import {
-	confirmElementAction,
-	runTrackedElementAction
-} from '../shared/action-feedback';
+import { confirmElementAction, runTrackedElementAction } from '../shared/action-feedback';
 import {
 	createElementWarningFromErrorHandler,
 	resolveErrorMessage,
 	showElementErrorFromError
 } from '../shared/error-message';
-import {
-	loadDepartmentOptions,
-	loadUserOptions
-} from '../../utils/lookup-options.js';
+import { loadDepartmentOptions, loadUserOptions } from '../../utils/lookup-options.js';
 import {
 	consumeRoutePreset,
 	firstQueryValue,
@@ -601,7 +601,7 @@ async function openEdit(row: InterviewApiRecord) {
 		}
 
 		editingInterview.value = record;
-			Object.assign(form, createEmptyInterview(), {
+		Object.assign(form, createEmptyInterview(), {
 			...record,
 			departmentId: record.departmentId ?? undefined,
 			interviewType: record.interviewType ?? undefined,
@@ -860,18 +860,18 @@ function openCreateWithPrefill(prefill?: {
 						candidateName: prefill?.candidateName || null,
 						targetDepartmentId: prefill?.departmentId || null,
 						targetPosition: prefill?.position || null
-				  }
+					}
 				: prefill?.resumePoolId || prefill?.recruitPlanId
-				? {
-						sourceResource: 'resumePool',
-						resumePoolId: prefill?.resumePoolId || null,
-						recruitPlanId: prefill?.recruitPlanId || null,
-						recruitPlanTitle: prefill?.recruitPlanTitle || null,
-						candidateName: prefill?.candidateName || null,
-						targetDepartmentId: prefill?.departmentId || null,
-						targetPosition: prefill?.position || null
-				  }
-				: null
+					? {
+							sourceResource: 'resumePool',
+							resumePoolId: prefill?.resumePoolId || null,
+							recruitPlanId: prefill?.recruitPlanId || null,
+							recruitPlanTitle: prefill?.recruitPlanTitle || null,
+							candidateName: prefill?.candidateName || null,
+							targetDepartmentId: prefill?.departmentId || null,
+							targetPosition: prefill?.position || null
+						}
+					: null
 	});
 	editingInterview.value = null;
 	formVisible.value = true;

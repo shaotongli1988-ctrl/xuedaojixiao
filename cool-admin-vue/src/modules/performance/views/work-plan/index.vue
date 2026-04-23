@@ -59,7 +59,9 @@
 					<el-button v-if="showSyncButton" type="warning" plain @click="openSyncDialog">
 						来源同步
 					</el-button>
-					<el-button v-if="showAddButton" type="primary" @click="openCreate">新建计划</el-button>
+					<el-button v-if="showAddButton" type="primary" @click="openCreate"
+						>新建计划</el-button
+					>
 				</div>
 			</div>
 		</el-card>
@@ -82,7 +84,12 @@
 
 			<el-table :data="rows" border v-loading="tableLoading">
 				<el-table-column prop="workNo" label="计划单号" min-width="150" />
-				<el-table-column prop="title" label="计划标题" min-width="220" show-overflow-tooltip />
+				<el-table-column
+					prop="title"
+					label="计划标题"
+					min-width="220"
+					show-overflow-tooltip
+				/>
 				<el-table-column label="所属部门" min-width="150">
 					<template #default="{ row }">
 						{{ row.ownerDepartmentName || departmentLabel(row.ownerDepartmentId) }}
@@ -100,7 +107,9 @@
 				</el-table-column>
 				<el-table-column label="优先级" width="100">
 					<template #default="{ row }">
-						<el-tag :type="priorityTagType(row.priority)">{{ priorityLabel(row.priority) }}</el-tag>
+						<el-tag :type="priorityTagType(row.priority)">{{
+							priorityLabel(row.priority)
+						}}</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column label="来源" min-width="260" show-overflow-tooltip>
@@ -125,13 +134,17 @@
 				</el-table-column>
 				<el-table-column label="执行状态" width="110">
 					<template #default="{ row }">
-						<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+						<el-tag :type="statusTagType(row.status)">{{
+							statusLabel(row.status)
+						}}</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
 				<el-table-column label="操作" fixed="right" min-width="320">
 					<template #default="{ row }">
-						<el-button v-if="showInfoButton" text @click="openDetail(row)">详情</el-button>
+						<el-button v-if="showInfoButton" text @click="openDetail(row)"
+							>详情</el-button
+						>
 						<el-button v-if="canEdit(row)" text type="primary" @click="openEdit(row)">
 							编辑
 						</el-button>
@@ -148,7 +161,9 @@
 							v-if="canComplete(row)"
 							text
 							type="success"
-							:loading="actionLoadingId === row.id && actionLoadingType === 'complete'"
+							:loading="
+								actionLoadingId === row.id && actionLoadingType === 'complete'
+							"
 							@click="handleComplete(row)"
 						>
 							完成
@@ -190,7 +205,10 @@
 		<el-dialog v-model="detailVisible" title="工作计划详情" width="920px" destroy-on-close>
 			<div v-if="detailRecord" class="work-plan-page__detail">
 				<el-alert
-					v-if="detailRecord.sourceType === 'dingtalkApproval' && detailRecord.sourceStatus !== 'approved'"
+					v-if="
+						detailRecord.sourceType === 'dingtalkApproval' &&
+						detailRecord.sourceStatus !== 'approved'
+					"
 					title="来源审批未通过前，只能安排计划，不能开始执行。"
 					type="warning"
 					:closable="false"
@@ -209,7 +227,10 @@
 						{{ detailRecord.title }}
 					</el-descriptions-item>
 					<el-descriptions-item label="所属部门">
-						{{ detailRecord.ownerDepartmentName || departmentLabel(detailRecord.ownerDepartmentId) }}
+						{{
+							detailRecord.ownerDepartmentName ||
+							departmentLabel(detailRecord.ownerDepartmentId)
+						}}
 					</el-descriptions-item>
 					<el-descriptions-item label="负责人">
 						{{ detailRecord.ownerName || userLabel(detailRecord.ownerId) }}
@@ -269,7 +290,9 @@
 						{{ detailRecord.approvalFinishedAt || '-' }}
 					</el-descriptions-item>
 					<el-descriptions-item label="来源快照" :span="2">
-						<pre class="work-plan-page__snapshot">{{ sourceSnapshotText(detailRecord.sourceSnapshot) }}</pre>
+						<pre class="work-plan-page__snapshot">{{
+							sourceSnapshotText(detailRecord.sourceSnapshot)
+						}}</pre>
 					</el-descriptions-item>
 				</el-descriptions>
 			</div>
@@ -377,12 +400,7 @@
 			</template>
 		</el-dialog>
 
-		<el-dialog
-			v-model="syncVisible"
-			title="同步钉钉审批来源"
-			width="760px"
-			destroy-on-close
-		>
+		<el-dialog v-model="syncVisible" title="同步钉钉审批来源" width="760px" destroy-on-close>
 			<el-form ref="syncFormRef" :model="syncForm" :rules="syncRules" label-width="130px">
 				<el-form-item label="审批标题" prop="sourceTitle">
 					<el-input v-model="syncForm.sourceTitle" maxlength="200" show-word-limit />
@@ -576,9 +594,7 @@ const statusOptions = computed<Array<{ label: string; value: WorkPlanStatus }>>(
 	}))
 );
 
-const sourceStatusOptions = computed<
-	Array<{ label: string; value: WorkPlanSourceStatus }>
->(() =>
+const sourceStatusOptions = computed<Array<{ label: string; value: WorkPlanSourceStatus }>>(() =>
 	dict.get(WORK_PLAN_SOURCE_STATUS_DICT_KEY).value.map(item => ({
 		label: item.label,
 		value: item.value as WorkPlanSourceStatus
@@ -1003,8 +1019,7 @@ function canEdit(row: WorkPlanRecord) {
 
 function canDelete(row: WorkPlanRecord) {
 	return (
-		canDeletePerm.value &&
-		['draft', 'planned', 'cancelled'].includes(String(row.status || ''))
+		canDeletePerm.value && ['draft', 'planned', 'cancelled'].includes(String(row.status || ''))
 	);
 }
 
@@ -1042,17 +1057,11 @@ function statusLabel(status?: WorkPlanStatus | string | null) {
 }
 
 function sourceStatusLabel(status?: WorkPlanSourceStatus | string | null) {
-	return (
-		dict.getLabel(WORK_PLAN_SOURCE_STATUS_DICT_KEY, status) || status || '未知状态'
-	);
+	return dict.getLabel(WORK_PLAN_SOURCE_STATUS_DICT_KEY, status) || status || '未知状态';
 }
 
 function sourceTypeLabel(sourceType?: string | null) {
-	return (
-		dict.getLabel(WORK_PLAN_SOURCE_TYPE_DICT_KEY, sourceType) ||
-		sourceType ||
-		'未知来源'
-	);
+	return dict.getLabel(WORK_PLAN_SOURCE_TYPE_DICT_KEY, sourceType) || sourceType || '未知来源';
 }
 
 function priorityLabel(priority?: WorkPlanPriority | string | null) {

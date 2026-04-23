@@ -31,9 +31,7 @@ function createRoutePermissionContext(
 	perms: readonly string[] = [],
 	options?: { permissionMask?: string; isAdmin?: boolean }
 ) {
-	const normalizedPerms = perms
-		.map(item => String(item || '').trim())
-		.filter(Boolean);
+	const normalizedPerms = perms.map(item => String(item || '').trim()).filter(Boolean);
 
 	return {
 		perms: normalizedPerms,
@@ -42,25 +40,19 @@ function createRoutePermissionContext(
 			(normalizedPerms.length
 				? resolvePermissionMask(normalizedPerms, {
 						isAdmin: options?.isAdmin === true
-				  })
+					})
 				: '')
 	};
 }
 
-function hasRouteAccess(
-	path: string,
-	context: { perms: string[]; permissionMask: string }
-) {
-	const permissionRule =
-		ROUTE_PERMISSION_BY_PATH[path as keyof typeof ROUTE_PERMISSION_BY_PATH];
+function hasRouteAccess(path: string, context: { perms: string[]; permissionMask: string }) {
+	const permissionRule = ROUTE_PERMISSION_BY_PATH[path as keyof typeof ROUTE_PERMISSION_BY_PATH];
 
 	if (!permissionRule) {
 		return true;
 	}
 
-	function matchesRule(
-		value: string | { or?: readonly string[]; and?: readonly string[] }
-	) {
+	function matchesRule(value: string | { or?: readonly string[]; and?: readonly string[] }) {
 		if (typeof value === 'string') {
 			const permissionBit = PERMISSION_BIT_BY_KEY[value];
 

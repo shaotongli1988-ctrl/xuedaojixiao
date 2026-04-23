@@ -6,10 +6,17 @@
 				<div>
 					<div class="asset-dashboard__eyebrow">资产管理 / 主题20</div>
 					<h2>资产首页</h2>
-					<p>查看资产总量、净值、折旧和最近流转，作为台账、盘点、调拨和报废的统一入口。</p>
+					<p>
+						查看资产总量、净值、折旧和最近流转，作为台账、盘点、调拨和报废的统一入口。
+					</p>
 				</div>
 				<div class="asset-dashboard__filters">
-					<el-input v-model="filters.category" placeholder="分类" clearable style="width: 180px" />
+					<el-input
+						v-model="filters.category"
+						placeholder="分类"
+						clearable
+						style="width: 180px"
+					/>
 					<el-button type="primary" @click="loadSummary">刷新</el-button>
 				</div>
 			</div>
@@ -47,7 +54,8 @@
 							:type="assetStatusTagMap[item.status]?.type || 'info'"
 							effect="plain"
 						>
-							{{ assetStatusTagMap[item.status]?.label || item.status }} / {{ item.count }}
+							{{ assetStatusTagMap[item.status]?.label || item.status }} /
+							{{ item.count }}
 						</el-tag>
 					</div>
 				</el-card>
@@ -56,7 +64,11 @@
 				<el-card shadow="never" v-loading="loading">
 					<template #header>分类分布</template>
 					<div class="asset-dashboard__tag-grid">
-						<el-tag v-for="item in summary?.categoryDistribution || []" :key="item.category" effect="plain">
+						<el-tag
+							v-for="item in summary?.categoryDistribution || []"
+							:key="item.category"
+							effect="plain"
+						>
 							{{ item.category || '未分类' }} / {{ item.count }}
 						</el-tag>
 					</div>
@@ -76,14 +88,24 @@
 				<el-table-column label="结果状态" min-width="120">
 					<template #default="{ row }">
 						<el-tag effect="plain">
-							{{ statusLabelMap[row.resultStatus || row.status] || row.resultStatus || row.status || '-' }}
+							{{
+								statusLabelMap[row.resultStatus || row.status] ||
+								row.resultStatus ||
+								row.status ||
+								'-'
+							}}
 						</el-tag>
 					</template>
 				</el-table-column>
 			</el-table>
 		</el-card>
 	</div>
-	<el-result v-else icon="warning" title="暂无访问权限" sub-title="当前账号未被授予资产首页权限。" />
+	<el-result
+		v-else
+		icon="warning"
+		title="暂无访问权限"
+		sub-title="当前账号未被授予资产首页权限。"
+	/>
 </template>
 
 <script lang="ts" setup>
@@ -134,8 +156,8 @@ const actionOverviewCards = computed(() => [
 		value: summary.value?.actionOverview?.thisMonth || emptyActionSummary
 	}
 ]);
-const activityTimeline = computed<AssetDashboardActivityItem[]>(() =>
-	summary.value?.actionTimeline || summary.value?.recentActivities || []
+const activityTimeline = computed<AssetDashboardActivityItem[]>(
+	() => summary.value?.actionTimeline || summary.value?.recentActivities || []
 );
 const statusLabelMap: Record<string, string> = {
 	draft: '草稿',

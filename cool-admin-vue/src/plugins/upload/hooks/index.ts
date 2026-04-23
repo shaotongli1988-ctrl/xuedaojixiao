@@ -131,52 +131,56 @@ export function useUpload() {
 										}
 									: {}
 							)
-								.then(res => {
-									switch (type) {
-										// 腾讯
-										case 'cos':
-											next({
-												host: requireUploadField(res.url, 'url', 'cos'),
-												data: res.credentials
-											});
-											break;
-										// 阿里
-										case 'oss':
-											next({
-												host: requireUploadField(res.host, 'host', 'oss'),
-												preview: res.publicDomain,
-												data: {
-													OSSAccessKeyId: res.OSSAccessKeyId,
-													policy: res.policy,
+							.then(res => {
+								switch (type) {
+									// 腾讯
+									case 'cos':
+										next({
+											host: requireUploadField(res.url, 'url', 'cos'),
+											data: res.credentials
+										});
+										break;
+									// 阿里
+									case 'oss':
+										next({
+											host: requireUploadField(res.host, 'host', 'oss'),
+											preview: res.publicDomain,
+											data: {
+												OSSAccessKeyId: res.OSSAccessKeyId,
+												policy: res.policy,
 												signature: res.signature
 											}
 										});
 										break;
-										// 七牛
-										case 'qiniu':
-											next({
-												host: requireUploadField(res.uploadUrl, 'uploadUrl', 'qiniu'),
-												preview: res.publicDomain,
-												data: {
-													token: res.token
-												}
+									// 七牛
+									case 'qiniu':
+										next({
+											host: requireUploadField(
+												res.uploadUrl,
+												'uploadUrl',
+												'qiniu'
+											),
+											preview: res.publicDomain,
+											data: {
+												token: res.token
+											}
 										});
 										break;
-										// aws
-										case 'aws':
-											next({
-												host: requireUploadField(res.url, 'url', 'aws'),
-												data: res.fields
-											});
-											break;
+									// aws
+									case 'aws':
+										next({
+											host: requireUploadField(res.url, 'url', 'aws'),
+											data: res.fields
+										});
+										break;
 
-										default:
-											next({
-												host: requireUploadField(res.url, 'url', type),
-												preview: res.previewUrl
-											});
-											break;
-									}
+									default:
+										next({
+											host: requireUploadField(res.url, 'url', type),
+											preview: res.previewUrl
+										});
+										break;
+								}
 							})
 							.catch(reject);
 					}

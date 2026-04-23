@@ -99,13 +99,17 @@
 				</el-table-column>
 				<el-table-column prop="status" label="状态" width="110">
 					<template #default="{ row }">
-						<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+						<el-tag :type="statusTagType(row.status)">{{
+							statusLabel(row.status)
+						}}</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
 				<el-table-column label="操作" fixed="right" min-width="220">
 					<template #default="{ row }">
-						<el-button v-if="showInfoButton" text @click="openDetail(row)">详情</el-button>
+						<el-button v-if="showInfoButton" text @click="openDetail(row)"
+							>详情</el-button
+						>
 						<el-button v-if="canEdit(row)" text type="primary" @click="openEdit(row)">
 							编辑
 						</el-button>
@@ -193,7 +197,11 @@
 		>
 			<el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
 				<el-alert
-					:title="editingSupplier?.id ? '供应商仅支持 active / inactive 状态维护；删除只允许 inactive 且无关联有效采购订单。' : '新建供应商默认保存为 active。'"
+					:title="
+						editingSupplier?.id
+							? '供应商仅支持 active / inactive 状态维护；删除只允许 inactive 且无关联有效采购订单。'
+							: '新建供应商默认保存为 active。'
+					"
 					:type="editingSupplier?.id ? 'warning' : 'info'"
 					:closable="false"
 					show-icon
@@ -254,12 +262,7 @@
 				</el-row>
 
 				<el-form-item label="备注">
-					<el-input
-						v-model="form.remark"
-						type="textarea"
-						:rows="4"
-						placeholder="可选"
-					/>
+					<el-input v-model="form.remark" type="textarea" :rows="4" placeholder="可选" />
 				</el-form-item>
 			</el-form>
 
@@ -292,10 +295,7 @@ import { useListPage } from '../../composables/use-list-page.js';
 import { performanceAccessContextService } from '../../service/access-context';
 import { resolvePerformanceRoleFact } from '../../service/role-fact';
 import { performanceSupplierService } from '../../service/supplier';
-import {
-	confirmElementAction,
-	runTrackedElementAction
-} from '../shared/action-feedback';
+import { confirmElementAction, runTrackedElementAction } from '../shared/action-feedback';
 import {
 	resolveErrorMessage,
 	showElementErrorFromError,
@@ -510,7 +510,9 @@ async function handleDelete(row: SupplierRecord) {
 }
 
 function canEdit(row: SupplierRecord) {
-	return showUpdateButton.value && ['active', 'inactive'].includes(String(row.status || 'active'));
+	return (
+		showUpdateButton.value && ['active', 'inactive'].includes(String(row.status || 'active'))
+	);
 }
 
 function canDelete(row: SupplierRecord) {

@@ -24,12 +24,7 @@ export type CourseExamResultStatus = GeneratedCourseExamResultStatus;
 
 export type CourseLearningTaskRecord = Omit<
 	GeneratedCourseLearningTaskRecord,
-	| 'courseTitle'
-	| 'promptText'
-	| 'latestScore'
-	| 'feedbackSummary'
-	| 'submittedAt'
-	| 'evaluatedAt'
+	'courseTitle' | 'promptText' | 'latestScore' | 'feedbackSummary' | 'submittedAt' | 'evaluatedAt'
 > & {
 	courseTitle?: string | null;
 	promptText?: string | null;
@@ -68,5 +63,4 @@ export type CourseExamSummary = Omit<
 	summaryText?: string | null;
 	updatedAt?: string | null;
 };
-export type CourseExamSummaryQuery =
-	import('./generated/course-exam').CourseExamFetchSummaryQuery;
+export type CourseExamSummaryQuery = import('./generated/course-exam').CourseExamFetchSummaryQuery;

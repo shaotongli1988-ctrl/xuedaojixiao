@@ -48,7 +48,10 @@ export function decodeAssetDisposalRecord(
 
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
-		disposalNo: expectPerformanceServiceOptionalString(record.disposalNo, `${field}.disposalNo`),
+		disposalNo: expectPerformanceServiceOptionalString(
+			record.disposalNo,
+			`${field}.disposalNo`
+		),
 		assetId: expectPerformanceServiceOptionalNumber(record.assetId, `${field}.assetId`),
 		assetNo: expectPerformanceServiceOptionalString(record.assetNo, `${field}.assetNo`),
 		assetName: expectPerformanceServiceOptionalString(record.assetName, `${field}.assetName`),
@@ -56,12 +59,18 @@ export function decodeAssetDisposalRecord(
 			record.assetStatus === undefined
 				? undefined
 				: decodeAssetStatus(record.assetStatus, `${field}.assetStatus`),
-		departmentId: expectPerformanceServiceOptionalNumber(record.departmentId, `${field}.departmentId`),
+		departmentId: expectPerformanceServiceOptionalNumber(
+			record.departmentId,
+			`${field}.departmentId`
+		),
 		departmentName: expectPerformanceServiceOptionalString(
 			record.departmentName,
 			`${field}.departmentName`
 		),
-		applicantId: expectPerformanceServiceOptionalNumber(record.applicantId, `${field}.applicantId`),
+		applicantId: expectPerformanceServiceOptionalNumber(
+			record.applicantId,
+			`${field}.applicantId`
+		),
 		applicantName: expectPerformanceServiceOptionalString(
 			record.applicantName,
 			`${field}.applicantName`
@@ -71,15 +80,27 @@ export function decodeAssetDisposalRecord(
 			record.estimatedResidualAmount,
 			`${field}.estimatedResidualAmount`
 		),
-		submitTime: expectPerformanceServiceOptionalString(record.submitTime, `${field}.submitTime`),
-		approveTime: expectPerformanceServiceOptionalString(record.approveTime, `${field}.approveTime`),
-		executeTime: expectPerformanceServiceOptionalString(record.executeTime, `${field}.executeTime`),
+		submitTime: expectPerformanceServiceOptionalString(
+			record.submitTime,
+			`${field}.submitTime`
+		),
+		approveTime: expectPerformanceServiceOptionalString(
+			record.approveTime,
+			`${field}.approveTime`
+		),
+		executeTime: expectPerformanceServiceOptionalString(
+			record.executeTime,
+			`${field}.executeTime`
+		),
 		remark: expectPerformanceServiceOptionalString(record.remark, `${field}.remark`),
 		status:
 			record.status === undefined
 				? undefined
 				: decodeAssetDisposalStatus(record.status, `${field}.status`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
 		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`)
 	};
 }

@@ -7,195 +7,218 @@
 		description="页面内容已切换到保护态。请联系管理员开通班级查看权限后再处理合作班级。"
 	>
 		<div class="teacher-channel-class-page">
-		<el-card shadow="never" class="teacher-channel-class-page__toolbar-card">
-			<div class="teacher-channel-class-page__toolbar">
-				<div class="teacher-channel-class-page__toolbar-left">
-					<el-input
-						v-model="filters.keyword"
-						clearable
-						placeholder="班级 / 班主任 / 学校"
-						style="width: 260px"
-						@keyup.enter="refresh"
-					/>
-					<el-select
-						v-model="statusModel"
-						clearable
-						placeholder="班级状态"
-						style="width: 180px"
-					>
-						<el-option
-							v-for="item in classStatusOptions"
-							:key="item.value"
-							:label="item.label"
-							:value="item.value"
+			<el-card shadow="never" class="teacher-channel-class-page__toolbar-card">
+				<div class="teacher-channel-class-page__toolbar">
+					<div class="teacher-channel-class-page__toolbar-left">
+						<el-input
+							v-model="filters.keyword"
+							clearable
+							placeholder="班级 / 班主任 / 学校"
+							style="width: 260px"
+							@keyup.enter="refresh"
 						/>
-					</el-select>
-				</div>
-
-				<div class="teacher-channel-class-page__toolbar-right">
-					<el-button @click="handleReset">重置</el-button>
-					<el-button type="primary" :loading="tableLoading" @click="refresh">刷新</el-button>
-					<el-button v-if="showAddButton" type="primary" plain @click="openCreate()">
-						新增班级
-					</el-button>
-				</div>
-			</div>
-		</el-card>
-
-		<el-card shadow="never" class="teacher-channel-class-page__content-card">
-			<template #header>
-				<div class="teacher-channel-class-page__header">
-					<div>
-						<h2>合作班级列表</h2>
-						<p>仅 partnered teacher 可建班，closed 班级不可编辑、删除、重开。</p>
+						<el-select
+							v-model="statusModel"
+							clearable
+							placeholder="班级状态"
+							style="width: 180px"
+						>
+							<el-option
+								v-for="item in classStatusOptions"
+								:key="item.value"
+								:label="item.label"
+								:value="item.value"
+							/>
+						</el-select>
 					</div>
-					<el-tag effect="plain">{{ rows.length }} 条</el-tag>
+
+					<div class="teacher-channel-class-page__toolbar-right">
+						<el-button @click="handleReset">重置</el-button>
+						<el-button type="primary" :loading="tableLoading" @click="refresh"
+							>刷新</el-button
+						>
+						<el-button v-if="showAddButton" type="primary" plain @click="openCreate()">
+							新增班级
+						</el-button>
+					</div>
 				</div>
-			</template>
+			</el-card>
 
-			<el-alert
-				v-if="pageError"
-				type="warning"
-				:title="pageError"
-				:closable="false"
-				show-icon
-			/>
+			<el-card shadow="never" class="teacher-channel-class-page__content-card">
+				<template #header>
+					<div class="teacher-channel-class-page__header">
+						<div>
+							<h2>合作班级列表</h2>
+							<p>仅 partnered teacher 可建班，closed 班级不可编辑、删除、重开。</p>
+						</div>
+						<el-tag effect="plain">{{ rows.length }} 条</el-tag>
+					</div>
+				</template>
 
-			<el-table :data="rows" border v-loading="tableLoading">
-				<el-table-column prop="teacherName" label="班主任" min-width="140" />
-				<el-table-column prop="className" label="班级" min-width="180" />
-				<el-table-column prop="schoolName" label="学校" min-width="180">
-					<template #default="{ row }">
-						{{ row.schoolName || '-' }}
-					</template>
-				</el-table-column>
-				<el-table-column prop="projectTag" label="项目标签" min-width="120">
-					<template #default="{ row }">
-						{{ row.projectTag || '-' }}
-					</template>
-				</el-table-column>
-				<el-table-column prop="studentCount" label="学员数" width="100" />
-				<el-table-column prop="status" label="状态" width="110">
-					<template #default="{ row }">
-						<el-tag :type="classStatusTagType(row.status)">
-							{{ classStatusLabel(row.status) }}
-						</el-tag>
-					</template>
-				</el-table-column>
-				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
-				<el-table-column label="操作" min-width="220" fixed="right">
-					<template #default="{ row }">
-						<el-button v-if="showInfoButton" text @click="openDetail(row)">详情</el-button>
-						<el-button
-							v-if="canEditTeacherClass(row, showUpdateButton)"
-							text
-							type="primary"
-							@click="openEdit(row)"
-						>
-							编辑
-						</el-button>
-						<el-button
-							v-if="canDeleteTeacherClass(row, showDeleteButton)"
-							text
-							type="danger"
-							@click="handleDelete(row)"
-						>
-							删除
-						</el-button>
-					</template>
-				</el-table-column>
-			</el-table>
-
-			<el-empty v-if="!tableLoading && rows.length === 0" description="当前范围内暂无合作班级" />
-
-			<div class="teacher-channel-class-page__pagination">
-				<el-pagination
-					background
-					layout="total, prev, pager, next"
-					:current-page="pagination.page"
-					:page-size="pagination.size"
-					:total="pagination.total"
-					@current-change="changePage"
-				/>
-			</div>
-		</el-card>
-
-		<el-dialog v-model="detailVisible" title="班级详情" width="720px" destroy-on-close>
-			<el-descriptions v-if="detailRecord" :column="2" border>
-				<el-descriptions-item label="班主任">{{ detailRecord.teacherName || '-' }}</el-descriptions-item>
-				<el-descriptions-item label="班级">{{ detailRecord.className }}</el-descriptions-item>
-				<el-descriptions-item label="学校">{{ detailRecord.schoolName || '-' }}</el-descriptions-item>
-				<el-descriptions-item label="年级">{{ detailRecord.grade || '-' }}</el-descriptions-item>
-				<el-descriptions-item label="项目标签">{{ detailRecord.projectTag || '-' }}</el-descriptions-item>
-				<el-descriptions-item label="学员数">{{ detailRecord.studentCount || 0 }}</el-descriptions-item>
-				<el-descriptions-item label="状态">
-					<el-tag :type="classStatusTagType(detailRecord.status)">
-						{{ classStatusLabel(detailRecord.status) }}
-					</el-tag>
-				</el-descriptions-item>
-				<el-descriptions-item label="更新时间">{{ detailRecord.updateTime || '-' }}</el-descriptions-item>
-			</el-descriptions>
-		</el-dialog>
-
-		<el-dialog
-			v-model="formVisible"
-			:title="editingRecord?.id ? '编辑班级' : '新增班级'"
-			width="720px"
-			destroy-on-close
-		>
-			<el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
 				<el-alert
-					:title="
-						editingRecord?.id
-							? 'closed 班级只能查看不能编辑，最终以后端校验为准。'
-							: '仅 partnered teacher 出现在可选项中，terminated teacher 不可建班。'
-					"
-					:type="editingRecord?.id ? 'warning' : 'info'"
+					v-if="pageError"
+					type="warning"
+					:title="pageError"
 					:closable="false"
 					show-icon
 				/>
-				<el-form-item label="班主任" prop="teacherId">
-					<el-select
-						v-model="teacherIdModel"
-						filterable
-						placeholder="请选择班主任"
-						style="width: 100%"
-						:disabled="Boolean(editingRecord?.id)"
-					>
-						<el-option
-							v-for="item in teacherOptions"
-							:key="Number(item.id || 0)"
-							:label="item.teacherName"
-							:value="Number(item.id || 0)"
-						/>
-					</el-select>
-				</el-form-item>
-				<el-form-item label="班级名称" prop="className">
-					<el-input v-model="form.className" maxlength="100" show-word-limit />
-				</el-form-item>
-				<el-form-item label="项目标签">
-					<el-input v-model="form.projectTag" maxlength="50" />
-				</el-form-item>
-				<el-form-item label="学员数">
-					<el-input-number v-model="studentCountModel" :min="0" :max="9999" />
-				</el-form-item>
-				<el-form-item v-if="editingRecord?.id" label="状态">
-					<el-select v-model="classStatusModel" style="width: 100%">
-						<el-option
-							v-for="item in editableStatusOptions"
-							:key="item.value"
-							:label="item.label"
-							:value="item.value"
-						/>
-					</el-select>
-				</el-form-item>
-			</el-form>
 
-			<template #footer>
-				<el-button @click="formVisible = false">取消</el-button>
-				<el-button type="primary" :loading="submitLoading" @click="submitForm">保存</el-button>
-			</template>
-		</el-dialog>
+				<el-table :data="rows" border v-loading="tableLoading">
+					<el-table-column prop="teacherName" label="班主任" min-width="140" />
+					<el-table-column prop="className" label="班级" min-width="180" />
+					<el-table-column prop="schoolName" label="学校" min-width="180">
+						<template #default="{ row }">
+							{{ row.schoolName || '-' }}
+						</template>
+					</el-table-column>
+					<el-table-column prop="projectTag" label="项目标签" min-width="120">
+						<template #default="{ row }">
+							{{ row.projectTag || '-' }}
+						</template>
+					</el-table-column>
+					<el-table-column prop="studentCount" label="学员数" width="100" />
+					<el-table-column prop="status" label="状态" width="110">
+						<template #default="{ row }">
+							<el-tag :type="classStatusTagType(row.status)">
+								{{ classStatusLabel(row.status) }}
+							</el-tag>
+						</template>
+					</el-table-column>
+					<el-table-column prop="updateTime" label="更新时间" min-width="170" />
+					<el-table-column label="操作" min-width="220" fixed="right">
+						<template #default="{ row }">
+							<el-button v-if="showInfoButton" text @click="openDetail(row)"
+								>详情</el-button
+							>
+							<el-button
+								v-if="canEditTeacherClass(row, showUpdateButton)"
+								text
+								type="primary"
+								@click="openEdit(row)"
+							>
+								编辑
+							</el-button>
+							<el-button
+								v-if="canDeleteTeacherClass(row, showDeleteButton)"
+								text
+								type="danger"
+								@click="handleDelete(row)"
+							>
+								删除
+							</el-button>
+						</template>
+					</el-table-column>
+				</el-table>
+
+				<el-empty
+					v-if="!tableLoading && rows.length === 0"
+					description="当前范围内暂无合作班级"
+				/>
+
+				<div class="teacher-channel-class-page__pagination">
+					<el-pagination
+						background
+						layout="total, prev, pager, next"
+						:current-page="pagination.page"
+						:page-size="pagination.size"
+						:total="pagination.total"
+						@current-change="changePage"
+					/>
+				</div>
+			</el-card>
+
+			<el-dialog v-model="detailVisible" title="班级详情" width="720px" destroy-on-close>
+				<el-descriptions v-if="detailRecord" :column="2" border>
+					<el-descriptions-item label="班主任">{{
+						detailRecord.teacherName || '-'
+					}}</el-descriptions-item>
+					<el-descriptions-item label="班级">{{
+						detailRecord.className
+					}}</el-descriptions-item>
+					<el-descriptions-item label="学校">{{
+						detailRecord.schoolName || '-'
+					}}</el-descriptions-item>
+					<el-descriptions-item label="年级">{{
+						detailRecord.grade || '-'
+					}}</el-descriptions-item>
+					<el-descriptions-item label="项目标签">{{
+						detailRecord.projectTag || '-'
+					}}</el-descriptions-item>
+					<el-descriptions-item label="学员数">{{
+						detailRecord.studentCount || 0
+					}}</el-descriptions-item>
+					<el-descriptions-item label="状态">
+						<el-tag :type="classStatusTagType(detailRecord.status)">
+							{{ classStatusLabel(detailRecord.status) }}
+						</el-tag>
+					</el-descriptions-item>
+					<el-descriptions-item label="更新时间">{{
+						detailRecord.updateTime || '-'
+					}}</el-descriptions-item>
+				</el-descriptions>
+			</el-dialog>
+
+			<el-dialog
+				v-model="formVisible"
+				:title="editingRecord?.id ? '编辑班级' : '新增班级'"
+				width="720px"
+				destroy-on-close
+			>
+				<el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
+					<el-alert
+						:title="
+							editingRecord?.id
+								? 'closed 班级只能查看不能编辑，最终以后端校验为准。'
+								: '仅 partnered teacher 出现在可选项中，terminated teacher 不可建班。'
+						"
+						:type="editingRecord?.id ? 'warning' : 'info'"
+						:closable="false"
+						show-icon
+					/>
+					<el-form-item label="班主任" prop="teacherId">
+						<el-select
+							v-model="teacherIdModel"
+							filterable
+							placeholder="请选择班主任"
+							style="width: 100%"
+							:disabled="Boolean(editingRecord?.id)"
+						>
+							<el-option
+								v-for="item in teacherOptions"
+								:key="Number(item.id || 0)"
+								:label="item.teacherName"
+								:value="Number(item.id || 0)"
+							/>
+						</el-select>
+					</el-form-item>
+					<el-form-item label="班级名称" prop="className">
+						<el-input v-model="form.className" maxlength="100" show-word-limit />
+					</el-form-item>
+					<el-form-item label="项目标签">
+						<el-input v-model="form.projectTag" maxlength="50" />
+					</el-form-item>
+					<el-form-item label="学员数">
+						<el-input-number v-model="studentCountModel" :min="0" :max="9999" />
+					</el-form-item>
+					<el-form-item v-if="editingRecord?.id" label="状态">
+						<el-select v-model="classStatusModel" style="width: 100%">
+							<el-option
+								v-for="item in editableStatusOptions"
+								:key="item.value"
+								:label="item.label"
+								:value="item.value"
+							/>
+						</el-select>
+					</el-form-item>
+				</el-form>
+
+				<template #footer>
+					<el-button @click="formVisible = false">取消</el-button>
+					<el-button type="primary" :loading="submitLoading" @click="submitForm"
+						>保存</el-button
+					>
+				</template>
+			</el-dialog>
 		</div>
 	</permission-overlay>
 </template>
@@ -214,10 +237,7 @@ import PermissionOverlay from '../../components/permission-overlay.vue';
 import { useListPage } from '../../composables/use-list-page.js';
 import { performanceTeacherClassService } from '../../service/teacherClass';
 import { performanceTeacherInfoService } from '../../service/teacherInfo';
-import {
-	confirmElementAction,
-	runTrackedElementAction
-} from '../shared/action-feedback';
+import { confirmElementAction, runTrackedElementAction } from '../shared/action-feedback';
 import {
 	resolveErrorMessage,
 	showElementErrorFromError,
@@ -263,8 +283,12 @@ const rules: FormRules = {
 const canAccess = computed(() => checkPerm(performanceTeacherClassService.permission.page));
 const showInfoButton = computed(() => checkPerm(performanceTeacherClassService.permission.info));
 const showAddButton = computed(() => checkPerm(performanceTeacherClassService.permission.add));
-const showUpdateButton = computed(() => checkPerm(performanceTeacherClassService.permission.update));
-const showDeleteButton = computed(() => checkPerm(performanceTeacherClassService.permission.delete));
+const showUpdateButton = computed(() =>
+	checkPerm(performanceTeacherClassService.permission.update)
+);
+const showDeleteButton = computed(() =>
+	checkPerm(performanceTeacherClassService.permission.delete)
+);
 const statusModel = computed<TeacherClassStatus | undefined>({
 	get: () => filters.status || undefined,
 	set: value => {
@@ -435,7 +459,9 @@ async function submitForm() {
 		};
 
 		if (editingRecord.value?.id || editingRecord.value?.classId) {
-			await performanceTeacherClassService.updateTeacherClass(payload as TeacherClassRecord & { id: number });
+			await performanceTeacherClassService.updateTeacherClass(
+				payload as TeacherClassRecord & { id: number }
+			);
 		} else {
 			await performanceTeacherClassService.createTeacherClass(payload);
 		}
@@ -458,7 +484,10 @@ async function handleDelete(row: TeacherClassRecord) {
 		return;
 	}
 
-	const confirmed = await confirmElementAction(`确认删除班级「${row.className}」吗？`, '删除确认');
+	const confirmed = await confirmElementAction(
+		`确认删除班级「${row.className}」吗？`,
+		'删除确认'
+	);
 
 	if (!confirmed) {
 		return;

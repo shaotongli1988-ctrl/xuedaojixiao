@@ -23,15 +23,18 @@ const quarterOptions = computed(() => {
 	return [currentYear - 1, currentYear, currentYear + 1].flatMap(year =>
 		[1, 2, 3, 4].map(quarter => ({
 			label: `${year} Q${quarter}`,
-			value: `${year}-Q${quarter}`,
+			value: `${year}-Q${quarter}`
 		}))
 	);
 });
 
-function patch<K extends keyof DashboardFilterViewModel>(key: K, value: DashboardFilterViewModel[K]) {
+function patch<K extends keyof DashboardFilterViewModel>(
+	key: K,
+	value: DashboardFilterViewModel[K]
+) {
 	emit('update:model-value', {
 		...props.modelValue,
-		[key]: value,
+		[key]: value
 	});
 }
 </script>
@@ -113,7 +116,12 @@ function patch<K extends keyof DashboardFilterViewModel>(key: K, value: Dashboar
 				/>
 
 				<el-button :disabled="disabled" @click="$emit('refresh')">刷新</el-button>
-				<el-button type="primary" :loading="loading" :disabled="disabled" @click="$emit('refresh')">
+				<el-button
+					type="primary"
+					:loading="loading"
+					:disabled="disabled"
+					@click="$emit('refresh')"
+				>
 					查询汇总
 				</el-button>
 			</div>

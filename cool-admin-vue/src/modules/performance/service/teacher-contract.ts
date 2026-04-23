@@ -136,7 +136,10 @@ export function decodeTeacherAttributionInfo(
 		currentAttribution:
 			record.currentAttribution == null
 				? null
-				: decodeTeacherAttributionRecord(record.currentAttribution, `${field}.currentAttribution`),
+				: decodeTeacherAttributionRecord(
+						record.currentAttribution,
+						`${field}.currentAttribution`
+					),
 		openConflicts:
 			record.openConflicts === undefined
 				? undefined
@@ -146,13 +149,14 @@ export function decodeTeacherAttributionInfo(
 								item,
 								`${field}.openConflicts[${index}]`
 							)
-				  ),
+					),
 		history:
 			record.history === undefined
 				? undefined
-				: expectPerformanceServiceArray(record.history, `${field}.history`).map((item, index) =>
-						decodeTeacherAttributionRecord(item, `${field}.history[${index}]`)
-				  )
+				: expectPerformanceServiceArray(record.history, `${field}.history`).map(
+						(item, index) =>
+							decodeTeacherAttributionRecord(item, `${field}.history[${index}]`)
+					)
 	};
 }
 
@@ -212,7 +216,10 @@ export function decodeTeacherAttributionConflictRecord(
 		),
 		resolvedBy: decodeOptionalNullableNumber(record.resolvedBy, `${field}.resolvedBy`),
 		resolvedTime: decodeOptionalNullableString(record.resolvedTime, `${field}.resolvedTime`),
-		currentAgentId: decodeOptionalNullableNumber(record.currentAgentId, `${field}.currentAgentId`),
+		currentAgentId: decodeOptionalNullableNumber(
+			record.currentAgentId,
+			`${field}.currentAgentId`
+		),
 		requestedAgentId: decodeOptionalNullableNumber(
 			record.requestedAgentId,
 			`${field}.requestedAgentId`
@@ -253,9 +260,12 @@ export function decodeTeacherAttributionConflictDetail(
 		candidateAgents:
 			record.candidateAgents === undefined
 				? undefined
-				: expectPerformanceServiceArray(record.candidateAgents, `${field}.candidateAgents`).map(
-						(item, index) => decodeCandidateAgent(item, `${field}.candidateAgents[${index}]`)
-				  ),
+				: expectPerformanceServiceArray(
+						record.candidateAgents,
+						`${field}.candidateAgents`
+					).map((item, index) =>
+						decodeCandidateAgent(item, `${field}.candidateAgents[${index}]`)
+					),
 		candidateAgentIds:
 			record.candidateAgentIds === undefined
 				? undefined
@@ -283,7 +293,10 @@ export function decodeTeacherAttributionConflictDetail(
 		),
 		resolvedBy: decodeOptionalNullableNumber(record.resolvedBy, `${field}.resolvedBy`),
 		resolvedTime: decodeOptionalNullableString(record.resolvedTime, `${field}.resolvedTime`),
-		currentAgentId: decodeOptionalNullableNumber(record.currentAgentId, `${field}.currentAgentId`),
+		currentAgentId: decodeOptionalNullableNumber(
+			record.currentAgentId,
+			`${field}.currentAgentId`
+		),
 		requestedAgentId: decodeOptionalNullableNumber(
 			record.requestedAgentId,
 			`${field}.requestedAgentId`
@@ -351,7 +364,10 @@ export function decodeTeacherDashboardSummary(
 			record.overdueFollowCount,
 			`${field}.overdueFollowCount`
 		),
-		partneredCount: decodeOptionalNullableNumber(record.partneredCount, `${field}.partneredCount`),
+		partneredCount: decodeOptionalNullableNumber(
+			record.partneredCount,
+			`${field}.partneredCount`
+		),
 		classCount: decodeOptionalNullableNumber(record.classCount, `${field}.classCount`),
 		memberDistribution:
 			record.memberDistribution === undefined
@@ -406,7 +422,10 @@ export function decodeTeacherFollowRecord(
 		content: decodeOptionalNullableString(record.content, `${field}.content`),
 		followContent: decodeOptionalNullableString(record.followContent, `${field}.followContent`),
 		remark: decodeOptionalNullableString(record.remark, `${field}.remark`),
-		nextFollowTime: decodeOptionalNullableString(record.nextFollowTime, `${field}.nextFollowTime`),
+		nextFollowTime: decodeOptionalNullableString(
+			record.nextFollowTime,
+			`${field}.nextFollowTime`
+		),
 		createTime: decodeOptionalNullableString(record.createTime, `${field}.createTime`),
 		operatorName: decodeOptionalNullableString(record.operatorName, `${field}.operatorName`),
 		creatorEmployeeName: decodeOptionalNullableString(
@@ -445,7 +464,10 @@ export function decodeTeacherClassRecord(
 		grade: decodeOptionalNullableString(record.grade, `${field}.grade`),
 		projectTag: decodeOptionalNullableString(record.projectTag, `${field}.projectTag`),
 		studentCount: decodeOptionalNullableNumber(record.studentCount, `${field}.studentCount`),
-		ownerEmployeeId: decodeOptionalNullableNumber(record.ownerEmployeeId, `${field}.ownerEmployeeId`),
+		ownerEmployeeId: decodeOptionalNullableNumber(
+			record.ownerEmployeeId,
+			`${field}.ownerEmployeeId`
+		),
 		ownerDepartmentId: decodeOptionalNullableNumber(
 			record.ownerDepartmentId,
 			`${field}.ownerDepartmentId`
@@ -506,8 +528,14 @@ export function decodeTeacherTodoRecord(
 			record.ownerEmployeeName,
 			`${field}.ownerEmployeeName`
 		),
-		lastFollowTime: decodeOptionalNullableString(record.lastFollowTime, `${field}.lastFollowTime`),
-		nextFollowTime: decodeOptionalNullableString(record.nextFollowTime, `${field}.nextFollowTime`)
+		lastFollowTime: decodeOptionalNullableString(
+			record.lastFollowTime,
+			`${field}.lastFollowTime`
+		),
+		nextFollowTime: decodeOptionalNullableString(
+			record.nextFollowTime,
+			`${field}.nextFollowTime`
+		)
 	};
 }
 
@@ -565,12 +593,18 @@ export function decodeTeacherInfoRecord(
 		className: decodeOptionalNullableString(record.className, `${field}.className`),
 		subject: decodeOptionalNullableString(record.subject, `${field}.subject`),
 		projectTags: decodeProjectTags(record.projectTags, `${field}.projectTags`),
-		intentionLevel: decodeOptionalNullableString(record.intentionLevel, `${field}.intentionLevel`),
+		intentionLevel: decodeOptionalNullableString(
+			record.intentionLevel,
+			`${field}.intentionLevel`
+		),
 		communicationStyle: decodeOptionalNullableString(
 			record.communicationStyle,
 			`${field}.communicationStyle`
 		),
-		ownerEmployeeId: decodeOptionalNullableNumber(record.ownerEmployeeId, `${field}.ownerEmployeeId`),
+		ownerEmployeeId: decodeOptionalNullableNumber(
+			record.ownerEmployeeId,
+			`${field}.ownerEmployeeId`
+		),
 		ownerEmployeeName: decodeOptionalNullableString(
 			record.ownerEmployeeName,
 			`${field}.ownerEmployeeName`
@@ -583,8 +617,14 @@ export function decodeTeacherInfoRecord(
 			record.ownerDepartmentName,
 			`${field}.ownerDepartmentName`
 		),
-		lastFollowTime: decodeOptionalNullableString(record.lastFollowTime, `${field}.lastFollowTime`),
-		nextFollowTime: decodeOptionalNullableString(record.nextFollowTime, `${field}.nextFollowTime`),
+		lastFollowTime: decodeOptionalNullableString(
+			record.lastFollowTime,
+			`${field}.lastFollowTime`
+		),
+		nextFollowTime: decodeOptionalNullableString(
+			record.nextFollowTime,
+			`${field}.nextFollowTime`
+		),
 		cooperationTime: decodeOptionalNullableString(
 			record.cooperationTime,
 			`${field}.cooperationTime`
@@ -629,7 +669,10 @@ export function decodeTeacherAgentAuditRecord(
 			record.beforeSnapshot,
 			`${field}.beforeSnapshot`
 		),
-		afterSnapshot: decodeTeacherAgentAuditSnapshot(record.afterSnapshot, `${field}.afterSnapshot`),
+		afterSnapshot: decodeTeacherAgentAuditSnapshot(
+			record.afterSnapshot,
+			`${field}.afterSnapshot`
+		),
 		operatorId: decodeOptionalNullableNumber(record.operatorId, `${field}.operatorId`),
 		operatorName: decodeOptionalNullableString(record.operatorName, `${field}.operatorName`),
 		createTime: decodeOptionalNullableString(record.createTime, `${field}.createTime`),
@@ -671,7 +714,10 @@ export function decodeTeacherAgentRecord(
 			`${field}.cooperationStatus`
 		),
 		remark: decodeOptionalNullableString(record.remark, `${field}.remark`),
-		ownerEmployeeId: decodeOptionalNullableNumber(record.ownerEmployeeId, `${field}.ownerEmployeeId`),
+		ownerEmployeeId: decodeOptionalNullableNumber(
+			record.ownerEmployeeId,
+			`${field}.ownerEmployeeId`
+		),
 		ownerDepartmentId: decodeOptionalNullableNumber(
 			record.ownerDepartmentId,
 			`${field}.ownerDepartmentId`
@@ -701,13 +747,25 @@ export function decodeTeacherAgentRelationRecord(
 			`${field}.status`,
 			TEACHER_AGENT_RELATION_STATUS
 		),
-		parentAgentId: expectPerformanceServiceNumber(record.parentAgentId, `${field}.parentAgentId`),
-		parentAgentName: decodeOptionalNullableString(record.parentAgentName, `${field}.parentAgentName`),
+		parentAgentId: expectPerformanceServiceNumber(
+			record.parentAgentId,
+			`${field}.parentAgentId`
+		),
+		parentAgentName: decodeOptionalNullableString(
+			record.parentAgentName,
+			`${field}.parentAgentName`
+		),
 		childAgentId: expectPerformanceServiceNumber(record.childAgentId, `${field}.childAgentId`),
-		childAgentName: decodeOptionalNullableString(record.childAgentName, `${field}.childAgentName`),
+		childAgentName: decodeOptionalNullableString(
+			record.childAgentName,
+			`${field}.childAgentName`
+		),
 		effectiveTime: decodeOptionalNullableString(record.effectiveTime, `${field}.effectiveTime`),
 		remark: decodeOptionalNullableString(record.remark, `${field}.remark`),
-		ownerEmployeeId: decodeOptionalNullableNumber(record.ownerEmployeeId, `${field}.ownerEmployeeId`),
+		ownerEmployeeId: decodeOptionalNullableNumber(
+			record.ownerEmployeeId,
+			`${field}.ownerEmployeeId`
+		),
 		ownerDepartmentId: decodeOptionalNullableNumber(
 			record.ownerDepartmentId,
 			`${field}.ownerDepartmentId`

@@ -115,7 +115,9 @@
 						<el-table-column prop="ownerName" label="负责人" min-width="120" />
 						<el-table-column label="状态" width="110">
 							<template #default="{ row }">
-								<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+								<el-tag :type="statusTagType(row.status)">{{
+									statusLabel(row.status)
+								}}</el-tag>
 							</template>
 						</el-table-column>
 						<el-table-column prop="importance" label="重要度" width="100">
@@ -181,9 +183,17 @@
 							</template>
 
 							<div class="knowledge-base-page__graph-metrics">
-								<el-card v-for="card in graphMetricCards" :key="card.label" shadow="hover">
-									<div class="knowledge-base-page__metric-label">{{ card.label }}</div>
-									<div class="knowledge-base-page__metric-value">{{ card.value }}</div>
+								<el-card
+									v-for="card in graphMetricCards"
+									:key="card.label"
+									shadow="hover"
+								>
+									<div class="knowledge-base-page__metric-label">
+										{{ card.label }}
+									</div>
+									<div class="knowledge-base-page__metric-value">
+										{{ card.value }}
+									</div>
 								</el-card>
 							</div>
 
@@ -199,7 +209,9 @@
 											>
 												{{ item }}
 											</el-tag>
-											<span v-if="!graphGroups.categories.length">暂无分类节点</span>
+											<span v-if="!graphGroups.categories.length"
+												>暂无分类节点</span
+											>
 										</div>
 									</el-card>
 								</el-col>
@@ -215,7 +227,9 @@
 											>
 												{{ item }}
 											</el-tag>
-											<span v-if="!graphGroups.tags.length">暂无标签节点</span>
+											<span v-if="!graphGroups.tags.length"
+												>暂无标签节点</span
+											>
 										</div>
 									</el-card>
 								</el-col>
@@ -226,7 +240,11 @@
 								<el-table :data="graphRelationPreview" border>
 									<el-table-column prop="name" label="节点" min-width="220" />
 									<el-table-column prop="category" label="类型" min-width="140" />
-									<el-table-column prop="relationCount" label="关联数" min-width="100" />
+									<el-table-column
+										prop="relationCount"
+										label="关联数"
+										min-width="100"
+									/>
 								</el-table>
 							</el-card>
 						</el-card>
@@ -240,7 +258,10 @@
 								<div class="knowledge-base-page__panel-header">
 									<div>
 										<h3>知识搜索</h3>
-										<p>只聚合知识条目、关联文件摘要和百问百答元数据，不生成 AI 答案。</p>
+										<p>
+											只聚合知识条目、关联文件摘要和百问百答元数据，不生成 AI
+											答案。
+										</p>
 									</div>
 									<div class="knowledge-base-page__inline-actions">
 										<el-input
@@ -250,7 +271,9 @@
 											style="width: 220px"
 											@keyup.enter="runSearch"
 										/>
-										<el-button type="primary" @click="runSearch">搜索</el-button>
+										<el-button type="primary" @click="runSearch"
+											>搜索</el-button
+										>
 									</div>
 								</div>
 							</template>
@@ -263,7 +286,9 @@
 								<el-tag effect="plain" type="warning">
 									文件 {{ searchResult.files.length }}
 								</el-tag>
-								<el-tag effect="plain" type="info">问答 {{ searchResult.qas.length }}</el-tag>
+								<el-tag effect="plain" type="info"
+									>问答 {{ searchResult.qas.length }}</el-tag
+								>
 							</div>
 
 							<el-row :gutter="16">
@@ -271,9 +296,21 @@
 									<el-card shadow="never">
 										<template #header>知识条目命中</template>
 										<el-table :data="searchResult.knowledge" border>
-											<el-table-column prop="title" label="标题" min-width="160" />
-											<el-table-column prop="category" label="分类" min-width="120" />
-											<el-table-column prop="status" label="状态" min-width="100">
+											<el-table-column
+												prop="title"
+												label="标题"
+												min-width="160"
+											/>
+											<el-table-column
+												prop="category"
+												label="分类"
+												min-width="120"
+											/>
+											<el-table-column
+												prop="status"
+												label="状态"
+												min-width="100"
+											>
 												<template #default="{ row }">
 													<el-tag :type="statusTagType(row.status)">
 														{{ statusLabel(row.status) }}
@@ -287,9 +324,21 @@
 									<el-card shadow="never">
 										<template #header>关联文件命中</template>
 										<el-table :data="searchResult.files" border>
-											<el-table-column prop="fileName" label="文件名称" min-width="160" />
-											<el-table-column prop="fileNo" label="文件编号" min-width="120" />
-											<el-table-column prop="status" label="状态" min-width="100">
+											<el-table-column
+												prop="fileName"
+												label="文件名称"
+												min-width="160"
+											/>
+											<el-table-column
+												prop="fileNo"
+												label="文件编号"
+												min-width="120"
+											/>
+											<el-table-column
+												prop="status"
+												label="状态"
+												min-width="100"
+											>
 												<template #default="{ row }">
 													<el-tag :type="fileStatusTagType(row.status)">
 														{{ fileStatusLabel(row.status) }}
@@ -303,8 +352,16 @@
 									<el-card shadow="never">
 										<template #header>问答命中</template>
 										<el-table :data="searchResult.qas" border>
-											<el-table-column prop="question" label="问题" min-width="160" />
-											<el-table-column prop="updateTime" label="更新时间" min-width="140">
+											<el-table-column
+												prop="question"
+												label="问题"
+												min-width="160"
+											/>
+											<el-table-column
+												prop="updateTime"
+												label="更新时间"
+												min-width="140"
+											>
 												<template #default="{ row }">
 													{{ row.updateTime || row.createTime || '-' }}
 												</template>
@@ -331,7 +388,11 @@
 											@keyup.enter="refreshQaList"
 										/>
 										<el-button @click="refreshQaList">查询</el-button>
-										<el-button v-if="showQaAddButton" type="primary" @click="openQaCreate">
+										<el-button
+											v-if="showQaAddButton"
+											type="primary"
+											@click="openQaCreate"
+										>
 											新增问答
 										</el-button>
 									</div>
@@ -375,7 +436,11 @@
 		>
 			<el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
 				<el-alert
-					:title="editingRecord?.id ? '编辑只维护条目元数据和关系；已归档条目不允许继续编辑。' : '新建条目默认保存为 draft，后续在编辑时可发布或归档。'"
+					:title="
+						editingRecord?.id
+							? '编辑只维护条目元数据和关系；已归档条目不允许继续编辑。'
+							: '新建条目默认保存为 draft，后续在编辑时可发布或归档。'
+					"
 					:type="editingRecord?.id ? 'warning' : 'info'"
 					:closable="false"
 					show-icon
@@ -403,7 +468,11 @@
 					</el-col>
 					<el-col :span="12">
 						<el-form-item label="状态" prop="status">
-							<el-select v-model="form.status" style="width: 100%" :disabled="!editingRecord?.id">
+							<el-select
+								v-model="form.status"
+								style="width: 100%"
+								:disabled="!editingRecord?.id"
+							>
 								<el-option
 									v-for="item in formStatusOptions"
 									:key="item.value"
@@ -415,7 +484,12 @@
 					</el-col>
 					<el-col :span="12">
 						<el-form-item label="重要度">
-							<el-input-number v-model="form.importance" :min="0" :max="100" style="width: 100%" />
+							<el-input-number
+								v-model="form.importance"
+								:min="0"
+								:max="100"
+								style="width: 100%"
+							/>
 						</el-form-item>
 					</el-col>
 				</el-row>
@@ -564,10 +638,7 @@ import { performanceAccessContextService } from '../../service/access-context';
 import { performanceDocumentCenterService } from '../../service/documentCenter';
 import { performanceKnowledgeBaseService } from '../../service/knowledgeBase';
 import { resolvePerformanceRoleFact } from '../../service/role-fact';
-import {
-	confirmElementAction,
-	runTrackedElementAction
-} from '../shared/action-feedback';
+import { confirmElementAction, runTrackedElementAction } from '../shared/action-feedback';
 import {
 	resolveErrorMessage,
 	showElementErrorFromError,
@@ -650,12 +721,18 @@ const roleFact = computed(() =>
 		roleKind: accessContext.value?.roleKind || null
 	})
 );
-const showStatsSection = computed(() => checkPerm(performanceKnowledgeBaseService.permission.stats));
+const showStatsSection = computed(() =>
+	checkPerm(performanceKnowledgeBaseService.permission.stats)
+);
 const showAddButton = computed(() => checkPerm(performanceKnowledgeBaseService.permission.add));
 const showEditButton = computed(() => checkPerm(performanceKnowledgeBaseService.permission.update));
-const showDeleteButton = computed(() => checkPerm(performanceKnowledgeBaseService.permission.delete));
+const showDeleteButton = computed(() =>
+	checkPerm(performanceKnowledgeBaseService.permission.delete)
+);
 const showGraphTab = computed(() => checkPerm(performanceKnowledgeBaseService.permission.graph));
-const showSearchPanel = computed(() => checkPerm(performanceKnowledgeBaseService.permission.search));
+const showSearchPanel = computed(() =>
+	checkPerm(performanceKnowledgeBaseService.permission.search)
+);
 const showQaPanel = computed(() => checkPerm(performanceKnowledgeBaseService.permission.qaList));
 const showQaAddButton = computed(() => checkPerm(performanceKnowledgeBaseService.permission.qaAdd));
 const showSearchOrQaTab = computed(() => showSearchPanel.value || showQaPanel.value);
@@ -691,8 +768,16 @@ const metricCards = computed(() => [
 	{ label: '知识条目', value: stats.value.total || 0, helper: '当前筛选范围内的知识资产数量' },
 	{ label: '已发布', value: stats.value.publishedCount || 0, helper: '可作为正式知识资料使用' },
 	{ label: '草稿', value: stats.value.draftCount || 0, helper: '待完善和待发布条目' },
-	{ label: '关联文件', value: stats.value.fileLinkedCount || 0, helper: '已建立文件关系的条目数' },
-	{ label: '平均重要度', value: formatDecimal(stats.value.avgImportance), helper: '用于排序和治理观察' },
+	{
+		label: '关联文件',
+		value: stats.value.fileLinkedCount || 0,
+		helper: '已建立文件关系的条目数'
+	},
+	{
+		label: '平均重要度',
+		value: formatDecimal(stats.value.avgImportance),
+		helper: '用于排序和治理观察'
+	},
 	{ label: '主题覆盖', value: stats.value.topicCount || 0, helper: '知识主题维度覆盖情况' }
 ]);
 
@@ -721,15 +806,13 @@ const graphGroups = computed(() => ({
 }));
 
 const graphRelationPreview = computed(() =>
-	graphSummary.value.nodes
-		.slice(0, 8)
-		.map(node => ({
-			name: node.name,
-			category: graphCategoryLabel(node.category),
-			relationCount: graphSummary.value.links.filter(
-				link => link.source === node.id || link.target === node.id
-			).length
-		}))
+	graphSummary.value.nodes.slice(0, 8).map(node => ({
+		name: node.name,
+		category: graphCategoryLabel(node.category),
+		relationCount: graphSummary.value.links.filter(
+			link => link.source === node.id || link.target === node.id
+		).length
+	}))
 );
 
 const knowledgeOptions = computed(() =>
@@ -1039,7 +1122,9 @@ function buildKnowledgeBaseStatusOptions(values: KnowledgeBaseStatus[]) {
 	return statusOptions.value.filter(item => values.includes(item.value));
 }
 
-function normalizeSearchResult(result?: Partial<KnowledgeSearchResult> | null): KnowledgeSearchResult {
+function normalizeSearchResult(
+	result?: Partial<KnowledgeSearchResult> | null
+): KnowledgeSearchResult {
 	return {
 		total: Number(result?.total || 0),
 		knowledge: Array.isArray(result?.knowledge) ? result.knowledge : [],

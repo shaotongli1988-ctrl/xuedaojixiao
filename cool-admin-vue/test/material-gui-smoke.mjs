@@ -106,7 +106,10 @@ async function selectOptionByTestId(page, testId, optionText) {
 	const trigger = page.getByTestId(testId);
 	await trigger.waitFor({ timeout: 15000 });
 	await trigger.click();
-	const option = page.locator('.el-select-dropdown__item').filter({ hasText: optionText }).first();
+	const option = page
+		.locator('.el-select-dropdown__item')
+		.filter({ hasText: optionText })
+		.first();
 	await option.waitFor({ timeout: 15000 });
 	await option.click();
 }
@@ -205,7 +208,10 @@ async function loginViaGui(page, cacheDir) {
 	const captchaResponse = await captchaResponsePromise;
 	const captchaBody = await captchaResponse.json();
 	const captchaId = captchaBody?.data?.captchaId;
-	expect(captchaBody?.code === 1000 && captchaId, `captcha failed: ${JSON.stringify(captchaBody)}`);
+	expect(
+		captchaBody?.code === 1000 && captchaId,
+		`captcha failed: ${JSON.stringify(captchaBody)}`
+	);
 
 	const verifyCode = await readCaptchaValue(cacheDir, captchaId);
 
@@ -260,7 +266,10 @@ async function run() {
 		await fillInputByTestId(page, 'material-form-remark', 'GUI smoke catalog');
 		await saveForm(page, '已新增');
 		await searchByKeyword(page, materialCode);
-		expect((await rowText(page, materialCode)).includes(materialName), 'catalog row not found after create');
+		expect(
+			(await rowText(page, materialCode)).includes(materialName),
+			'catalog row not found after create'
+		);
 
 		await navigateToMaterialPage(
 			page,
@@ -297,9 +306,18 @@ async function run() {
 		);
 		await searchByKeyword(page, materialCode);
 		const inboundStockCells = await rowCells(page, materialCode);
-		expect(inboundStockCells[5] === '8', `unexpected currentQty after inbound: ${inboundStockCells.join(' | ')}`);
-		expect(inboundStockCells[6] === '8', `unexpected availableQty after inbound: ${inboundStockCells.join(' | ')}`);
-		expect(inboundStockCells[8] === '0', `unexpected issuedQty after inbound: ${inboundStockCells.join(' | ')}`);
+		expect(
+			inboundStockCells[5] === '8',
+			`unexpected currentQty after inbound: ${inboundStockCells.join(' | ')}`
+		);
+		expect(
+			inboundStockCells[6] === '8',
+			`unexpected availableQty after inbound: ${inboundStockCells.join(' | ')}`
+		);
+		expect(
+			inboundStockCells[8] === '0',
+			`unexpected issuedQty after inbound: ${inboundStockCells.join(' | ')}`
+		);
 
 		await navigateToMaterialPage(
 			page,
@@ -314,7 +332,11 @@ async function run() {
 		await selectFirstOptionByTestId(page, 'material-form-departmentId');
 		await selectFirstOptionByTestId(page, 'material-form-assigneeId');
 		await fillNumberByTestId(page, 'material-form-quantity', 3);
-		await fillInputByTestId(page, 'material-form-issueDate', new Date().toISOString().slice(0, 10));
+		await fillInputByTestId(
+			page,
+			'material-form-issueDate',
+			new Date().toISOString().slice(0, 10)
+		);
 		await fillInputByTestId(page, 'material-form-purpose', 'GUI smoke issue');
 		await fillInputByTestId(page, 'material-form-remark', 'GUI smoke remark');
 		await saveForm(page, '已新增');
@@ -335,15 +357,26 @@ async function run() {
 		);
 		await searchByKeyword(page, materialCode);
 		const finalStockCells = await rowCells(page, materialCode);
-		expect(finalStockCells[5] === '5', `unexpected currentQty after issue: ${finalStockCells.join(' | ')}`);
-		expect(finalStockCells[6] === '5', `unexpected availableQty after issue: ${finalStockCells.join(' | ')}`);
-		expect(finalStockCells[8] === '3', `unexpected issuedQty after issue: ${finalStockCells.join(' | ')}`);
+		expect(
+			finalStockCells[5] === '5',
+			`unexpected currentQty after issue: ${finalStockCells.join(' | ')}`
+		);
+		expect(
+			finalStockCells[6] === '5',
+			`unexpected availableQty after issue: ${finalStockCells.join(' | ')}`
+		);
+		expect(
+			finalStockCells[8] === '3',
+			`unexpected issuedQty after issue: ${finalStockCells.join(' | ')}`
+		);
 
 		console.log(`[PASS] material gui smoke - ${materialCode}`);
 	} catch (error) {
 		try {
 			await page.screenshot({ path: '/tmp/material-gui-smoke-failure.png', fullPage: true });
-			console.error('[material-gui-smoke] screenshot saved to /tmp/material-gui-smoke-failure.png');
+			console.error(
+				'[material-gui-smoke] screenshot saved to /tmp/material-gui-smoke-failure.png'
+			);
 		} catch (screenshotError) {
 			console.error(`[material-gui-smoke] screenshot failed: ${screenshotError.message}`);
 		}

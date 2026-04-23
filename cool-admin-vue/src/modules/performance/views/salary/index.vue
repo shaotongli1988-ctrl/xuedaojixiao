@@ -110,7 +110,9 @@
 				<el-table-column prop="effectiveDate" label="生效日期" min-width="120" />
 				<el-table-column prop="status" label="状态" width="110">
 					<template #default="{ row }">
-						<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+						<el-tag :type="statusTagType(row.status)">{{
+							statusLabel(row.status)
+						}}</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column prop="baseSalary" label="基础薪资" min-width="130">
@@ -304,12 +306,7 @@
 			</template>
 		</el-dialog>
 
-		<el-drawer
-			v-model="detailVisible"
-			title="薪资详情"
-			size="720px"
-			destroy-on-close
-		>
+		<el-drawer v-model="detailVisible" title="薪资详情" size="720px" destroy-on-close>
 			<template v-if="detailSalary">
 				<el-descriptions :column="2" border>
 					<el-descriptions-item label="员工">
@@ -379,7 +376,11 @@
 						</div>
 					</template>
 
-					<el-table :data="detailSalary.changeRecords || []" border empty-text="暂无调整记录">
+					<el-table
+						:data="detailSalary.changeRecords || []"
+						border
+						empty-text="暂无调整记录"
+					>
 						<el-table-column prop="beforeAmount" label="调整前" min-width="120">
 							<template #default="{ row }">
 								{{ formatAmount(row.beforeAmount) }}
@@ -411,12 +412,7 @@
 		/>
 	</div>
 
-	<el-result
-		v-else
-		icon="warning"
-		title="无权限访问"
-		:sub-title="salaryDeniedSubtitle"
-	/>
+	<el-result v-else icon="warning" title="无权限访问" :sub-title="salaryDeniedSubtitle" />
 </template>
 
 <script lang="ts" setup>
@@ -429,17 +425,12 @@ import { service } from '/@/cool';
 import { checkPerm } from '/$/base/utils/permission';
 import SalaryChangeDrawer from '../../components/salary-change-drawer.vue';
 import { useListPage } from '../../composables/use-list-page.js';
-import {
-	performanceAccessContextService
-} from '../../service/access-context';
+import { performanceAccessContextService } from '../../service/access-context';
 import { performanceAssessmentService } from '../../service/assessment';
 import { resolvePerformanceRoleFact } from '../../service/role-fact';
 import { performanceSalaryService } from '../../service/salary';
 import { loadUserOptions } from '../../utils/lookup-options.js';
-import {
-	confirmElementAction,
-	runTrackedElementAction
-} from '../shared/action-feedback';
+import { confirmElementAction, runTrackedElementAction } from '../shared/action-feedback';
 import {
 	createElementWarningFromErrorHandler,
 	resolveErrorMessage,
@@ -719,31 +710,19 @@ async function submitChange(payload: {
 }
 
 function canEdit(row: SalaryRecord) {
-	return (
-		checkPerm(performanceSalaryService.permission.update) &&
-		row.status === 'draft'
-	);
+	return checkPerm(performanceSalaryService.permission.update) && row.status === 'draft';
 }
 
 function canConfirm(row: SalaryRecord) {
-	return (
-		checkPerm(performanceSalaryService.permission.confirm) &&
-		row.status === 'draft'
-	);
+	return checkPerm(performanceSalaryService.permission.confirm) && row.status === 'draft';
 }
 
 function canArchive(row: SalaryRecord) {
-	return (
-		checkPerm(performanceSalaryService.permission.archive) &&
-		row.status === 'confirmed'
-	);
+	return checkPerm(performanceSalaryService.permission.archive) && row.status === 'confirmed';
 }
 
 function canChange(row: SalaryRecord) {
-	return (
-		checkPerm(performanceSalaryService.permission.changeAdd) &&
-		row.status === 'confirmed'
-	);
+	return checkPerm(performanceSalaryService.permission.changeAdd) && row.status === 'confirmed';
 }
 
 function canViewSourceAssessment(row: SalaryRecord) {

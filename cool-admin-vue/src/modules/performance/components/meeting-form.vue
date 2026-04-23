@@ -189,7 +189,9 @@ watch(
 	() => props.modelValue,
 	value => {
 		Object.assign(localValue, createEmptyMeeting(), value || {});
-		localValue.participantIds = Array.isArray(value?.participantIds) ? [...value.participantIds] : [];
+		localValue.participantIds = Array.isArray(value?.participantIds)
+			? [...value.participantIds]
+			: [];
 	},
 	{
 		immediate: true,

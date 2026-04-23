@@ -37,7 +37,10 @@ export default class PerformanceCourseService extends BaseService {
 	}
 
 	fetchPage(data: CoursePageQuery) {
-		return asPerformanceServicePromise<CoursePageResult>(super.page(data), decodeCoursePageResult);
+		return asPerformanceServicePromise<CoursePageResult>(
+			super.page(data),
+			decodeCoursePageResult
+		);
 	}
 
 	fetchInfo(params: CourseInfoQuery) {

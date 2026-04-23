@@ -36,10 +36,7 @@ function decodeAssetStatus(value: unknown, field: string): AssetStatus {
 	return expectPerformanceServiceEnum(value, field, ASSET_STATUS);
 }
 
-function decodeAssetAssignmentStatus(
-	value: unknown,
-	field: string
-): AssetAssignmentStatus {
+function decodeAssetAssignmentStatus(value: unknown, field: string): AssetAssignmentStatus {
 	return expectPerformanceServiceEnum(value, field, ASSET_ASSIGNMENT_STATUS);
 }
 
@@ -58,12 +55,18 @@ export function decodeAssetAssignmentRecord(
 			record.assetStatus === undefined
 				? undefined
 				: decodeAssetStatus(record.assetStatus, `${field}.assetStatus`),
-		assigneeId: expectPerformanceServiceOptionalNumber(record.assigneeId, `${field}.assigneeId`),
+		assigneeId: expectPerformanceServiceOptionalNumber(
+			record.assigneeId,
+			`${field}.assigneeId`
+		),
 		assigneeName: expectPerformanceServiceOptionalString(
 			record.assigneeName,
 			`${field}.assigneeName`
 		),
-		departmentId: expectPerformanceServiceOptionalNumber(record.departmentId, `${field}.departmentId`),
+		departmentId: expectPerformanceServiceOptionalNumber(
+			record.departmentId,
+			`${field}.departmentId`
+		),
 		departmentName: expectPerformanceServiceOptionalString(
 			record.departmentName,
 			`${field}.departmentName`
@@ -86,7 +89,10 @@ export function decodeAssetAssignmentRecord(
 			record.status === undefined
 				? undefined
 				: decodeAssetAssignmentStatus(record.status, `${field}.status`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
 		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`)
 	};
 }

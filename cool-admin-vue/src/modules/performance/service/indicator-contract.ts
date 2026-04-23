@@ -41,10 +41,7 @@ function decodeIndicatorStatus(value: unknown, field: string): IndicatorStatus {
 	return value as IndicatorStatus;
 }
 
-export function decodeIndicatorRecord(
-	value: unknown,
-	field = 'indicatorRecord'
-): IndicatorRecord {
+export function decodeIndicatorRecord(value: unknown, field = 'indicatorRecord'): IndicatorRecord {
 	const record = expectPerformanceServiceRecord(value, field);
 
 	return {
@@ -59,10 +56,13 @@ export function decodeIndicatorRecord(
 			record.description === undefined
 				? undefined
 				: record.description === null
-				? null
-				: expectPerformanceServiceString(record.description, `${field}.description`),
+					? null
+					: expectPerformanceServiceString(record.description, `${field}.description`),
 		status: decodeIndicatorStatus(record.status, `${field}.status`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
 		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`)
 	};
 }

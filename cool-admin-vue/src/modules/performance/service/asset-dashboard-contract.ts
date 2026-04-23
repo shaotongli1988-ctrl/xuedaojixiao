@@ -101,7 +101,10 @@ function decodeAssetDashboardActionSummaryItem(
 	return {
 		actionCount: expectPerformanceServiceNumber(record.actionCount, `${field}.actionCount`),
 		assetCount: expectPerformanceServiceNumber(record.assetCount, `${field}.assetCount`),
-		documentCount: expectPerformanceServiceNumber(record.documentCount, `${field}.documentCount`)
+		documentCount: expectPerformanceServiceNumber(
+			record.documentCount,
+			`${field}.documentCount`
+		)
 	};
 }
 
@@ -127,11 +130,24 @@ function decodeAssetDashboardActivityItem(
 			record.operatorName,
 			`${field}.operatorName`
 		),
-		module: expectPerformanceServiceEnum(record.module, `${field}.module`, ASSET_DASHBOARD_MODULE),
-		actionLabel: expectPerformanceServiceOptionalString(record.actionLabel, `${field}.actionLabel`),
+		module: expectPerformanceServiceEnum(
+			record.module,
+			`${field}.module`,
+			ASSET_DASHBOARD_MODULE
+		),
+		actionLabel: expectPerformanceServiceOptionalString(
+			record.actionLabel,
+			`${field}.actionLabel`
+		),
 		objectNo: expectPerformanceServiceOptionalString(record.objectNo, `${field}.objectNo`),
-		objectName: expectPerformanceServiceOptionalString(record.objectName, `${field}.objectName`),
-		occurredAt: expectPerformanceServiceOptionalString(record.occurredAt, `${field}.occurredAt`),
+		objectName: expectPerformanceServiceOptionalString(
+			record.objectName,
+			`${field}.objectName`
+		),
+		occurredAt: expectPerformanceServiceOptionalString(
+			record.occurredAt,
+			`${field}.occurredAt`
+		),
 		assetId: decodeOptionalNullableNumber(record.assetId, `${field}.assetId`),
 		departmentId: decodeOptionalNullableNumber(record.departmentId, `${field}.departmentId`),
 		documentKey: decodeOptionalNullableString(record.documentKey, `${field}.documentKey`)
@@ -153,8 +169,14 @@ export function decodeAssetDashboardSummary(
 			record.pendingInboundCount,
 			`${field}.pendingInboundCount`
 		),
-		availableCount: expectPerformanceServiceNumber(record.availableCount, `${field}.availableCount`),
-		assignedCount: expectPerformanceServiceNumber(record.assignedCount, `${field}.assignedCount`),
+		availableCount: expectPerformanceServiceNumber(
+			record.availableCount,
+			`${field}.availableCount`
+		),
+		assignedCount: expectPerformanceServiceNumber(
+			record.assignedCount,
+			`${field}.assignedCount`
+		),
 		maintenanceCount: expectPerformanceServiceNumber(
 			record.maintenanceCount,
 			`${field}.maintenanceCount`
@@ -163,7 +185,10 @@ export function decodeAssetDashboardSummary(
 			record.inventoryingCount,
 			`${field}.inventoryingCount`
 		),
-		scrappedCount: expectPerformanceServiceNumber(record.scrappedCount, `${field}.scrappedCount`),
+		scrappedCount: expectPerformanceServiceNumber(
+			record.scrappedCount,
+			`${field}.scrappedCount`
+		),
 		lostCount: expectPerformanceServiceNumber(record.lostCount, `${field}.lostCount`),
 		totalOriginalAmount: expectPerformanceServiceNumber(
 			record.totalOriginalAmount,
@@ -214,8 +239,11 @@ export function decodeAssetDashboardSummary(
 				)
 			};
 		})(),
-		actionTimeline: expectPerformanceServiceArray(record.actionTimeline, `${field}.actionTimeline`).map(
-			(item, index) => decodeAssetDashboardActivityItem(item, `${field}.actionTimeline[${index}]`)
+		actionTimeline: expectPerformanceServiceArray(
+			record.actionTimeline,
+			`${field}.actionTimeline`
+		).map((item, index) =>
+			decodeAssetDashboardActivityItem(item, `${field}.actionTimeline[${index}]`)
 		),
 		recentActivities: expectPerformanceServiceArray(
 			record.recentActivities,

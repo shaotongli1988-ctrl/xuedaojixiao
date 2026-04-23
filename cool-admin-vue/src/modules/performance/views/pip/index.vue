@@ -90,7 +90,10 @@
 				<el-card shadow="never">
 					<div class="pip-page__stat-label">已完成/关闭</div>
 					<div class="pip-page__stat-value">
-						{{ rows.filter(item => ['completed', 'closed'].includes(item.status || '')).length }}
+						{{
+							rows.filter(item => ['completed', 'closed'].includes(item.status || ''))
+								.length
+						}}
 					</div>
 				</el-card>
 			</el-col>
@@ -125,7 +128,9 @@
 				</el-table-column>
 				<el-table-column prop="sourceReason" label="来源原因" min-width="220">
 					<template #default="{ row }">
-						<span class="pip-page__cell-text">{{ row.sourceReason || '评估单带入' }}</span>
+						<span class="pip-page__cell-text">{{
+							row.sourceReason || '评估单带入'
+						}}</span>
 					</template>
 				</el-table-column>
 				<el-table-column label="时间范围" min-width="200">
@@ -135,7 +140,9 @@
 				</el-table-column>
 				<el-table-column prop="status" label="状态" width="110">
 					<template #default="{ row }">
-						<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+						<el-tag :type="statusTagType(row.status)">{{
+							statusLabel(row.status)
+						}}</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
@@ -153,7 +160,12 @@
 						<el-button v-if="canEdit(row)" text type="primary" @click="openEdit(row)">
 							编辑
 						</el-button>
-						<el-button v-if="canStart(row)" text type="warning" @click="handleStart(row)">
+						<el-button
+							v-if="canStart(row)"
+							text
+							type="warning"
+							@click="handleStart(row)"
+						>
 							启动
 						</el-button>
 						<el-button v-if="canTrack(row)" text type="success" @click="openTrack(row)">
@@ -293,10 +305,7 @@
 						</el-form-item>
 					</el-col>
 					<el-col :span="24">
-						<el-form-item
-							label="来源原因"
-							prop="sourceReason"
-						>
+						<el-form-item label="来源原因" prop="sourceReason">
 							<el-input
 								v-model="form.sourceReason"
 								type="textarea"
@@ -346,10 +355,7 @@ import PipTrackDrawer from '../../components/pip-track-drawer.vue';
 import { useListPage } from '../../composables/use-list-page.js';
 import { performanceAssessmentService } from '../../service/assessment';
 import { performancePipService } from '../../service/pip';
-import {
-	promptElementAction,
-	runTrackedElementAction
-} from '../shared/action-feedback';
+import { promptElementAction, runTrackedElementAction } from '../shared/action-feedback';
 import {
 	createElementWarningFromErrorHandler,
 	resolveErrorMessage,
@@ -357,12 +363,7 @@ import {
 } from '../shared/error-message';
 import { loadUserOptions } from '../../utils/lookup-options.js';
 import { clearRoutePresetQuery } from '../../utils/route-preset.js';
-import {
-	type PipExportRow,
-	type PipRecord,
-	type UserOption,
-	createEmptyPip
-} from '../../types';
+import { type PipExportRow, type PipRecord, type UserOption, createEmptyPip } from '../../types';
 
 const PIP_STATUS_DICT_KEY = 'performance.pip.status';
 
@@ -491,8 +492,8 @@ async function loadUsers() {
 	userOptions.value = await loadUserOptions(
 		() =>
 			service.base.sys.user.page({
-			page: 1,
-			size: 200
+				page: 1,
+				size: 200
 			}),
 		createElementWarningFromErrorHandler('用户选项加载失败')
 	);
@@ -563,7 +564,8 @@ async function applyAssessmentSource() {
 		form.employeeId = assessment.employeeId;
 		form.ownerId = assessment.assessorId;
 		form.title = form.title || `PIP-${assessment.employeeName || assessment.employeeId}`;
-		form.improvementGoal = form.improvementGoal || assessment.managerFeedback || assessment.selfEvaluation || '';
+		form.improvementGoal =
+			form.improvementGoal || assessment.managerFeedback || assessment.selfEvaluation || '';
 		form.sourceReason = '';
 		ElMessage.success('评估信息已带入');
 	} catch (error: unknown) {

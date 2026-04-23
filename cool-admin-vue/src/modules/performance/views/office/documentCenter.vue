@@ -147,7 +147,9 @@
 				</el-table-column>
 				<el-table-column label="状态" width="110">
 					<template #default="{ row }">
-						<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+						<el-tag :type="statusTagType(row.status)">{{
+							statusLabel(row.status)
+						}}</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column prop="updateTime" label="更新时间" min-width="170">
@@ -157,13 +159,10 @@
 				</el-table-column>
 				<el-table-column label="操作" fixed="right" min-width="220">
 					<template #default="{ row }">
-						<el-button v-if="showInfoButton" text @click="openDetail(row)">详情</el-button>
-						<el-button
-							v-if="canEdit(row)"
-							text
-							type="primary"
-							@click="openEdit(row)"
+						<el-button v-if="showInfoButton" text @click="openDetail(row)"
+							>详情</el-button
 						>
+						<el-button v-if="canEdit(row)" text type="primary" @click="openEdit(row)">
 							编辑
 						</el-button>
 						<el-button
@@ -190,12 +189,7 @@
 			</div>
 		</el-card>
 
-		<el-drawer
-			v-model="detailVisible"
-			title="文件元数据详情"
-			size="720px"
-			destroy-on-close
-		>
+		<el-drawer v-model="detailVisible" title="文件元数据详情" size="720px" destroy-on-close>
 			<el-descriptions v-if="detailRecord" :column="2" border>
 				<el-descriptions-item label="文件编号">
 					{{ detailRecord.fileNo }}
@@ -213,7 +207,10 @@
 					{{ storageLabel(detailRecord.storage) }}
 				</el-descriptions-item>
 				<el-descriptions-item label="密级">
-					<el-tag :type="confidentialityTagType(detailRecord.confidentiality)" effect="plain">
+					<el-tag
+						:type="confidentialityTagType(detailRecord.confidentiality)"
+						effect="plain"
+					>
 						{{ confidentialityLabel(detailRecord.confidentiality) }}
 					</el-tag>
 				</el-descriptions-item>
@@ -270,7 +267,11 @@
 		>
 			<el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
 				<el-alert
-					:title="editingRecord?.id ? '编辑可维护元数据并执行状态切换；已归档文件不允许继续编辑。' : '新建记录默认保存为 draft，后续在编辑时可转为 review / published / archived。'"
+					:title="
+						editingRecord?.id
+							? '编辑可维护元数据并执行状态切换；已归档文件不允许继续编辑。'
+							: '新建记录默认保存为 draft，后续在编辑时可转为 review / published / archived。'
+					"
 					:type="editingRecord?.id ? 'warning' : 'info'"
 					:closable="false"
 					show-icon
@@ -373,7 +374,11 @@
 					</el-col>
 					<el-col :span="12">
 						<el-form-item label="状态" prop="status">
-							<el-select v-model="form.status" style="width: 100%" :disabled="!editingRecord?.id">
+							<el-select
+								v-model="form.status"
+								style="width: 100%"
+								:disabled="!editingRecord?.id"
+							>
 								<el-option
 									v-for="item in formStatusOptions"
 									:key="item.value"
@@ -430,10 +435,7 @@ import { useListPage } from '../../composables/use-list-page.js';
 import { performanceAccessContextService } from '../../service/access-context';
 import { performanceDocumentCenterService } from '../../service/documentCenter';
 import { resolvePerformanceRoleFact } from '../../service/role-fact';
-import {
-	confirmElementAction,
-	runTrackedElementAction
-} from '../shared/action-feedback';
+import { confirmElementAction, runTrackedElementAction } from '../shared/action-feedback';
 import {
 	resolveErrorMessage,
 	showElementErrorFromError,
@@ -524,10 +526,16 @@ const roleFact = computed(() =>
 	})
 );
 const showInfoButton = computed(() => checkPerm(performanceDocumentCenterService.permission.info));
-const showStatsSection = computed(() => checkPerm(performanceDocumentCenterService.permission.stats));
+const showStatsSection = computed(() =>
+	checkPerm(performanceDocumentCenterService.permission.stats)
+);
 const showAddButton = computed(() => checkPerm(performanceDocumentCenterService.permission.add));
-const showEditButton = computed(() => checkPerm(performanceDocumentCenterService.permission.update));
-const showDeleteButton = computed(() => checkPerm(performanceDocumentCenterService.permission.delete));
+const showEditButton = computed(() =>
+	checkPerm(performanceDocumentCenterService.permission.update)
+);
+const showDeleteButton = computed(() =>
+	checkPerm(performanceDocumentCenterService.permission.delete)
+);
 
 const documentList = useListPage({
 	createFilters: () => ({
@@ -563,7 +571,11 @@ const metricCards = computed(() => [
 	{ label: '已发布', value: stats.value.publishedCount || 0, helper: '可作为有效资料使用' },
 	{ label: '待审核', value: stats.value.reviewCount || 0, helper: '待后台管理复核发布' },
 	{ label: '已归档', value: stats.value.archivedCount || 0, helper: '历史版本与失效资料' },
-	{ label: '总容量(MB)', value: formatDecimal(stats.value.totalSizeMb), helper: '仅统计元数据容量摘要' },
+	{
+		label: '总容量(MB)',
+		value: formatDecimal(stats.value.totalSizeMb),
+		helper: '仅统计元数据容量摘要'
+	},
 	{ label: '累计下载', value: stats.value.totalDownloads || 0, helper: '用于判断资料热度' }
 ]);
 

@@ -89,8 +89,7 @@ function decodePurchaseOrderItemRecord(
 		itemName: expectPerformanceServiceString(record.itemName, `${field}.itemName`),
 		specification: decodeOptionalNullableString(record.specification, `${field}.specification`),
 		unit: decodeOptionalNullableString(record.unit, `${field}.unit`),
-		quantity:
-			expectPerformanceServiceOptionalNumber(record.quantity, `${field}.quantity`) ?? 0,
+		quantity: expectPerformanceServiceOptionalNumber(record.quantity, `${field}.quantity`) ?? 0,
 		unitPrice: decodeOptionalNullableNumber(record.unitPrice, `${field}.unitPrice`),
 		amount: decodeOptionalNullableNumber(record.amount, `${field}.amount`),
 		remark: decodeOptionalNullableString(record.remark, `${field}.remark`)
@@ -165,8 +164,14 @@ export function decodePurchaseOrderRecord(
 			record.supplierName,
 			`${field}.supplierName`
 		),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
-		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
+		updateTime: expectPerformanceServiceOptionalString(
+			record.updateTime,
+			`${field}.updateTime`
+		),
 		title: expectPerformanceServiceString(record.title, `${field}.title`),
 		requesterName: expectPerformanceServiceOptionalString(
 			record.requesterName,
@@ -214,34 +219,32 @@ export function decodePurchaseOrderRecord(
 				? undefined
 				: expectPerformanceServiceArray(record.items, `${field}.items`).map((item, index) =>
 						decodePurchaseOrderItemRecord(item, `${field}.items[${index}]`)
-				  ),
+					),
 		inquiryRecords:
 			record.inquiryRecords == null
 				? undefined
 				: expectPerformanceServiceArray(
 						record.inquiryRecords,
 						`${field}.inquiryRecords`
-				  ).map((item, index) =>
+					).map((item, index) =>
 						decodePurchaseOrderInquiryRecord(item, `${field}.inquiryRecords[${index}]`)
-				  ),
+					),
 		approvalLogs:
 			record.approvalLogs == null
 				? undefined
-				: expectPerformanceServiceArray(
-						record.approvalLogs,
-						`${field}.approvalLogs`
-				  ).map((item, index) =>
-						decodePurchaseOrderApprovalLog(item, `${field}.approvalLogs[${index}]`)
-				  ),
+				: expectPerformanceServiceArray(record.approvalLogs, `${field}.approvalLogs`).map(
+						(item, index) =>
+							decodePurchaseOrderApprovalLog(item, `${field}.approvalLogs[${index}]`)
+					),
 		receiptRecords:
 			record.receiptRecords == null
 				? undefined
 				: expectPerformanceServiceArray(
 						record.receiptRecords,
 						`${field}.receiptRecords`
-				  ).map((item, index) =>
+					).map((item, index) =>
 						decodePurchaseOrderReceiptRecord(item, `${field}.receiptRecords[${index}]`)
-				  ),
+					),
 		remark: decodeOptionalNullableString(record.remark, `${field}.remark`)
 	};
 }

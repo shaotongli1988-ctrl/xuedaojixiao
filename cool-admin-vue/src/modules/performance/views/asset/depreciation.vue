@@ -9,7 +9,11 @@
 			:columns="columns"
 			:filters="filters"
 			:create-filters="createFilters"
-			:fetch-page="performanceAssetDepreciationService.fetchPage.bind(performanceAssetDepreciationService)"
+			:fetch-page="
+				performanceAssetDepreciationService.fetchPage.bind(
+					performanceAssetDepreciationService
+				)
+			"
 			:toolbar-actions="toolbarActions"
 		/>
 		<el-card shadow="never" v-loading="loading">
@@ -17,9 +21,13 @@
 			<div class="asset-depreciation-page__summary">
 				<el-tag effect="plain">资产数 {{ summary.assetCount }}</el-tag>
 				<el-tag effect="plain">原值 {{ formatMoney(summary.totalOriginalAmount) }}</el-tag>
-				<el-tag effect="plain">累计折旧 {{ formatMoney(summary.totalAccumulatedDepreciation) }}</el-tag>
+				<el-tag effect="plain"
+					>累计折旧 {{ formatMoney(summary.totalAccumulatedDepreciation) }}</el-tag
+				>
 				<el-tag effect="plain">净值 {{ formatMoney(summary.totalNetValue) }}</el-tag>
-				<el-tag effect="plain">本月折旧 {{ formatMoney(summary.currentMonthDepreciation) }}</el-tag>
+				<el-tag effect="plain"
+					>本月折旧 {{ formatMoney(summary.currentMonthDepreciation) }}</el-tag
+				>
 			</div>
 		</el-card>
 	</div>
@@ -86,9 +94,10 @@ function createFilters() {
 async function loadSummary() {
 	loading.value = true;
 	try {
-		const result: AssetDepreciationSummary = await performanceAssetDepreciationService.fetchSummary({
-			depreciationMonth: createFilters().depreciationMonth
-		});
+		const result: AssetDepreciationSummary =
+			await performanceAssetDepreciationService.fetchSummary({
+				depreciationMonth: createFilters().depreciationMonth
+			});
 		Object.assign(summary, result || {});
 	} catch (error: unknown) {
 		showElementErrorFromError(error, '折旧汇总加载失败');

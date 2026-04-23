@@ -4,11 +4,7 @@
  * 维护重点：职位标准主记录与列表必须共享同一条结构边界，避免岗位状态和标签字段被异常响应污染。
  */
 
-import type {
-	JobStandardPageResult,
-	JobStandardRecord,
-	JobStandardStatus
-} from '../types';
+import type { JobStandardPageResult, JobStandardRecord, JobStandardStatus } from '../types';
 import {
 	decodePerformanceServicePageResult,
 	expectPerformanceServiceEnum,
@@ -57,7 +53,10 @@ export function decodeJobStandardRecord(
 			`${field}.targetDepartmentName`
 		),
 		jobLevel: decodeOptionalNullableString(record.jobLevel, `${field}.jobLevel`),
-		profileSummary: decodeOptionalNullableString(record.profileSummary, `${field}.profileSummary`),
+		profileSummary: decodeOptionalNullableString(
+			record.profileSummary,
+			`${field}.profileSummary`
+		),
 		requirementSummary: decodeOptionalNullableString(
 			record.requirementSummary,
 			`${field}.requirementSummary`
@@ -74,7 +73,10 @@ export function decodeJobStandardRecord(
 			record.status === undefined
 				? undefined
 				: decodeJobStandardStatus(record.status, `${field}.status`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
 		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`)
 	};
 }

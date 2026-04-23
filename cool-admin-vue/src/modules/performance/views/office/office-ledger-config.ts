@@ -101,7 +101,10 @@ function formatDate(value: string | null | undefined) {
 }
 
 function formatDocumentRef(
-	row: { relatedDocumentSummary?: { fileNo?: string; fileName?: string } | null } | null | undefined
+	row:
+		| { relatedDocumentSummary?: { fileNo?: string; fileName?: string } | null }
+		| null
+		| undefined
 ) {
 	if (row?.relatedDocumentSummary?.fileNo) {
 		return `${row.relatedDocumentSummary.fileNo} / ${row.relatedDocumentSummary.fileName}`;
@@ -109,10 +112,7 @@ function formatDocumentRef(
 	return '-';
 }
 
-function createBaseConfig<
-	TRecord extends OfficeLedgerBaseRecord,
-	TExtra extends object = {}
->(
+function createBaseConfig<TRecord extends OfficeLedgerBaseRecord, TExtra extends object = {}>(
 	config: OfficeLedgerModuleConfigInput<TRecord> & TExtra
 ): OfficeLedgerConfig<TRecord> & TExtra {
 	const statusMap = buildStatusMap(config.statusOptions);
@@ -147,9 +147,9 @@ function createBaseConfig<
 		canEditRow: row => !['archived'].includes(String(row?.status || '')),
 		canDeleteRow: row => !['archived'].includes(String(row?.status || '')),
 		getDeleteMessage: row =>
-			`确认删除“${
-				String(row?.[config.primaryTextProp] || row?.title || row?.id || '当前记录')
-			}”吗？此操作只移除元数据台账记录。`,
+			`确认删除“${String(
+				row?.[config.primaryTextProp] || row?.title || row?.id || '当前记录'
+			)}”吗？此操作只移除元数据台账记录。`,
 		statusMap,
 		...config
 	};
@@ -166,8 +166,20 @@ export const officeLedgerModules = {
 		notice: '只维护后台元数据，不保存真实扫描件、外部系统账号或监管密码。',
 		statusOptions: [...ANNUAL_INSPECTION_STATUS_OPTIONS],
 		filters: [
-			{ prop: 'keyword', label: '标题 / 编号', type: 'text', width: '240px', placeholder: '标题 / 材料编号' },
-			{ prop: 'status', label: '状态', type: 'select', width: '160px', optionsProp: 'status' },
+			{
+				prop: 'keyword',
+				label: '标题 / 编号',
+				type: 'text',
+				width: '240px',
+				placeholder: '标题 / 材料编号'
+			},
+			{
+				prop: 'status',
+				label: '状态',
+				type: 'select',
+				width: '160px',
+				optionsProp: 'status'
+			},
 			{
 				prop: 'category',
 				label: '年检分类',
@@ -231,7 +243,13 @@ export const officeLedgerModules = {
 			{ prop: 'version', label: '版本', type: 'text', required: true },
 			{ prop: 'completeness', label: '完整度', type: 'number', min: 0, precision: 0 },
 			{ prop: 'reminderDays', label: '提醒天数', type: 'number', min: 0, precision: 0 },
-			{ prop: 'status', label: '状态', type: 'select', required: true, optionsProp: 'status' },
+			{
+				prop: 'status',
+				label: '状态',
+				type: 'select',
+				required: true,
+				optionsProp: 'status'
+			},
 			{ prop: 'notes', label: '备注', type: 'textarea', span: 2, rows: 4 }
 		]
 	}),
@@ -245,8 +263,20 @@ export const officeLedgerModules = {
 		notice: '只维护后台元数据，不保存证书原图、展示页或对外分享链接。',
 		statusOptions: [...HONOR_STATUS_OPTIONS],
 		filters: [
-			{ prop: 'keyword', label: '标题 / 编号', type: 'text', width: '240px', placeholder: '荣誉标题 / 荣誉编号' },
-			{ prop: 'status', label: '状态', type: 'select', width: '160px', optionsProp: 'status' },
+			{
+				prop: 'keyword',
+				label: '标题 / 编号',
+				type: 'text',
+				width: '240px',
+				placeholder: '荣誉标题 / 荣誉编号'
+			},
+			{
+				prop: 'status',
+				label: '状态',
+				type: 'select',
+				width: '160px',
+				optionsProp: 'status'
+			},
 			{
 				prop: 'honorType',
 				label: '对象类型',
@@ -316,7 +346,13 @@ export const officeLedgerModules = {
 			{ prop: 'issuer', label: '授予单位', type: 'text', required: true },
 			{ prop: 'awardedAt', label: '授予日期', type: 'date', required: true },
 			{ prop: 'impactScore', label: '影响分', type: 'number', min: 0, precision: 0 },
-			{ prop: 'status', label: '状态', type: 'select', required: true, optionsProp: 'status' },
+			{
+				prop: 'status',
+				label: '状态',
+				type: 'select',
+				required: true,
+				optionsProp: 'status'
+			},
 			{ prop: 'notes', label: '备注', type: 'textarea', span: 2, rows: 4 }
 		]
 	}),
@@ -334,8 +370,20 @@ export const officeLedgerModules = {
 		},
 		statusOptions: [...PUBLICITY_MATERIAL_STATUS_OPTIONS],
 		filters: [
-			{ prop: 'keyword', label: '标题 / 编号', type: 'text', width: '240px', placeholder: '宣传标题 / 资料编号' },
-			{ prop: 'status', label: '状态', type: 'select', width: '160px', optionsProp: 'status' },
+			{
+				prop: 'keyword',
+				label: '标题 / 编号',
+				type: 'text',
+				width: '240px',
+				placeholder: '宣传标题 / 资料编号'
+			},
+			{
+				prop: 'status',
+				label: '状态',
+				type: 'select',
+				width: '160px',
+				optionsProp: 'status'
+			},
 			{
 				prop: 'materialType',
 				label: '资料类型',
@@ -370,9 +418,10 @@ export const officeLedgerModules = {
 		},
 		toPayload: form => ({
 			...form,
-			relatedDocumentId: Array.isArray(form.documentIds) && form.documentIds.length
-				? Number(form.documentIds[0])
-				: null,
+			relatedDocumentId:
+				Array.isArray(form.documentIds) && form.documentIds.length
+					? Number(form.documentIds[0])
+					: null,
 			tags: splitTextList(form.tagsText)
 		}),
 		statsCards: [
@@ -401,7 +450,12 @@ export const officeLedgerModules = {
 			{ prop: 'publishDate', label: '发布日期', type: 'date' },
 			{ prop: 'views', label: '浏览量' },
 			{ prop: 'downloads', label: '下载量' },
-			{ prop: 'relatedDocumentId', label: '关联文件', formatter: row => formatDocumentRef(row), span: 2 },
+			{
+				prop: 'relatedDocumentId',
+				label: '关联文件',
+				formatter: row => formatDocumentRef(row),
+				span: 2
+			},
 			{ prop: 'status', label: '状态', optionsProp: 'status', tag: true },
 			{ prop: 'notes', label: '备注', type: 'textarea', span: 2 }
 		],
@@ -427,7 +481,13 @@ export const officeLedgerModules = {
 			{ prop: 'publishDate', label: '发布日期', type: 'date', required: true },
 			{ prop: 'views', label: '浏览量', type: 'number', min: 0, precision: 0 },
 			{ prop: 'downloads', label: '下载量', type: 'number', min: 0, precision: 0 },
-			{ prop: 'status', label: '状态', type: 'select', required: true, optionsProp: 'status' },
+			{
+				prop: 'status',
+				label: '状态',
+				type: 'select',
+				required: true,
+				optionsProp: 'status'
+			},
 			{ prop: 'documentIds', label: '关联文件元数据', type: 'document-multi', span: 2 },
 			{ prop: 'notes', label: '备注', type: 'textarea', span: 2, rows: 4 }
 		]
@@ -442,8 +502,20 @@ export const officeLedgerModules = {
 		notice: '只维护协同元数据，不上传源文件、不提供评论流和审稿链接。',
 		statusOptions: [...DESIGN_COLLAB_STATUS_OPTIONS],
 		filters: [
-			{ prop: 'keyword', label: '标题 / 编号', type: 'text', width: '240px', placeholder: '任务标题 / 任务编号' },
-			{ prop: 'status', label: '状态', type: 'select', width: '160px', optionsProp: 'status' },
+			{
+				prop: 'keyword',
+				label: '标题 / 编号',
+				type: 'text',
+				width: '240px',
+				placeholder: '任务标题 / 任务编号'
+			},
+			{
+				prop: 'status',
+				label: '状态',
+				type: 'select',
+				width: '160px',
+				optionsProp: 'status'
+			},
 			{
 				prop: 'priority',
 				label: '优先级',
@@ -507,7 +579,13 @@ export const officeLedgerModules = {
 			{ prop: 'progress', label: '任务进度', type: 'number', min: 0, precision: 0 },
 			{ prop: 'workload', label: '工作量', type: 'number', min: 1, precision: 0 },
 			{ prop: 'relatedMaterialNo', label: '关联资料编号', type: 'text' },
-			{ prop: 'status', label: '状态', type: 'select', required: true, optionsProp: 'status' },
+			{
+				prop: 'status',
+				label: '状态',
+				type: 'select',
+				required: true,
+				optionsProp: 'status'
+			},
 			{ prop: 'notes', label: '备注', type: 'textarea', span: 2, rows: 4 }
 		]
 	}),
@@ -521,8 +599,20 @@ export const officeLedgerModules = {
 		notice: '只维护寄递元数据，不接第三方物流轨迹、面单打印和结算流程。',
 		statusOptions: [...EXPRESS_COLLAB_STATUS_OPTIONS],
 		filters: [
-			{ prop: 'keyword', label: '单号 / 订单', type: 'text', width: '260px', placeholder: '运单号 / 订单号 / 标题' },
-			{ prop: 'status', label: '状态', type: 'select', width: '160px', optionsProp: 'status' },
+			{
+				prop: 'keyword',
+				label: '单号 / 订单',
+				type: 'text',
+				width: '260px',
+				placeholder: '运单号 / 订单号 / 标题'
+			},
+			{
+				prop: 'status',
+				label: '状态',
+				type: 'select',
+				width: '160px',
+				optionsProp: 'status'
+			},
 			{
 				prop: 'serviceLevel',
 				label: '服务等级',
@@ -554,7 +644,13 @@ export const officeLedgerModules = {
 			{ prop: 'senderName', label: '寄件人', minWidth: 120 },
 			{ prop: 'receiverName', label: '收件人', minWidth: 120 },
 			{ prop: 'etaDate', label: '预计送达', minWidth: 130, type: 'date' },
-			{ prop: 'syncStatus', label: '同步状态', minWidth: 110, optionsProp: 'syncStatus', tag: true },
+			{
+				prop: 'syncStatus',
+				label: '同步状态',
+				minWidth: 110,
+				optionsProp: 'syncStatus',
+				tag: true
+			},
 			{ prop: 'status', label: '状态', width: 110, optionsProp: 'status', tag: true }
 		],
 		detailFields: [
@@ -598,7 +694,13 @@ export const officeLedgerModules = {
 			{ prop: 'lastEvent', label: '最近事件', type: 'text' },
 			{ prop: 'lastUpdate', label: '最近更新时间', type: 'date', required: true },
 			{ prop: 'etaDate', label: '预计送达', type: 'date', required: true },
-			{ prop: 'status', label: '状态', type: 'select', required: true, optionsProp: 'status' },
+			{
+				prop: 'status',
+				label: '状态',
+				type: 'select',
+				required: true,
+				optionsProp: 'status'
+			},
 			{ prop: 'notes', label: '备注', type: 'textarea', span: 2, rows: 4 }
 		]
 	}),
@@ -615,8 +717,20 @@ export const officeLedgerModules = {
 		statusOptions: [...VEHICLE_STATUS_OPTIONS],
 		vehicleType: [...VEHICLE_TYPE_OPTIONS],
 		filters: [
-			{ prop: 'keyword', label: '车辆编号 / 车牌', type: 'text', width: '240px', placeholder: '车辆编号 / 车牌 / 品牌 / 型号' },
-			{ prop: 'status', label: '状态', type: 'select', width: '160px', optionsProp: 'status' },
+			{
+				prop: 'keyword',
+				label: '车辆编号 / 车牌',
+				type: 'text',
+				width: '240px',
+				placeholder: '车辆编号 / 车牌 / 品牌 / 型号'
+			},
+			{
+				prop: 'status',
+				label: '状态',
+				type: 'select',
+				width: '160px',
+				optionsProp: 'status'
+			},
 			{
 				prop: 'vehicleType',
 				label: '车辆类型',
@@ -691,7 +805,13 @@ export const officeLedgerModules = {
 			{ prop: 'registerDate', label: '登记日期', type: 'date', required: true },
 			{ prop: 'inspectionDueDate', label: '年检到期', type: 'date' },
 			{ prop: 'insuranceDueDate', label: '保险到期', type: 'date' },
-			{ prop: 'status', label: '状态', type: 'select', required: true, optionsProp: 'status' },
+			{
+				prop: 'status',
+				label: '状态',
+				type: 'select',
+				required: true,
+				optionsProp: 'status'
+			},
 			{ prop: 'usageScope', label: '使用范围', type: 'textarea', span: 2, rows: 3 },
 			{ prop: 'notes', label: '备注', type: 'textarea', span: 2, rows: 4 }
 		]
@@ -709,8 +829,20 @@ export const officeLedgerModules = {
 		statusOptions: [...INTELLECTUAL_PROPERTY_STATUS_OPTIONS],
 		ipType: [...INTELLECTUAL_PROPERTY_TYPE_OPTIONS],
 		filters: [
-			{ prop: 'keyword', label: '编号 / 标题', type: 'text', width: '240px', placeholder: '编号 / 标题 / 归属人 / 登记号' },
-			{ prop: 'status', label: '状态', type: 'select', width: '160px', optionsProp: 'status' },
+			{
+				prop: 'keyword',
+				label: '编号 / 标题',
+				type: 'text',
+				width: '240px',
+				placeholder: '编号 / 标题 / 归属人 / 登记号'
+			},
+			{
+				prop: 'status',
+				label: '状态',
+				type: 'select',
+				width: '160px',
+				optionsProp: 'status'
+			},
 			{
 				prop: 'ipType',
 				label: '类型',
@@ -789,7 +921,13 @@ export const officeLedgerModules = {
 				type: 'select',
 				options: [...INTELLECTUAL_PROPERTY_RISK_LEVEL_OPTIONS]
 			},
-			{ prop: 'status', label: '状态', type: 'select', required: true, optionsProp: 'status' },
+			{
+				prop: 'status',
+				label: '状态',
+				type: 'select',
+				required: true,
+				optionsProp: 'status'
+			},
 			{ prop: 'usageScope', label: '使用范围', type: 'textarea', span: 2, rows: 3 },
 			{ prop: 'notes', label: '备注', type: 'textarea', span: 2, rows: 4 }
 		],

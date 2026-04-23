@@ -59,7 +59,9 @@ export interface OfficeLedgerFieldOption {
 	type?: string;
 }
 
-export interface OfficeLedgerField<TRecord extends OfficeLedgerBaseRecord = OfficeLedgerBaseRecord> {
+export interface OfficeLedgerField<
+	TRecord extends OfficeLedgerBaseRecord = OfficeLedgerBaseRecord
+> {
 	prop: string;
 	label: string;
 	type?: string;

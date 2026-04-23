@@ -18,7 +18,7 @@ function parse(value: any) {
 		!String(user.info?.permissionMask || '').trim() && menu.perms.length
 			? resolvePermissionMask(menu.perms, {
 					isAdmin
-			  })
+				})
 			: '';
 
 	if (typeof value == 'string') {
@@ -33,9 +33,7 @@ function parse(value: any) {
 		}
 
 		const permissionBit = PERMISSION_BIT_BY_KEY[permissionKey];
-		const permissionMask = String(
-			user.info?.permissionMask || menuPermissionMask || ''
-		).trim();
+		const permissionMask = String(user.info?.permissionMask || menuPermissionMask || '').trim();
 
 		if (permissionBit === undefined) {
 			return false;

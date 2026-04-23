@@ -14,10 +14,24 @@
 		:form-fields="formFields"
 		:create-filters="createFilters"
 		:create-empty="createEmptyAssetMaintenance"
-		:fetch-page="performanceAssetMaintenanceService.fetchPage.bind(performanceAssetMaintenanceService)"
-		:create-item="performanceAssetMaintenanceService.createMaintenance.bind(performanceAssetMaintenanceService)"
-		:update-item="performanceAssetMaintenanceService.updateMaintenance.bind(performanceAssetMaintenanceService)"
-		:remove-item="performanceAssetMaintenanceService.removeMaintenance.bind(performanceAssetMaintenanceService)"
+		:fetch-page="
+			performanceAssetMaintenanceService.fetchPage.bind(performanceAssetMaintenanceService)
+		"
+		:create-item="
+			performanceAssetMaintenanceService.createMaintenance.bind(
+				performanceAssetMaintenanceService
+			)
+		"
+		:update-item="
+			performanceAssetMaintenanceService.updateMaintenance.bind(
+				performanceAssetMaintenanceService
+			)
+		"
+		:remove-item="
+			performanceAssetMaintenanceService.removeMaintenance.bind(
+				performanceAssetMaintenanceService
+			)
+		"
 		:row-actions="rowActions"
 		create-label="新增维护"
 		edit-label="编辑维护"
@@ -28,14 +42,11 @@
 import { computed, onMounted, ref } from 'vue';
 import AssetCrudPage from './asset-crud-page.vue';
 import { performanceAssetMaintenanceService } from '../../service/asset-maintenance';
-import {
-	createEmptyAssetMaintenance,
-	type AssetMaintenanceRecord
-} from '../../types';
+import { createEmptyAssetMaintenance, type AssetMaintenanceRecord } from '../../types';
 import {
 	createElementLookupWarningHandler,
 	loadAssetOptions,
-	toAssetSelectOptions,
+	toAssetSelectOptions
 } from './lookups';
 import { assetStatusTagMap, enumOptions, formatMoney, maintenanceStatusTagMap } from './shared';
 import { PERMISSIONS } from '../../../base/generated/permissions.generated';

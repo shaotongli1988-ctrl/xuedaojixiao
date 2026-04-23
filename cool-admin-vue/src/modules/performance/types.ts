@@ -380,10 +380,7 @@ export interface GoalOpsTrendRow {
 	totalTargetValue: number;
 	completionRate: number;
 }
-export type {
-	ContractPageQuery,
-	ContractSaveRequest
-} from './generated/contract';
+export type { ContractPageQuery, ContractSaveRequest } from './generated/contract';
 export type {
 	CapabilityModelPageQuery,
 	CapabilityModelSaveRequest,
@@ -398,14 +395,8 @@ export type {
 	HiringStatusUpdateRequest,
 	HiringUpdateStatus
 } from './generated/hiring';
-export type {
-	IndicatorPageQuery,
-	IndicatorSaveRequest
-} from './generated/indicator';
-export type {
-	InterviewPageQuery,
-	InterviewSaveRequest
-} from './generated/interview';
+export type { IndicatorPageQuery, IndicatorSaveRequest } from './generated/indicator';
+export type { InterviewPageQuery, InterviewSaveRequest } from './generated/interview';
 export type {
 	JobStandardPageQuery,
 	JobStandardSaveRequest,
@@ -439,10 +430,7 @@ export type {
 	ResumePoolTalentAssetConvertResult,
 	ResumePoolUploadAttachmentRequest
 } from './generated/resume-pool';
-export type {
-	TalentAssetPageQuery,
-	TalentAssetSaveRequest
-} from './generated/talent-asset';
+export type { TalentAssetPageQuery, TalentAssetSaveRequest } from './generated/talent-asset';
 
 export type AssessmentMode = AssessmentPageMode;
 export type AssessmentDraft = Omit<AssessmentSaveRequest, 'employeeId' | 'assessorId'> & {
@@ -477,8 +465,7 @@ export type DashboardCrossScopeType = GeneratedDashboardCrossScopeType;
 export type DashboardCrossDataStatus = GeneratedDashboardCrossDataStatus;
 export type DashboardSummaryQuery = GeneratedDashboardSummaryQuery;
 export type DashboardStageProgressItem = GeneratedDashboardStageProgressItem;
-export type DashboardDepartmentDistributionItem =
-	GeneratedDashboardDepartmentDistributionItem;
+export type DashboardDepartmentDistributionItem = GeneratedDashboardDepartmentDistributionItem;
 export type DashboardGradeDistributionItem = GeneratedDashboardGradeDistributionItem;
 export type RecruitPlanStatus = GeneratedRecruitPlanStatus;
 export type ContractStatus = GeneratedContractStatus;
@@ -635,10 +622,7 @@ export type ContractRecord = Omit<GeneratedContractRecord, 'employeeId'> & {
 	employeeId: number | undefined;
 };
 
-export type ContractPageResult = Omit<
-	ApiResponseData<GeneratedContractPageResponse>,
-	'list'
-> & {
+export type ContractPageResult = Omit<ApiResponseData<GeneratedContractPageResponse>, 'list'> & {
 	list: ContractRecord[];
 };
 export interface ContractInfoQuery {
@@ -921,10 +905,7 @@ export interface MaterialOption {
 
 export type LookupErrorHandler = (error: unknown) => void;
 
-export type SupplierPageResult = Omit<
-	ApiResponseData<GeneratedSupplierPageResponse>,
-	'list'
-> & {
+export type SupplierPageResult = Omit<ApiResponseData<GeneratedSupplierPageResponse>, 'list'> & {
 	list: SupplierRecord[];
 };
 export type SupplierPageQuery = import('./generated/supplier').SupplierFetchPageRequest;
@@ -993,12 +974,10 @@ export type CourseEnrollmentPageResult = Omit<
 > & {
 	list: CourseEnrollmentRecord[];
 };
-export type CourseEnrollmentPageQuery = import('./generated/course').CourseFetchEnrollmentPageRequest;
+export type CourseEnrollmentPageQuery =
+	import('./generated/course').CourseFetchEnrollmentPageRequest;
 
-export type DocumentCenterRecord = Omit<
-	GeneratedDocumentCenterRecord,
-	'sizeMb' | 'expireDate'
-> & {
+export type DocumentCenterRecord = Omit<GeneratedDocumentCenterRecord, 'sizeMb' | 'expireDate'> & {
 	sizeMb?: number | null;
 	expireDate?: string | null;
 };
@@ -1192,10 +1171,7 @@ export type InterviewRecord = Omit<
 	status?: InterviewStatus;
 };
 
-export type InterviewPageResult = Omit<
-	ApiResponseData<GeneratedInterviewPageResponse>,
-	'list'
-> & {
+export type InterviewPageResult = Omit<ApiResponseData<GeneratedInterviewPageResponse>, 'list'> & {
 	list: InterviewRecord[];
 };
 export interface InterviewInfoQuery {
@@ -1238,10 +1214,7 @@ export interface ResumePoolInfoQuery {
 	id: number;
 }
 
-export type MeetingRecord = Omit<
-	GeneratedMeetingRecord,
-	'organizerId' | 'status'
-> & {
+export type MeetingRecord = Omit<GeneratedMeetingRecord, 'organizerId' | 'status'> & {
 	organizerId: number | undefined;
 	participantIds?: number[];
 	status?: MeetingStatus;
@@ -1338,23 +1311,24 @@ export type WorkPlanDeletePayload = import('./generated/work-plan').WorkPlanDele
 export type WorkPlanStartPayload = import('./generated/work-plan').WorkPlanStartRequest;
 export type WorkPlanCompletePayload = import('./generated/work-plan').WorkPlanCompleteRequest;
 export type WorkPlanCancelPayload = import('./generated/work-plan').WorkPlanCancelRequest;
-export type WorkPlanSyncPayload = import('./generated/work-plan').WorkPlanSyncDingtalkApprovalRequest & {
-	sourceTitle: string;
-	sourceBizType: string;
-	sourceBizId?: string;
-	externalInstanceId: string;
-	externalProcessCode?: string;
-	sourceStatus: string;
-	planTitle?: string;
-	planDescription?: string;
-	ownerDepartmentId?: number;
-	ownerId?: number;
-	assigneeIds: number[];
-	priority: WorkPlanPriority;
-	plannedStartDate?: string;
-	plannedEndDate?: string;
-	sourceSnapshot?: Record<string, unknown>;
-};
+export type WorkPlanSyncPayload =
+	import('./generated/work-plan').WorkPlanSyncDingtalkApprovalRequest & {
+		sourceTitle: string;
+		sourceBizType: string;
+		sourceBizId?: string;
+		externalInstanceId: string;
+		externalProcessCode?: string;
+		sourceStatus: string;
+		planTitle?: string;
+		planDescription?: string;
+		ownerDepartmentId?: number;
+		ownerId?: number;
+		assigneeIds: number[];
+		priority: WorkPlanPriority;
+		plannedStartDate?: string;
+		plannedEndDate?: string;
+		sourceSnapshot?: Record<string, unknown>;
+	};
 
 /**
  * 统一工作计划默认结构和数组字段，避免页面层自己补空数组和默认值。
@@ -1398,16 +1372,20 @@ export type TeacherAgentPageResult = Omit<
 > & {
 	list: TeacherAgentRecord[];
 };
-export type TeacherAgentPageQuery = import('./generated/teacher-agent').TeacherAgentFetchPageRequest & {
-	page: number;
-	size: number;
-};
+export type TeacherAgentPageQuery =
+	import('./generated/teacher-agent').TeacherAgentFetchPageRequest & {
+		page: number;
+		size: number;
+	};
 export type TeacherAgentInfoQuery = import('./generated/teacher-agent').TeacherAgentFetchInfoQuery;
 export type TeacherAgentCreatePayload = Partial<TeacherAgentRecord>;
 export type TeacherAgentUpdatePayload = Partial<TeacherAgentRecord> & { id: number };
-export type TeacherAgentUpdateStatusPayload = import('./generated/teacher-agent').TeacherAgentUpdateStatusRequest;
-export type TeacherAgentBlacklistPayload = import('./generated/teacher-agent').TeacherAgentBlacklistRequest;
-export type TeacherAgentUnblacklistPayload = import('./generated/teacher-agent').TeacherAgentUnblacklistRequest;
+export type TeacherAgentUpdateStatusPayload =
+	import('./generated/teacher-agent').TeacherAgentUpdateStatusRequest;
+export type TeacherAgentBlacklistPayload =
+	import('./generated/teacher-agent').TeacherAgentBlacklistRequest;
+export type TeacherAgentUnblacklistPayload =
+	import('./generated/teacher-agent').TeacherAgentUnblacklistRequest;
 
 export type TeacherAgentRelationRecord = Omit<
 	GeneratedTeacherAgentRelationRecord,
@@ -1494,14 +1472,16 @@ export type TeacherAttributionPageQuery =
 		status?: TeacherAttributionStatus | string;
 		teacherId?: number;
 	};
-export type TeacherAttributionInfoQuery = import('./generated/teacher-attribution').TeacherAttributionFetchInfoQuery;
+export type TeacherAttributionInfoQuery =
+	import('./generated/teacher-attribution').TeacherAttributionFetchInfoQuery;
 export interface TeacherAttributionAssignPayload {
 	teacherId: number;
 	agentId?: number | null;
 	sourceRemark?: string;
 }
 export type TeacherAttributionChangePayload = TeacherAttributionAssignPayload;
-export type TeacherAttributionRemovePayload = import('./generated/teacher-attribution').TeacherAttributionRemoveRequest;
+export type TeacherAttributionRemovePayload =
+	import('./generated/teacher-attribution').TeacherAttributionRemoveRequest;
 
 export type TeacherAttributionConflictRecord = Omit<
 	GeneratedTeacherAttributionConflictRecord,
@@ -1693,27 +1673,29 @@ export type TeacherInfoPageResult = Omit<
 > & {
 	list: TeacherInfoRecord[];
 };
-export type TeacherInfoPageQuery = import('./generated/teacher-info').TeacherInfoFetchPageRequest & {
-	page: number;
-	size: number;
-	keyword?: string;
-	cooperationStatus?: TeacherCooperationStatus | string;
-	ownerDepartmentId?: number;
-};
+export type TeacherInfoPageQuery =
+	import('./generated/teacher-info').TeacherInfoFetchPageRequest & {
+		page: number;
+		size: number;
+		keyword?: string;
+		cooperationStatus?: TeacherCooperationStatus | string;
+		ownerDepartmentId?: number;
+	};
 export type TeacherInfoInfoQuery = import('./generated/teacher-info').TeacherInfoFetchInfoQuery;
 export type TeacherInfoCreatePayload = Partial<TeacherInfoRecord>;
 export type TeacherInfoUpdatePayload = Partial<TeacherInfoRecord> & { id: number };
 export type TeacherInfoAssignPayload = import('./generated/teacher-info').TeacherInfoAssignRequest;
-export type TeacherInfoUpdateStatusPayload = import('./generated/teacher-info').TeacherInfoUpdateStatusRequest;
-export type TeacherInfoAttributionInfoQuery = import('./generated/teacher-info').TeacherInfoFetchAttributionInfoQuery;
-export type TeacherInfoAttributionHistoryQuery = import('./generated/teacher-info').TeacherInfoFetchAttributionHistoryQuery;
+export type TeacherInfoUpdateStatusPayload =
+	import('./generated/teacher-info').TeacherInfoUpdateStatusRequest;
+export type TeacherInfoAttributionInfoQuery =
+	import('./generated/teacher-info').TeacherInfoFetchAttributionInfoQuery;
+export type TeacherInfoAttributionHistoryQuery =
+	import('./generated/teacher-info').TeacherInfoFetchAttributionHistoryQuery;
 
 /**
  * 统一班主任资源的标签字段，避免页面层各自兼容 string/string[]/null。
  */
-export function normalizeTeacherInfoDomainRecord(
-	record: TeacherInfoRecord
-): TeacherInfoRecord {
+export function normalizeTeacherInfoDomainRecord(record: TeacherInfoRecord): TeacherInfoRecord {
 	return {
 		...record,
 		projectTags: normalizeUnknownStringArray(record.projectTags)
@@ -1754,12 +1736,14 @@ export type TeacherFollowPageResult = Omit<
 > & {
 	list: TeacherFollowRecord[];
 };
-export type TeacherFollowPageQuery = import('./generated/teacher-follow').TeacherFollowFetchPageRequest & {
-	page: number;
-	size: number;
-	teacherId: number;
-};
-export type TeacherFollowCreatePayload = import('./generated/teacher-follow').TeacherFollowCreateTeacherFollowRequest;
+export type TeacherFollowPageQuery =
+	import('./generated/teacher-follow').TeacherFollowFetchPageRequest & {
+		page: number;
+		size: number;
+		teacherId: number;
+	};
+export type TeacherFollowCreatePayload =
+	import('./generated/teacher-follow').TeacherFollowCreateTeacherFollowRequest;
 
 export type TeacherClassRecord = Omit<
 	GeneratedTeacherClassRecord,
@@ -1793,16 +1777,18 @@ export type TeacherClassPageResult = Omit<
 > & {
 	list: TeacherClassRecord[];
 };
-export type TeacherClassPageQuery = import('./generated/teacher-class').TeacherClassFetchPageRequest & {
-	page: number;
-	size: number;
-	keyword?: string;
-	status?: TeacherClassStatus | string;
-};
+export type TeacherClassPageQuery =
+	import('./generated/teacher-class').TeacherClassFetchPageRequest & {
+		page: number;
+		size: number;
+		keyword?: string;
+		status?: TeacherClassStatus | string;
+	};
 export type TeacherClassInfoQuery = import('./generated/teacher-class').TeacherClassFetchInfoQuery;
 export type TeacherClassCreatePayload = Partial<TeacherClassRecord>;
 export type TeacherClassUpdatePayload = Partial<TeacherClassRecord> & { id: number };
-export type TeacherClassRemovePayload = import('./generated/teacher-class').TeacherClassRemoveTeacherClassRequest;
+export type TeacherClassRemovePayload =
+	import('./generated/teacher-class').TeacherClassRemoveTeacherClassRequest;
 
 export type TeacherDashboardDistributionItem = Omit<
 	GeneratedTeacherDashboardDistributionItem,
@@ -1838,7 +1824,8 @@ export type TeacherDashboardSummary = Omit<
 	classStatusDistribution?: TeacherDashboardDistributionItem[];
 	[key: string]: unknown;
 };
-export type TeacherDashboardSummaryQuery = import('./generated/teacher-dashboard').TeacherDashboardFetchSummaryQuery;
+export type TeacherDashboardSummaryQuery =
+	import('./generated/teacher-dashboard').TeacherDashboardFetchSummaryQuery;
 
 export type TeacherTodoRecord = Omit<
 	GeneratedTeacherTodoRecord,
@@ -1872,12 +1859,13 @@ export type TeacherTodoPageResult = Omit<
 > & {
 	list: TeacherTodoRecord[];
 };
-export type TeacherTodoPageQuery = import('./generated/teacher-todo').TeacherTodoFetchPageRequest & {
-	page: number;
-	size: number;
-	keyword?: string;
-	todoBucket?: TeacherTodoBucket | string;
-};
+export type TeacherTodoPageQuery =
+	import('./generated/teacher-todo').TeacherTodoFetchPageRequest & {
+		page: number;
+		size: number;
+		keyword?: string;
+		todoBucket?: TeacherTodoBucket | string;
+	};
 
 export type JobStandardRecord = Omit<
 	GeneratedJobStandardRecord,
@@ -1936,14 +1924,8 @@ function normalizeOptionalString(value: unknown): string | null {
 }
 
 function normalizeUnknownStringArray(value: unknown): string[] {
-	const source = Array.isArray(value)
-		? value
-		: typeof value === 'string'
-			? value.split(',')
-			: [];
-	return Array.from(
-		new Set(source.map(item => String(item || '').trim()).filter(Boolean))
-	);
+	const source = Array.isArray(value) ? value : typeof value === 'string' ? value.split(',') : [];
+	return Array.from(new Set(source.map(item => String(item || '').trim()).filter(Boolean)));
 }
 
 function normalizeRecruitPlanStatusValue(value: unknown): RecruitPlanStatus | null {
@@ -1981,7 +1963,9 @@ export function normalizeRecruitPlanDomainRecord(record: RecruitPlanRecord): Rec
 					...rawSourceSnapshot,
 					sourceResource: rawSourceSnapshot.sourceResource || 'jobStandard',
 					jobStandardId: normalizePositiveIntegerOrNull(
-						record.jobStandardId ?? rawSourceSnapshot.jobStandardId ?? rawSourceSnapshot.id
+						record.jobStandardId ??
+							rawSourceSnapshot.jobStandardId ??
+							rawSourceSnapshot.id
 					),
 					jobStandardPositionName:
 						normalizeOptionalString(
@@ -1992,7 +1976,8 @@ export function normalizeRecruitPlanDomainRecord(record: RecruitPlanRecord): Rec
 						) || null,
 					jobStandardRequirementSummary:
 						normalizeOptionalString(
-							rawSourceSnapshot.jobStandardRequirementSummary ?? record.requirementSummary
+							rawSourceSnapshot.jobStandardRequirementSummary ??
+								record.requirementSummary
 						) || null,
 					targetDepartmentId: normalizePositiveIntegerOrNull(
 						rawSourceSnapshot.targetDepartmentId ?? record.targetDepartmentId
@@ -2004,7 +1989,7 @@ export function normalizeRecruitPlanDomainRecord(record: RecruitPlanRecord): Rec
 								rawSourceSnapshot.positionName ??
 								record.positionName
 						) || null
-			  }
+				}
 			: null;
 
 	return {
@@ -2104,7 +2089,7 @@ export function normalizeResumePoolDomainRecord(record: ResumePoolRecord): Resum
 								record.targetPosition ??
 								jobStandardPositionName
 						) || null
-			  }
+				}
 			: null;
 
 	return {
@@ -2135,10 +2120,10 @@ export function normalizeInterviewDomainRecord(record: InterviewRecord): Intervi
 					(rawSourceSnapshot.talentAssetId
 						? 'talentAsset'
 						: rawSourceSnapshot.resumePoolId
-						? 'resumePool'
-						: rawSourceSnapshot.recruitPlanId
-						? 'recruitPlan'
-						: null),
+							? 'resumePool'
+							: rawSourceSnapshot.recruitPlanId
+								? 'recruitPlan'
+								: null),
 				talentAssetId: normalizePositiveIntegerOrNull(rawSourceSnapshot.talentAssetId),
 				resumePoolId: normalizePositiveIntegerOrNull(
 					record.resumePoolId ?? rawSourceSnapshot.resumePoolId
@@ -2146,19 +2131,23 @@ export function normalizeInterviewDomainRecord(record: InterviewRecord): Intervi
 				recruitPlanId: normalizePositiveIntegerOrNull(
 					record.recruitPlanId ?? rawSourceSnapshot.recruitPlanId
 				),
-				recruitPlanStatus: normalizeRecruitPlanStatusValue(rawSourceSnapshot.recruitPlanStatus),
+				recruitPlanStatus: normalizeRecruitPlanStatusValue(
+					rawSourceSnapshot.recruitPlanStatus
+				),
 				candidateName:
-					normalizeOptionalString(rawSourceSnapshot.candidateName ?? record.candidateName) ||
-					null,
+					normalizeOptionalString(
+						rawSourceSnapshot.candidateName ?? record.candidateName
+					) || null,
 				targetDepartmentId: normalizePositiveIntegerOrNull(
 					rawSourceSnapshot.targetDepartmentId ?? record.departmentId
 				),
 				targetPosition:
-					normalizeOptionalString(rawSourceSnapshot.targetPosition ?? record.position) || null,
+					normalizeOptionalString(rawSourceSnapshot.targetPosition ?? record.position) ||
+					null,
 				interviewStatus: normalizeInterviewStatusValue(
 					rawSourceSnapshot.interviewStatus ?? record.status
 				)
-		  }
+			}
 		: normalizeInterviewSourceSummary(record);
 
 	return {
@@ -2182,8 +2171,8 @@ function normalizeInterviewSourceSummary(
 		record.resumePoolSummary && typeof record.resumePoolSummary === 'object'
 			? record.resumePoolSummary
 			: record.resumePoolSnapshot && typeof record.resumePoolSnapshot === 'object'
-			? record.resumePoolSnapshot
-			: null;
+				? record.resumePoolSnapshot
+				: null;
 	if (resumePoolSummary) {
 		return {
 			sourceResource: 'resumePool',
@@ -2216,8 +2205,8 @@ function normalizeInterviewSourceSummary(
 		record.recruitPlanSummary && typeof record.recruitPlanSummary === 'object'
 			? record.recruitPlanSummary
 			: record.recruitPlanSnapshot && typeof record.recruitPlanSnapshot === 'object'
-			? record.recruitPlanSnapshot
-			: null;
+				? record.recruitPlanSnapshot
+				: null;
 	if (recruitPlanSummary) {
 		return {
 			sourceResource: 'recruitPlan',
@@ -2308,10 +2297,7 @@ export type IndicatorRemovePayload = import('./generated/assessment').DeleteIdsR
 
 export type FeedbackRelationType = '上级' | '同级' | '下级' | '协作人';
 
-export type FeedbackTaskRelationItem = Omit<
-	GeneratedFeedbackTaskRelationItem,
-	'relationType'
-> & {
+export type FeedbackTaskRelationItem = Omit<GeneratedFeedbackTaskRelationItem, 'relationType'> & {
 	relationType: FeedbackRelationType | string;
 };
 
@@ -2319,10 +2305,7 @@ export type FeedbackRecord = Omit<GeneratedFeedbackRecord, 'relationType'> & {
 	relationType: FeedbackRelationType | string;
 };
 
-export type FeedbackSummary = Omit<
-	ApiResponseData<GeneratedFeedbackSummaryResponse>,
-	'records'
-> & {
+export type FeedbackSummary = Omit<ApiResponseData<GeneratedFeedbackSummaryResponse>, 'records'> & {
 	records: FeedbackRecord[];
 };
 
@@ -2402,10 +2385,7 @@ export type PromotionRecord = Omit<
 	reviewRecords?: PromotionReviewRecord[];
 };
 
-export type PromotionPageResult = Omit<
-	ApiResponseData<GeneratedPromotionPageResponse>,
-	'list'
-> & {
+export type PromotionPageResult = Omit<ApiResponseData<GeneratedPromotionPageResponse>, 'list'> & {
 	list: PromotionRecord[];
 };
 export type PromotionPageQuery = import('./generated/promotion').PromotionFetchPageRequest & {
@@ -2495,7 +2475,11 @@ export type AssetDashboardActionSummaryItem = GeneratedAssetDashboardActionSumma
 
 export type AssetDashboardSummary = Omit<
 	ApiResponseData<GeneratedAssetDashboardSummaryResponse>,
-	'statusDistribution' | 'categoryDistribution' | 'actionOverview' | 'actionTimeline' | 'recentActivities'
+	| 'statusDistribution'
+	| 'categoryDistribution'
+	| 'actionOverview'
+	| 'actionTimeline'
+	| 'recentActivities'
 > & {
 	statusDistribution: AssetStatusDistributionItem[];
 	categoryDistribution: AssetCategoryDistributionItem[];
@@ -2508,18 +2492,12 @@ export type AssetDashboardSummary = Omit<
 	recentActivities: AssetDashboardActivityItem[];
 };
 
-export type AssetInfoRecord = Omit<
-	GeneratedAssetInfoRecord,
-	'supplierId' | 'purchaseOrderId'
-> & {
+export type AssetInfoRecord = Omit<GeneratedAssetInfoRecord, 'supplierId' | 'purchaseOrderId'> & {
 	supplierId?: number | null | undefined;
 	purchaseOrderId?: number | null | undefined;
 };
 
-export type AssetInfoPageResult = Omit<
-	ApiResponseData<GeneratedAssetInfoPageResponse>,
-	'list'
-> & {
+export type AssetInfoPageResult = Omit<ApiResponseData<GeneratedAssetInfoPageResponse>, 'list'> & {
 	list: AssetInfoRecord[];
 };
 export type AssetInfoPageQuery = import('./generated/asset-info').AssetInfoFetchPageRequest;
@@ -2717,9 +2695,10 @@ export type AssetDisposalCancelPayload =
 	import('./generated/asset-disposal').AssetDisposalCancelDisposalRequest;
 
 export type AssetReportSummary = ApiResponseData<GeneratedAssetReportSummaryResponse>;
-export type AssetReportSummaryQuery = import('./generated/asset-report').AssetReportFetchSummaryQuery & {
-	keyword?: string;
-};
+export type AssetReportSummaryQuery =
+	import('./generated/asset-report').AssetReportFetchSummaryQuery & {
+		keyword?: string;
+	};
 
 export type AssetReportRecord = GeneratedAssetReportRecord;
 
@@ -2730,9 +2709,10 @@ export type AssetReportPageResult = Omit<
 	list: AssetReportRecord[];
 };
 export type AssetReportPageQuery = import('./generated/asset-report').AssetReportFetchPageRequest;
-export type AssetReportExportQuery = import('./generated/asset-report').AssetReportExportReportQuery & {
-	keyword?: string;
-};
+export type AssetReportExportQuery =
+	import('./generated/asset-report').AssetReportExportReportQuery & {
+		keyword?: string;
+	};
 export type AssetReportExportResult = AssetReportRecord[];
 
 export type MaterialCatalogStatus = GeneratedMaterialCatalogStatus;
@@ -2789,7 +2769,14 @@ export type MaterialStockInfoQuery =
 
 export type MaterialInboundRecord = Omit<
 	GeneratedMaterialInboundRecord,
-	'category' | 'specification' | 'sourceType' | 'sourceBizId' | 'submittedAt' | 'receivedBy' | 'receivedAt' | 'remark'
+	| 'category'
+	| 'specification'
+	| 'sourceType'
+	| 'sourceBizId'
+	| 'submittedAt'
+	| 'receivedBy'
+	| 'receivedAt'
+	| 'remark'
 > & {
 	category?: string | null;
 	specification?: string | null;
@@ -2824,7 +2811,14 @@ export type MaterialInboundCancelPayload =
 
 export type MaterialIssueRecord = Omit<
 	GeneratedMaterialIssueRecord,
-	'category' | 'specification' | 'purpose' | 'issueDate' | 'submittedAt' | 'issuedBy' | 'issuedAt' | 'remark'
+	| 'category'
+	| 'specification'
+	| 'purpose'
+	| 'issueDate'
+	| 'submittedAt'
+	| 'issuedBy'
+	| 'issuedAt'
+	| 'remark'
 > & {
 	category?: string | null;
 	specification?: string | null;
@@ -3694,12 +3688,7 @@ export type AnnualInspectionStatus =
 	| 'rejected'
 	| 'expired';
 
-export type AnnualInspectionCategory =
-	| 'safety'
-	| 'equipment'
-	| 'license'
-	| 'compliance'
-	| 'other';
+export type AnnualInspectionCategory = 'safety' | 'equipment' | 'license' | 'compliance' | 'other';
 
 export interface AnnualInspectionRecord {
 	[key: string]: unknown;
@@ -3731,12 +3720,7 @@ export type HonorStatus = 'draft' | 'published' | 'archived';
 
 export type HonorType = 'individual' | 'team' | 'organization';
 
-export type HonorLevel =
-	| 'departmental'
-	| 'city'
-	| 'provincial'
-	| 'national'
-	| 'international';
+export type HonorLevel = 'departmental' | 'city' | 'provincial' | 'national' | 'international';
 
 export interface HonorRecord {
 	[key: string]: unknown;
@@ -3765,12 +3749,7 @@ export interface HonorStats {
 	avgImpactScore: number;
 }
 
-export type PublicityMaterialStatus =
-	| 'draft'
-	| 'review'
-	| 'approved'
-	| 'published'
-	| 'offline';
+export type PublicityMaterialStatus = 'draft' | 'review' | 'approved' | 'published' | 'offline';
 
 export type PublicityMaterialType = 'poster' | 'video' | 'article' | 'ppt' | 'brochure';
 
@@ -3841,12 +3820,7 @@ export interface DesignCollabStats {
 	overdueCount: number;
 }
 
-export type ExpressCollabStatus =
-	| 'created'
-	| 'in_transit'
-	| 'delivered'
-	| 'exception'
-	| 'returned';
+export type ExpressCollabStatus = 'created' | 'in_transit' | 'delivered' | 'exception' | 'returned';
 
 export type ExpressCollabServiceLevel = 'standard' | 'express' | 'same_day';
 
@@ -3886,12 +3860,7 @@ export interface ExpressCollabStats {
 
 export type VehicleType = 'sedan' | 'suv' | 'mpv' | 'bus' | 'truck' | 'other';
 
-export type VehicleStatus =
-	| 'idle'
-	| 'in_use'
-	| 'maintenance'
-	| 'inspection_due'
-	| 'retired';
+export type VehicleStatus = 'idle' | 'in_use' | 'maintenance' | 'inspection_due' | 'retired';
 
 export interface VehicleRecord {
 	[key: string]: unknown;
@@ -3922,11 +3891,7 @@ export interface VehicleStats {
 	inspectionDueCount: number;
 }
 
-export type IntellectualPropertyType =
-	| 'patent'
-	| 'trademark'
-	| 'copyright'
-	| 'softwareCopyright';
+export type IntellectualPropertyType = 'patent' | 'trademark' | 'copyright' | 'softwareCopyright';
 
 export type IntellectualPropertyStatus =
 	| 'drafting'

@@ -147,17 +147,26 @@
 						{{ renderPeriod(row) }}
 					</template>
 				</el-table-column>
-				<el-table-column prop="triggerLabel" label="触发摘要" min-width="220" show-overflow-tooltip />
+				<el-table-column
+					prop="triggerLabel"
+					label="触发摘要"
+					min-width="220"
+					show-overflow-tooltip
+				/>
 				<el-table-column prop="status" label="状态" width="110">
 					<template #default="{ row }">
-						<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+						<el-tag :type="statusTagType(row.status)">{{
+							statusLabel(row.status)
+						}}</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column label="处理摘要" min-width="190">
 					<template #default="{ row }">
 						<div class="suggestion-page__handle">
 							<div>{{ row.handlerName || row.handlerId || '-' }}</div>
-							<div class="suggestion-page__handle-time">{{ row.handleTime || '-' }}</div>
+							<div class="suggestion-page__handle-time">
+								{{ row.handleTime || '-' }}
+							</div>
 						</div>
 					</template>
 				</el-table-column>
@@ -169,7 +178,9 @@
 				<el-table-column prop="createTime" label="生成时间" min-width="170" />
 				<el-table-column label="操作" fixed="right" min-width="360">
 					<template #default="{ row }">
-						<el-button v-if="showInfoButton" text @click="openDetail(row)">详情</el-button>
+						<el-button v-if="showInfoButton" text @click="openDetail(row)"
+							>详情</el-button
+						>
 						<el-button
 							v-if="canAccept(row)"
 							text
@@ -178,14 +189,31 @@
 						>
 							采用
 						</el-button>
-						<el-button v-if="canGoCreate(row)" text type="primary" @click="goCreate(row)">
+						<el-button
+							v-if="canGoCreate(row)"
+							text
+							type="primary"
+							@click="goCreate(row)"
+						>
 							去创建
 						</el-button>
-						<el-button v-if="canIgnore(row)" text @click="handleIgnore(row)">忽略</el-button>
-						<el-button v-if="canReject(row)" text type="warning" @click="handleReject(row)">
+						<el-button v-if="canIgnore(row)" text @click="handleIgnore(row)"
+							>忽略</el-button
+						>
+						<el-button
+							v-if="canReject(row)"
+							text
+							type="warning"
+							@click="handleReject(row)"
+						>
 							驳回
 						</el-button>
-						<el-button v-if="canRevoke(row)" text type="danger" @click="openRevoke(row)">
+						<el-button
+							v-if="canRevoke(row)"
+							text
+							type="danger"
+							@click="openRevoke(row)"
+						>
 							撤销
 						</el-button>
 					</template>
@@ -220,12 +248,7 @@
 			@go-create="handleDetailGoCreate"
 		/>
 
-		<el-dialog
-			v-model="revokeVisible"
-			title="撤销建议"
-			width="520px"
-			destroy-on-close
-		>
+		<el-dialog v-model="revokeVisible" title="撤销建议" width="520px" destroy-on-close>
 			<el-form label-width="100px">
 				<el-form-item label="原因分类" required>
 					<el-select v-model="revokeForm.revokeReasonCode" placeholder="请选择原因分类">
@@ -279,19 +302,13 @@ import { useListPage } from '../../composables/use-list-page.js';
 import { performancePipService } from '../../service/pip';
 import { performancePromotionService } from '../../service/promotion';
 import { performanceSuggestionService } from '../../service/suggestion';
-import {
-	confirmElementAction,
-	runTrackedElementAction
-} from '../shared/action-feedback';
+import { confirmElementAction, runTrackedElementAction } from '../shared/action-feedback';
 import {
 	createElementWarningFromErrorHandler,
 	resolveErrorMessage,
 	showElementErrorFromError
 } from '../shared/error-message';
-import {
-	loadDepartmentOptions,
-	loadUserOptions
-} from '../../utils/lookup-options.js';
+import { loadDepartmentOptions, loadUserOptions } from '../../utils/lookup-options.js';
 import type {
 	DepartmentOption,
 	SuggestionAcceptResult,
@@ -344,10 +361,18 @@ const revokeReasonOptions = computed<Array<{ label: string; value: string }>>(()
 
 const canAccess = computed(() => checkPerm(performanceSuggestionService.permission.page));
 const showInfoButton = computed(() => checkPerm(performanceSuggestionService.permission.info));
-const detailCanAccept = computed(() => (detailSuggestion.value ? canAccept(detailSuggestion.value) : false));
-const detailCanIgnore = computed(() => (detailSuggestion.value ? canIgnore(detailSuggestion.value) : false));
-const detailCanReject = computed(() => (detailSuggestion.value ? canReject(detailSuggestion.value) : false));
-const detailCanRevoke = computed(() => (detailSuggestion.value ? canRevoke(detailSuggestion.value) : false));
+const detailCanAccept = computed(() =>
+	detailSuggestion.value ? canAccept(detailSuggestion.value) : false
+);
+const detailCanIgnore = computed(() =>
+	detailSuggestion.value ? canIgnore(detailSuggestion.value) : false
+);
+const detailCanReject = computed(() =>
+	detailSuggestion.value ? canReject(detailSuggestion.value) : false
+);
+const detailCanRevoke = computed(() =>
+	detailSuggestion.value ? canRevoke(detailSuggestion.value) : false
+);
 const detailCanGoCreate = computed(() =>
 	detailSuggestion.value ? canGoCreate(detailSuggestion.value) : false
 );
@@ -396,8 +421,8 @@ async function loadUsers() {
 	userOptions.value = await loadUserOptions(
 		() =>
 			service.base.sys.user.page({
-			page: 1,
-			size: 200
+				page: 1,
+				size: 200
 			}),
 		createElementWarningFromErrorHandler('用户选项加载失败')
 	);
@@ -686,7 +711,6 @@ function linkedEntityLabel(row: SuggestionRecord) {
 
 	return `${targetLabel} #${row.linkedEntityId}`;
 }
-
 </script>
 
 <style lang="scss" scoped>

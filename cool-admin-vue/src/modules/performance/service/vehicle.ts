@@ -3,7 +3,10 @@
  */
 
 import type { VehicleRecord, VehicleStats } from '../types';
-import { createPerformanceOfficeLedgerService, PerformanceOfficeLedgerService } from './office-ledger';
+import {
+	createPerformanceOfficeLedgerService,
+	PerformanceOfficeLedgerService
+} from './office-ledger';
 import { decodeVehicleRecord, decodeVehicleStats } from './office-ledger-contract';
 
 const vehicleServiceDecoders = {

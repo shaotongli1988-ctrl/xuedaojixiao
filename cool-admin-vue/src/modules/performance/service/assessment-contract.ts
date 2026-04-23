@@ -35,8 +35,14 @@ function decodeAssessmentScoreItem(
 		indicatorId:
 			record.indicatorId === undefined
 				? undefined
-				: expectPerformanceServiceNullableNumber(record.indicatorId, `${field}.indicatorId`),
-		indicatorName: expectPerformanceServiceString(record.indicatorName, `${field}.indicatorName`),
+				: expectPerformanceServiceNullableNumber(
+						record.indicatorId,
+						`${field}.indicatorId`
+					),
+		indicatorName: expectPerformanceServiceString(
+			record.indicatorName,
+			`${field}.indicatorName`
+		),
 		score: expectPerformanceServiceOptionalNumber(record.score, `${field}.score`) ?? 0,
 		weight: expectPerformanceServiceOptionalNumber(record.weight, `${field}.weight`) ?? 0,
 		comment: expectPerformanceServiceOptionalString(record.comment, `${field}.comment`),
@@ -56,10 +62,22 @@ export function decodeAssessmentRecord(
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
 		code: expectPerformanceServiceOptionalString(record.code, `${field}.code`),
-		employeeId: expectPerformanceServiceOptionalNumber(record.employeeId, `${field}.employeeId`),
-		employeeName: expectPerformanceServiceOptionalString(record.employeeName, `${field}.employeeName`),
-		assessorId: expectPerformanceServiceOptionalNumber(record.assessorId, `${field}.assessorId`),
-		assessorName: expectPerformanceServiceOptionalString(record.assessorName, `${field}.assessorName`),
+		employeeId: expectPerformanceServiceOptionalNumber(
+			record.employeeId,
+			`${field}.employeeId`
+		),
+		employeeName: expectPerformanceServiceOptionalString(
+			record.employeeName,
+			`${field}.employeeName`
+		),
+		assessorId: expectPerformanceServiceOptionalNumber(
+			record.assessorId,
+			`${field}.assessorId`
+		),
+		assessorName: expectPerformanceServiceOptionalString(
+			record.assessorName,
+			`${field}.assessorName`
+		),
 		departmentId: expectPerformanceServiceOptionalNumber(
 			record.departmentId,
 			`${field}.departmentId`
@@ -68,13 +86,22 @@ export function decodeAssessmentRecord(
 			record.departmentName,
 			`${field}.departmentName`
 		),
-		periodType: expectPerformanceServiceOptionalString(record.periodType, `${field}.periodType`),
-		periodValue: expectPerformanceServiceOptionalString(record.periodValue, `${field}.periodValue`),
+		periodType: expectPerformanceServiceOptionalString(
+			record.periodType,
+			`${field}.periodType`
+		),
+		periodValue: expectPerformanceServiceOptionalString(
+			record.periodValue,
+			`${field}.periodValue`
+		),
 		targetCompletion: expectPerformanceServiceOptionalNumber(
 			record.targetCompletion,
 			`${field}.targetCompletion`
 		),
-		totalScore: expectPerformanceServiceOptionalNumber(record.totalScore, `${field}.totalScore`),
+		totalScore: expectPerformanceServiceOptionalNumber(
+			record.totalScore,
+			`${field}.totalScore`
+		),
 		grade: expectPerformanceServiceOptionalString(record.grade, `${field}.grade`),
 		selfEvaluation: expectPerformanceServiceOptionalString(
 			record.selfEvaluation,
@@ -87,22 +114,30 @@ export function decodeAssessmentRecord(
 		status:
 			record.status === undefined
 				? undefined
-				: expectPerformanceServiceEnum(
-						record.status,
-						`${field}.status`,
-						ASSESSMENT_STATUS
-				  ),
-		submitTime: expectPerformanceServiceOptionalString(record.submitTime, `${field}.submitTime`),
-		approveTime: expectPerformanceServiceOptionalString(record.approveTime, `${field}.approveTime`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
-		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`),
+				: expectPerformanceServiceEnum(record.status, `${field}.status`, ASSESSMENT_STATUS),
+		submitTime: expectPerformanceServiceOptionalString(
+			record.submitTime,
+			`${field}.submitTime`
+		),
+		approveTime: expectPerformanceServiceOptionalString(
+			record.approveTime,
+			`${field}.approveTime`
+		),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
+		updateTime: expectPerformanceServiceOptionalString(
+			record.updateTime,
+			`${field}.updateTime`
+		),
 		scoreItems:
 			record.scoreItems === undefined
 				? undefined
 				: expectPerformanceServiceArray(record.scoreItems, `${field}.scoreItems`).map(
 						(item, index) =>
 							decodeAssessmentScoreItem(item, `${field}.scoreItems[${index}]`)
-				  )
+					)
 	};
 }
 
@@ -134,7 +169,10 @@ export function decodeAssessmentExportRows(
 				row.departmentName,
 				`${field}[${index}].departmentName`
 			),
-			periodType: expectPerformanceServiceString(row.periodType, `${field}[${index}].periodType`),
+			periodType: expectPerformanceServiceString(
+				row.periodType,
+				`${field}[${index}].periodType`
+			),
 			periodValue: expectPerformanceServiceString(
 				row.periodValue,
 				`${field}[${index}].periodValue`
@@ -144,14 +182,16 @@ export function decodeAssessmentExportRows(
 				`${field}[${index}].assessorName`
 			),
 			status: decodeAssessmentStatus(row.status, `${field}[${index}].status`),
-			targetCompletion: expectPerformanceServiceOptionalNumber(
-				row.targetCompletion,
-				`${field}[${index}].targetCompletion`
-			) ?? 0,
-			totalScore: expectPerformanceServiceOptionalNumber(
-				row.totalScore,
-				`${field}[${index}].totalScore`
-			) ?? 0,
+			targetCompletion:
+				expectPerformanceServiceOptionalNumber(
+					row.targetCompletion,
+					`${field}[${index}].targetCompletion`
+				) ?? 0,
+			totalScore:
+				expectPerformanceServiceOptionalNumber(
+					row.totalScore,
+					`${field}[${index}].totalScore`
+				) ?? 0,
 			grade: expectPerformanceServiceString(row.grade, `${field}[${index}].grade`),
 			submitTime: expectPerformanceServiceOptionalString(
 				row.submitTime,

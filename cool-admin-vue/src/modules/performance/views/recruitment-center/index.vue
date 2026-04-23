@@ -23,13 +23,7 @@
 		</el-card>
 
 		<el-row :gutter="16" class="recruitment-center-page__grid">
-			<el-col
-				v-for="entry in entries"
-				:key="entry.path"
-				:xs="24"
-				:sm="12"
-				:lg="8"
-			>
+			<el-col v-for="entry in entries" :key="entry.path" :xs="24" :sm="12" :lg="8">
 				<el-card shadow="never" class="recruitment-center-page__card">
 					<div class="recruitment-center-page__card-head">
 						<div>
@@ -197,7 +191,10 @@ async function goToEntry(path: string) {
 		border-radius: var(--app-radius-lg);
 		background: var(--recruitment-card-bg);
 		border: 1px solid var(--app-border-strong);
-		transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+		transition:
+			border-color 0.2s ease,
+			transform 0.2s ease,
+			box-shadow 0.2s ease;
 
 		&:hover {
 			transform: translateY(-2px);

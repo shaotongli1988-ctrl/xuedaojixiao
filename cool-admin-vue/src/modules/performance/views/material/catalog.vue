@@ -16,11 +16,21 @@
 		:form-fields="formFields"
 		:create-filters="createFilters"
 		:create-empty="createEmptyMaterialCatalog"
-		:fetch-page="performanceMaterialCatalogService.fetchPage.bind(performanceMaterialCatalogService)"
-		:fetch-info="performanceMaterialCatalogService.fetchInfo.bind(performanceMaterialCatalogService)"
-		:create-item="performanceMaterialCatalogService.createMaterial.bind(performanceMaterialCatalogService)"
-		:update-item="performanceMaterialCatalogService.updateMaterial.bind(performanceMaterialCatalogService)"
-		:remove-item="performanceMaterialCatalogService.removeMaterial.bind(performanceMaterialCatalogService)"
+		:fetch-page="
+			performanceMaterialCatalogService.fetchPage.bind(performanceMaterialCatalogService)
+		"
+		:fetch-info="
+			performanceMaterialCatalogService.fetchInfo.bind(performanceMaterialCatalogService)
+		"
+		:create-item="
+			performanceMaterialCatalogService.createMaterial.bind(performanceMaterialCatalogService)
+		"
+		:update-item="
+			performanceMaterialCatalogService.updateMaterial.bind(performanceMaterialCatalogService)
+		"
+		:remove-item="
+			performanceMaterialCatalogService.removeMaterial.bind(performanceMaterialCatalogService)
+		"
 		create-label="新增目录"
 		edit-label="编辑目录"
 	/>
@@ -31,12 +41,7 @@ import MaterialCrudPage from './material-crud-page.vue';
 import { performanceMaterialCatalogService } from '../../service/material-catalog';
 import { createEmptyMaterialCatalog } from '../../types';
 import { PERMISSIONS } from '../../../base/generated/permissions.generated';
-import {
-	enumOptions,
-	formatMoney,
-	formatQuantity,
-	materialCatalogStatusTagMap
-} from './shared';
+import { enumOptions, formatMoney, formatQuantity, materialCatalogStatusTagMap } from './shared';
 
 const columns = [
 	{ prop: 'code', label: '物资编码', minWidth: 140 },
@@ -63,7 +68,12 @@ const detailFields = [
 
 const filters = [
 	{ prop: 'keyword', label: '关键词', type: 'text', placeholder: '编码 / 名称 / 分类 / 规格' },
-	{ prop: 'status', label: '状态', type: 'select', options: enumOptions(materialCatalogStatusTagMap) }
+	{
+		prop: 'status',
+		label: '状态',
+		type: 'select',
+		options: enumOptions(materialCatalogStatusTagMap)
+	}
 ];
 
 const formFields = [

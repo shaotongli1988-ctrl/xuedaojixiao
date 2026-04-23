@@ -86,17 +86,19 @@
 						</el-tag>
 					</template>
 				</el-table-column>
-				<el-table-column prop="description" label="说明" min-width="220" show-overflow-tooltip />
+				<el-table-column
+					prop="description"
+					label="说明"
+					min-width="220"
+					show-overflow-tooltip
+				/>
 				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
 				<el-table-column label="操作" fixed="right" min-width="210">
 					<template #default="{ row }">
-						<el-button v-if="showInfoButton" text @click="openDetail(row)">详情</el-button>
-						<el-button
-							v-if="showEditButton"
-							text
-							type="primary"
-							@click="openEdit(row)"
+						<el-button v-if="showInfoButton" text @click="openDetail(row)"
+							>详情</el-button
 						>
+						<el-button v-if="showEditButton" text type="primary" @click="openEdit(row)">
 							编辑
 						</el-button>
 						<el-button
@@ -270,14 +272,8 @@ import { ElMessage, type FormInstance } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
 import { useDict } from '/$/dict';
 import { useListPage } from '../../composables/use-list-page.js';
-import {
-	confirmElementAction,
-	runTrackedElementAction
-} from '../shared/action-feedback';
-import {
-	resolveErrorMessage,
-	showElementErrorFromError
-} from '../shared/error-message';
+import { confirmElementAction, runTrackedElementAction } from '../shared/action-feedback';
+import { resolveErrorMessage, showElementErrorFromError } from '../shared/error-message';
 import {
 	type IndicatorApplyScope,
 	type IndicatorCategory,

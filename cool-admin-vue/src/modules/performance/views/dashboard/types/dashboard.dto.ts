@@ -42,15 +42,11 @@ export type DashboardSummaryResponseDto = SsotDashboardSummary & {
 
 export type DashboardStageProgressItemDto = SsotDashboardStageProgressItem;
 
-export type DashboardDepartmentDistributionItemDto =
-	SsotDashboardDepartmentDistributionItem;
+export type DashboardDepartmentDistributionItemDto = SsotDashboardDepartmentDistributionItem;
 
 export type DashboardGradeDistributionItemDto = SsotDashboardGradeDistributionItem;
 
-export type DashboardCrossSummaryResponseDto = Omit<
-	SsotDashboardCrossSummary,
-	'metricCards'
-> & {
+export type DashboardCrossSummaryResponseDto = Omit<SsotDashboardCrossSummary, 'metricCards'> & {
 	metricCards: DashboardCrossMetricCardDto[];
 };
 

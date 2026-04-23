@@ -54,10 +54,7 @@ function decodeHiringStatus(value: unknown, field: string): HiringStatus {
 	return expectPerformanceServiceEnum(value, field, HIRING_STATUS);
 }
 
-function decodeHiringSourceSnapshot(
-	value: unknown,
-	field: string
-): HiringSourceSnapshot {
+function decodeHiringSourceSnapshot(value: unknown, field: string): HiringSourceSnapshot {
 	const record = expectPerformanceServiceRecord(value, field);
 
 	return {
@@ -65,12 +62,12 @@ function decodeHiringSourceSnapshot(
 			record.sourceResource === undefined
 				? undefined
 				: record.sourceResource === null
-				? null
-				: expectPerformanceServiceEnum(
-						record.sourceResource,
-						`${field}.sourceResource`,
-						HIRING_SOURCE_TYPE
-				  ),
+					? null
+					: expectPerformanceServiceEnum(
+							record.sourceResource,
+							`${field}.sourceResource`,
+							HIRING_SOURCE_TYPE
+						),
 		interviewId: decodeOptionalNullableNumber(record.interviewId, `${field}.interviewId`),
 		resumePoolId: decodeOptionalNullableNumber(record.resumePoolId, `${field}.resumePoolId`),
 		recruitPlanId: decodeOptionalNullableNumber(record.recruitPlanId, `${field}.recruitPlanId`),
@@ -87,13 +84,16 @@ function decodeHiringSourceSnapshot(
 			record.targetDepartmentName,
 			`${field}.targetDepartmentName`
 		),
-		targetPosition: decodeOptionalNullableString(record.targetPosition, `${field}.targetPosition`),
+		targetPosition: decodeOptionalNullableString(
+			record.targetPosition,
+			`${field}.targetPosition`
+		),
 		interviewStatus:
 			record.interviewStatus === undefined
 				? undefined
 				: record.interviewStatus === null
-				? null
-				: decodeInterviewStatus(record.interviewStatus, `${field}.interviewStatus`),
+					? null
+					: decodeInterviewStatus(record.interviewStatus, `${field}.interviewStatus`),
 		sourceStatusSnapshot: decodeOptionalNullableString(
 			record.sourceStatusSnapshot,
 			`${field}.sourceStatusSnapshot`
@@ -109,7 +109,10 @@ export function decodeHiringTransportRecord(
 
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
-		candidateName: expectPerformanceServiceString(record.candidateName, `${field}.candidateName`),
+		candidateName: expectPerformanceServiceString(
+			record.candidateName,
+			`${field}.candidateName`
+		),
 		targetDepartmentId: expectPerformanceServiceNumber(
 			record.targetDepartmentId,
 			`${field}.targetDepartmentId`
@@ -118,13 +121,20 @@ export function decodeHiringTransportRecord(
 			record.targetDepartmentName,
 			`${field}.targetDepartmentName`
 		),
-		targetPosition: decodeOptionalNullableString(record.targetPosition, `${field}.targetPosition`),
+		targetPosition: decodeOptionalNullableString(
+			record.targetPosition,
+			`${field}.targetPosition`
+		),
 		sourceType:
 			record.sourceType === undefined
 				? undefined
 				: record.sourceType === null
-				? null
-				: expectPerformanceServiceEnum(record.sourceType, `${field}.sourceType`, HIRING_SOURCE_TYPE),
+					? null
+					: expectPerformanceServiceEnum(
+							record.sourceType,
+							`${field}.sourceType`,
+							HIRING_SOURCE_TYPE
+						),
 		sourceId: decodeOptionalNullableNumber(record.sourceId, `${field}.sourceId`),
 		sourceStatusSnapshot: decodeOptionalNullableString(
 			record.sourceStatusSnapshot,
@@ -134,10 +144,13 @@ export function decodeHiringTransportRecord(
 			record.sourceSnapshot === undefined
 				? undefined
 				: record.sourceSnapshot === null
-				? null
-				: typeof record.sourceSnapshot === 'string'
-				? record.sourceSnapshot
-				: decodeHiringSourceSnapshot(record.sourceSnapshot, `${field}.sourceSnapshot`),
+					? null
+					: typeof record.sourceSnapshot === 'string'
+						? record.sourceSnapshot
+						: decodeHiringSourceSnapshot(
+								record.sourceSnapshot,
+								`${field}.sourceSnapshot`
+							),
 		interviewId: decodeOptionalNullableNumber(record.interviewId, `${field}.interviewId`),
 		resumePoolId: decodeOptionalNullableNumber(record.resumePoolId, `${field}.resumePoolId`),
 		recruitPlanId: decodeOptionalNullableNumber(record.recruitPlanId, `${field}.recruitPlanId`),
@@ -155,7 +168,10 @@ export function decodeHiringTransportRecord(
 		rejectedAt: decodeOptionalNullableString(record.rejectedAt, `${field}.rejectedAt`),
 		closedAt: decodeOptionalNullableString(record.closedAt, `${field}.closedAt`),
 		closeReason: decodeOptionalNullableString(record.closeReason, `${field}.closeReason`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
 		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`)
 	};
 }

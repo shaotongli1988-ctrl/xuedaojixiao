@@ -14,10 +14,18 @@
 		:form-fields="formFields"
 		:create-filters="createFilters"
 		:create-empty="createEmptyAssetDisposal"
-		:fetch-page="performanceAssetDisposalService.fetchPage.bind(performanceAssetDisposalService)"
-		:fetch-info="performanceAssetDisposalService.fetchInfo.bind(performanceAssetDisposalService)"
-		:create-item="performanceAssetDisposalService.createDisposal.bind(performanceAssetDisposalService)"
-		:update-item="performanceAssetDisposalService.updateDisposal.bind(performanceAssetDisposalService)"
+		:fetch-page="
+			performanceAssetDisposalService.fetchPage.bind(performanceAssetDisposalService)
+		"
+		:fetch-info="
+			performanceAssetDisposalService.fetchInfo.bind(performanceAssetDisposalService)
+		"
+		:create-item="
+			performanceAssetDisposalService.createDisposal.bind(performanceAssetDisposalService)
+		"
+		:update-item="
+			performanceAssetDisposalService.updateDisposal.bind(performanceAssetDisposalService)
+		"
 		:row-actions="rowActions"
 		create-label="新增报废单"
 		edit-label="编辑报废单"
@@ -28,10 +36,7 @@
 import { computed, onMounted, ref } from 'vue';
 import AssetCrudPage from './asset-crud-page.vue';
 import { performanceAssetDisposalService } from '../../service/asset-disposal';
-import {
-	createEmptyAssetDisposal,
-	type AssetDisposalRecord
-} from '../../types';
+import { createEmptyAssetDisposal, type AssetDisposalRecord } from '../../types';
 import {
 	createElementLookupWarningHandler,
 	loadAssetDepartmentOptions,

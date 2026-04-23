@@ -35,24 +35,30 @@ function decodeCourseStatus(value: unknown, field: string): CourseStatus {
 	return expectPerformanceServiceEnum(value, field, COURSE_STATUS);
 }
 
-export function decodeCourseRecord(
-	value: unknown,
-	field = 'courseRecord'
-): CourseRecord {
+export function decodeCourseRecord(value: unknown, field = 'courseRecord'): CourseRecord {
 	const record = expectPerformanceServiceRecord(value, field);
 
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
 		category: expectPerformanceServiceOptionalString(record.category, `${field}.category`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
-		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
+		updateTime: expectPerformanceServiceOptionalString(
+			record.updateTime,
+			`${field}.updateTime`
+		),
 		title: expectPerformanceServiceString(record.title, `${field}.title`),
 		status:
 			record.status === undefined
 				? undefined
 				: decodeCourseStatus(record.status, `${field}.status`),
 		code: expectPerformanceServiceOptionalString(record.code, `${field}.code`),
-		description: expectPerformanceServiceOptionalString(record.description, `${field}.description`),
+		description: expectPerformanceServiceOptionalString(
+			record.description,
+			`${field}.description`
+		),
 		enrollmentCount: expectPerformanceServiceOptionalNumber(
 			record.enrollmentCount,
 			`${field}.enrollmentCount`
@@ -79,11 +85,15 @@ export function decodeCourseEnrollmentRecord(
 		status: expectPerformanceServiceOptionalString(record.status, `${field}.status`),
 		userId: expectPerformanceServiceOptionalNumber(record.userId, `${field}.userId`) ?? 0,
 		userName: expectPerformanceServiceString(record.userName, `${field}.userName`),
-		enrollTime: expectPerformanceServiceOptionalString(record.enrollTime, `${field}.enrollTime`),
+		enrollTime: expectPerformanceServiceOptionalString(
+			record.enrollTime,
+			`${field}.enrollTime`
+		),
 		score:
 			record.score === undefined
 				? undefined
-				: expectPerformanceServiceOptionalNumber(record.score, `${field}.score`) ?? undefined
+				: (expectPerformanceServiceOptionalNumber(record.score, `${field}.score`) ??
+					undefined)
 	};
 }
 

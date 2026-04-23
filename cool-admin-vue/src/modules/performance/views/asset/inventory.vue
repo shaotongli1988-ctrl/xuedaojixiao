@@ -14,10 +14,18 @@
 		:form-fields="formFields"
 		:create-filters="createFilters"
 		:create-empty="createEmptyAssetInventory"
-		:fetch-page="performanceAssetInventoryService.fetchPage.bind(performanceAssetInventoryService)"
-		:fetch-info="performanceAssetInventoryService.fetchInfo.bind(performanceAssetInventoryService)"
-		:create-item="performanceAssetInventoryService.createInventory.bind(performanceAssetInventoryService)"
-		:update-item="performanceAssetInventoryService.updateInventory.bind(performanceAssetInventoryService)"
+		:fetch-page="
+			performanceAssetInventoryService.fetchPage.bind(performanceAssetInventoryService)
+		"
+		:fetch-info="
+			performanceAssetInventoryService.fetchInfo.bind(performanceAssetInventoryService)
+		"
+		:create-item="
+			performanceAssetInventoryService.createInventory.bind(performanceAssetInventoryService)
+		"
+		:update-item="
+			performanceAssetInventoryService.updateInventory.bind(performanceAssetInventoryService)
+		"
 		:row-actions="rowActions"
 		create-label="新增盘点"
 		edit-label="编辑盘点"
@@ -28,14 +36,11 @@
 import { computed, onMounted, ref } from 'vue';
 import AssetCrudPage from './asset-crud-page.vue';
 import { performanceAssetInventoryService } from '../../service/asset-inventory';
-import {
-	createEmptyAssetInventory,
-	type AssetInventoryRecord
-} from '../../types';
+import { createEmptyAssetInventory, type AssetInventoryRecord } from '../../types';
 import {
 	createElementLookupWarningHandler,
 	loadAssetOptions,
-	toAssetSelectOptions,
+	toAssetSelectOptions
 } from './lookups';
 import { enumOptions, inventoryStatusTagMap } from './shared';
 import { PERMISSIONS } from '../../../base/generated/permissions.generated';

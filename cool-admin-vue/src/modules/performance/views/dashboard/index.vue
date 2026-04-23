@@ -1,7 +1,7 @@
 <!-- 文件职责：装配驾驶舱页面结构、权限、筛选、空态与组件组合；不直接书写复杂图表映射和单卡逻辑。 -->
 <script setup lang="ts">
 defineOptions({
-	name: 'performance-dashboard',
+	name: 'performance-dashboard'
 });
 
 import { computed, watch } from 'vue';
@@ -32,7 +32,7 @@ const {
 	crossSummary,
 	isEmpty,
 	refresh,
-	patchFilters,
+	patchFilters
 } = useDashboardQuery(performanceDashboardService);
 
 const pageVm = computed(() =>
@@ -40,7 +40,7 @@ const pageVm = computed(() =>
 		summary: summary.value,
 		crossSummary: crossSummary.value,
 		refreshing: loading.value,
-		errorMessage: errorMessage.value,
+		errorMessage: errorMessage.value
 	})
 );
 
@@ -99,11 +99,7 @@ function handleCrossDrilldown(metricCode: string) {
 			@refresh="handleRefresh"
 		/>
 
-		<DashboardEmptyState
-			v-if="emptyKind"
-			:kind="emptyKind"
-			:description="errorMessage || ''"
-		/>
+		<DashboardEmptyState v-if="emptyKind" :kind="emptyKind" :description="errorMessage || ''" />
 
 		<template v-else>
 			<section class="dashboard-page__overview">
@@ -111,13 +107,18 @@ function handleCrossDrilldown(metricCode: string) {
 					<div>
 						<div class="dashboard-page__section-title">本期概览</div>
 						<p class="dashboard-page__description">
-							{{ pageVm.hero.scopeLabel }}，优先关注待审批事项与跨模块异常，再进入具体模块细查。
+							{{
+								pageVm.hero.scopeLabel
+							}}，优先关注待审批事项与跨模块异常，再进入具体模块细查。
 						</p>
 					</div>
 
 					<div class="dashboard-page__overview-tags">
 						<el-tag effect="plain">当前周期 {{ filters.periodValue }}</el-tag>
-						<el-tag effect="plain" :type="pageVm.hero.refreshing ? 'warning' : 'success'">
+						<el-tag
+							effect="plain"
+							:type="pageVm.hero.refreshing ? 'warning' : 'success'"
+						>
 							{{ pageVm.hero.refreshing ? '数据刷新中' : '汇总已同步' }}
 						</el-tag>
 					</div>

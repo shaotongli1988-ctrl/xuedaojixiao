@@ -5,11 +5,7 @@
  */
 import { BaseService } from '/@/cool';
 import { asPerformanceServicePromise } from './service-contract';
-import {
-	decodePipExportRows,
-	decodePipPageResult,
-	decodePipRecord
-} from './pip-contract';
+import { decodePipExportRows, decodePipPageResult, decodePipRecord } from './pip-contract';
 import type {
 	PipClosePayload,
 	PipCompletePayload,
@@ -43,17 +39,11 @@ export default class PerformancePipService extends BaseService {
 	}
 
 	fetchPage(data: PipPageQuery) {
-		return asPerformanceServicePromise<PipPageResult>(
-			super.page(data),
-			decodePipPageResult
-		);
+		return asPerformanceServicePromise<PipPageResult>(super.page(data), decodePipPageResult);
 	}
 
 	fetchInfo(params: PipInfoQuery) {
-		return asPerformanceServicePromise<PipRecord>(
-			super.info(params),
-			decodePipRecord
-		);
+		return asPerformanceServicePromise<PipRecord>(super.info(params), decodePipRecord);
 	}
 
 	createPip(data: PipCreatePayload) {
@@ -65,43 +55,58 @@ export default class PerformancePipService extends BaseService {
 	}
 
 	start(data: PipStartPayload) {
-		return asPerformanceServicePromise<PipRecord>(this.request({
-			url: '/start',
-			method: 'POST',
-			data
-		}), decodePipRecord);
+		return asPerformanceServicePromise<PipRecord>(
+			this.request({
+				url: '/start',
+				method: 'POST',
+				data
+			}),
+			decodePipRecord
+		);
 	}
 
 	track(data: PipTrackPayload) {
-		return asPerformanceServicePromise<PipRecord>(this.request({
-			url: '/track',
-			method: 'POST',
-			data
-		}), decodePipRecord);
+		return asPerformanceServicePromise<PipRecord>(
+			this.request({
+				url: '/track',
+				method: 'POST',
+				data
+			}),
+			decodePipRecord
+		);
 	}
 
 	complete(data: PipCompletePayload) {
-		return asPerformanceServicePromise<PipRecord>(this.request({
-			url: '/complete',
-			method: 'POST',
-			data
-		}), decodePipRecord);
+		return asPerformanceServicePromise<PipRecord>(
+			this.request({
+				url: '/complete',
+				method: 'POST',
+				data
+			}),
+			decodePipRecord
+		);
 	}
 
 	close(data: PipClosePayload) {
-		return asPerformanceServicePromise<PipRecord>(this.request({
-			url: '/close',
-			method: 'POST',
-			data
-		}), decodePipRecord);
+		return asPerformanceServicePromise<PipRecord>(
+			this.request({
+				url: '/close',
+				method: 'POST',
+				data
+			}),
+			decodePipRecord
+		);
 	}
 
 	exportSummary(data: PipExportQuery) {
-		return asPerformanceServicePromise<PipExportRow[]>(this.request({
-			url: '/export',
-			method: 'POST',
-			data
-		}), decodePipExportRows);
+		return asPerformanceServicePromise<PipExportRow[]>(
+			this.request({
+				url: '/export',
+				method: 'POST',
+				data
+			}),
+			decodePipExportRows
+		);
 	}
 }
 

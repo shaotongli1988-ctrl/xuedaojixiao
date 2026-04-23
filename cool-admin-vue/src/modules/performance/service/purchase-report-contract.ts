@@ -35,14 +35,23 @@ export function decodePurchaseReportSummary(
 			record.pendingApprovalCount,
 			`${field}.pendingApprovalCount`
 		),
-		approvedCount: expectPerformanceServiceNumber(record.approvedCount, `${field}.approvedCount`),
-		receivedCount: expectPerformanceServiceNumber(record.receivedCount, `${field}.receivedCount`),
+		approvedCount: expectPerformanceServiceNumber(
+			record.approvedCount,
+			`${field}.approvedCount`
+		),
+		receivedCount: expectPerformanceServiceNumber(
+			record.receivedCount,
+			`${field}.receivedCount`
+		),
 		closedCount: expectPerformanceServiceNumber(record.closedCount, `${field}.closedCount`),
 		cancelledCount: expectPerformanceServiceNumber(
 			record.cancelledCount,
 			`${field}.cancelledCount`
 		),
-		supplierCount: expectPerformanceServiceNumber(record.supplierCount, `${field}.supplierCount`)
+		supplierCount: expectPerformanceServiceNumber(
+			record.supplierCount,
+			`${field}.supplierCount`
+		)
 	};
 }
 
@@ -56,7 +65,10 @@ function decodePurchaseReportTrendPoint(
 		period: expectPerformanceServiceString(record.period, `${field}.period`),
 		orderCount: expectPerformanceServiceNumber(record.orderCount, `${field}.orderCount`),
 		totalAmount: expectPerformanceServiceNumber(record.totalAmount, `${field}.totalAmount`),
-		approvedCount: expectPerformanceServiceNumber(record.approvedCount, `${field}.approvedCount`),
+		approvedCount: expectPerformanceServiceNumber(
+			record.approvedCount,
+			`${field}.approvedCount`
+		),
 		receivedQuantity: expectPerformanceServiceNumber(
 			record.receivedQuantity,
 			`${field}.receivedQuantity`

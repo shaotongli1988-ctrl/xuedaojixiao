@@ -62,7 +62,9 @@
 				<el-table-column prop="grade" label="等级" width="80" />
 				<el-table-column prop="status" label="状态" width="110">
 					<template #default="{ row }">
-						<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+						<el-tag :type="statusTagType(row.status)">{{
+							statusLabel(row.status)
+						}}</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
@@ -185,10 +187,7 @@ import { useRoute, useRouter } from 'vue-router';
 import AssessmentForm from './assessment-form.vue';
 import AssessmentDetail from './assessment-detail.vue';
 import ApprovalDrawer from './approval-drawer.vue';
-import {
-	confirmElementAction,
-	runTrackedElementAction
-} from '../views/shared/action-feedback';
+import { confirmElementAction, runTrackedElementAction } from '../views/shared/action-feedback';
 import {
 	createElementWarningFromErrorHandler,
 	showElementErrorFromError
@@ -272,12 +271,8 @@ const showAddButton = computed(() => {
 const showExportButton = computed(() => {
 	return props.mode === 'initiated' && checkPerm(performanceAssessmentService.permission.export);
 });
-const canApproveReview = computed(() =>
-	checkPerm(performanceAssessmentService.permission.approve)
-);
-const canRejectReview = computed(() =>
-	checkPerm(performanceAssessmentService.permission.reject)
-);
+const canApproveReview = computed(() => checkPerm(performanceAssessmentService.permission.approve));
+const canRejectReview = computed(() => checkPerm(performanceAssessmentService.permission.reject));
 const showCreateFeedbackButton = computed(() =>
 	checkPerm(performanceFeedbackService.permission.add)
 );
@@ -312,8 +307,8 @@ async function loadUsers() {
 	userOptions.value = await loadUserOptions(
 		() =>
 			service.base.sys.user.page({
-			page: 1,
-			size: 200
+				page: 1,
+				size: 200
 			}),
 		createElementWarningFromErrorHandler('用户选项加载失败')
 	);
@@ -640,7 +635,6 @@ function statusLabel(status?: string) {
 function statusTagType(status?: string) {
 	return dict.getMeta(ASSESSMENT_STATUS_DICT_KEY, status)?.tone || 'info';
 }
-
 </script>
 
 <style lang="scss" scoped>

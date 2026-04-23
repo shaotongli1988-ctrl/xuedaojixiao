@@ -121,19 +121,18 @@
 				</el-table-column>
 				<el-table-column prop="status" label="状态" width="110">
 					<template #default="{ row }">
-						<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+						<el-tag :type="statusTagType(row.status)">{{
+							statusLabel(row.status)
+						}}</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
 				<el-table-column label="操作" fixed="right" min-width="200">
 					<template #default="{ row }">
-						<el-button v-if="showInfoButton" text @click="openDetail(row)">详情</el-button>
-						<el-button
-							v-if="canEdit(row)"
-							text
-							type="primary"
-							@click="openEdit(row)"
+						<el-button v-if="showInfoButton" text @click="openDetail(row)"
+							>详情</el-button
 						>
+						<el-button v-if="canEdit(row)" text type="primary" @click="openEdit(row)">
 							编辑
 						</el-button>
 					</template>
@@ -198,7 +197,11 @@
 		>
 			<el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
 				<el-alert
-					:title="editingModel?.status === 'active' ? '启用中模型只允许保持 active 或归档为 archived。' : '新建能力模型默认保存为 draft，可在编辑时启用。'"
+					:title="
+						editingModel?.status === 'active'
+							? '启用中模型只允许保持 active 或归档为 archived。'
+							: '新建能力模型默认保存为 draft，可在编辑时启用。'
+					"
 					:type="editingModel?.status === 'active' ? 'warning' : 'info'"
 					:closable="false"
 					show-icon
@@ -445,8 +448,12 @@ const filterStatusOptions = computed<Array<{ label: string; value: CapabilityMod
 const canAccess = computed(() => checkPerm(performanceCapabilityService.permission.page));
 const showInfoButton = computed(() => checkPerm(performanceCapabilityService.permission.info));
 const showAddButton = computed(() => checkPerm(performanceCapabilityService.permission.add));
-const showItemInfoButton = computed(() => checkPerm(performanceCapabilityService.permission.itemInfo));
-const showPortraitButton = computed(() => checkPerm(performanceCapabilityService.permission.portraitInfo));
+const showItemInfoButton = computed(() =>
+	checkPerm(performanceCapabilityService.permission.itemInfo)
+);
+const showPortraitButton = computed(() =>
+	checkPerm(performanceCapabilityService.permission.portraitInfo)
+);
 const showCertificateRecordButton = computed(
 	() =>
 		checkPerm(performanceCertificateService.permission.page) &&
@@ -602,7 +609,9 @@ async function submitForm() {
 			code: normalizeOptionalText(form.code),
 			category: normalizeOptionalText(form.category),
 			description: normalizeOptionalText(form.description),
-			status: editingModel.value?.id ? form.status || editingModel.value.status || 'draft' : 'draft'
+			status: editingModel.value?.id
+				? form.status || editingModel.value.status || 'draft'
+				: 'draft'
 		};
 
 		if (editingModel.value?.id) {
@@ -704,17 +713,14 @@ async function goPortraitCertificateRecords() {
 }
 
 function canEdit(row: CapabilityModelRecord) {
-	return (
-		checkPerm(performanceCapabilityService.permission.update) &&
-		row.status !== 'archived'
-	);
+	return checkPerm(performanceCapabilityService.permission.update) && row.status !== 'archived';
 }
 
 function canViewCertificateRecords(record: CapabilityPortraitRecord | null) {
 	return Boolean(
 		record?.employeeId &&
-		(record.certificateCount ?? 0) > 0 &&
-		showCertificateRecordButton.value
+			(record.certificateCount ?? 0) > 0 &&
+			showCertificateRecordButton.value
 	);
 }
 

@@ -59,10 +59,7 @@ function decodeAssetAssignmentRequestType(
 	return expectPerformanceServiceEnum(value, field, ASSET_ASSIGNMENT_REQUEST_TYPE);
 }
 
-function decodeAssetAssignmentStatus(
-	value: unknown,
-	field: string
-): AssetAssignmentStatus {
+function decodeAssetAssignmentStatus(value: unknown, field: string): AssetAssignmentStatus {
 	return expectPerformanceServiceEnum(value, field, ASSET_ASSIGNMENT_STATUS);
 }
 
@@ -87,7 +84,10 @@ export function decodeAssetAssignmentRequestRecord(
 				? undefined
 				: decodeAssetAssignmentRequestLevel(record.requestLevel, `${field}.requestLevel`),
 		requestType: decodeAssetAssignmentRequestType(record.requestType, `${field}.requestType`),
-		applicantId: expectPerformanceServiceOptionalNumber(record.applicantId, `${field}.applicantId`),
+		applicantId: expectPerformanceServiceOptionalNumber(
+			record.applicantId,
+			`${field}.applicantId`
+		),
 		applicantName: expectPerformanceServiceOptionalString(
 			record.applicantName,
 			`${field}.applicantName`
@@ -100,7 +100,10 @@ export function decodeAssetAssignmentRequestRecord(
 			record.applicantDepartmentName,
 			`${field}.applicantDepartmentName`
 		),
-		assetCategory: expectPerformanceServiceString(record.assetCategory, `${field}.assetCategory`),
+		assetCategory: expectPerformanceServiceString(
+			record.assetCategory,
+			`${field}.assetCategory`
+		),
 		assetModelRequest: expectPerformanceServiceOptionalString(
 			record.assetModelRequest,
 			`${field}.assetModelRequest`
@@ -110,7 +113,10 @@ export function decodeAssetAssignmentRequestRecord(
 			record.unitPriceEstimate,
 			`${field}.unitPriceEstimate`
 		),
-		usageReason: expectPerformanceServiceOptionalString(record.usageReason, `${field}.usageReason`),
+		usageReason: expectPerformanceServiceOptionalString(
+			record.usageReason,
+			`${field}.usageReason`
+		),
 		expectedUseStartDate: expectPerformanceServiceOptionalString(
 			record.expectedUseStartDate,
 			`${field}.expectedUseStartDate`
@@ -161,7 +167,7 @@ export function decodeAssetAssignmentRequestRecord(
 				: expectPerformanceServiceStringArray(
 						record.approvalTriggeredRules,
 						`${field}.approvalTriggeredRules`
-				  ),
+					),
 		assignedAssetId: expectPerformanceServiceOptionalNumber(
 			record.assignedAssetId,
 			`${field}.assignedAssetId`
@@ -182,17 +188,26 @@ export function decodeAssetAssignmentRequestRecord(
 			record.assignmentStatus === undefined
 				? undefined
 				: decodeAssetAssignmentStatus(record.assignmentStatus, `${field}.assignmentStatus`),
-		assignedBy: expectPerformanceServiceOptionalNumber(record.assignedBy, `${field}.assignedBy`),
+		assignedBy: expectPerformanceServiceOptionalNumber(
+			record.assignedBy,
+			`${field}.assignedBy`
+		),
 		assignedByName: expectPerformanceServiceOptionalString(
 			record.assignedByName,
 			`${field}.assignedByName`
 		),
-		assignedAt: expectPerformanceServiceOptionalString(record.assignedAt, `${field}.assignedAt`),
+		assignedAt: expectPerformanceServiceOptionalString(
+			record.assignedAt,
+			`${field}.assignedAt`
+		),
 		status:
 			record.status === undefined
 				? undefined
 				: decodeAssetAssignmentRequestStatus(record.status, `${field}.status`),
-		submitTime: expectPerformanceServiceOptionalString(record.submitTime, `${field}.submitTime`),
+		submitTime: expectPerformanceServiceOptionalString(
+			record.submitTime,
+			`${field}.submitTime`
+		),
 		withdrawTime: expectPerformanceServiceOptionalString(
 			record.withdrawTime,
 			`${field}.withdrawTime`
@@ -201,7 +216,10 @@ export function decodeAssetAssignmentRequestRecord(
 			record.cancelReason,
 			`${field}.cancelReason`
 		),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
 		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`)
 	};
 }

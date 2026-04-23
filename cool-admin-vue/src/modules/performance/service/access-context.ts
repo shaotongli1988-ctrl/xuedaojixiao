@@ -22,7 +22,7 @@ export default class PerformanceAccessContextService extends BaseService {
 				params: activePersonaKey
 					? {
 							activePersonaKey
-					  }
+						}
 					: undefined
 			}),
 			decodePerformanceAccessContext

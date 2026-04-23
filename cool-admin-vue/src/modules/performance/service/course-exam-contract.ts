@@ -4,10 +4,7 @@
  * 维护重点：考试摘要必须继续绑定课程学习域类型边界，避免可空分数字段被异常响应污染。
  */
 
-import type {
-	CourseExamResultStatus,
-	CourseExamSummary
-} from '../course-learning.types';
+import type { CourseExamResultStatus, CourseExamSummary } from '../course-learning.types';
 import {
 	expectPerformanceServiceEnum,
 	expectPerformanceServiceNullableNumber,
@@ -34,10 +31,7 @@ function decodeOptionalNullableNumber(value: unknown, field: string) {
 	return expectPerformanceServiceNullableNumber(value, field);
 }
 
-function decodeCourseExamResultStatus(
-	value: unknown,
-	field: string
-): CourseExamResultStatus {
+function decodeCourseExamResultStatus(value: unknown, field: string): CourseExamResultStatus {
 	return expectPerformanceServiceEnum(value, field, COURSE_EXAM_RESULT_STATUS);
 }
 

@@ -154,13 +154,19 @@
 				</el-table-column>
 				<el-table-column prop="status" label="状态" width="120">
 					<template #default="{ row }">
-						<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+						<el-tag :type="statusTagType(row.status)">{{
+							statusLabel(row.status)
+						}}</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
 				<el-table-column label="操作" fixed="right" min-width="360">
 					<template #default="{ row }">
-						<el-button v-if="canShowAction('detail', row)" text @click="openDetail(row)">
+						<el-button
+							v-if="canShowAction('detail', row)"
+							text
+							@click="openDetail(row)"
+						>
 							详情
 						</el-button>
 						<el-button
@@ -250,12 +256,7 @@
 			</div>
 		</el-card>
 
-		<el-dialog
-			v-model="detailVisible"
-			title="采购单详情"
-			width="1180px"
-			destroy-on-close
-		>
+		<el-dialog v-model="detailVisible" title="采购单详情" width="1180px" destroy-on-close>
 			<div v-if="detailOrder" class="purchase-workspace__detail">
 				<el-alert
 					:title="detailNotice(detailOrder)"
@@ -282,7 +283,9 @@
 						{{ detailOrder.expectedDeliveryDate || '-' }}
 					</el-descriptions-item>
 					<el-descriptions-item label="申请部门">
-						{{ detailOrder.departmentName || departmentLabel(detailOrder.departmentId) }}
+						{{
+							detailOrder.departmentName || departmentLabel(detailOrder.departmentId)
+						}}
 					</el-descriptions-item>
 					<el-descriptions-item label="申请人">
 						{{ detailOrder.requesterName || requesterLabel(detailOrder.requesterId) }}
@@ -408,7 +411,11 @@
 		>
 			<el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
 				<el-alert
-					:title="editingOrder?.id ? '仅 draft 采购单允许编辑；状态流转必须通过询价/审批/收货/关闭动作推进。' : '新建采购单默认保存为 draft，purchaseOrder 是唯一主资源。'"
+					:title="
+						editingOrder?.id
+							? '仅 draft 采购单允许编辑；状态流转必须通过询价/审批/收货/关闭动作推进。'
+							: '新建采购单默认保存为 draft，purchaseOrder 是唯一主资源。'
+					"
 					:type="editingOrder?.id ? 'warning' : 'info'"
 					:closable="false"
 					show-icon
@@ -488,13 +495,13 @@
 						</el-form-item>
 					</el-col>
 					<el-col :span="12">
-							<el-form-item label="预计到货">
-								<el-date-picker
-									v-model="expectedDeliveryDateModel"
-									type="date"
-									value-format="YYYY-MM-DD"
-									placeholder="可选"
-									style="width: 100%"
+						<el-form-item label="预计到货">
+							<el-date-picker
+								v-model="expectedDeliveryDateModel"
+								type="date"
+								value-format="YYYY-MM-DD"
+								placeholder="可选"
+								style="width: 100%"
 							/>
 						</el-form-item>
 					</el-col>
@@ -583,11 +590,7 @@
 								</el-form-item>
 							</el-col>
 							<el-col :span="4" class="purchase-workspace__item-action">
-								<el-button
-									text
-									type="danger"
-									@click="removeItem(index)"
-								>
+								<el-button text type="danger" @click="removeItem(index)">
 									删除明细
 								</el-button>
 							</el-col>
@@ -596,12 +599,7 @@
 				</el-card>
 
 				<el-form-item label="备注">
-					<el-input
-						v-model="form.remark"
-						type="textarea"
-						:rows="4"
-						placeholder="可选"
-					/>
+					<el-input v-model="form.remark" type="textarea" :rows="4" placeholder="可选" />
 				</el-form-item>
 			</el-form>
 
@@ -647,10 +645,7 @@ import {
 	showElementErrorFromError,
 	showElementWarningFromError
 } from '../shared/error-message';
-import {
-	loadDepartmentOptions,
-	loadUserOptions
-} from '../../utils/lookup-options.js';
+import { loadDepartmentOptions, loadUserOptions } from '../../utils/lookup-options.js';
 import type {
 	DepartmentOption,
 	PerformanceAccessContext,
@@ -703,8 +698,7 @@ const WORKSPACE_CONFIG_MAP: Record<PurchaseWorkspaceViewKey, PurchaseWorkspaceCo
 	main: {
 		title: '采购管理',
 		statusSummary: '全状态主链',
-		notice:
-			'purchaseOrder 仍是唯一主资源；本页承接创建采购单、详情、询价提交、提交审批、审批、收货与关闭的最小闭环，不扩付款、对账或库存总账联动。',
+		notice: 'purchaseOrder 仍是唯一主资源；本页承接创建采购单、详情、询价提交、提交审批、审批、收货与关闭的最小闭环，不扩付款、对账或库存总账联动。',
 		fixedStatuses: [],
 		actionKeys: [
 			'detail',
@@ -722,8 +716,7 @@ const WORKSPACE_CONFIG_MAP: Record<PurchaseWorkspaceViewKey, PurchaseWorkspaceCo
 	inquiry: {
 		title: '询价管理',
 		statusSummary: 'draft / inquiring',
-		notice:
-			'询价管理只处理 draft -> inquiring 和 inquiring -> pendingApproval 的链路，仍围绕同一张采购单推进。',
+		notice: '询价管理只处理 draft -> inquiring 和 inquiring -> pendingApproval 的链路，仍围绕同一张采购单推进。',
 		fixedStatuses: ['draft', 'inquiring'],
 		actionKeys: ['detail', 'submitInquiry', 'submitApproval'],
 		allowCreate: false
@@ -731,8 +724,7 @@ const WORKSPACE_CONFIG_MAP: Record<PurchaseWorkspaceViewKey, PurchaseWorkspaceCo
 	approval: {
 		title: '采购审批',
 		statusSummary: 'pendingApproval',
-		notice:
-			'采购审批页只处理 pendingApproval 状态；reject 固定回 draft，不在前端直改状态。',
+		notice: '采购审批页只处理 pendingApproval 状态；reject 固定回 draft，不在前端直改状态。',
 		fixedStatuses: ['pendingApproval'],
 		actionKeys: ['detail', 'approve', 'reject'],
 		allowCreate: false
@@ -740,8 +732,7 @@ const WORKSPACE_CONFIG_MAP: Record<PurchaseWorkspaceViewKey, PurchaseWorkspaceCo
 	execution: {
 		title: '订单管理',
 		statusSummary: 'approved / received / closed',
-		notice:
-			'订单管理是 purchaseOrder 执行视角别名，不新增第二套订单资源；仅展示执行态与关闭态。',
+		notice: '订单管理是 purchaseOrder 执行视角别名，不新增第二套订单资源；仅展示执行态与关闭态。',
 		fixedStatuses: ['approved', 'received', 'closed'],
 		actionKeys: ['detail', 'receive', 'close'],
 		allowCreate: false
@@ -749,8 +740,7 @@ const WORKSPACE_CONFIG_MAP: Record<PurchaseWorkspaceViewKey, PurchaseWorkspaceCo
 	receipt: {
 		title: '收货管理',
 		statusSummary: 'approved / received',
-		notice:
-			'收货管理只处理 approved / received 视图，支持累计收货；close 仍通过采购单动作完成。',
+		notice: '收货管理只处理 approved / received 视图，支持累计收货；close 仍通过采购单动作完成。',
 		fixedStatuses: ['approved', 'received'],
 		actionKeys: ['detail', 'receive'],
 		allowCreate: false
@@ -807,13 +797,16 @@ const roleFact = computed(() =>
 	})
 );
 const showAddButton = computed(
-	() => workspaceConfig.value.allowCreate && checkPerm(performancePurchaseOrderService.permission.add)
+	() =>
+		workspaceConfig.value.allowCreate &&
+		checkPerm(performancePurchaseOrderService.permission.add)
 );
-const purchaseOrderStatusOptions = computed<Array<{ label: string; value: PurchaseOrderStatus }>>(() =>
-	dict.get(PURCHASE_ORDER_STATUS_DICT_KEY).value.map(item => ({
-		label: item.label,
-		value: item.value as PurchaseOrderStatus
-	}))
+const purchaseOrderStatusOptions = computed<Array<{ label: string; value: PurchaseOrderStatus }>>(
+	() =>
+		dict.get(PURCHASE_ORDER_STATUS_DICT_KEY).value.map(item => ({
+			label: item.label,
+			value: item.value as PurchaseOrderStatus
+		}))
 );
 const currentStatusOptions = computed(() => {
 	if (!workspaceConfig.value.fixedStatuses.length) {
@@ -1090,7 +1083,9 @@ async function openEdit(row: PurchaseOrderRecord) {
 			expectedDeliveryDate: detail.expectedDeliveryDate || '',
 			currency: detail.currency || 'CNY',
 			remark: detail.remark || '',
-			items: detail.items?.length ? detail.items.map(cloneItem) : [createEmptyPurchaseOrderItem()]
+			items: detail.items?.length
+				? detail.items.map(cloneItem)
+				: [createEmptyPurchaseOrderItem()]
 		});
 		formVisible.value = true;
 	} catch (error: unknown) {
@@ -1373,9 +1368,15 @@ function canShowAction(action: PurchaseActionKey, row: PurchaseOrderRecord) {
 		case 'detail':
 			return checkPerm(performancePurchaseOrderService.permission.info);
 		case 'edit':
-			return checkPerm(performancePurchaseOrderService.permission.update) && row.status === 'draft';
+			return (
+				checkPerm(performancePurchaseOrderService.permission.update) &&
+				row.status === 'draft'
+			);
 		case 'delete':
-			return checkPerm(performancePurchaseOrderService.permission.delete) && row.status === 'draft';
+			return (
+				checkPerm(performancePurchaseOrderService.permission.delete) &&
+				row.status === 'draft'
+			);
 		case 'submitInquiry':
 			return (
 				checkPerm(performancePurchaseOrderService.permission.submitInquiry) &&

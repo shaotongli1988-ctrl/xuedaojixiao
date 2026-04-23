@@ -3,7 +3,10 @@
  */
 
 import type { AnnualInspectionRecord, AnnualInspectionStats } from '../types';
-import { createPerformanceOfficeLedgerService, PerformanceOfficeLedgerService } from './office-ledger';
+import {
+	createPerformanceOfficeLedgerService,
+	PerformanceOfficeLedgerService
+} from './office-ledger';
 import {
 	decodeAnnualInspectionRecord,
 	decodeAnnualInspectionStats
@@ -23,8 +26,7 @@ export default class PerformanceAnnualInspectionService extends PerformanceOffic
 	}
 }
 
-export const performanceAnnualInspectionService =
-	createPerformanceOfficeLedgerService<AnnualInspectionRecord, AnnualInspectionStats>(
-		'annualInspection',
-		annualInspectionServiceDecoders
-	);
+export const performanceAnnualInspectionService = createPerformanceOfficeLedgerService<
+	AnnualInspectionRecord,
+	AnnualInspectionStats
+>('annualInspection', annualInspectionServiceDecoders);

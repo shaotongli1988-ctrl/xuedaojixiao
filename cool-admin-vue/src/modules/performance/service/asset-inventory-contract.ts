@@ -19,10 +19,7 @@ import {
 
 const ASSET_INVENTORY_STATUS = ['draft', 'counting', 'completed', 'closed'] as const;
 
-function decodeAssetInventoryStatus(
-	value: unknown,
-	field: string
-): AssetInventoryStatus {
+function decodeAssetInventoryStatus(value: unknown, field: string): AssetInventoryStatus {
 	return expectPerformanceServiceEnum(value, field, ASSET_INVENTORY_STATUS);
 }
 
@@ -34,9 +31,18 @@ export function decodeAssetInventoryRecord(
 
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
-		inventoryNo: expectPerformanceServiceOptionalString(record.inventoryNo, `${field}.inventoryNo`),
-		scopeLabel: expectPerformanceServiceOptionalString(record.scopeLabel, `${field}.scopeLabel`),
-		departmentId: expectPerformanceServiceOptionalNumber(record.departmentId, `${field}.departmentId`),
+		inventoryNo: expectPerformanceServiceOptionalString(
+			record.inventoryNo,
+			`${field}.inventoryNo`
+		),
+		scopeLabel: expectPerformanceServiceOptionalString(
+			record.scopeLabel,
+			`${field}.scopeLabel`
+		),
+		departmentId: expectPerformanceServiceOptionalNumber(
+			record.departmentId,
+			`${field}.departmentId`
+		),
 		departmentName: expectPerformanceServiceOptionalString(
 			record.departmentName,
 			`${field}.departmentName`
@@ -44,12 +50,18 @@ export function decodeAssetInventoryRecord(
 		location: expectPerformanceServiceOptionalString(record.location, `${field}.location`),
 		ownerId: expectPerformanceServiceOptionalNumber(record.ownerId, `${field}.ownerId`),
 		ownerName: expectPerformanceServiceOptionalString(record.ownerName, `${field}.ownerName`),
-		plannedDate: expectPerformanceServiceOptionalString(record.plannedDate, `${field}.plannedDate`),
+		plannedDate: expectPerformanceServiceOptionalString(
+			record.plannedDate,
+			`${field}.plannedDate`
+		),
 		completedDate: expectPerformanceServiceOptionalString(
 			record.completedDate,
 			`${field}.completedDate`
 		),
-		assetCount: expectPerformanceServiceOptionalNumber(record.assetCount, `${field}.assetCount`),
+		assetCount: expectPerformanceServiceOptionalNumber(
+			record.assetCount,
+			`${field}.assetCount`
+		),
 		matchedCount: expectPerformanceServiceOptionalNumber(
 			record.matchedCount,
 			`${field}.matchedCount`
@@ -63,7 +75,10 @@ export function decodeAssetInventoryRecord(
 			record.status === undefined
 				? undefined
 				: decodeAssetInventoryStatus(record.status, `${field}.status`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
 		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`)
 	};
 }

@@ -36,10 +36,7 @@ const DASHBOARD_CROSS_SCOPE_TYPE = ['global', 'department_tree'] as const;
 const DASHBOARD_CROSS_DATA_STATUS = ['ready', 'delayed', 'unavailable'] as const;
 const DASHBOARD_GRADE = ['S', 'A', 'B', 'C'] as const;
 
-function decodeDashboardCrossMetricCode(
-	value: unknown,
-	field: string
-): DashboardCrossMetricCode {
+function decodeDashboardCrossMetricCode(value: unknown, field: string): DashboardCrossMetricCode {
 	return expectPerformanceServiceEnum(value, field, DASHBOARD_CROSS_METRIC_CODE);
 }
 
@@ -50,17 +47,11 @@ function decodeDashboardCrossSourceDomain(
 	return expectPerformanceServiceEnum(value, field, DASHBOARD_CROSS_SOURCE_DOMAIN);
 }
 
-function decodeDashboardCrossScopeType(
-	value: unknown,
-	field: string
-): DashboardCrossScopeType {
+function decodeDashboardCrossScopeType(value: unknown, field: string): DashboardCrossScopeType {
 	return expectPerformanceServiceEnum(value, field, DASHBOARD_CROSS_SCOPE_TYPE);
 }
 
-function decodeDashboardCrossDataStatus(
-	value: unknown,
-	field: string
-): DashboardCrossDataStatus {
+function decodeDashboardCrossDataStatus(value: unknown, field: string): DashboardCrossDataStatus {
 	return expectPerformanceServiceEnum(value, field, DASHBOARD_CROSS_DATA_STATUS);
 }
 
@@ -138,7 +129,10 @@ function decodeDashboardCrossMetricCard(
 		scopeType: decodeDashboardCrossScopeType(record.scopeType, `${field}.scopeType`),
 		dataStatus: decodeDashboardCrossDataStatus(record.dataStatus, `${field}.dataStatus`),
 		statusText: expectPerformanceServiceString(record.statusText, `${field}.statusText`),
-		metricValue: expectPerformanceServiceNullableNumber(record.metricValue, `${field}.metricValue`),
+		metricValue: expectPerformanceServiceNullableNumber(
+			record.metricValue,
+			`${field}.metricValue`
+		),
 		departmentId: expectPerformanceServiceNullableNumber(
 			record.departmentId,
 			`${field}.departmentId`

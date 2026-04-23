@@ -44,19 +44,25 @@ export default class PerformanceTeacherAttributionConflictService extends BaseSe
 	}
 
 	createConflict(data: TeacherAttributionConflictCreatePayload) {
-		return asPerformanceServicePromise<TeacherAttributionConflictRecord>(this.request({
-			url: '/create',
-			method: 'POST',
-			data
-		}), decodeTeacherAttributionConflictRecord);
+		return asPerformanceServicePromise<TeacherAttributionConflictRecord>(
+			this.request({
+				url: '/create',
+				method: 'POST',
+				data
+			}),
+			decodeTeacherAttributionConflictRecord
+		);
 	}
 
 	resolveConflict(data: TeacherAttributionConflictResolvePayload) {
-		return asPerformanceServicePromise<TeacherAttributionConflictResolveResult>(this.request({
-			url: '/resolve',
-			method: 'POST',
-			data
-		}), decodeTeacherAttributionConflictResolveResult);
+		return asPerformanceServicePromise<TeacherAttributionConflictResolveResult>(
+			this.request({
+				url: '/resolve',
+				method: 'POST',
+				data
+			}),
+			decodeTeacherAttributionConflictResolveResult
+		);
 	}
 }
 

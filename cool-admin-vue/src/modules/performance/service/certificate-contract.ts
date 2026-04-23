@@ -49,10 +49,7 @@ function decodeCertificateStatus(value: unknown, field: string): CertificateStat
 	return expectPerformanceServiceEnum(value, field, CERTIFICATE_STATUS);
 }
 
-function decodeCertificateRecordStatus(
-	value: unknown,
-	field: string
-): CertificateRecordStatus {
+function decodeCertificateRecordStatus(value: unknown, field: string): CertificateRecordStatus {
 	return expectPerformanceServiceEnum(value, field, CERTIFICATE_RECORD_STATUS);
 }
 
@@ -69,14 +66,26 @@ export function decodeCertificateRecord(
 		category: decodeOptionalNullableString(record.category, `${field}.category`),
 		issuer: decodeOptionalNullableString(record.issuer, `${field}.issuer`),
 		description: decodeOptionalNullableString(record.description, `${field}.description`),
-		validityMonths: decodeOptionalNullableNumber(record.validityMonths, `${field}.validityMonths`),
-		sourceCourseId: decodeOptionalNullableNumber(record.sourceCourseId, `${field}.sourceCourseId`),
+		validityMonths: decodeOptionalNullableNumber(
+			record.validityMonths,
+			`${field}.validityMonths`
+		),
+		sourceCourseId: decodeOptionalNullableNumber(
+			record.sourceCourseId,
+			`${field}.sourceCourseId`
+		),
 		status:
 			record.status === undefined
 				? undefined
 				: decodeCertificateStatus(record.status, `${field}.status`),
-		issuedCount: expectPerformanceServiceOptionalNumber(record.issuedCount, `${field}.issuedCount`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
+		issuedCount: expectPerformanceServiceOptionalNumber(
+			record.issuedCount,
+			`${field}.issuedCount`
+		),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
 		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`)
 	};
 }
@@ -104,16 +113,25 @@ function decodeCertificateLedgerRecord(
 			record.certificateName,
 			`${field}.certificateName`
 		),
-		employeeId: expectPerformanceServiceOptionalNumber(record.employeeId, `${field}.employeeId`),
+		employeeId: expectPerformanceServiceOptionalNumber(
+			record.employeeId,
+			`${field}.employeeId`
+		),
 		employeeName: expectPerformanceServiceOptionalString(
 			record.employeeName,
 			`${field}.employeeName`
 		),
 		departmentId: decodeOptionalNullableNumber(record.departmentId, `${field}.departmentId`),
-		departmentName: decodeOptionalNullableString(record.departmentName, `${field}.departmentName`),
+		departmentName: decodeOptionalNullableString(
+			record.departmentName,
+			`${field}.departmentName`
+		),
 		issuedAt: expectPerformanceServiceString(record.issuedAt, `${field}.issuedAt`),
 		issuedBy: expectPerformanceServiceOptionalString(record.issuedBy, `${field}.issuedBy`),
-		sourceCourseId: decodeOptionalNullableNumber(record.sourceCourseId, `${field}.sourceCourseId`),
+		sourceCourseId: decodeOptionalNullableNumber(
+			record.sourceCourseId,
+			`${field}.sourceCourseId`
+		),
 		status:
 			record.status === undefined
 				? undefined

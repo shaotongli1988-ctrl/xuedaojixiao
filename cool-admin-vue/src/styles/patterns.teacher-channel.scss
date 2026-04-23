@@ -14,8 +14,7 @@
 	--teacher-channel-text: var(--app-text-primary);
 	--teacher-channel-text-secondary: var(--app-text-secondary);
 	--teacher-channel-text-tertiary: var(--app-text-tertiary);
-	--teacher-channel-hover-bg:
-		color-mix(in srgb, var(--app-accent-brand-soft) 52%, transparent);
+	--teacher-channel-hover-bg: color-mix(in srgb, var(--app-accent-brand-soft) 52%, transparent);
 
 	:deep(.el-card) {
 		border-color: var(--teacher-channel-border);

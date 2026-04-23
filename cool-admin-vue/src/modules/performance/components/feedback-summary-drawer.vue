@@ -65,10 +65,7 @@
 
 			<el-card shadow="never">
 				<template #header>单条反馈记录</template>
-				<el-empty
-					v-if="!canViewRecords"
-					description="当前角色仅允许查看汇总结果"
-				/>
+				<el-empty v-if="!canViewRecords" description="当前角色仅允许查看汇总结果" />
 				<el-empty
 					v-else-if="!summary?.records?.length"
 					description="暂无可展示的单条反馈记录"

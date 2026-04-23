@@ -51,13 +51,7 @@ function handleDrilldown() {
 		</div>
 
 		<footer class="dashboard-cross-metric__footer">
-			<el-button
-				v-if="clickable"
-				type="primary"
-				plain
-				size="small"
-				@click="handleDrilldown"
-			>
+			<el-button v-if="clickable" type="primary" plain size="small" @click="handleDrilldown">
 				进入页面
 			</el-button>
 		</footer>

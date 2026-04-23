@@ -21,10 +21,7 @@ test('frontend normal office modules expose the requested admin ledgers', async 
 	assert.match(source, /designCollab:\s*createBaseConfig<DesignCollabRecord>/);
 	assert.match(source, /expressCollab:\s*createBaseConfig<ExpressCollabRecord>/);
 	assert.match(source, /vehicle:\s*createBaseConfig<VehicleRecord>/);
-	assert.match(
-		source,
-		/intellectualProperty:\s*createBaseConfig<IntellectualPropertyRecord>/
-	);
+	assert.match(source, /intellectualProperty:\s*createBaseConfig<IntellectualPropertyRecord>/);
 	assert.match(source, /documentReference:\s*\{\s*prop:\s*'documentIds'/);
 	assert.match(source, /route:\s*'\/performance\/office\/vehicle'/);
 	assert.match(source, /route:\s*'\/performance\/office\/intellectual-property'/);

@@ -75,35 +75,47 @@ export default class PerformanceAssessmentService extends BaseService {
 	}
 
 	submit(data: AssessmentActionRequest) {
-		return asPerformanceServicePromise<AssessmentRecord>(this.request({
-			url: '/submit',
-			method: 'POST',
-			data
-		}), decodeAssessmentRecord);
+		return asPerformanceServicePromise<AssessmentRecord>(
+			this.request({
+				url: '/submit',
+				method: 'POST',
+				data
+			}),
+			decodeAssessmentRecord
+		);
 	}
 
 	approve(data: AssessmentReviewRequest) {
-		return asPerformanceServicePromise<AssessmentRecord>(this.request({
-			url: '/approve',
-			method: 'POST',
-			data
-		}), decodeAssessmentRecord);
+		return asPerformanceServicePromise<AssessmentRecord>(
+			this.request({
+				url: '/approve',
+				method: 'POST',
+				data
+			}),
+			decodeAssessmentRecord
+		);
 	}
 
 	reject(data: AssessmentReviewRequest) {
-		return asPerformanceServicePromise<AssessmentRecord>(this.request({
-			url: '/reject',
-			method: 'POST',
-			data
-		}), decodeAssessmentRecord);
+		return asPerformanceServicePromise<AssessmentRecord>(
+			this.request({
+				url: '/reject',
+				method: 'POST',
+				data
+			}),
+			decodeAssessmentRecord
+		);
 	}
 
 	exportSummary(data: AssessmentExportQuery) {
-		return asPerformanceServicePromise<AssessmentExportRows>(this.request({
-			url: '/export',
-			method: 'POST',
-			data
-		}), decodeAssessmentExportRows);
+		return asPerformanceServicePromise<AssessmentExportRows>(
+			this.request({
+				url: '/export',
+				method: 'POST',
+				data
+			}),
+			decodeAssessmentExportRows
+		);
 	}
 }
 

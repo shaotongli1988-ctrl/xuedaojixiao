@@ -40,17 +40,11 @@ function decodeOptionalNullableNumber(value: unknown, field: string) {
 	return expectPerformanceServiceNullableNumber(value, field);
 }
 
-function decodeCourseLearningTaskStatus(
-	value: unknown,
-	field: string
-): CourseLearningTaskStatus {
+function decodeCourseLearningTaskStatus(value: unknown, field: string): CourseLearningTaskStatus {
 	return expectPerformanceServiceEnum(value, field, COURSE_LEARNING_TASK_STATUS);
 }
 
-function decodeCourseLearningTaskType(
-	value: unknown,
-	field: string
-): CourseLearningTaskType {
+function decodeCourseLearningTaskType(value: unknown, field: string): CourseLearningTaskType {
 	return expectPerformanceServiceEnum(value, field, COURSE_LEARNING_TASK_TYPE);
 }
 
@@ -95,7 +89,7 @@ export function decodeCourseLearningPageResult(
 				? undefined
 				: expectPerformanceServiceArray(record.list, `${field}.list`).map((item, index) =>
 						decodeCourseLearningTaskRecord(item, `${field}.list[${index}]`)
-				  ),
+					),
 		pagination: {
 			page: expectPerformanceServiceNumber(pagination.page, `${field}.pagination.page`),
 			size: expectPerformanceServiceNumber(pagination.size, `${field}.pagination.size`),

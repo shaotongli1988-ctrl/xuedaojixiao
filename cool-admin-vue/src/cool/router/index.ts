@@ -230,23 +230,23 @@ router.beforeEach(async (to, from, next) => {
 				return;
 			}
 		} else {
-				const routePermission =
-					ROUTE_PERMISSION_BY_PATH[to.path as keyof typeof ROUTE_PERMISSION_BY_PATH];
+			const routePermission =
+				ROUTE_PERMISSION_BY_PATH[to.path as keyof typeof ROUTE_PERMISSION_BY_PATH];
 
-				if (routePermission && !user.info) {
-					try {
-						await user.get();
-					} catch (error) {
-						user.clear();
-						next('/login');
+			if (routePermission && !user.info) {
+				try {
+					await user.get();
+				} catch (error) {
+					user.clear();
+					next('/login');
 					return;
 				}
 			}
 
-				if (routePermission && !checkPerm(routePermission)) {
-					next('/403');
-					return;
-				}
+			if (routePermission && !checkPerm(routePermission)) {
+				next('/403');
+				return;
+			}
 
 			process.add(to); // 添加路由进程
 		}

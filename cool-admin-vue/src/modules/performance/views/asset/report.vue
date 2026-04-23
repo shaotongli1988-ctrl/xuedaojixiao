@@ -9,7 +9,9 @@
 			:columns="columns"
 			:filters="filters"
 			:create-filters="createFilters"
-			:fetch-page="performanceAssetReportService.fetchPage.bind(performanceAssetReportService)"
+			:fetch-page="
+				performanceAssetReportService.fetchPage.bind(performanceAssetReportService)
+			"
 			:toolbar-actions="toolbarActions"
 		/>
 		<el-card shadow="never" v-loading="loading">
@@ -40,12 +42,7 @@ import type {
 	AssetReportSummary
 } from '../../types';
 import { PERMISSIONS } from '../../../base/generated/permissions.generated';
-import {
-	assetStatusTagMap,
-	disposalStatusTagMap,
-	enumOptions,
-	formatMoney
-} from './shared';
+import { assetStatusTagMap, disposalStatusTagMap, enumOptions, formatMoney } from './shared';
 import type { CrudToolbarAction } from '../shared/crud-page-shell';
 import { resolveErrorMessage, showElementErrorFromError } from '../shared/error-message';
 
@@ -90,7 +87,9 @@ const toolbarActions: CrudToolbarAction[] = [
 		label: '导出',
 		permission: PERMISSIONS.performance.assetReport.export,
 		handler: async context => {
-			const filters = normalizeFilters((context.filters || createFilters()) as AssetReportFilters);
+			const filters = normalizeFilters(
+				(context.filters || createFilters()) as AssetReportFilters
+			);
 			const response = await performanceAssetReportService.exportReport(filters);
 			const exportedList = extractList(response);
 
@@ -145,7 +144,12 @@ function normalizeFilters(raw: AssetReportFilters): AssetReportExportQuery {
 }
 
 function extractList(
-	response: AssetReportExportResult | AssetReportPageResult | AssetReportRecord[] | null | undefined
+	response:
+		| AssetReportExportResult
+		| AssetReportPageResult
+		| AssetReportRecord[]
+		| null
+		| undefined
 ) {
 	if (Array.isArray(response)) {
 		return response;
@@ -179,7 +183,9 @@ function downloadExportAsExcel(list: AssetReportRecord[], reportDate?: string) {
 			item.assetName || '',
 			item.category || '',
 			item.departmentName || '',
-			assetStatusTagMap[item.assetStatus as keyof typeof assetStatusTagMap]?.label || item.assetStatus || '',
+			assetStatusTagMap[item.assetStatus as keyof typeof assetStatusTagMap]?.label ||
+				item.assetStatus ||
+				'',
 			Number(item.originalAmount || 0).toFixed(2),
 			Number(item.netValue || 0).toFixed(2),
 			Number(item.monthlyDepreciation || 0).toFixed(2),
@@ -194,7 +200,6 @@ function downloadExportAsExcel(list: AssetReportRecord[], reportDate?: string) {
 
 	ElMessage.success('导出成功');
 }
-
 </script>
 
 <style lang="scss" scoped>

@@ -50,7 +50,10 @@ export function decodeAssetDepreciationRecord(
 			record.assetStatus === undefined
 				? undefined
 				: decodeAssetStatus(record.assetStatus, `${field}.assetStatus`),
-		departmentId: expectPerformanceServiceOptionalNumber(record.departmentId, `${field}.departmentId`),
+		departmentId: expectPerformanceServiceOptionalNumber(
+			record.departmentId,
+			`${field}.departmentId`
+		),
 		departmentName: expectPerformanceServiceOptionalString(
 			record.departmentName,
 			`${field}.departmentName`
@@ -59,8 +62,14 @@ export function decodeAssetDepreciationRecord(
 			record.depreciationMonth,
 			`${field}.depreciationMonth`
 		),
-		originalAmount: expectPerformanceServiceNumber(record.originalAmount, `${field}.originalAmount`),
-		residualValue: expectPerformanceServiceNumber(record.residualValue, `${field}.residualValue`),
+		originalAmount: expectPerformanceServiceNumber(
+			record.originalAmount,
+			`${field}.originalAmount`
+		),
+		residualValue: expectPerformanceServiceNumber(
+			record.residualValue,
+			`${field}.residualValue`
+		),
 		monthlyDepreciation: expectPerformanceServiceNumber(
 			record.monthlyDepreciation,
 			`${field}.monthlyDepreciation`
@@ -98,7 +107,10 @@ export function decodeAssetDepreciationSummary(
 			record.totalAccumulatedDepreciation,
 			`${field}.totalAccumulatedDepreciation`
 		),
-		totalNetValue: expectPerformanceServiceNumber(record.totalNetValue, `${field}.totalNetValue`),
+		totalNetValue: expectPerformanceServiceNumber(
+			record.totalNetValue,
+			`${field}.totalNetValue`
+		),
 		currentMonthDepreciation: expectPerformanceServiceNumber(
 			record.currentMonthDepreciation,
 			`${field}.currentMonthDepreciation`

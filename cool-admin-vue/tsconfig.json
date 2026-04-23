@@ -21,11 +21,6 @@
 			"/~/*": ["./packages/*"]
 		}
 	},
-	"include": [
-		"src/**/*.ts",
-		"src/**/*.tsx",
-		"src/**/*.vue",
-		"build/cool/eps.ssot.d.ts"
-	],
+	"include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "build/cool/eps.ssot.d.ts"],
 	"exclude": ["node_modules", "dist"]
 }

@@ -90,13 +90,17 @@
 				</el-table-column>
 				<el-table-column prop="status" label="状态" width="110">
 					<template #default="{ row }">
-						<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+						<el-tag :type="statusTagType(row.status)">{{
+							statusLabel(row.status)
+						}}</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
 				<el-table-column label="操作" fixed="right" min-width="380">
 					<template #default="{ row }">
-						<el-button v-if="showInfoButton" text @click="openDetail(row)">详情</el-button>
+						<el-button v-if="showInfoButton" text @click="openDetail(row)"
+							>详情</el-button
+						>
 						<el-button
 							v-if="canViewSourceCourse(row)"
 							text
@@ -203,7 +207,11 @@
 		>
 			<el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
 				<el-alert
-					:title="editingCertificate?.status === 'active' ? '启用中证书只允许保持 active 或停用为 retired。' : '新建证书默认保存为 draft，可在编辑时启用。'"
+					:title="
+						editingCertificate?.status === 'active'
+							? '启用中证书只允许保持 active 或停用为 retired。'
+							: '新建证书默认保存为 draft，可在编辑时启用。'
+					"
 					:type="editingCertificate?.status === 'active' ? 'warning' : 'info'"
 					:closable="false"
 					show-icon
@@ -367,12 +375,7 @@
 			</template>
 		</el-dialog>
 
-		<el-dialog
-			v-model="recordVisible"
-			title="证书发放记录"
-			width="960px"
-			destroy-on-close
-		>
+		<el-dialog v-model="recordVisible" title="证书发放记录" width="960px" destroy-on-close>
 			<div class="certificate-page__record-toolbar">
 				<el-select
 					v-model="recordFilters.employeeId"
@@ -519,10 +522,7 @@ import {
 	showElementErrorFromError,
 	showElementWarningFromError
 } from '../shared/error-message';
-import {
-	loadDepartmentOptions,
-	loadUserOptions
-} from '../../utils/lookup-options.js';
+import { loadDepartmentOptions, loadUserOptions } from '../../utils/lookup-options.js';
 import {
 	consumeRoutePreset,
 	firstQueryValue,
@@ -595,12 +595,11 @@ const issueRules: FormRules = {
 	issuedAt: [{ required: true, message: '请选择发放时间', trigger: 'change' }]
 };
 
-const certificateStatusOptions = computed<Array<{ label: string; value: CertificateStatus }>>(
-	() =>
-		dict.get(CERTIFICATE_STATUS_DICT_KEY).value.map(item => ({
-			label: item.label,
-			value: item.value as CertificateStatus
-		}))
+const certificateStatusOptions = computed<Array<{ label: string; value: CertificateStatus }>>(() =>
+	dict.get(CERTIFICATE_STATUS_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as CertificateStatus
+	}))
 );
 
 const certificateRecordStatusOptions = computed<
@@ -625,7 +624,9 @@ const showCapabilityPortraitButton = computed(
 		checkPerm(performanceCapabilityService.permission.page) &&
 		checkPerm(performanceCapabilityService.permission.portraitInfo)
 );
-const showRecordButton = computed(() => checkPerm(performanceCertificateService.permission.recordPage));
+const showRecordButton = computed(() =>
+	checkPerm(performanceCertificateService.permission.recordPage)
+);
 const roleFact = computed(() =>
 	resolvePerformanceRoleFact({
 		personaKey: accessContext.value?.activePersonaKey || null,
@@ -649,9 +650,7 @@ const formStatusOptions = computed<Array<{ label: string; value: CertificateStat
 		);
 	}
 
-	return certificateStatusOptions.value.filter(item =>
-		['draft', 'active'].includes(item.value)
-	);
+	return certificateStatusOptions.value.filter(item => ['draft', 'active'].includes(item.value));
 });
 const validityMonthsModel = computed<number | undefined>({
 	get: () => form.validityMonths ?? undefined,
@@ -987,10 +986,7 @@ async function submitIssue() {
 }
 
 function canEdit(row: CertificateRecord) {
-	return (
-		checkPerm(performanceCertificateService.permission.update) &&
-		row.status !== 'retired'
-	);
+	return checkPerm(performanceCertificateService.permission.update) && row.status !== 'retired';
 }
 
 function canViewSourceCourse(row: CertificateRecord | CertificateLedgerRecord) {
@@ -1002,10 +998,7 @@ function canViewCapabilityPortrait(row: CertificateLedgerRecord) {
 }
 
 function canIssue(row: CertificateRecord) {
-	return (
-		checkPerm(performanceCertificateService.permission.issue) &&
-		row.status === 'active'
-	);
+	return checkPerm(performanceCertificateService.permission.issue) && row.status === 'active';
 }
 
 function statusLabel(status?: CertificateStatus) {
@@ -1060,7 +1053,6 @@ function normalizeOptionalNumber(value?: number | null) {
 
 	return Number(value);
 }
-
 </script>
 
 <style lang="scss" scoped>

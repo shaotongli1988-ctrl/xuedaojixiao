@@ -5,10 +5,7 @@
  */
 import { BaseService } from '/@/cool';
 import { asPerformanceServicePromise } from './service-contract';
-import {
-	decodeSalaryPageResult,
-	decodeSalaryRecord
-} from './salary-contract';
+import { decodeSalaryPageResult, decodeSalaryRecord } from './salary-contract';
 import type {
 	SalaryAddChangePayload,
 	SalaryArchivePayload,
@@ -44,48 +41,48 @@ export default class PerformanceSalaryService extends BaseService {
 	}
 
 	fetchInfo(params: SalaryInfoQuery) {
-		return asPerformanceServicePromise<SalaryRecord>(
-			super.info(params),
-			decodeSalaryRecord
-		);
+		return asPerformanceServicePromise<SalaryRecord>(super.info(params), decodeSalaryRecord);
 	}
 
 	createSalary(data: SalaryCreatePayload) {
-		return asPerformanceServicePromise<SalaryRecord>(
-			super.add(data),
-			decodeSalaryRecord
-		);
+		return asPerformanceServicePromise<SalaryRecord>(super.add(data), decodeSalaryRecord);
 	}
 
 	updateSalary(data: SalaryUpdatePayload) {
+		return asPerformanceServicePromise<SalaryRecord>(super.update(data), decodeSalaryRecord);
+	}
+
+	confirmSalary(data: SalaryConfirmPayload) {
 		return asPerformanceServicePromise<SalaryRecord>(
-			super.update(data),
+			this.request({
+				url: '/confirm',
+				method: 'POST',
+				data
+			}),
 			decodeSalaryRecord
 		);
 	}
 
-	confirmSalary(data: SalaryConfirmPayload) {
-		return asPerformanceServicePromise<SalaryRecord>(this.request({
-			url: '/confirm',
-			method: 'POST',
-			data
-		}), decodeSalaryRecord);
-	}
-
 	archiveSalary(data: SalaryArchivePayload) {
-		return asPerformanceServicePromise<SalaryRecord>(this.request({
-			url: '/archive',
-			method: 'POST',
-			data
-		}), decodeSalaryRecord);
+		return asPerformanceServicePromise<SalaryRecord>(
+			this.request({
+				url: '/archive',
+				method: 'POST',
+				data
+			}),
+			decodeSalaryRecord
+		);
 	}
 
 	addChange(data: SalaryAddChangePayload) {
-		return asPerformanceServicePromise<SalaryRecord>(this.request({
-			url: '/changeAdd',
-			method: 'POST',
-			data
-		}), decodeSalaryRecord);
+		return asPerformanceServicePromise<SalaryRecord>(
+			this.request({
+				url: '/changeAdd',
+				method: 'POST',
+				data
+			}),
+			decodeSalaryRecord
+		);
 	}
 }
 

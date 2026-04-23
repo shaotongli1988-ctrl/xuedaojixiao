@@ -65,29 +65,38 @@ export default class PerformanceFeedbackService extends BaseService {
 	}
 
 	submitFeedback(data: FeedbackSubmitPayload) {
-		return asPerformanceServicePromise<FeedbackTaskRecord>(this.request({
-			url: '/submit',
-			method: 'POST',
-			data
-		}), decodeFeedbackTaskRecord);
+		return asPerformanceServicePromise<FeedbackTaskRecord>(
+			this.request({
+				url: '/submit',
+				method: 'POST',
+				data
+			}),
+			decodeFeedbackTaskRecord
+		);
 	}
 
 	fetchSummary(params: FeedbackSummaryQuery) {
-		return asPerformanceServicePromise<FeedbackSummary>(this.request({
-			url: '/summary',
-			method: 'GET',
-			params: {
-				id: params.taskId
-			}
-		}), decodeFeedbackSummary);
+		return asPerformanceServicePromise<FeedbackSummary>(
+			this.request({
+				url: '/summary',
+				method: 'GET',
+				params: {
+					id: params.taskId
+				}
+			}),
+			decodeFeedbackSummary
+		);
 	}
 
 	exportSummary(data: FeedbackExportQuery) {
-		return asPerformanceServicePromise<FeedbackExportRow[]>(this.request({
-			url: '/export',
-			method: 'POST',
-			data
-		}), decodeFeedbackExportRows);
+		return asPerformanceServicePromise<FeedbackExportRow[]>(
+			this.request({
+				url: '/export',
+				method: 'POST',
+				data
+			}),
+			decodeFeedbackExportRows
+		);
 	}
 }
 

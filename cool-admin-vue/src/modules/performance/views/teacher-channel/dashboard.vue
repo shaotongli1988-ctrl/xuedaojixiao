@@ -7,129 +7,147 @@
 		description="页面内容已切换到保护态。请联系管理员开通看板访问权限后再查看聚合摘要。"
 	>
 		<div class="teacher-channel-dashboard-page">
-		<el-card shadow="never" class="teacher-channel-dashboard-page__hero-card">
-			<div class="teacher-channel-dashboard-page__hero">
-				<div>
-					<div class="teacher-channel-dashboard-page__eyebrow">班主任化 / 主题 19</div>
-					<h2>班主任渠道合作看板</h2>
-					<p>当前页面只消费 `/admin/performance/teacherDashboard/summary` 聚合结果。</p>
+			<el-card shadow="never" class="teacher-channel-dashboard-page__hero-card">
+				<div class="teacher-channel-dashboard-page__hero">
+					<div>
+						<div class="teacher-channel-dashboard-page__eyebrow">
+							班主任化 / 主题 19
+						</div>
+						<h2>班主任渠道合作看板</h2>
+						<p>
+							当前页面只消费 `/admin/performance/teacherDashboard/summary` 聚合结果。
+						</p>
+					</div>
+
+					<div class="teacher-channel-dashboard-page__hero-actions">
+						<el-tag effect="plain" type="info">{{ roleFact.roleLabel }}</el-tag>
+						<el-tag effect="plain" :type="teacherCapabilityTagType">
+							{{ teacherCapabilityLabel }}
+						</el-tag>
+						<el-button type="primary" :loading="loading" @click="refresh"
+							>刷新看板</el-button
+						>
+					</div>
 				</div>
 
-				<div class="teacher-channel-dashboard-page__hero-actions">
-					<el-tag effect="plain" type="info">{{ roleFact.roleLabel }}</el-tag>
-					<el-tag effect="plain" :type="teacherCapabilityTagType">
-						{{ teacherCapabilityLabel }}
-					</el-tag>
-					<el-button type="primary" :loading="loading" @click="refresh"
-						>刷新看板</el-button
-					>
-				</div>
-			</div>
+				<el-alert
+					:title="
+						isReadOnlyRole
+							? '当前账号无主题19任何写权限，仅查看授权范围内聚合摘要。'
+							: '看板只展示聚合卡片、待跟进摘要和分布统计，不提供复杂钻取。'
+					"
+					:type="isReadOnlyRole ? 'info' : 'success'"
+					:closable="false"
+					show-icon
+				/>
+			</el-card>
 
 			<el-alert
-				:title="
-					isReadOnlyRole
-						? '当前账号无主题19任何写权限，仅查看授权范围内聚合摘要。'
-						: '看板只展示聚合卡片、待跟进摘要和分布统计，不提供复杂钻取。'
-				"
-				:type="isReadOnlyRole ? 'info' : 'success'"
+				v-if="pageError"
+				class="teacher-channel-dashboard-page__error"
+				type="warning"
+				:title="pageError"
 				:closable="false"
 				show-icon
 			/>
-		</el-card>
 
-		<el-alert
-			v-if="pageError"
-			class="teacher-channel-dashboard-page__error"
-			type="warning"
-			:title="pageError"
-			:closable="false"
-			show-icon
-		/>
-
-		<el-row :gutter="16">
-			<el-col v-for="item in summaryCards" :key="item.key" :xs="24" :sm="12" :lg="6">
-				<el-card
-					shadow="never"
-					class="teacher-channel-dashboard-page__metric-card"
-					v-loading="loading"
-				>
-					<div class="teacher-channel-dashboard-page__metric-label">{{ item.label }}</div>
-					<div class="teacher-channel-dashboard-page__metric-value">{{ item.value }}</div>
-					<div class="teacher-channel-dashboard-page__metric-tip">{{ item.tip }}</div>
-				</el-card>
-			</el-col>
-		</el-row>
-
-		<el-row :gutter="16">
-			<el-col :xs="24" :lg="12">
-				<el-card shadow="never" v-loading="loading" class="teacher-channel-dashboard-page__content-card">
-					<template #header>
-						<div class="teacher-channel-dashboard-page__section-header">
-							<span>待跟进摘要</span>
-							<el-tag effect="plain" type="warning">today / overdue</el-tag>
+			<el-row :gutter="16">
+				<el-col v-for="item in summaryCards" :key="item.key" :xs="24" :sm="12" :lg="6">
+					<el-card
+						shadow="never"
+						class="teacher-channel-dashboard-page__metric-card"
+						v-loading="loading"
+					>
+						<div class="teacher-channel-dashboard-page__metric-label">
+							{{ item.label }}
 						</div>
-					</template>
+						<div class="teacher-channel-dashboard-page__metric-value">
+							{{ item.value }}
+						</div>
+						<div class="teacher-channel-dashboard-page__metric-tip">{{ item.tip }}</div>
+					</el-card>
+				</el-col>
+			</el-row>
 
-					<div class="teacher-channel-dashboard-page__todo-grid">
-						<article class="teacher-channel-dashboard-page__todo-item">
-							<div class="teacher-channel-dashboard-page__todo-label">今日待跟进</div>
-							<div class="teacher-channel-dashboard-page__todo-value">
-								{{ summary.pendingFollowCount ?? 0 }}
+			<el-row :gutter="16">
+				<el-col :xs="24" :lg="12">
+					<el-card
+						shadow="never"
+						v-loading="loading"
+						class="teacher-channel-dashboard-page__content-card"
+					>
+						<template #header>
+							<div class="teacher-channel-dashboard-page__section-header">
+								<span>待跟进摘要</span>
+								<el-tag effect="plain" type="warning">today / overdue</el-tag>
 							</div>
-						</article>
-						<article class="teacher-channel-dashboard-page__todo-item">
-							<div class="teacher-channel-dashboard-page__todo-label">
-								已逾期待跟进
+						</template>
+
+						<div class="teacher-channel-dashboard-page__todo-grid">
+							<article class="teacher-channel-dashboard-page__todo-item">
+								<div class="teacher-channel-dashboard-page__todo-label">
+									今日待跟进
+								</div>
+								<div class="teacher-channel-dashboard-page__todo-value">
+									{{ summary.pendingFollowCount ?? 0 }}
+								</div>
+							</article>
+							<article class="teacher-channel-dashboard-page__todo-item">
+								<div class="teacher-channel-dashboard-page__todo-label">
+									已逾期待跟进
+								</div>
+								<div
+									class="teacher-channel-dashboard-page__todo-value teacher-channel-dashboard-page__todo-value--danger"
+								>
+									{{ summary.overdueFollowCount ?? 0 }}
+								</div>
+							</article>
+						</div>
+					</el-card>
+				</el-col>
+
+				<el-col :xs="24" :lg="12">
+					<el-card
+						shadow="never"
+						v-loading="loading"
+						class="teacher-channel-dashboard-page__content-card"
+					>
+						<template #header>
+							<div class="teacher-channel-dashboard-page__section-header">
+								<span>合作 / 班级摘要</span>
+								<el-tag effect="plain" type="info">冻结字段范围</el-tag>
 							</div>
-							<div
-								class="teacher-channel-dashboard-page__todo-value teacher-channel-dashboard-page__todo-value--danger"
+						</template>
+
+						<el-empty
+							v-if="!distributionItems.length && !loading"
+							description="当前范围内暂无分布摘要"
+						/>
+
+						<div v-else class="teacher-channel-dashboard-page__distribution">
+							<article
+								v-for="(item, index) in distributionItems"
+								:key="`${item.key || item.status || item.label || item.name || index}`"
+								class="teacher-channel-dashboard-page__distribution-item"
 							>
-								{{ summary.overdueFollowCount ?? 0 }}
-							</div>
-						</article>
-					</div>
-				</el-card>
-			</el-col>
-
-			<el-col :xs="24" :lg="12">
-				<el-card shadow="never" v-loading="loading" class="teacher-channel-dashboard-page__content-card">
-					<template #header>
-						<div class="teacher-channel-dashboard-page__section-header">
-							<span>合作 / 班级摘要</span>
-							<el-tag effect="plain" type="info">冻结字段范围</el-tag>
+								<div>
+									<div class="teacher-channel-dashboard-page__distribution-label">
+										{{ distributionLabel(item) }}
+									</div>
+									<div class="teacher-channel-dashboard-page__distribution-meta">
+										{{ distributionValue(item) }}
+									</div>
+								</div>
+								<el-progress
+									:percentage="distributionPercent(item)"
+									:show-text="false"
+									:stroke-width="10"
+								/>
+							</article>
 						</div>
-					</template>
-
-					<el-empty
-						v-if="!distributionItems.length && !loading"
-						description="当前范围内暂无分布摘要"
-					/>
-
-					<div v-else class="teacher-channel-dashboard-page__distribution">
-						<article
-							v-for="(item, index) in distributionItems"
-							:key="`${item.key || item.status || item.label || item.name || index}`"
-							class="teacher-channel-dashboard-page__distribution-item"
-						>
-							<div>
-								<div class="teacher-channel-dashboard-page__distribution-label">
-									{{ distributionLabel(item) }}
-								</div>
-								<div class="teacher-channel-dashboard-page__distribution-meta">
-									{{ distributionValue(item) }}
-								</div>
-							</div>
-							<el-progress
-								:percentage="distributionPercent(item)"
-								:show-text="false"
-								:stroke-width="10"
-							/>
-						</article>
-					</div>
-				</el-card>
-			</el-col>
-		</el-row>
+					</el-card>
+				</el-col>
+			</el-row>
 		</div>
 	</permission-overlay>
 </template>
@@ -146,10 +164,7 @@ import PermissionOverlay from '../../components/permission-overlay.vue';
 import { performanceAccessContextService } from '../../service/access-context';
 import { resolvePerformanceRoleFact } from '../../service/role-fact';
 import { performanceTeacherDashboardService } from '../../service/teacherDashboard';
-import {
-	showElementWarningFromError,
-	resolveErrorMessage
-} from '../shared/error-message';
+import { showElementWarningFromError, resolveErrorMessage } from '../shared/error-message';
 import type {
 	PerformanceAccessContext,
 	TeacherDashboardDistributionItem,
@@ -196,12 +211,8 @@ const roleFact = computed(() =>
 		roleKind: accessContext.value?.roleKind || null
 	})
 );
-const teacherCapabilityLabel = computed(() =>
-	isReadOnlyRole.value ? '只读能力' : '可写能力'
-);
-const teacherCapabilityTagType = computed(() =>
-	isReadOnlyRole.value ? 'info' : 'success'
-);
+const teacherCapabilityLabel = computed(() => (isReadOnlyRole.value ? '只读能力' : '可写能力'));
+const teacherCapabilityTagType = computed(() => (isReadOnlyRole.value ? 'info' : 'success'));
 
 const summaryCards = computed(() => [
 	{

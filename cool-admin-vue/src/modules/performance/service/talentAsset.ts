@@ -5,10 +5,7 @@
  */
 import { BaseService } from '/@/cool';
 import { asPerformanceServicePromise } from './service-contract';
-import {
-	decodeTalentAssetPageResult,
-	decodeTalentAssetRecord
-} from './talent-asset-contract';
+import { decodeTalentAssetPageResult, decodeTalentAssetRecord } from './talent-asset-contract';
 import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import type {
 	DeleteIdsRequest,

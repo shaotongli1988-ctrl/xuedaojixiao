@@ -38,10 +38,7 @@ function mergeUserRuntimeInfo(value: any, token?: string) {
 	return {
 		...value,
 		permissionMask: value.permissionMask || tokenPayload?.permissionMask || '',
-		isAdmin:
-			typeof value.isAdmin === 'boolean'
-				? value.isAdmin
-				: tokenPayload?.isAdmin === true
+		isAdmin: typeof value.isAdmin === 'boolean' ? value.isAdmin : tokenPayload?.isAdmin === true
 	};
 }
 
@@ -87,9 +84,7 @@ export const useUserStore = defineStore('user', function () {
 	}
 
 	// 用户信息
-	const info = ref<Eps.BaseSysUserEntity | null>(
-		mergeUserRuntimeInfo(data.userInfo, data.token)
-	);
+	const info = ref<Eps.BaseSysUserEntity | null>(mergeUserRuntimeInfo(data.userInfo, data.token));
 
 	// 设置用户信息
 	function set(value: any) {

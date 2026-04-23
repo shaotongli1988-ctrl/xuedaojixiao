@@ -3,7 +3,10 @@
  */
 
 import type { PublicityMaterialRecord, PublicityMaterialStats } from '../types';
-import { createPerformanceOfficeLedgerService, PerformanceOfficeLedgerService } from './office-ledger';
+import {
+	createPerformanceOfficeLedgerService,
+	PerformanceOfficeLedgerService
+} from './office-ledger';
 import {
 	decodePublicityMaterialRecord,
 	decodePublicityMaterialStats
@@ -23,8 +26,7 @@ export default class PerformancePublicityMaterialService extends PerformanceOffi
 	}
 }
 
-export const performancePublicityMaterialService =
-	createPerformanceOfficeLedgerService<PublicityMaterialRecord, PublicityMaterialStats>(
-		'publicityMaterial',
-		publicityMaterialServiceDecoders
-	);
+export const performancePublicityMaterialService = createPerformanceOfficeLedgerService<
+	PublicityMaterialRecord,
+	PublicityMaterialStats
+>('publicityMaterial', publicityMaterialServiceDecoders);

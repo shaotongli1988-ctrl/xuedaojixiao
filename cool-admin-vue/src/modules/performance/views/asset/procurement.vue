@@ -14,10 +14,22 @@
 		:form-fields="formFields"
 		:create-filters="createFilters"
 		:create-empty="createEmptyAssetProcurement"
-		:fetch-page="performanceAssetProcurementService.fetchPage.bind(performanceAssetProcurementService)"
-		:fetch-info="performanceAssetProcurementService.fetchInfo.bind(performanceAssetProcurementService)"
-		:create-item="performanceAssetProcurementService.createProcurement.bind(performanceAssetProcurementService)"
-		:update-item="performanceAssetProcurementService.updateProcurement.bind(performanceAssetProcurementService)"
+		:fetch-page="
+			performanceAssetProcurementService.fetchPage.bind(performanceAssetProcurementService)
+		"
+		:fetch-info="
+			performanceAssetProcurementService.fetchInfo.bind(performanceAssetProcurementService)
+		"
+		:create-item="
+			performanceAssetProcurementService.createProcurement.bind(
+				performanceAssetProcurementService
+			)
+		"
+		:update-item="
+			performanceAssetProcurementService.updateProcurement.bind(
+				performanceAssetProcurementService
+			)
+		"
 		:row-actions="rowActions"
 		create-label="新增入库单"
 		edit-label="编辑入库单"
@@ -28,10 +40,7 @@
 import { computed, onMounted, ref } from 'vue';
 import AssetCrudPage from './asset-crud-page.vue';
 import { performanceAssetProcurementService } from '../../service/asset-procurement';
-import {
-	createEmptyAssetProcurement,
-	type AssetProcurementRecord
-} from '../../types';
+import { createEmptyAssetProcurement, type AssetProcurementRecord } from '../../types';
 import {
 	createElementLookupWarningHandler,
 	loadAssetDepartmentOptions,

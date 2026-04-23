@@ -25,11 +25,7 @@ export type { DepartmentOption } from '../../types';
 export type { AssetOption } from '../../types';
 export type { LookupErrorHandler } from '../../types';
 export type { SupplierOption } from '../../types';
-export {
-	createElementLookupWarningHandler,
-	createLookupWarningHandler,
-	resolveLookupErrorMessage
-};
+export { createElementLookupWarningHandler, createLookupWarningHandler, resolveLookupErrorMessage };
 
 export function toSelectOptions<T extends { id: number; label: string }>(
 	list: T[]

@@ -21,7 +21,9 @@ async function loadTypesModule() {
 				}
 			}).outputText;
 
-			return import(`data:text/javascript;base64,${Buffer.from(transpiled).toString('base64')}`);
+			return import(
+				`data:text/javascript;base64,${Buffer.from(transpiled).toString('base64')}`
+			);
 		});
 	}
 

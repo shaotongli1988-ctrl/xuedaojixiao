@@ -17,11 +17,14 @@ export default class PerformanceTeacherDashboardService extends BaseService {
 	}
 
 	fetchSummary(params?: TeacherDashboardSummaryQuery) {
-		return asPerformanceServicePromise<TeacherDashboardSummary>(this.request({
-			url: '/summary',
-			method: 'GET',
-			params
-		}), decodeTeacherDashboardSummary);
+		return asPerformanceServicePromise<TeacherDashboardSummary>(
+			this.request({
+				url: '/summary',
+				method: 'GET',
+				params
+			}),
+			decodeTeacherDashboardSummary
+		);
 	}
 }
 

@@ -122,13 +122,17 @@
 				</el-table-column>
 				<el-table-column prop="status" label="状态" width="110">
 					<template #default="{ row }">
-						<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+						<el-tag :type="statusTagType(row.status)">{{
+							statusLabel(row.status)
+						}}</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
 				<el-table-column label="操作" fixed="right" min-width="220">
 					<template #default="{ row }">
-						<el-button v-if="showInfoButton" text @click="openDetail(row)">详情</el-button>
+						<el-button v-if="showInfoButton" text @click="openDetail(row)"
+							>详情</el-button
+						>
 						<el-button v-if="canEdit(row)" text type="primary" @click="openEdit(row)">
 							编辑
 						</el-button>
@@ -156,12 +160,7 @@
 			</div>
 		</el-card>
 
-		<el-dialog
-			v-model="detailVisible"
-			title="合同详情"
-			width="860px"
-			destroy-on-close
-		>
+		<el-dialog v-model="detailVisible" title="合同详情" width="860px" destroy-on-close>
 			<div v-if="detailContract" class="contract-page__detail">
 				<el-alert
 					v-if="detailContract.status !== 'draft'"
@@ -172,7 +171,9 @@
 				/>
 				<el-descriptions :column="2" border>
 					<el-descriptions-item label="员工">
-						{{ detailContract.employeeName || employeeLabel(detailContract.employeeId) }}
+						{{
+							detailContract.employeeName || employeeLabel(detailContract.employeeId)
+						}}
 					</el-descriptions-item>
 					<el-descriptions-item label="合同类型">
 						{{ typeLabel(detailContract.type) }}
@@ -199,7 +200,10 @@
 						{{ detailContract.position || '-' }}
 					</el-descriptions-item>
 					<el-descriptions-item label="部门">
-						{{ detailContract.departmentName || departmentLabel(detailContract.departmentId) }}
+						{{
+							detailContract.departmentName ||
+							departmentLabel(detailContract.departmentId)
+						}}
 					</el-descriptions-item>
 					<el-descriptions-item label="状态">
 						<el-tag :type="statusTagType(detailContract.status)">
@@ -224,7 +228,11 @@
 		>
 			<el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
 				<el-alert
-					:title="editingContract?.id ? '仅 draft 合同可编辑；编辑时可保持 draft 或转为 active。' : '新建保存后默认进入 draft 状态。'"
+					:title="
+						editingContract?.id
+							? '仅 draft 合同可编辑；编辑时可保持 draft 或转为 active。'
+							: '新建保存后默认进入 draft 状态。'
+					"
 					:type="editingContract?.id ? 'warning' : 'info'"
 					:closable="false"
 					show-icon
@@ -402,14 +410,8 @@ import { useDict } from '/$/dict';
 import { service } from '/@/cool';
 import { useListPage } from '../../composables/use-list-page.js';
 import { performanceContractService } from '../../service/contract';
-import {
-	loadDepartmentOptions,
-	loadUserOptions
-} from '../../utils/lookup-options.js';
-import {
-	confirmElementAction,
-	runTrackedElementAction
-} from '../shared/action-feedback';
+import { loadDepartmentOptions, loadUserOptions } from '../../utils/lookup-options.js';
+import { confirmElementAction, runTrackedElementAction } from '../shared/action-feedback';
 import {
 	createElementWarningFromErrorHandler,
 	resolveErrorMessage,
@@ -691,7 +693,8 @@ async function submitForm() {
 			contractNumber: form.contractNumber?.trim() || undefined,
 			startDate: form.startDate,
 			endDate: form.endDate,
-			probationPeriod: form.probationPeriod == null ? undefined : Number(form.probationPeriod),
+			probationPeriod:
+				form.probationPeriod == null ? undefined : Number(form.probationPeriod),
 			salary: form.salary == null ? undefined : Number(form.salary),
 			position: form.position?.trim() || undefined,
 			departmentId: form.departmentId || undefined,
@@ -699,7 +702,9 @@ async function submitForm() {
 		};
 
 		if (editingContract.value?.id) {
-			await performanceContractService.updateContract(payload as ContractSaveRequest & { id: number });
+			await performanceContractService.updateContract(
+				payload as ContractSaveRequest & { id: number }
+			);
 		} else {
 			await performanceContractService.createContract(payload);
 		}
@@ -827,7 +832,6 @@ function formatInteger(value?: number | null) {
 
 	return `${Number(value)}`;
 }
-
 </script>
 
 <style lang="scss" scoped>

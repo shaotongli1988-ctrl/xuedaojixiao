@@ -35,10 +35,7 @@ function decodeAssetStatus(value: unknown, field: string): AssetStatus {
 	return expectPerformanceServiceEnum(value, field, ASSET_STATUS);
 }
 
-function decodeAssetMaintenanceStatus(
-	value: unknown,
-	field: string
-): AssetMaintenanceStatus {
+function decodeAssetMaintenanceStatus(value: unknown, field: string): AssetMaintenanceStatus {
 	return expectPerformanceServiceEnum(value, field, ASSET_MAINTENANCE_STATUS);
 }
 
@@ -61,7 +58,10 @@ export function decodeAssetMaintenanceRecord(
 			record.maintenanceType,
 			`${field}.maintenanceType`
 		),
-		vendorName: expectPerformanceServiceOptionalString(record.vendorName, `${field}.vendorName`),
+		vendorName: expectPerformanceServiceOptionalString(
+			record.vendorName,
+			`${field}.vendorName`
+		),
 		cost: expectPerformanceServiceOptionalNumber(record.cost, `${field}.cost`),
 		planDate: expectPerformanceServiceOptionalString(record.planDate, `${field}.planDate`),
 		startDate: expectPerformanceServiceOptionalString(record.startDate, `${field}.startDate`),
@@ -81,7 +81,10 @@ export function decodeAssetMaintenanceRecord(
 			record.status === undefined
 				? undefined
 				: decodeAssetMaintenanceStatus(record.status, `${field}.status`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
 		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`)
 	};
 }

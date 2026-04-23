@@ -5,10 +5,7 @@
  */
 import { BaseService } from '/@/cool';
 import { asPerformanceServicePromise } from './service-contract';
-import {
-	decodeAssetInfoPageResult,
-	decodeAssetInfoRecord
-} from './asset-info-contract';
+import { decodeAssetInfoPageResult, decodeAssetInfoRecord } from './asset-info-contract';
 import type {
 	AssetInfoCreatePayload,
 	AssetInfoInfoQuery,
@@ -36,11 +33,17 @@ export default class PerformanceAssetInfoService extends BaseService {
 	}
 
 	fetchPage(data: AssetInfoPageQuery) {
-		return asPerformanceServicePromise<AssetInfoPageResult>(super.page(data), decodeAssetInfoPageResult);
+		return asPerformanceServicePromise<AssetInfoPageResult>(
+			super.page(data),
+			decodeAssetInfoPageResult
+		);
 	}
 
 	fetchInfo(params: AssetInfoInfoQuery) {
-		return asPerformanceServicePromise<AssetInfoRecord>(super.info(params), decodeAssetInfoRecord);
+		return asPerformanceServicePromise<AssetInfoRecord>(
+			super.info(params),
+			decodeAssetInfoRecord
+		);
 	}
 
 	createAsset(data: AssetInfoCreatePayload) {
@@ -48,7 +51,10 @@ export default class PerformanceAssetInfoService extends BaseService {
 	}
 
 	updateAsset(data: AssetInfoUpdatePayload) {
-		return asPerformanceServicePromise<AssetInfoRecord>(super.update(data), decodeAssetInfoRecord);
+		return asPerformanceServicePromise<AssetInfoRecord>(
+			super.update(data),
+			decodeAssetInfoRecord
+		);
 	}
 
 	removeAsset(data: AssetInfoRemovePayload) {

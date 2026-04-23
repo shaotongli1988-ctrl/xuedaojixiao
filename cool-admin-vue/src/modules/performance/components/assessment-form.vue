@@ -162,7 +162,7 @@ watch(
 									weight: Number(item.weight || 0)
 								}))
 							: createEmptyAssessment().scoreItems
-			  }
+				}
 			: createEmptyAssessment();
 
 		Object.assign(form, next);

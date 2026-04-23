@@ -7,12 +7,33 @@
 	--app-surface-muted: var(--foundation-color-surface-muted);
 	--app-surface-soft: var(--foundation-color-surface-soft);
 	--app-surface-spotlight: var(--foundation-gradient-surface-spotlight);
-	--app-surface-warm-muted:
-		linear-gradient(180deg, color-mix(in srgb, var(--foundation-color-warning-soft) 88%, var(--foundation-color-neutral-0)) 0%, var(--foundation-color-neutral-0) 100%);
-	--app-surface-neutral-muted:
-		linear-gradient(180deg, color-mix(in srgb, var(--foundation-color-neutral-50) 90%, var(--foundation-color-neutral-0)) 0%, var(--foundation-color-neutral-0) 100%);
-	--app-surface-primary:
-		linear-gradient(135deg, color-mix(in srgb, var(--foundation-color-brand-200) 92%, var(--foundation-color-neutral-0)) 0%, color-mix(in srgb, var(--foundation-color-brand-300) 78%, var(--foundation-color-neutral-0)) 100%);
+	--app-surface-warm-muted: linear-gradient(
+		180deg,
+		color-mix(
+				in srgb,
+				var(--foundation-color-warning-soft) 88%,
+				var(--foundation-color-neutral-0)
+			)
+			0%,
+		var(--foundation-color-neutral-0) 100%
+	);
+	--app-surface-neutral-muted: linear-gradient(
+		180deg,
+		color-mix(
+				in srgb,
+				var(--foundation-color-neutral-50) 90%,
+				var(--foundation-color-neutral-0)
+			)
+			0%,
+		var(--foundation-color-neutral-0) 100%
+	);
+	--app-surface-primary: linear-gradient(
+		135deg,
+		color-mix(in srgb, var(--foundation-color-brand-200) 92%, var(--foundation-color-neutral-0))
+			0%,
+		color-mix(in srgb, var(--foundation-color-brand-300) 78%, var(--foundation-color-neutral-0))
+			100%
+	);
 
 	--app-border-strong: var(--foundation-color-neutral-200);
 	--app-border-soft: color-mix(in srgb, var(--foundation-color-neutral-300) 70%, transparent);
@@ -22,7 +43,11 @@
 	--app-text-primary: var(--foundation-color-neutral-900);
 	--app-text-secondary: var(--foundation-color-neutral-700);
 	--app-text-tertiary: var(--foundation-color-neutral-500);
-	--app-text-emphasis: color-mix(in srgb, var(--foundation-color-neutral-900) 92%, var(--foundation-color-brand-900));
+	--app-text-emphasis: color-mix(
+		in srgb,
+		var(--foundation-color-neutral-900) 92%,
+		var(--foundation-color-brand-900)
+	);
 	--app-text-on-primary: #173150;
 	--app-text-on-primary-muted: rgba(23, 49, 80, 0.72);
 
@@ -36,8 +61,11 @@
 	--app-accent-danger-soft: var(--foundation-color-danger-soft);
 	--app-accent-warm: var(--foundation-color-warning-500);
 	--app-accent-warm-soft: var(--foundation-color-warning-soft);
-	--app-accent-warm-text:
-		color-mix(in srgb, var(--foundation-color-neutral-900) 58%, var(--foundation-color-warning-500));
+	--app-accent-warm-text: color-mix(
+		in srgb,
+		var(--foundation-color-neutral-900) 58%,
+		var(--foundation-color-warning-500)
+	);
 
 	--app-chart-label: var(--app-text-tertiary);
 	--app-chart-grid: color-mix(in srgb, var(--foundation-color-neutral-200) 88%, transparent);
@@ -45,9 +73,16 @@
 	--app-chart-series-success: var(--app-accent-success);
 	--app-chart-series-warning: var(--app-accent-warning);
 	--app-chart-series-danger: var(--app-accent-danger);
-	--app-atmosphere-brand: radial-gradient(circle, var(--app-accent-brand-soft) 0%, transparent 72%);
-	--app-atmosphere-warning:
-		radial-gradient(circle, var(--app-accent-warning-soft) 0%, transparent 72%);
+	--app-atmosphere-brand: radial-gradient(
+		circle,
+		var(--app-accent-brand-soft) 0%,
+		transparent 72%
+	);
+	--app-atmosphere-warning: radial-gradient(
+		circle,
+		var(--app-accent-warning-soft) 0%,
+		transparent 72%
+	);
 
 	--app-shadow-surface: var(--foundation-shadow-surface-md);
 	--app-shadow-hover: var(--foundation-shadow-hover-md);
@@ -84,12 +119,22 @@
 	--app-nav-hover-bg: var(--foundation-nav-hover-bg);
 	--app-nav-hover-text: var(--foundation-nav-hover-text);
 
-	--app-shell-topbar-bg:
-		color-mix(in srgb, var(--foundation-color-neutral-0) 94%, var(--foundation-color-brand-soft));
-	--app-shell-process-bg:
-		color-mix(in srgb, var(--foundation-color-neutral-0) 97%, var(--foundation-color-brand-soft));
+	--app-shell-topbar-bg: color-mix(
+		in srgb,
+		var(--foundation-color-neutral-0) 94%,
+		var(--foundation-color-brand-soft)
+	);
+	--app-shell-process-bg: color-mix(
+		in srgb,
+		var(--foundation-color-neutral-0) 97%,
+		var(--foundation-color-brand-soft)
+	);
 	--app-shell-border: color-mix(in srgb, var(--foundation-color-neutral-200) 76%, transparent);
-	--app-control-hover-bg: color-mix(in srgb, var(--foundation-color-neutral-100) 88%, transparent);
+	--app-control-hover-bg: color-mix(
+		in srgb,
+		var(--foundation-color-neutral-100) 88%,
+		transparent
+	);
 }
 
 html.dark {
@@ -100,18 +145,53 @@ html.dark {
 	--app-text-on-primary: #f4f8ff;
 	--app-text-on-primary-muted: rgba(244, 248, 255, 0.82);
 	--app-chart-grid: var(--foundation-color-neutral-200);
-	--app-surface-warm-muted:
-		linear-gradient(180deg, color-mix(in srgb, var(--foundation-color-warning-soft) 88%, var(--foundation-color-neutral-50)) 0%, color-mix(in srgb, var(--foundation-color-warning-soft) 52%, var(--foundation-color-neutral-50)) 100%);
-	--app-surface-neutral-muted:
-		linear-gradient(180deg, color-mix(in srgb, var(--foundation-color-neutral-100) 92%, var(--foundation-color-neutral-50)) 0%, var(--foundation-color-neutral-50) 100%);
-	--app-surface-primary:
-		linear-gradient(135deg, color-mix(in srgb, var(--foundation-color-brand-300) 82%, var(--foundation-color-neutral-50)) 0%, color-mix(in srgb, var(--foundation-color-brand-500) 68%, var(--foundation-color-neutral-50)) 100%);
-	--app-accent-warm-text:
-		color-mix(in srgb, var(--foundation-color-warning-500) 58%, var(--foundation-color-neutral-900));
-	--app-shell-topbar-bg:
-		color-mix(in srgb, var(--foundation-color-neutral-50) 92%, transparent);
-	--app-shell-process-bg:
-		color-mix(in srgb, var(--foundation-color-neutral-50) 96%, transparent);
+	--app-surface-warm-muted: linear-gradient(
+		180deg,
+		color-mix(
+				in srgb,
+				var(--foundation-color-warning-soft) 88%,
+				var(--foundation-color-neutral-50)
+			)
+			0%,
+		color-mix(
+				in srgb,
+				var(--foundation-color-warning-soft) 52%,
+				var(--foundation-color-neutral-50)
+			)
+			100%
+	);
+	--app-surface-neutral-muted: linear-gradient(
+		180deg,
+		color-mix(
+				in srgb,
+				var(--foundation-color-neutral-100) 92%,
+				var(--foundation-color-neutral-50)
+			)
+			0%,
+		var(--foundation-color-neutral-50) 100%
+	);
+	--app-surface-primary: linear-gradient(
+		135deg,
+		color-mix(
+				in srgb,
+				var(--foundation-color-brand-300) 82%,
+				var(--foundation-color-neutral-50)
+			)
+			0%,
+		color-mix(
+				in srgb,
+				var(--foundation-color-brand-500) 68%,
+				var(--foundation-color-neutral-50)
+			)
+			100%
+	);
+	--app-accent-warm-text: color-mix(
+		in srgb,
+		var(--foundation-color-warning-500) 58%,
+		var(--foundation-color-neutral-900)
+	);
+	--app-shell-topbar-bg: color-mix(in srgb, var(--foundation-color-neutral-50) 92%, transparent);
+	--app-shell-process-bg: color-mix(in srgb, var(--foundation-color-neutral-50) 96%, transparent);
 	--app-shell-border: color-mix(in srgb, var(--foundation-color-neutral-300) 36%, transparent);
 	--app-control-hover-bg: color-mix(in srgb, var(--foundation-color-neutral-900) 8%, transparent);
 }

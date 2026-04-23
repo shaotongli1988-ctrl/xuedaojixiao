@@ -117,7 +117,10 @@
 					<template #default="{ row }">
 						<div class="resumePool-page__source-cell">
 							<span>{{ sourceTypeLabel(row.sourceType) }}</span>
-							<span v-if="resumeSourceSummary(row)" class="resumePool-page__source-meta">
+							<span
+								v-if="resumeSourceSummary(row)"
+								class="resumePool-page__source-meta"
+							>
 								{{ resumeSourceSummary(row) }}
 							</span>
 						</div>
@@ -130,13 +133,17 @@
 				</el-table-column>
 				<el-table-column prop="status" label="状态" width="120">
 					<template #default="{ row }">
-						<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+						<el-tag :type="statusTagType(row.status)">{{
+							statusLabel(row.status)
+						}}</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
 				<el-table-column label="操作" fixed="right" min-width="380">
 					<template #default="{ row }">
-						<el-button v-if="showInfoButton" text @click="openDetail(row)">详情</el-button>
+						<el-button v-if="showInfoButton" text @click="openDetail(row)"
+							>详情</el-button
+						>
 						<el-button v-if="canEdit(row)" text type="primary" @click="openEdit(row)">
 							编辑
 						</el-button>
@@ -161,7 +168,9 @@
 							v-if="canCreateInterview(row)"
 							text
 							type="primary"
-							:loading="actionLoadingId === row.id && actionLoadingType === 'interview'"
+							:loading="
+								actionLoadingId === row.id && actionLoadingType === 'interview'
+							"
 							@click="handleCreateInterview(row)"
 						>
 							发起面试
@@ -182,12 +191,7 @@
 			</div>
 		</el-card>
 
-		<el-dialog
-			v-model="detailVisible"
-			title="简历详情"
-			width="980px"
-			destroy-on-close
-		>
+		<el-dialog v-model="detailVisible" title="简历详情" width="980px" destroy-on-close>
 			<div v-if="detailRecord" class="resumePool-page__detail">
 				<el-alert
 					v-if="detailRecord.status === 'archived'"
@@ -206,7 +210,10 @@
 						</el-tag>
 					</el-descriptions-item>
 					<el-descriptions-item label="目标部门">
-						{{ detailRecord.targetDepartmentName || departmentLabel(detailRecord.targetDepartmentId) }}
+						{{
+							detailRecord.targetDepartmentName ||
+							departmentLabel(detailRecord.targetDepartmentId)
+						}}
 					</el-descriptions-item>
 					<el-descriptions-item label="目标岗位">
 						{{ detailRecord.targetPosition || '-' }}
@@ -261,7 +268,9 @@
 						<span v-else>-</span>
 					</el-descriptions-item>
 					<el-descriptions-item label="简历正文" :span="2">
-						<div class="resumePool-page__resume-text">{{ detailRecord.resumeText }}</div>
+						<div class="resumePool-page__resume-text">
+							{{ detailRecord.resumeText }}
+						</div>
 					</el-descriptions-item>
 					<el-descriptions-item label="人才资产 ID">
 						{{ detailRecord.linkedTalentAssetId ?? '-' }}
@@ -291,7 +300,12 @@
 					size="small"
 					class="resumePool-page__attachment-table"
 				>
-					<el-table-column prop="name" label="文件名" min-width="260" show-overflow-tooltip />
+					<el-table-column
+						prop="name"
+						label="文件名"
+						min-width="260"
+						show-overflow-tooltip
+					/>
 					<el-table-column label="大小" width="120">
 						<template #default="{ row }">
 							{{ formatFileSize(row.size) }}
@@ -325,7 +339,11 @@
 		>
 			<el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
 				<el-alert
-					:title="editingRecord?.id ? 'archived 记录禁止编辑；interviewing 不可再次发起面试。' : '新建默认状态为 new。'"
+					:title="
+						editingRecord?.id
+							? 'archived 记录禁止编辑；interviewing 不可再次发起面试。'
+							: '新建默认状态为 new。'
+					"
 					:type="editingRecord?.id ? 'warning' : 'info'"
 					:closable="false"
 					show-icon
@@ -466,10 +484,7 @@
 							上传附件
 						</el-button>
 					</div>
-					<el-empty
-						v-if="!formAttachmentSummaryList.length"
-						description="暂无附件"
-					/>
+					<el-empty v-if="!formAttachmentSummaryList.length" description="暂无附件" />
 					<el-table
 						v-else
 						:data="formAttachmentSummaryList"
@@ -477,14 +492,23 @@
 						size="small"
 						class="resumePool-page__attachment-table"
 					>
-						<el-table-column prop="name" label="文件名" min-width="260" show-overflow-tooltip />
+						<el-table-column
+							prop="name"
+							label="文件名"
+							min-width="260"
+							show-overflow-tooltip
+						/>
 						<el-table-column label="大小" width="120">
 							<template #default="{ row }">
 								{{ formatFileSize(row.size) }}
 							</template>
 						</el-table-column>
 						<el-table-column prop="uploadTime" label="上传时间" min-width="170" />
-						<el-table-column v-if="showDownloadAttachmentButton && editingRecord?.id" label="操作" width="100">
+						<el-table-column
+							v-if="showDownloadAttachmentButton && editingRecord?.id"
+							label="操作"
+							width="100"
+						>
 							<template #default="{ row }">
 								<el-button
 									text
@@ -542,10 +566,7 @@ import { service } from '/@/cool';
 import { exportJsonToExcel } from '/@/plugins/excel/utils';
 import { useRoute, useRouter } from 'vue-router';
 import { useListPage } from '../../composables/use-list-page.js';
-import {
-	confirmElementAction,
-	runTrackedElementAction
-} from '../shared/action-feedback';
+import { confirmElementAction, runTrackedElementAction } from '../shared/action-feedback';
 import {
 	createElementWarningFromErrorHandler,
 	showElementErrorFromError
@@ -579,11 +600,7 @@ interface SpaceSelectionFile {
 }
 
 interface SpaceSelectorRef {
-	open: (options: {
-		title: string;
-		limit: number;
-		multiple: boolean;
-	}) => void;
+	open: (options: { title: string; limit: number; multiple: boolean }) => void;
 }
 
 const { dict } = useDict();
@@ -818,7 +835,9 @@ async function submitForm() {
 			recruitPlanId: form.recruitPlanId || undefined,
 			jobStandardId: form.jobStandardId || undefined,
 			externalLink:
-				form.sourceType === 'external' ? normalizeOptionalText(form.externalLink) : undefined,
+				form.sourceType === 'external'
+					? normalizeOptionalText(form.externalLink)
+					: undefined,
 			attachmentIdList: form.attachmentIdList?.length ? form.attachmentIdList : undefined,
 			status: form.status || 'new'
 		};
@@ -1124,7 +1143,8 @@ function canEdit(row: ResumePoolRecord) {
 
 function canUploadAttachment(row: ResumePoolRecord) {
 	return (
-		checkPerm(performanceResumePoolService.permission.uploadAttachment) && row.status !== 'archived'
+		checkPerm(performanceResumePoolService.permission.uploadAttachment) &&
+		row.status !== 'archived'
 	);
 }
 
@@ -1264,10 +1284,8 @@ function openCreateWithPrefill(prefill?: {
 							prefill?.jobStandardRequirementSummary || null,
 						targetDepartmentId: prefill?.targetDepartmentId || null,
 						targetPosition:
-							prefill?.targetPosition ||
-							prefill?.jobStandardPositionName ||
-							null
-				  }
+							prefill?.targetPosition || prefill?.jobStandardPositionName || null
+					}
 				: null
 	});
 	formVisible.value = true;
@@ -1356,7 +1374,7 @@ function buildResumeSourceSummary(prefill?: {
 		prefill?.recruitPlanId
 			? `${prefill.recruitPlanTitle || '招聘计划'} #${prefill.recruitPlanId}${
 					prefill.recruitPlanStatus ? `（${prefill.recruitPlanStatus}）` : ''
-			  }`
+				}`
 			: '',
 		prefill?.jobStandardId
 			? `${prefill.jobStandardPositionName || '职位标准'} #${prefill.jobStandardId}`
@@ -1412,7 +1430,9 @@ function openUrl(url: string) {
 }
 
 function toRecord(value: unknown): Record<string, unknown> | undefined {
-	return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : undefined;
+	return typeof value === 'object' && value !== null
+		? (value as Record<string, unknown>)
+		: undefined;
 }
 
 function formatFileSize(size?: number | null) {

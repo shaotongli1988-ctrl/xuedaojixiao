@@ -4,12 +4,7 @@
  * 维护重点：列表、详情和动作返回要共享同一份结构约束，避免后端异常字段把工作计划状态机静默带偏。
  */
 
-import type {
-	JsonObject,
-	WorkPlanAssignee,
-	WorkPlanPageResult,
-	WorkPlanRecord
-} from '../types';
+import type { JsonObject, WorkPlanAssignee, WorkPlanPageResult, WorkPlanRecord } from '../types';
 import {
 	decodePerformanceServicePageResult,
 	expectPerformanceServiceArray,
@@ -114,10 +109,20 @@ export function decodeWorkPlanRecord(value: unknown, field = 'workPlanRecord'): 
 
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
-		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
+		updateTime: expectPerformanceServiceOptionalString(
+			record.updateTime,
+			`${field}.updateTime`
+		),
 		title: expectPerformanceServiceString(record.title, `${field}.title`),
-		status: expectPerformanceServiceOptionalEnum(record.status, `${field}.status`, WORK_PLAN_STATUS),
+		status: expectPerformanceServiceOptionalEnum(
+			record.status,
+			`${field}.status`,
+			WORK_PLAN_STATUS
+		),
 		workNo: expectPerformanceServiceOptionalString(record.workNo, `${field}.workNo`),
 		assigneeIds:
 			record.assigneeIds === undefined
@@ -129,14 +134,14 @@ export function decodeWorkPlanRecord(value: unknown, field = 'workPlanRecord'): 
 				: expectPerformanceServiceArray(record.assigneeList, `${field}.assigneeList`).map(
 						(item, index) =>
 							decodeWorkPlanAssignee(item, `${field}.assigneeList[${index}]`)
-				  ),
+					),
 		assigneeNames:
 			record.assigneeNames === undefined
 				? undefined
 				: expectPerformanceServiceArray(record.assigneeNames, `${field}.assigneeNames`).map(
 						(item, index) =>
 							expectPerformanceServiceString(item, `${field}.assigneeNames[${index}]`)
-				  ),
+					),
 		priority: expectPerformanceServiceOptionalEnum(
 			record.priority,
 			`${field}.priority`,
@@ -157,7 +162,10 @@ export function decodeWorkPlanRecord(value: unknown, field = 'workPlanRecord'): 
 			record.plannedStartDate,
 			`${field}.plannedStartDate`
 		),
-		plannedEndDate: decodeOptionalNullableString(record.plannedEndDate, `${field}.plannedEndDate`),
+		plannedEndDate: decodeOptionalNullableString(
+			record.plannedEndDate,
+			`${field}.plannedEndDate`
+		),
 		startedAt: decodeOptionalNullableString(record.startedAt, `${field}.startedAt`),
 		completedAt: decodeOptionalNullableString(record.completedAt, `${field}.completedAt`),
 		progressSummary: decodeOptionalNullableString(

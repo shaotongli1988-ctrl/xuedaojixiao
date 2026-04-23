@@ -49,13 +49,19 @@ export function decodeCapabilityModelRecord(
 		description:
 			record.description === undefined
 				? undefined
-				: expectPerformanceServiceNullableString(record.description, `${field}.description`),
+				: expectPerformanceServiceNullableString(
+						record.description,
+						`${field}.description`
+					),
 		status:
 			record.status === undefined
 				? undefined
 				: decodeCapabilityModelStatus(record.status, `${field}.status`),
 		itemCount: expectPerformanceServiceOptionalNumber(record.itemCount, `${field}.itemCount`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
 		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`)
 	};
 }
@@ -84,11 +90,17 @@ export function decodeCapabilityItemRecord(
 		description:
 			record.description === undefined
 				? undefined
-				: expectPerformanceServiceNullableString(record.description, `${field}.description`),
+				: expectPerformanceServiceNullableString(
+						record.description,
+						`${field}.description`
+					),
 		evidenceHint:
 			record.evidenceHint === undefined
 				? undefined
-				: expectPerformanceServiceNullableString(record.evidenceHint, `${field}.evidenceHint`),
+				: expectPerformanceServiceNullableString(
+						record.evidenceHint,
+						`${field}.evidenceHint`
+					),
 		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`)
 	};
 }
@@ -102,19 +114,31 @@ export function decodeCapabilityPortraitRecord(
 	return {
 		employeeId:
 			expectPerformanceServiceOptionalNumber(record.employeeId, `${field}.employeeId`) ?? 0,
-		employeeName: expectPerformanceServiceOptionalString(record.employeeName, `${field}.employeeName`),
+		employeeName: expectPerformanceServiceOptionalString(
+			record.employeeName,
+			`${field}.employeeName`
+		),
 		departmentId:
 			record.departmentId === undefined
 				? undefined
-				: expectPerformanceServiceNullableNumber(record.departmentId, `${field}.departmentId`),
+				: expectPerformanceServiceNullableNumber(
+						record.departmentId,
+						`${field}.departmentId`
+					),
 		departmentName:
 			record.departmentName === undefined
 				? undefined
-				: expectPerformanceServiceNullableString(record.departmentName, `${field}.departmentName`),
+				: expectPerformanceServiceNullableString(
+						record.departmentName,
+						`${field}.departmentName`
+					),
 		capabilityTags:
 			record.capabilityTags === undefined
 				? undefined
-				: expectPerformanceServiceStringArray(record.capabilityTags, `${field}.capabilityTags`),
+				: expectPerformanceServiceStringArray(
+						record.capabilityTags,
+						`${field}.capabilityTags`
+					),
 		levelSummary:
 			record.levelSummary === undefined
 				? undefined
@@ -129,7 +153,7 @@ export function decodeCapabilityPortraitRecord(
 				: expectPerformanceServiceNullableString(
 						record.lastCertifiedAt,
 						`${field}.lastCertifiedAt`
-				  ),
+					),
 		updatedAt: expectPerformanceServiceOptionalString(record.updatedAt, `${field}.updatedAt`)
 	};
 }

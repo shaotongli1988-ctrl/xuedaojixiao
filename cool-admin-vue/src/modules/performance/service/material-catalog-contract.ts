@@ -29,10 +29,7 @@ function decodeOptionalNullableString(value: unknown, field: string) {
 	return expectPerformanceServiceNullableString(value, field);
 }
 
-function decodeMaterialCatalogStatus(
-	value: unknown,
-	field: string
-): MaterialCatalogStatus {
+function decodeMaterialCatalogStatus(value: unknown, field: string): MaterialCatalogStatus {
 	return expectPerformanceServiceEnum(value, field, MATERIAL_CATALOG_STATUS);
 }
 
@@ -45,14 +42,23 @@ export function decodeMaterialCatalogRecord(
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
 		name: expectPerformanceServiceString(record.name, `${field}.name`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
-		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
+		updateTime: expectPerformanceServiceOptionalString(
+			record.updateTime,
+			`${field}.updateTime`
+		),
 		status:
 			record.status === undefined
 				? undefined
 				: decodeMaterialCatalogStatus(record.status, `${field}.status`),
 		code: expectPerformanceServiceString(record.code, `${field}.code`),
-		materialNo: expectPerformanceServiceOptionalString(record.materialNo, `${field}.materialNo`),
+		materialNo: expectPerformanceServiceOptionalString(
+			record.materialNo,
+			`${field}.materialNo`
+		),
 		unit: expectPerformanceServiceString(record.unit, `${field}.unit`),
 		stockDepartmentCount: expectPerformanceServiceOptionalNumber(
 			record.stockDepartmentCount,
@@ -62,14 +68,23 @@ export function decodeMaterialCatalogRecord(
 			record.departmentCount,
 			`${field}.departmentCount`
 		),
-		currentQty: expectPerformanceServiceOptionalNumber(record.currentQty, `${field}.currentQty`),
+		currentQty: expectPerformanceServiceOptionalNumber(
+			record.currentQty,
+			`${field}.currentQty`
+		),
 		availableQty: expectPerformanceServiceOptionalNumber(
 			record.availableQty,
 			`${field}.availableQty`
 		),
-		reservedQty: expectPerformanceServiceOptionalNumber(record.reservedQty, `${field}.reservedQty`),
+		reservedQty: expectPerformanceServiceOptionalNumber(
+			record.reservedQty,
+			`${field}.reservedQty`
+		),
 		issuedQty: expectPerformanceServiceOptionalNumber(record.issuedQty, `${field}.issuedQty`),
-		safetyStock: expectPerformanceServiceOptionalNumber(record.safetyStock, `${field}.safetyStock`),
+		safetyStock: expectPerformanceServiceOptionalNumber(
+			record.safetyStock,
+			`${field}.safetyStock`
+		),
 		referenceUnitCost: expectPerformanceServiceOptionalNumber(
 			record.referenceUnitCost,
 			`${field}.referenceUnitCost`

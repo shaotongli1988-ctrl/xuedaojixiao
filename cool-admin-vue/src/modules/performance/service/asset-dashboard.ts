@@ -18,11 +18,7 @@ export default class PerformanceAssetDashboardService extends BaseService {
 		super('admin/performance/assetDashboard');
 	}
 
-	fetchSummary(params?: {
-		departmentId?: number;
-		category?: string;
-		keyword?: string;
-	}) {
+	fetchSummary(params?: { departmentId?: number; category?: string; keyword?: string }) {
 		return asPerformanceServicePromise<AssetDashboardSummary>(
 			this.request({
 				url: '/summary',

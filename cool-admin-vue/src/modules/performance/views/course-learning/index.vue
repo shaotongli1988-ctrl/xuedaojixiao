@@ -37,13 +37,17 @@
 				<el-col :xs="24" :md="8">
 					<el-card shadow="never" class="course-learning-page__stat">
 						<div class="course-learning-page__stat-label">背诵任务</div>
-						<div class="course-learning-page__stat-value">{{ recitePagination.total }}</div>
+						<div class="course-learning-page__stat-value">
+							{{ recitePagination.total }}
+						</div>
 					</el-card>
 				</el-col>
 				<el-col :xs="24" :md="8">
 					<el-card shadow="never" class="course-learning-page__stat">
 						<div class="course-learning-page__stat-label">练习任务</div>
-						<div class="course-learning-page__stat-value">{{ practicePagination.total }}</div>
+						<div class="course-learning-page__stat-value">
+							{{ practicePagination.total }}
+						</div>
 					</el-card>
 				</el-col>
 				<el-col :xs="24" :md="8">
@@ -92,7 +96,9 @@
 							<el-table-column prop="title" label="任务标题" min-width="180" />
 							<el-table-column prop="status" label="状态" width="120">
 								<template #default="{ row }">
-									<el-tag :type="taskStatusTag(row.status)">{{ taskStatusLabel(row.status) }}</el-tag>
+									<el-tag :type="taskStatusTag(row.status)">{{
+										taskStatusLabel(row.status)
+									}}</el-tag>
 								</template>
 							</el-table-column>
 							<el-table-column prop="latestScore" label="最近分数" width="100">
@@ -104,7 +110,9 @@
 							<el-table-column prop="evaluatedAt" label="评估时间" min-width="170" />
 							<el-table-column label="操作" width="180" fixed="right">
 								<template #default="{ row }">
-									<el-button text @click="openTaskDetail(row, 'recite')">详情</el-button>
+									<el-button text @click="openTaskDetail(row, 'recite')"
+										>详情</el-button
+									>
 									<el-button
 										text
 										type="primary"
@@ -151,7 +159,9 @@
 							<el-table-column prop="title" label="任务标题" min-width="180" />
 							<el-table-column prop="status" label="状态" width="120">
 								<template #default="{ row }">
-									<el-tag :type="taskStatusTag(row.status)">{{ taskStatusLabel(row.status) }}</el-tag>
+									<el-tag :type="taskStatusTag(row.status)">{{
+										taskStatusLabel(row.status)
+									}}</el-tag>
 								</template>
 							</el-table-column>
 							<el-table-column prop="latestScore" label="最近分数" width="100">
@@ -163,7 +173,9 @@
 							<el-table-column prop="evaluatedAt" label="评估时间" min-width="170" />
 							<el-table-column label="操作" width="180" fixed="right">
 								<template #default="{ row }">
-									<el-button text @click="openTaskDetail(row, 'practice')">详情</el-button>
+									<el-button text @click="openTaskDetail(row, 'practice')"
+										>详情</el-button
+									>
 									<el-button
 										text
 										type="primary"
@@ -221,7 +233,9 @@
 		</template>
 
 		<el-card v-else shadow="never">
-			<el-empty description="缺少课程上下文，请先输入 courseId 或从课程入口携带查询参数进入" />
+			<el-empty
+				description="缺少课程上下文，请先输入 courseId 或从课程入口携带查询参数进入"
+			/>
 		</el-card>
 
 		<el-dialog v-model="detailVisible" title="任务详情" width="760px" destroy-on-close>
@@ -505,10 +519,7 @@ async function fetchExamSummary() {
 	}
 }
 
-async function openTaskDetail(
-	row: CourseLearningTaskRecord,
-	type: 'recite' | 'practice'
-) {
+async function openTaskDetail(row: CourseLearningTaskRecord, type: 'recite' | 'practice') {
 	detailVisible.value = true;
 	detailLoading.value = true;
 	try {
@@ -521,10 +532,7 @@ async function openTaskDetail(
 	}
 }
 
-async function openTaskSubmit(
-	row: CourseLearningTaskRecord,
-	type: 'recite' | 'practice'
-) {
+async function openTaskSubmit(row: CourseLearningTaskRecord, type: 'recite' | 'practice') {
 	submitVisible.value = true;
 	submitLoading.value = false;
 	submissionText.value = '';
@@ -552,11 +560,11 @@ async function submitCurrentTask() {
 				? await performanceCourseReciteService.submitTask({
 						id: submitTask.value.id,
 						submissionText: submissionText.value
-				  })
+					})
 				: await performanceCoursePracticeService.submitTask({
 						id: submitTask.value.id,
 						submissionText: submissionText.value
-				  });
+					});
 		submitTask.value = result;
 		submitVisible.value = false;
 		ElMessage.success('提交成功');

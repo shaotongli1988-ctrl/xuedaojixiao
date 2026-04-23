@@ -5,10 +5,7 @@
  */
 import { BaseService } from '/@/cool';
 import { asPerformanceServicePromise } from './service-contract';
-import {
-	decodeJobStandardPageResult,
-	decodeJobStandardRecord
-} from './job-standard-contract';
+import { decodeJobStandardPageResult, decodeJobStandardRecord } from './job-standard-contract';
 import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import type {
 	JobStandardInfoQuery,
@@ -61,11 +58,14 @@ export default class PerformanceJobStandardService extends BaseService {
 	}
 
 	setStatus(data: JobStandardStatusUpdateRequest) {
-		return asPerformanceServicePromise<JobStandardRecord>(this.request({
-			url: '/setStatus',
-			method: 'POST',
-			data
-		}), decodeJobStandardRecord);
+		return asPerformanceServicePromise<JobStandardRecord>(
+			this.request({
+				url: '/setStatus',
+				method: 'POST',
+				data
+			}),
+			decodeJobStandardRecord
+		);
 	}
 }
 

@@ -33,17 +33,17 @@ const chartOption = computed(() => ({
 		left: '4%',
 		right: '4%',
 		bottom: 32,
-		containLabel: true,
+		containLabel: true
 	},
 	tooltip: {
 		trigger: 'axis',
 		axisPointer: {
-			type: 'shadow',
+			type: 'shadow'
 		},
 		formatter: (items: Array<{ axisValue: string; data: number }>) => {
 			const current = items[0];
 			return `${current?.axisValue || ''}<br/>平均分：${Number(current?.data || 0).toFixed(2)}`;
-		},
+		}
 	},
 	xAxis: {
 		type: 'category',
@@ -51,25 +51,25 @@ const chartOption = computed(() => ({
 		axisLabel: {
 			color: axisLabelColor.value,
 			interval: 0,
-			rotate: props.items.length > 5 ? 18 : 0,
+			rotate: props.items.length > 5 ? 18 : 0
 		},
 		axisLine: {
 			lineStyle: {
-				color: splitLineColor.value,
-			},
-		},
+				color: splitLineColor.value
+			}
+		}
 	},
 	yAxis: {
 		type: 'value',
 		min: 0,
 		axisLabel: {
-			color: axisLabelColor.value,
+			color: axisLabelColor.value
 		},
 		splitLine: {
 			lineStyle: {
-				color: splitLineColor.value,
-			},
-		},
+				color: splitLineColor.value
+			}
+		}
 	},
 	series: [
 		{
@@ -78,10 +78,10 @@ const chartOption = computed(() => ({
 			data: props.items.map(item => item.averageScore),
 			itemStyle: {
 				color: barColor.value,
-				borderRadius: [10, 10, 0, 0],
-			},
-		},
-	],
+				borderRadius: [10, 10, 0, 0]
+			}
+		}
+	]
 }));
 </script>
 
@@ -96,7 +96,12 @@ const chartOption = computed(() => ({
 			</template>
 
 			<el-empty v-if="!items.length" description="当前暂无部门分布数据" />
-			<v-chart v-else :option="chartOption" autoresize class="dashboard-department-chart__chart" />
+			<v-chart
+				v-else
+				:option="chartOption"
+				autoresize
+				class="dashboard-department-chart__chart"
+			/>
 		</el-card>
 	</div>
 </template>

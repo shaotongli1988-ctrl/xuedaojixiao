@@ -72,16 +72,31 @@
 				<el-button v-if="canGoCreate" type="primary" plain @click="$emit('go-create')">
 					去创建{{ targetLabel }}
 				</el-button>
-				<el-button v-if="canAccept" type="primary" :loading="loading" @click="$emit('accept')">
+				<el-button
+					v-if="canAccept"
+					type="primary"
+					:loading="loading"
+					@click="$emit('accept')"
+				>
 					采用
 				</el-button>
 				<el-button v-if="canIgnore" :loading="loading" @click="$emit('ignore')">
 					忽略
 				</el-button>
-				<el-button v-if="canReject" type="warning" :loading="loading" @click="$emit('reject')">
+				<el-button
+					v-if="canReject"
+					type="warning"
+					:loading="loading"
+					@click="$emit('reject')"
+				>
 					驳回
 				</el-button>
-				<el-button v-if="canRevoke" type="danger" :loading="loading" @click="$emit('revoke')">
+				<el-button
+					v-if="canRevoke"
+					type="danger"
+					:loading="loading"
+					@click="$emit('revoke')"
+				>
 					撤销
 				</el-button>
 			</div>
@@ -121,7 +136,11 @@ const { dict } = useDict();
 
 const canOperate = computed(() => {
 	return Boolean(
-		props.canAccept || props.canIgnore || props.canReject || props.canRevoke || props.canGoCreate
+		props.canAccept ||
+			props.canIgnore ||
+			props.canReject ||
+			props.canRevoke ||
+			props.canGoCreate
 	);
 });
 
@@ -135,7 +154,8 @@ const typeLabel = computed(() => {
 
 const targetLabel = computed(() => {
 	return (
-		dict.getMeta(SUGGESTION_TYPE_DICT_KEY, props.suggestion?.suggestionType)?.extra?.targetLabel ||
+		dict.getMeta(SUGGESTION_TYPE_DICT_KEY, props.suggestion?.suggestionType)?.extra
+			?.targetLabel ||
 		props.suggestion?.suggestionType ||
 		'-'
 	);
@@ -155,8 +175,8 @@ const linkedEntityLabel = computed(() => {
 	}
 
 	const target =
-		dict.getMeta(SUGGESTION_TYPE_DICT_KEY, props.suggestion.linkedEntityType)?.extra?.targetLabel ||
-		props.suggestion.linkedEntityType;
+		dict.getMeta(SUGGESTION_TYPE_DICT_KEY, props.suggestion.linkedEntityType)?.extra
+			?.targetLabel || props.suggestion.linkedEntityType;
 
 	return `${target} #${props.suggestion.linkedEntityId}`;
 });

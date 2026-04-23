@@ -31,10 +31,7 @@
 import { computed, onMounted, ref } from 'vue';
 import AssetCrudPage from './asset-crud-page.vue';
 import { performanceAssetInfoService } from '../../service/asset-info';
-import {
-	createEmptyAssetInfo,
-	type AssetInfoRecord
-} from '../../types';
+import { createEmptyAssetInfo, type AssetInfoRecord } from '../../types';
 import {
 	createElementLookupWarningHandler,
 	loadAssetDepartmentOptions,

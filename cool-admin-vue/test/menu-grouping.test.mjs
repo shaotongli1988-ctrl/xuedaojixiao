@@ -52,7 +52,13 @@ function createPerformanceGroup() {
 			createPage(105, '/performance/goals', '目标地图', 5, 'icon-data-board'),
 			createPage(106, '/performance/recruitment-center', '招聘中心', 6, 'icon-user'),
 			createPage(107, '/performance/course', '培训课程管理', 7, 'icon-task'),
-			createPage(108, '/performance/teacher-channel/dashboard', '首页看板', 8, 'icon-data-board'),
+			createPage(
+				108,
+				'/performance/teacher-channel/dashboard',
+				'首页看板',
+				8,
+				'icon-data-board'
+			),
 			createPage(109, '/performance/teacher-channel/teacher', '班主任列表', 9, 'icon-user'),
 			createPage(110, '/performance/teacher-channel/todo', '我的待跟进', 10, 'icon-time'),
 			createPage(111, '/performance/teacher-channel/class', '班级列表', 11, 'icon-course'),
@@ -227,10 +233,7 @@ test('duplicate top-level performance roots are collapsed into one grouped navig
 		grouped.map(item => item.meta?.label || item.name),
 		['绩效中心', '人才中心', '目标&计划', '行政协同', '采购&资产']
 	);
-	assert.equal(
-		grouped.filter(item => item.meta?.label === '绩效中心').length,
-		1
-	);
+	assert.equal(grouped.filter(item => item.meta?.label === '绩效中心').length, 1);
 
 	const talent = grouped.find(item => item.meta?.label === '人才中心');
 	const office = grouped.find(item => item.meta?.label === '行政协同');
@@ -254,12 +257,24 @@ test('management modules collapse into a single 系统管理 group', () => {
 	const grouped = buildMenuGroups(
 		[
 			createPerformanceGroup(),
-			createGenericGroup(2, '/sys', '系统管理', 2, [createPage(201, '/sys/role', '权限管理', 1)]),
-			createGenericGroup(3, '/tutorial', '框架教程', 3, [createPage(301, '/tutorial/demo', '示例', 1)]),
-			createGenericGroup(4, '/common', '通用', 4, [createPage(401, '/common/directive', '指令', 1)]),
-			createGenericGroup(5, '/data', '数据管理', 5, [createPage(501, '/dict/info', '字典管理', 1)]),
-			createGenericGroup(6, '/user', '用户管理', 6, [createPage(601, '/user/list', '用户列表', 1)]),
-			createGenericGroup(7, '/plugin', '扩展管理', 7, [createPage(701, '/plugin/list', '插件列表', 1)])
+			createGenericGroup(2, '/sys', '系统管理', 2, [
+				createPage(201, '/sys/role', '权限管理', 1)
+			]),
+			createGenericGroup(3, '/tutorial', '框架教程', 3, [
+				createPage(301, '/tutorial/demo', '示例', 1)
+			]),
+			createGenericGroup(4, '/common', '通用', 4, [
+				createPage(401, '/common/directive', '指令', 1)
+			]),
+			createGenericGroup(5, '/data', '数据管理', 5, [
+				createPage(501, '/dict/info', '字典管理', 1)
+			]),
+			createGenericGroup(6, '/user', '用户管理', 6, [
+				createPage(601, '/user/list', '用户列表', 1)
+			]),
+			createGenericGroup(7, '/plugin', '扩展管理', 7, [
+				createPage(701, '/plugin/list', '插件列表', 1)
+			])
 		],
 		{
 			isGroupEnabled: true
@@ -288,12 +303,12 @@ test('normalizeMenuIcon maps unavailable aliases to existing local icons', () =>
 });
 
 test('all performance menu page icons resolve to existing base svg assets', async () => {
-	const menuPath = new URL('../src/modules/base/../../../../cool-admin-midway/src/modules/base/menu.json', import.meta.url);
+	const menuPath = new URL(
+		'../src/modules/base/../../../../cool-admin-midway/src/modules/base/menu.json',
+		import.meta.url
+	);
 	const svgDir = new URL('../src/modules/base/static/svg/', import.meta.url);
-	const [menuSource, svgFiles] = await Promise.all([
-		readFile(menuPath, 'utf8'),
-		readdir(svgDir)
-	]);
+	const [menuSource, svgFiles] = await Promise.all([readFile(menuPath, 'utf8'), readdir(svgDir)]);
 	const svgNames = new Set(svgFiles.map(name => name.replace(/\.svg$/, '')));
 	const performancePages = [];
 

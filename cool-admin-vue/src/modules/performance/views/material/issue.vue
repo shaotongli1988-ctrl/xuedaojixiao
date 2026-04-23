@@ -15,10 +15,18 @@
 		:form-fields="formFields"
 		:create-filters="createFilters"
 		:create-empty="createEmptyMaterialIssue"
-		:fetch-page="performanceMaterialIssueService.fetchPage.bind(performanceMaterialIssueService)"
-		:fetch-info="performanceMaterialIssueService.fetchInfo.bind(performanceMaterialIssueService)"
-		:create-item="performanceMaterialIssueService.createIssue.bind(performanceMaterialIssueService)"
-		:update-item="performanceMaterialIssueService.updateIssue.bind(performanceMaterialIssueService)"
+		:fetch-page="
+			performanceMaterialIssueService.fetchPage.bind(performanceMaterialIssueService)
+		"
+		:fetch-info="
+			performanceMaterialIssueService.fetchInfo.bind(performanceMaterialIssueService)
+		"
+		:create-item="
+			performanceMaterialIssueService.createIssue.bind(performanceMaterialIssueService)
+		"
+		:update-item="
+			performanceMaterialIssueService.updateIssue.bind(performanceMaterialIssueService)
+		"
 		:row-actions="rowActions"
 		create-label="新增领用单"
 		edit-label="编辑领用单"
@@ -29,10 +37,7 @@
 import { computed, onMounted, ref } from 'vue';
 import MaterialCrudPage from './material-crud-page.vue';
 import { performanceMaterialIssueService } from '../../service/material-issue';
-import {
-	createEmptyMaterialIssue,
-	type MaterialIssueRecord
-} from '../../types';
+import { createEmptyMaterialIssue, type MaterialIssueRecord } from '../../types';
 import {
 	createElementLookupWarningHandler,
 	loadMaterialCatalogOptions,
@@ -76,7 +81,12 @@ const departmentOptions = ref<CrudSelectOption[]>([]);
 const userOptions = ref<CrudSelectOption[]>([]);
 
 const filters = computed(() => [
-	{ prop: 'keyword', label: '关键词', type: 'text', placeholder: '单号 / 标题 / 物资 / 领用人 / 部门' },
+	{
+		prop: 'keyword',
+		label: '关键词',
+		type: 'text',
+		placeholder: '单号 / 标题 / 物资 / 领用人 / 部门'
+	},
 	{
 		prop: 'departmentId',
 		label: '领用部门',

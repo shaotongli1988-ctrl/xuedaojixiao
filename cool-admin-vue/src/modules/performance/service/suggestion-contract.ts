@@ -41,23 +41,59 @@ export function decodeSuggestionRecord(
 
 	return {
 		id: expectPerformanceServiceOptionalNumber(record.id, `${field}.id`),
-		departmentId: expectPerformanceServiceOptionalNumber(record.departmentId, `${field}.departmentId`),
-		departmentName: expectPerformanceServiceOptionalString(record.departmentName, `${field}.departmentName`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
+		departmentId: expectPerformanceServiceOptionalNumber(
+			record.departmentId,
+			`${field}.departmentId`
+		),
+		departmentName: expectPerformanceServiceOptionalString(
+			record.departmentName,
+			`${field}.departmentName`
+		),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
 		status:
 			record.status === undefined
 				? undefined
 				: decodeSuggestionStatus(record.status, `${field}.status`),
-		assessmentId: expectPerformanceServiceOptionalNumber(record.assessmentId, `${field}.assessmentId`),
-		employeeId: expectPerformanceServiceOptionalNumber(record.employeeId, `${field}.employeeId`),
-		employeeName: expectPerformanceServiceOptionalString(record.employeeName, `${field}.employeeName`),
-		periodValue: expectPerformanceServiceOptionalString(record.periodValue, `${field}.periodValue`),
+		assessmentId: expectPerformanceServiceOptionalNumber(
+			record.assessmentId,
+			`${field}.assessmentId`
+		),
+		employeeId: expectPerformanceServiceOptionalNumber(
+			record.employeeId,
+			`${field}.employeeId`
+		),
+		employeeName: expectPerformanceServiceOptionalString(
+			record.employeeName,
+			`${field}.employeeName`
+		),
+		periodValue: expectPerformanceServiceOptionalString(
+			record.periodValue,
+			`${field}.periodValue`
+		),
 		suggestionType: decodeSuggestionType(record.suggestionType, `${field}.suggestionType`),
-		periodType: expectPerformanceServiceOptionalString(record.periodType, `${field}.periodType`),
-		triggerLabel: expectPerformanceServiceOptionalString(record.triggerLabel, `${field}.triggerLabel`),
-		handleTime: expectPerformanceServiceOptionalString(record.handleTime, `${field}.handleTime`),
-		ruleVersion: expectPerformanceServiceOptionalString(record.ruleVersion, `${field}.ruleVersion`),
-		revokeReason: expectPerformanceServiceOptionalString(record.revokeReason, `${field}.revokeReason`),
+		periodType: expectPerformanceServiceOptionalString(
+			record.periodType,
+			`${field}.periodType`
+		),
+		triggerLabel: expectPerformanceServiceOptionalString(
+			record.triggerLabel,
+			`${field}.triggerLabel`
+		),
+		handleTime: expectPerformanceServiceOptionalString(
+			record.handleTime,
+			`${field}.handleTime`
+		),
+		ruleVersion: expectPerformanceServiceOptionalString(
+			record.ruleVersion,
+			`${field}.ruleVersion`
+		),
+		revokeReason: expectPerformanceServiceOptionalString(
+			record.revokeReason,
+			`${field}.revokeReason`
+		),
 		handlerId:
 			record.handlerId === undefined
 				? undefined
@@ -65,18 +101,24 @@ export function decodeSuggestionRecord(
 		handlerName:
 			record.handlerName === undefined
 				? undefined
-				: expectPerformanceServiceNullableString(record.handlerName, `${field}.handlerName`),
+				: expectPerformanceServiceNullableString(
+						record.handlerName,
+						`${field}.handlerName`
+					),
 		linkedEntityType:
 			record.linkedEntityType === undefined
 				? undefined
 				: expectPerformanceServiceNullableString(
 						record.linkedEntityType,
 						`${field}.linkedEntityType`
-				  ),
+					),
 		linkedEntityId:
 			record.linkedEntityId === undefined
 				? undefined
-				: expectPerformanceServiceNullableNumber(record.linkedEntityId, `${field}.linkedEntityId`)
+				: expectPerformanceServiceNullableNumber(
+						record.linkedEntityId,
+						`${field}.linkedEntityId`
+					)
 	};
 }
 
@@ -98,7 +140,10 @@ export function decodeSuggestionAcceptResult(
 			record.prefill == null
 				? undefined
 				: (() => {
-						const prefill = expectPerformanceServiceRecord(record.prefill, `${field}.prefill`);
+						const prefill = expectPerformanceServiceRecord(
+							record.prefill,
+							`${field}.prefill`
+						);
 						return {
 							assessmentId: expectPerformanceServiceOptionalNumber(
 								prefill.assessmentId,
@@ -114,13 +159,13 @@ export function decodeSuggestionAcceptResult(
 									: decodeSuggestionType(
 											prefill.suggestionType,
 											`${field}.prefill.suggestionType`
-									  ),
+										),
 							suggestionId: expectPerformanceServiceOptionalNumber(
 								prefill.suggestionId,
 								`${field}.prefill.suggestionId`
 							)
 						};
-				  })(),
+					})(),
 		suggestion:
 			record.suggestion == null
 				? undefined

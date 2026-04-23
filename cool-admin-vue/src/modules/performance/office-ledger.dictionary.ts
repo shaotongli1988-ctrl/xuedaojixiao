@@ -104,7 +104,13 @@ export const PUBLICITY_MATERIAL_TYPE_OPTIONS = [
 	createOption('brochure', '画册')
 ] as const;
 
-export const PUBLICITY_MATERIAL_TYPE_VALUES = ['poster', 'video', 'article', 'ppt', 'brochure'] as const;
+export const PUBLICITY_MATERIAL_TYPE_VALUES = [
+	'poster',
+	'video',
+	'article',
+	'ppt',
+	'brochure'
+] as const;
 
 export const PUBLICITY_MATERIAL_CHANNEL_OPTIONS = [
 	createOption('website', '官网'),
@@ -130,7 +136,13 @@ export const DESIGN_COLLAB_STATUS_OPTIONS = [
 	createOption('cancelled', '已取消', 'info')
 ] as const;
 
-export const DESIGN_COLLAB_STATUS_VALUES = ['todo', 'in_progress', 'review', 'done', 'cancelled'] as const;
+export const DESIGN_COLLAB_STATUS_VALUES = [
+	'todo',
+	'in_progress',
+	'review',
+	'done',
+	'cancelled'
+] as const;
 
 export const DESIGN_COLLAB_PRIORITY_OPTIONS = [
 	createOption('low', '低', 'info'),

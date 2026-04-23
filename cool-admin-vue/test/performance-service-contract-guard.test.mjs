@@ -329,15 +329,12 @@ test('asset maintenance procurement transfer and dashboard services route key re
 });
 
 test('asset assignment request depreciation and report services route key responses through shared runtime contracts', async () => {
-	const [
-		assetAssignmentRequestSource,
-		assetDepreciationSource,
-		assetReportSource
-	] = await Promise.all([
-		readService('asset-assignment-request.ts'),
-		readService('asset-depreciation.ts'),
-		readService('asset-report.ts')
-	]);
+	const [assetAssignmentRequestSource, assetDepreciationSource, assetReportSource] =
+		await Promise.all([
+			readService('asset-assignment-request.ts'),
+			readService('asset-depreciation.ts'),
+			readService('asset-report.ts')
+		]);
 
 	assert.match(assetAssignmentRequestSource, /from '\.\/asset-assignment-request-contract'/);
 	assert.match(assetAssignmentRequestSource, /decodeAssetAssignmentRequestPageResult/);
@@ -354,17 +351,13 @@ test('asset assignment request depreciation and report services route key respon
 });
 
 test('material catalog inbound issue and stock services route key responses through shared runtime contracts', async () => {
-	const [
-		materialCatalogSource,
-		materialInboundSource,
-		materialIssueSource,
-		materialStockSource
-	] = await Promise.all([
-		readService('material-catalog.ts'),
-		readService('material-inbound.ts'),
-		readService('material-issue.ts'),
-		readService('material-stock.ts')
-	]);
+	const [materialCatalogSource, materialInboundSource, materialIssueSource, materialStockSource] =
+		await Promise.all([
+			readService('material-catalog.ts'),
+			readService('material-inbound.ts'),
+			readService('material-issue.ts'),
+			readService('material-stock.ts')
+		]);
 
 	assert.match(materialCatalogSource, /from '\.\/material-catalog-contract'/);
 	assert.match(materialCatalogSource, /decodeMaterialCatalogPageResult/);
@@ -384,11 +377,13 @@ test('material catalog inbound issue and stock services route key responses thro
 });
 
 test('teacher agent audit teacher cooperation and course exam services route key responses through shared runtime contracts', async () => {
-	const [teacherAgentAuditSource, teacherCooperationSource, courseExamSource] = await Promise.all([
-		readService('teacherAgentAudit.ts'),
-		readService('teacherCooperation.ts'),
-		readService('course-exam.ts')
-	]);
+	const [teacherAgentAuditSource, teacherCooperationSource, courseExamSource] = await Promise.all(
+		[
+			readService('teacherAgentAudit.ts'),
+			readService('teacherCooperation.ts'),
+			readService('course-exam.ts')
+		]
+	);
 
 	assert.match(teacherAgentAuditSource, /from '\.\/teacher-contract'/);
 	assert.match(teacherAgentAuditSource, /decodeTeacherAgentAuditPageResult/);

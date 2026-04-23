@@ -64,19 +64,24 @@ export default class PerformanceCertificateService extends BaseService {
 	}
 
 	issueCertificate(data: CertificateIssueRequest) {
-		return asPerformanceServicePromise<void>(this.request({
-			url: '/issue',
-			method: 'POST',
-			data
-		}));
+		return asPerformanceServicePromise<void>(
+			this.request({
+				url: '/issue',
+				method: 'POST',
+				data
+			})
+		);
 	}
 
 	fetchRecordPage(data: CertificateRecordPageQuery) {
-		return asPerformanceServicePromise<CertificateLedgerPageResult>(this.request({
-			url: '/recordPage',
-			method: 'POST',
-			data
-		}), decodeCertificateLedgerPageResult);
+		return asPerformanceServicePromise<CertificateLedgerPageResult>(
+			this.request({
+				url: '/recordPage',
+				method: 'POST',
+				data
+			}),
+			decodeCertificateLedgerPageResult
+		);
 	}
 }
 

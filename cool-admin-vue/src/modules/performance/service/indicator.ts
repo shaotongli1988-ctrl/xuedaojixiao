@@ -1,9 +1,6 @@
 import { BaseService } from '/@/cool';
 import { asPerformanceServicePromise } from './service-contract';
-import {
-	decodeIndicatorPageResult,
-	decodeIndicatorRecord
-} from './indicator-contract';
+import { decodeIndicatorPageResult, decodeIndicatorRecord } from './indicator-contract';
 import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import type {
 	IndicatorInfoQuery,
@@ -11,7 +8,7 @@ import type {
 	IndicatorPageResult,
 	IndicatorRemovePayload,
 	IndicatorRecord,
-	IndicatorSaveRequest,
+	IndicatorSaveRequest
 } from '../types';
 
 /**
@@ -46,10 +43,7 @@ export default class PerformanceIndicatorService extends BaseService {
 	}
 
 	createIndicator(data: IndicatorSaveRequest) {
-		return asPerformanceServicePromise<IndicatorRecord>(
-			super.add(data),
-			decodeIndicatorRecord
-		);
+		return asPerformanceServicePromise<IndicatorRecord>(super.add(data), decodeIndicatorRecord);
 	}
 
 	updateIndicator(data: IndicatorSaveRequest & { id: number }) {

@@ -4,12 +4,7 @@
  * 维护重点：合同主记录与列表必须共享同一条结构边界，避免合同状态、金额和人员字段被异常响应污染。
  */
 
-import type {
-	ContractPageResult,
-	ContractRecord,
-	ContractStatus,
-	ContractType
-} from '../types';
+import type { ContractPageResult, ContractRecord, ContractStatus, ContractType } from '../types';
 import {
 	decodePerformanceServicePageResult,
 	expectPerformanceServiceEnum,
@@ -51,10 +46,7 @@ function decodeContractStatus(value: unknown, field: string): ContractStatus {
 	return expectPerformanceServiceEnum(value, field, CONTRACT_STATUS);
 }
 
-export function decodeContractRecord(
-	value: unknown,
-	field = 'contractRecord'
-): ContractRecord {
+export function decodeContractRecord(value: unknown, field = 'contractRecord'): ContractRecord {
 	const record = expectPerformanceServiceRecord(value, field);
 
 	return {
@@ -62,7 +54,10 @@ export function decodeContractRecord(
 		employeeId:
 			expectPerformanceServiceOptionalNumber(record.employeeId, `${field}.employeeId`) ??
 			undefined,
-		employeeName: expectPerformanceServiceOptionalString(record.employeeName, `${field}.employeeName`),
+		employeeName: expectPerformanceServiceOptionalString(
+			record.employeeName,
+			`${field}.employeeName`
+		),
 		type: decodeContractType(record.type, `${field}.type`),
 		title: expectPerformanceServiceOptionalString(record.title, `${field}.title`),
 		contractNumber: expectPerformanceServiceOptionalString(
@@ -86,7 +81,10 @@ export function decodeContractRecord(
 			record.status === undefined
 				? undefined
 				: decodeContractStatus(record.status, `${field}.status`),
-		createTime: expectPerformanceServiceOptionalString(record.createTime, `${field}.createTime`),
+		createTime: expectPerformanceServiceOptionalString(
+			record.createTime,
+			`${field}.createTime`
+		),
 		updateTime: expectPerformanceServiceOptionalString(record.updateTime, `${field}.updateTime`)
 	};
 }

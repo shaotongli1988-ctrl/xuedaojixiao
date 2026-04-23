@@ -84,11 +84,9 @@ function isCardVisibleBySsot(card: WorkbenchTaskCardModel, input: WorkbenchRoleI
 	}
 
 	const pageSet = new Set((input.workbenchPages || []).filter(Boolean));
-	const hasPageAccess =
-		binding.pageIds?.some(pageId => pageSet.has(pageId)) || false;
+	const hasPageAccess = binding.pageIds?.some(pageId => pageSet.has(pageId)) || false;
 	const hasSurfaceAccess =
-		binding.surfaceAccessKeys?.some(key => input.surfaceAccess?.[key] === true) ||
-		false;
+		binding.surfaceAccessKeys?.some(key => input.surfaceAccess?.[key] === true) || false;
 
 	return hasPageAccess || hasSurfaceAccess;
 }

@@ -5,10 +5,7 @@
  */
 import { BaseService } from '/@/cool';
 import { asPerformanceServicePromise } from './service-contract';
-import {
-	decodeContractPageResult,
-	decodeContractRecord
-} from './contract-contract';
+import { decodeContractPageResult, decodeContractRecord } from './contract-contract';
 import type {
 	ContractInfoQuery,
 	ContractPageQuery,
@@ -47,10 +44,7 @@ export default class PerformanceContractService extends BaseService {
 	}
 
 	createContract(data: ContractSaveRequest) {
-		return asPerformanceServicePromise<ContractRecord>(
-			super.add(data),
-			decodeContractRecord
-		);
+		return asPerformanceServicePromise<ContractRecord>(super.add(data), decodeContractRecord);
 	}
 
 	updateContract(data: ContractSaveRequest & { id: number }) {
