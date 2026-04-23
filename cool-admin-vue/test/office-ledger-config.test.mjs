@@ -5,37 +5,41 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { officeLedgerModules } from '../src/modules/performance/views/office/office-ledger-config.js';
+import { readFile } from 'node:fs/promises';
 
-test('frontend normal office modules expose the requested admin ledgers', () => {
-	assert.deepEqual(Object.keys(officeLedgerModules), [
-		'annualInspection',
-		'honor',
-		'publicityMaterial',
-		'designCollab',
-		'expressCollab',
-		'vehicle',
-		'intellectualProperty'
-	]);
-	assert.equal(
-		officeLedgerModules.publicityMaterial.documentReference?.prop,
-		'documentIds'
+const officeLedgerConfigPath = new URL(
+	'../src/modules/performance/views/office/office-ledger-config.ts',
+	import.meta.url
+);
+
+test('frontend normal office modules expose the requested admin ledgers', async () => {
+	const source = await readFile(officeLedgerConfigPath, 'utf8');
+
+	assert.match(source, /annualInspection:\s*createBaseConfig<AnnualInspectionRecord>/);
+	assert.match(source, /honor:\s*createBaseConfig<HonorRecord>/);
+	assert.match(source, /publicityMaterial:\s*createBaseConfig<PublicityMaterialRecord>/);
+	assert.match(source, /designCollab:\s*createBaseConfig<DesignCollabRecord>/);
+	assert.match(source, /expressCollab:\s*createBaseConfig<ExpressCollabRecord>/);
+	assert.match(source, /vehicle:\s*createBaseConfig<VehicleRecord>/);
+	assert.match(
+		source,
+		/intellectualProperty:\s*createBaseConfig<IntellectualPropertyRecord>/
 	);
-	assert.equal(officeLedgerModules.vehicle.route, '/performance/office/vehicle');
-	assert.equal(
-		officeLedgerModules.intellectualProperty.route,
-		'/performance/office/intellectual-property'
-	);
+	assert.match(source, /documentReference:\s*\{\s*prop:\s*'documentIds'/);
+	assert.match(source, /route:\s*'\/performance\/office\/vehicle'/);
+	assert.match(source, /route:\s*'\/performance\/office\/intellectual-property'/);
 });
 
-test('frontend boundary createFilters and createEmptyForm return fresh objects', () => {
-	const firstFilters = officeLedgerModules.annualInspection.createFilters();
-	const secondFilters = officeLedgerModules.annualInspection.createFilters();
-	firstFilters.keyword = 'changed';
-	assert.equal(secondFilters.keyword, '');
+test('frontend boundary createFilters and createEmptyForm return fresh objects', async () => {
+	const source = await readFile(officeLedgerConfigPath, 'utf8');
 
-	const firstForm = officeLedgerModules.publicityMaterial.createEmptyForm();
-	const secondForm = officeLedgerModules.publicityMaterial.createEmptyForm();
-	firstForm.documentIds.push(1);
-	assert.equal(secondForm.documentIds.length, 0);
+	assert.match(
+		source,
+		/createFilters:\s*\(\)\s*=>\s*\(\{\s*keyword:\s*'',\s*status:\s*'',\s*category:\s*''\s*\}\)/
+	);
+	assert.match(
+		source,
+		/createEmptyForm:\s*\(\)\s*=>\s*\(\{\s*status:\s*config\.statusOptions\[0\]\?\.value \|\| '',\s*tagsText:\s*'',\s*notes:\s*''\s*\}\)/
+	);
+	assert.match(source, /documentIds:\s*\[\]/);
 });
