@@ -4,55 +4,60 @@
  * 不负责报表展示、图表渲染或下载后的文件处理。
  */
 import { BaseService } from '/@/cool';
-import type { AssetReportPageResult, AssetReportSummary } from '../types';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeAssetReportExportResult,
+	decodeAssetReportPageResult,
+	decodeAssetReportSummary
+} from './asset-report-contract';
+import type {
+	AssetReportExportQuery,
+	AssetReportExportResult,
+	AssetReportPageQuery,
+	AssetReportPageResult,
+	AssetReportSummary,
+	AssetReportSummaryQuery
+} from '../types';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 
 export default class PerformanceAssetReportService extends BaseService {
 	permission = {
-		summary: 'performance:assetReport:summary',
-		page: 'performance:assetReport:page',
-		export: 'performance:assetReport:export'
+		summary: PERMISSIONS.performance.assetReport.summary,
+		page: PERMISSIONS.performance.assetReport.page,
+		export: PERMISSIONS.performance.assetReport.export
 	};
 
 	constructor() {
 		super('admin/performance/assetReport');
 	}
 
-	fetchSummary(params?: {
-		departmentId?: number;
-		category?: string;
-		assetStatus?: string;
-		reportDate?: string;
-	}) {
-		return this.request({
-			url: '/summary',
-			method: 'GET',
-			params
-		}) as unknown as Promise<AssetReportSummary>;
+	fetchSummary(params?: AssetReportSummaryQuery) {
+		return asPerformanceServicePromise<AssetReportSummary>(
+			this.request({
+				url: '/summary',
+				method: 'GET',
+				params
+			}),
+			decodeAssetReportSummary
+		);
 	}
 
-	fetchPage(data: {
-		page: number;
-		size: number;
-		keyword?: string;
-		departmentId?: number;
-		category?: string;
-		assetStatus?: string;
-		reportDate?: string;
-	}) {
-		return super.page(data) as unknown as Promise<AssetReportPageResult>;
+	fetchPage(data: AssetReportPageQuery) {
+		return asPerformanceServicePromise<AssetReportPageResult>(
+			super.page(data),
+			decodeAssetReportPageResult
+		);
 	}
 
-	exportReport(params?: {
-		departmentId?: number;
-		category?: string;
-		assetStatus?: string;
-		reportDate?: string;
-	}) {
-		return this.request({
-			url: '/export',
-			method: 'GET',
-			params
-		}) as Promise<any>;
+	exportReport(params?: AssetReportExportQuery) {
+		return asPerformanceServicePromise<AssetReportExportResult>(
+			this.request({
+				url: '/export',
+				method: 'GET',
+				params
+			}),
+			decodeAssetReportExportResult
+		);
 	}
 }
 

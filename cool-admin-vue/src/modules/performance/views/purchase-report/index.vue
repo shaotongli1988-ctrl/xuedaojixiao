@@ -47,7 +47,7 @@
 						<h2>采购报表</h2>
 						<el-tag effect="plain">主题 11</el-tag>
 						<el-tag effect="plain" type="info">
-							{{ isHrRole ? 'HR 全量统计' : '经理范围统计' }}
+							{{ roleFact.scopeLabel }}
 						</el-tag>
 					</div>
 					<el-alert
@@ -122,17 +122,26 @@ defineOptions({
 import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
+import { useListPage } from '../../composables/use-list-page.js';
+import { performanceAccessContextService } from '../../service/access-context';
 import { performancePurchaseReportService } from '../../service/purchase-report';
+import { resolvePerformanceRoleFact } from '../../service/role-fact';
 import { performanceSupplierService } from '../../service/supplier';
+import {
+	createElementWarningFromErrorHandler,
+	resolveErrorMessage,
+	showElementErrorFromError
+} from '../shared/error-message';
+import type {
+	PerformanceAccessContext,
+	PurchaseReportSummary,
+	PurchaseReportSupplierStat,
+	PurchaseReportTrendPoint,
+	SupplierOption
+} from '../../types';
 
-interface SupplierOption {
-	id: number;
-	name: string;
-}
-
-const loading = ref(false);
 const supplierOptions = ref<SupplierOption[]>([]);
-const summary = reactive({
+const summary = reactive<PurchaseReportSummary>({
 	totalOrders: 0,
 	totalAmount: 0,
 	inquiringCount: 0,
@@ -143,14 +152,9 @@ const summary = reactive({
 	cancelledCount: 0,
 	supplierCount: 0
 });
-const trendRows = ref<any[]>([]);
-const supplierStats = ref<any[]>([]);
-
-const filters = reactive({
-	supplierId: undefined as number | undefined,
-	startDate: '',
-	endDate: ''
-});
+const trendRows = ref<PurchaseReportTrendPoint[]>([]);
+const supplierStats = ref<PurchaseReportSupplierStat[]>([]);
+const accessContext = ref<PerformanceAccessContext | null>(null);
 
 const canAccess = computed(
 	() =>
@@ -158,62 +162,35 @@ const canAccess = computed(
 		checkPerm(performancePurchaseReportService.permission.trend) ||
 		checkPerm(performancePurchaseReportService.permission.supplierStats)
 );
-const isHrRole = computed(() => checkPerm(performanceSupplierService.permission.add));
-const filterSupplierIdModel = computed<number | undefined>({
-	get: () => filters.supplierId ?? undefined,
-	set: value => {
-		filters.supplierId = value;
-	}
-});
-
-onMounted(async () => {
-	await Promise.all([loadSuppliers(), refresh()]);
-});
-
-async function loadSuppliers() {
-	try {
-		const result = await performanceSupplierService.fetchPage({
-			page: 1,
-			size: 200
-		});
-		supplierOptions.value = (result.list || []).map(item => ({
-			id: Number(item.id),
-			name: item.name
-		}));
-	} catch (error: any) {
-		supplierOptions.value = [];
-		ElMessage.warning(error.message || '供应商选项加载失败');
-	}
-}
-
-async function refresh() {
-	if (!canAccess.value) {
-		return;
-	}
-
-	if (filters.startDate && filters.endDate && filters.startDate > filters.endDate) {
-		ElMessage.warning('结束日期不能早于开始日期');
-		return;
-	}
-
-	loading.value = true;
-	const params = {
-		supplierId: filters.supplierId,
-		startDate: filters.startDate || undefined,
-		endDate: filters.endDate || undefined
-	};
-
-	try {
+const roleFact = computed(() =>
+	resolvePerformanceRoleFact({
+		personaKey: accessContext.value?.activePersonaKey || null,
+		roleKind: accessContext.value?.roleKind || null
+	})
+);
+const purchaseReportQuery = useListPage({
+	createFilters: () => ({
+		supplierId: undefined as number | undefined,
+		startDate: '',
+		endDate: ''
+	}),
+	canLoad: () => canAccess.value,
+	fetchPage: async params => {
+		const requestParams = {
+			supplierId: params.supplierId,
+			startDate: params.startDate || undefined,
+			endDate: params.endDate || undefined
+		};
 		const [summaryResult, trendResult, supplierResult] = await Promise.all([
 			checkPerm(performancePurchaseReportService.permission.summary)
-				? performancePurchaseReportService.fetchSummary(params)
-				: Promise.resolve(null),
+				? performancePurchaseReportService.fetchSummary(requestParams)
+				: Promise.resolve<PurchaseReportSummary | null>(null),
 			checkPerm(performancePurchaseReportService.permission.trend)
-				? performancePurchaseReportService.fetchTrend(params)
-				: Promise.resolve([]),
+				? performancePurchaseReportService.fetchTrend(requestParams)
+				: Promise.resolve<PurchaseReportTrendPoint[]>([]),
 			checkPerm(performancePurchaseReportService.permission.supplierStats)
-				? performancePurchaseReportService.fetchSupplierStats(params)
-				: Promise.resolve([])
+				? performancePurchaseReportService.fetchSupplierStats(requestParams)
+				: Promise.resolve<PurchaseReportSupplierStat[]>([])
 		]);
 
 		Object.assign(summary, {
@@ -230,18 +207,67 @@ async function refresh() {
 		});
 		trendRows.value = Array.isArray(trendResult) ? trendResult : [];
 		supplierStats.value = Array.isArray(supplierResult) ? supplierResult : [];
-	} catch (error: any) {
-		ElMessage.error(error.message || '采购报表加载失败');
-	} finally {
-		loading.value = false;
+
+		return {
+			list: [],
+			pagination: {
+				total: Array.isArray(supplierResult) ? supplierResult.length : 0
+			}
+		};
+	},
+	onError: (error: unknown) => {
+		showElementErrorFromError(error, '采购报表加载失败');
+	}
+});
+const filters = purchaseReportQuery.filters;
+const loading = purchaseReportQuery.loading;
+const filterSupplierIdModel = computed<number | undefined>({
+	get: () => filters.supplierId ?? undefined,
+	set: value => {
+		filters.supplierId = value;
+	}
+});
+
+onMounted(async () => {
+	await Promise.all([loadAccessContext(), loadSuppliers(), refresh()]);
+});
+
+async function loadAccessContext() {
+	try {
+		accessContext.value = await performanceAccessContextService.fetchContext();
+	} catch {
+		accessContext.value = null;
 	}
 }
 
+async function loadSuppliers() {
+	try {
+		const result = await performanceSupplierService.fetchPage({
+			page: 1,
+			size: 200
+		});
+		supplierOptions.value = (result.list || []).map(item => ({
+			id: Number(item.id),
+			name: item.name
+		}));
+	} catch (error: unknown) {
+		supplierOptions.value = [];
+		createElementWarningFromErrorHandler('供应商选项加载失败')(error);
+	}
+}
+
+async function refresh() {
+	if (filters.startDate && filters.endDate && filters.startDate > filters.endDate) {
+		ElMessage.warning('结束日期不能早于开始日期');
+		return;
+	}
+	await purchaseReportQuery.reload();
+}
+
 function resetFilters() {
-	filters.supplierId = undefined;
-	filters.startDate = '';
-	filters.endDate = '';
-	refresh();
+	void purchaseReportQuery.reset({
+		supplierId: undefined
+	});
 }
 
 function formatAmount(value?: number) {
@@ -250,9 +276,35 @@ function formatAmount(value?: number) {
 </script>
 
 <style lang="scss" scoped>
+@use '../../../../styles/patterns.data-panel.scss' as dataPanel;
+@use '../../../../styles/patterns.overlay-responsive.scss' as overlayResponsive;
+
 .purchase-report-page {
-	display: grid;
-	gap: 16px;
+	@include dataPanel.data-panel-shell;
+
+	--purchase-report-card-bg: var(--app-surface-card);
+	--purchase-report-muted-bg: var(--app-surface-muted);
+	--purchase-report-border: var(--app-border-strong);
+	--purchase-report-text: var(--app-text-primary);
+
+	:deep(.el-card) {
+		border-color: var(--purchase-report-border);
+		background: var(--purchase-report-card-bg);
+		box-shadow: var(--app-shadow-surface);
+	}
+
+	:deep(.el-table) {
+		@include dataPanel.data-panel-table;
+	}
+
+	:deep(.el-statistic) {
+		padding: var(--app-space-3);
+		border: 1px solid var(--purchase-report-border);
+		border-radius: var(--app-radius-md);
+		background: var(--purchase-report-muted-bg);
+	}
+
+	@include overlayResponsive.horizontal-scroll-table(640px);
 
 	&__toolbar,
 	&__toolbar-left,
@@ -260,34 +312,65 @@ function formatAmount(value?: number) {
 	&__header-main {
 		display: flex;
 		align-items: center;
-		gap: 12px;
+		gap: var(--app-space-3);
 		flex-wrap: wrap;
 	}
 
 	&__toolbar {
-		justify-content: space-between;
+		@include dataPanel.data-panel-toolbar;
 	}
 
 	&__header {
 		display: grid;
-		gap: 12px;
+		gap: var(--app-space-3);
 	}
 
 	&__header-main h2 {
 		margin: 0;
-		font-size: 18px;
+		font-size: var(--app-font-size-title);
+		color: var(--purchase-report-text);
 	}
 
 	&__summary {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-		gap: 16px;
+		gap: var(--app-space-4);
 	}
 
 	&__grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
-		gap: 16px;
+		gap: var(--app-space-4);
+	}
+
+	@include overlayResponsive.overlay-responsive;
+
+	@media (max-width: 768px) {
+		&__toolbar-left,
+		&__toolbar-right,
+		&__header-main {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		&__grid {
+			grid-template-columns: 1fr;
+		}
+
+		&__toolbar-left,
+		&__toolbar-right {
+			> * {
+				max-width: 100%;
+				min-width: 0;
+			}
+
+			:deep(.el-input),
+			:deep(.el-select),
+			:deep(.el-date-editor.el-input),
+			:deep(.el-date-editor.el-date-editor) {
+				width: 100% !important;
+			}
+		}
 	}
 }
 </style>

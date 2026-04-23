@@ -4,11 +4,14 @@
  * 维护重点是只消费 summary 摘要接口，不扩写未冻结的考试明细能力。
  */
 import { BaseService } from '/@/cool';
+import { asPerformanceServicePromise } from './service-contract';
+import { decodeCourseExamSummary } from './course-exam-contract';
 import type { CourseExamSummary } from '../course-learning.types';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 
 export default class PerformanceCourseExamService extends BaseService {
 	permission = {
-		summary: 'performance:courseExam:summary'
+		summary: PERMISSIONS.performance.courseExam.summary
 	};
 
 	constructor() {
@@ -16,11 +19,14 @@ export default class PerformanceCourseExamService extends BaseService {
 	}
 
 	fetchSummary(params: { courseId: number }) {
-		return this.request({
-			url: '/summary',
-			method: 'GET',
-			params
-		}) as unknown as Promise<CourseExamSummary>;
+		return asPerformanceServicePromise<CourseExamSummary>(
+			this.request({
+				url: '/summary',
+				method: 'GET',
+				params
+			}),
+			decodeCourseExamSummary
+		);
 	}
 }
 

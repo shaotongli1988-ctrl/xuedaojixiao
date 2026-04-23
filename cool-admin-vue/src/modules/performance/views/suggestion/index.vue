@@ -130,7 +130,7 @@
 				<el-table-column prop="id" label="建议 ID" width="100" />
 				<el-table-column label="建议类型" width="120">
 					<template #default="{ row }">
-						<el-tag effect="plain" :type="row.suggestionType === 'promotion' ? 'success' : 'warning'">
+						<el-tag effect="plain" :type="suggestionTypeTagType(row.suggestionType)">
 							{{ suggestionTypeLabel(row.suggestionType) }}
 						</el-tag>
 					</template>
@@ -270,18 +270,30 @@ defineOptions({
 
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
+import { useDict } from '/$/dict';
 import { service } from '/@/cool';
 import SuggestionDetailDrawer from '../../components/suggestion-detail-drawer.vue';
+import { useListPage } from '../../composables/use-list-page.js';
 import { performancePipService } from '../../service/pip';
 import { performancePromotionService } from '../../service/promotion';
 import { performanceSuggestionService } from '../../service/suggestion';
+import {
+	confirmElementAction,
+	runTrackedElementAction
+} from '../shared/action-feedback';
+import {
+	createElementWarningFromErrorHandler,
+	resolveErrorMessage,
+	showElementErrorFromError
+} from '../shared/error-message';
 import {
 	loadDepartmentOptions,
 	loadUserOptions
 } from '../../utils/lookup-options.js';
 import type {
+	DepartmentOption,
 	SuggestionAcceptResult,
 	SuggestionRecord,
 	SuggestionRevokeReasonCode,
@@ -289,62 +301,46 @@ import type {
 	UserOption
 } from '../../types';
 
-interface DepartmentOption {
-	id: number;
-	label: string;
-}
+const SUGGESTION_TYPE_DICT_KEY = 'performance.suggestion.type';
+const SUGGESTION_STATUS_DICT_KEY = 'performance.suggestion.status';
+const SUGGESTION_REVOKE_REASON_CODE_DICT_KEY = 'performance.suggestion.revokeReasonCode';
 
 const router = useRouter();
 
-const rows = ref<SuggestionRecord[]>([]);
 const userOptions = ref<UserOption[]>([]);
 const departmentOptions = ref<DepartmentOption[]>([]);
-const tableLoading = ref(false);
+const { dict } = useDict();
 const submitLoading = ref(false);
 const detailVisible = ref(false);
 const detailSuggestion = ref<SuggestionRecord | null>(null);
 const revokeVisible = ref(false);
 const revokeTarget = ref<SuggestionRecord | null>(null);
 
-const filters = reactive({
-	suggestionType: '' as '' | SuggestionType,
-	status: '',
-	employeeId: undefined as number | undefined,
-	departmentId: undefined as number | undefined,
-	assessmentId: '',
-	periodValue: ''
-});
-
-const pagination = reactive({
-	page: 1,
-	size: 10,
-	total: 0
-});
-
 const revokeForm = reactive({
-	revokeReasonCode: 'thresholdError' as SuggestionRevokeReasonCode,
+	revokeReasonCode: '' as SuggestionRevokeReasonCode,
 	revokeReason: ''
 });
 
-const suggestionTypeOptions = [
-	{ label: 'PIP 建议', value: 'pip' },
-	{ label: '晋升建议', value: 'promotion' }
-];
+const suggestionTypeOptions = computed<Array<{ label: string; value: string }>>(() =>
+	dict.get(SUGGESTION_TYPE_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: String(item.value)
+	}))
+);
 
-const statusOptions = [
-	{ label: '待处理', value: 'pending' },
-	{ label: '已采用', value: 'accepted' },
-	{ label: '已忽略', value: 'ignored' },
-	{ label: '已驳回', value: 'rejected' },
-	{ label: '已撤销', value: 'revoked' }
-];
+const statusOptions = computed<Array<{ label: string; value: string }>>(() =>
+	dict.get(SUGGESTION_STATUS_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: String(item.value)
+	}))
+);
 
-const revokeReasonOptions = [
-	{ label: '阈值命中错误', value: 'thresholdError' },
-	{ label: '评估数据已更正', value: 'assessmentCorrected' },
-	{ label: '数据范围判断错误', value: 'scopeError' },
-	{ label: '重复建议', value: 'duplicateSuggestion' }
-];
+const revokeReasonOptions = computed<Array<{ label: string; value: string }>>(() =>
+	dict.get(SUGGESTION_REVOKE_REASON_CODE_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: String(item.value)
+	}))
+);
 
 const canAccess = computed(() => checkPerm(performanceSuggestionService.permission.page));
 const showInfoButton = computed(() => checkPerm(performanceSuggestionService.permission.info));
@@ -355,8 +351,42 @@ const detailCanRevoke = computed(() => (detailSuggestion.value ? canRevoke(detai
 const detailCanGoCreate = computed(() =>
 	detailSuggestion.value ? canGoCreate(detailSuggestion.value) : false
 );
+const suggestionList = useListPage({
+	createFilters: () => ({
+		suggestionType: '' as '' | SuggestionType,
+		status: '',
+		employeeId: undefined as number | undefined,
+		departmentId: undefined as number | undefined,
+		assessmentId: '',
+		periodValue: ''
+	}),
+	canLoad: () => canAccess.value,
+	fetchPage: async params =>
+		performanceSuggestionService.fetchPage({
+			page: params.page,
+			size: params.size,
+			suggestionType: params.suggestionType || undefined,
+			status: params.status || undefined,
+			employeeId: params.employeeId,
+			departmentId: params.departmentId,
+			assessmentId: Number(params.assessmentId || 0) || undefined,
+			periodValue: params.periodValue || undefined
+		}),
+	onError: (error: unknown) => {
+		showElementErrorFromError(error, '建议列表加载失败');
+	}
+});
+const rows = suggestionList.rows;
+const tableLoading = suggestionList.loading;
+const filters = suggestionList.filters;
+const pagination = suggestionList.pager;
 
 onMounted(async () => {
+	await dict.refresh([
+		SUGGESTION_TYPE_DICT_KEY,
+		SUGGESTION_STATUS_DICT_KEY,
+		SUGGESTION_REVOKE_REASON_CODE_DICT_KEY
+	]);
 	await loadUsers();
 	await loadDepartments();
 	await refresh();
@@ -369,52 +399,23 @@ async function loadUsers() {
 			page: 1,
 			size: 200
 			}),
-		(error: any) => {
-			ElMessage.warning(error.message || '用户选项加载失败');
-		}
+		createElementWarningFromErrorHandler('用户选项加载失败')
 	);
 }
 
 async function loadDepartments() {
 	departmentOptions.value = await loadDepartmentOptions(
 		() => service.base.sys.department.list(),
-		(error: any) => {
-			ElMessage.warning(error.message || '部门选项加载失败');
-		}
+		createElementWarningFromErrorHandler('部门选项加载失败')
 	);
 }
 
 async function refresh() {
-	if (!canAccess.value) {
-		return;
-	}
-
-	tableLoading.value = true;
-
-	try {
-		const result = await performanceSuggestionService.fetchPage({
-			page: pagination.page,
-			size: pagination.size,
-			suggestionType: filters.suggestionType || undefined,
-			status: filters.status || undefined,
-			employeeId: filters.employeeId,
-			departmentId: filters.departmentId,
-			assessmentId: Number(filters.assessmentId || 0) || undefined,
-			periodValue: filters.periodValue || undefined
-		});
-
-		rows.value = result.list || [];
-		pagination.total = result.pagination?.total || 0;
-	} catch (error: any) {
-		ElMessage.error(error.message || '建议列表加载失败');
-	} finally {
-		tableLoading.value = false;
-	}
+	await suggestionList.reload();
 }
 
 function changePage(page: number) {
-	pagination.page = page;
-	refresh();
+	void suggestionList.goToPage(page);
 }
 
 async function openDetail(row: SuggestionRecord) {
@@ -427,8 +428,8 @@ async function openDetail(row: SuggestionRecord) {
 			id: row.id
 		});
 		detailVisible.value = true;
-	} catch (error: any) {
-		ElMessage.error(error.message || '建议详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '建议详情加载失败');
 	}
 }
 
@@ -437,29 +438,28 @@ async function handleAccept(row: SuggestionRecord) {
 		return;
 	}
 
-	await ElMessageBox.confirm(
+	const confirmed = await confirmElementAction(
 		`确认采用这条${suggestionTypeLabel(row.suggestionType)}吗？采用后只会跳转到既有手工创建入口，不会自动提交正式单据。`,
-		'采用建议',
-		{
-			type: 'warning'
-		}
+		'采用建议'
 	);
 
-	submitLoading.value = true;
-
-	try {
-		const result = await performanceSuggestionService.accept({ id: row.id });
-		ElMessage.success('建议已采用，正在跳转到手工创建入口');
-		await goCreate(resolveAcceptTarget(row, result));
-	} catch (error: any) {
-		if (error === 'cancel' || error === 'close') {
-			return;
-		}
-
-		ElMessage.error(error.message || '建议采用失败');
-	} finally {
-		submitLoading.value = false;
+	if (!confirmed) {
+		return;
 	}
+
+	await runTrackedElementAction({
+		rowId: row.id,
+		actionType: 'accept',
+		request: async () => {
+			const result = await performanceSuggestionService.accept({ id: row.id! });
+			await goCreate(resolveAcceptTarget(row, result));
+		},
+		successMessage: '建议已采用，正在跳转到手工创建入口',
+		errorMessage: '建议采用失败',
+		setLoading: rowId => {
+			submitLoading.value = Boolean(rowId);
+		}
+	});
 }
 
 async function handleIgnore(row: SuggestionRecord) {
@@ -467,26 +467,26 @@ async function handleIgnore(row: SuggestionRecord) {
 		return;
 	}
 
-	await ElMessageBox.confirm(`确认忽略建议 #${row.id} 吗？`, '忽略建议', {
-		type: 'warning'
-	});
+	const confirmed = await confirmElementAction(`确认忽略建议 #${row.id} 吗？`, '忽略建议');
 
-	submitLoading.value = true;
-
-	try {
-		await performanceSuggestionService.ignore({ id: row.id });
-		ElMessage.success('建议已忽略');
-		detailVisible.value = false;
-		await refresh();
-	} catch (error: any) {
-		if (error === 'cancel' || error === 'close') {
-			return;
-		}
-
-		ElMessage.error(error.message || '建议忽略失败');
-	} finally {
-		submitLoading.value = false;
+	if (!confirmed) {
+		return;
 	}
+
+	await runTrackedElementAction({
+		rowId: row.id,
+		actionType: 'ignore',
+		request: () => performanceSuggestionService.ignore({ id: row.id! }),
+		successMessage: '建议已忽略',
+		errorMessage: '建议忽略失败',
+		setLoading: rowId => {
+			submitLoading.value = Boolean(rowId);
+		},
+		onSuccess: () => {
+			detailVisible.value = false;
+		},
+		refresh
+	});
 }
 
 async function handleReject(row: SuggestionRecord) {
@@ -494,31 +494,33 @@ async function handleReject(row: SuggestionRecord) {
 		return;
 	}
 
-	await ElMessageBox.confirm(`确认驳回建议 #${row.id} 吗？`, '驳回建议', {
-		type: 'warning'
-	});
+	const confirmed = await confirmElementAction(`确认驳回建议 #${row.id} 吗？`, '驳回建议');
 
-	submitLoading.value = true;
-
-	try {
-		await performanceSuggestionService.reject({ id: row.id });
-		ElMessage.success('建议已驳回');
-		detailVisible.value = false;
-		await refresh();
-	} catch (error: any) {
-		if (error === 'cancel' || error === 'close') {
-			return;
-		}
-
-		ElMessage.error(error.message || '建议驳回失败');
-	} finally {
-		submitLoading.value = false;
+	if (!confirmed) {
+		return;
 	}
+
+	await runTrackedElementAction({
+		rowId: row.id,
+		actionType: 'reject',
+		request: () => performanceSuggestionService.reject({ id: row.id! }),
+		successMessage: '建议已驳回',
+		errorMessage: '建议驳回失败',
+		setLoading: rowId => {
+			submitLoading.value = Boolean(rowId);
+		},
+		onSuccess: () => {
+			detailVisible.value = false;
+		},
+		refresh
+	});
 }
 
 function openRevoke(row: SuggestionRecord) {
 	revokeTarget.value = row;
-	revokeForm.revokeReasonCode = 'thresholdError';
+	revokeForm.revokeReasonCode = String(
+		revokeReasonOptions.value[0]?.value || ''
+	) as SuggestionRevokeReasonCode;
 	revokeForm.revokeReason = '';
 	revokeVisible.value = true;
 }
@@ -545,8 +547,8 @@ async function submitRevoke() {
 		revokeVisible.value = false;
 		detailVisible.value = false;
 		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '建议撤销失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '建议撤销失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -658,37 +660,19 @@ function renderPeriod(row: SuggestionRecord) {
 }
 
 function suggestionTypeLabel(type?: SuggestionType) {
-	return type === 'promotion' ? '晋升建议' : 'PIP 建议';
+	return dict.getLabel(SUGGESTION_TYPE_DICT_KEY, type) || type || '-';
 }
 
 function statusLabel(status?: string) {
-	switch (status) {
-		case 'accepted':
-			return '已采用';
-		case 'ignored':
-			return '已忽略';
-		case 'rejected':
-			return '已驳回';
-		case 'revoked':
-			return '已撤销';
-		default:
-			return '待处理';
-	}
+	return dict.getLabel(SUGGESTION_STATUS_DICT_KEY, status) || status || '-';
 }
 
 function statusTagType(status?: string) {
-	switch (status) {
-		case 'accepted':
-			return 'success';
-		case 'ignored':
-			return 'info';
-		case 'rejected':
-			return 'warning';
-		case 'revoked':
-			return 'danger';
-		default:
-			return undefined;
-	}
+	return dict.getMeta(SUGGESTION_STATUS_DICT_KEY, status)?.tone;
+}
+
+function suggestionTypeTagType(type?: SuggestionType) {
+	return dict.getMeta(SUGGESTION_TYPE_DICT_KEY, type)?.tone || 'info';
 }
 
 function linkedEntityLabel(row: SuggestionRecord) {
@@ -696,59 +680,20 @@ function linkedEntityLabel(row: SuggestionRecord) {
 		return '-';
 	}
 
-	return `${row.linkedEntityType} #${row.linkedEntityId}`;
+	const targetLabel =
+		dict.getMeta(SUGGESTION_TYPE_DICT_KEY, row.linkedEntityType)?.extra?.targetLabel ||
+		row.linkedEntityType;
+
+	return `${targetLabel} #${row.linkedEntityId}`;
 }
 
 </script>
 
 <style lang="scss" scoped>
+@use '../../../../styles/patterns.management-workspace.scss' as managementWorkspace;
+
 .suggestion-page {
-	display: grid;
-	gap: 16px;
-
-	&__toolbar {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 16px;
-	}
-
-	&__toolbar-left,
-	&__toolbar-right {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 12px;
-	}
-
-	&__stat-label {
-		font-size: 12px;
-		color: var(--el-text-color-secondary);
-	}
-
-	&__stat-value {
-		margin-top: 8px;
-		font-size: 28px;
-		font-weight: 600;
-		color: var(--el-text-color-primary);
-	}
-
-	&__header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-	}
-
-	&__header-main {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-
-		h2 {
-			margin: 0;
-			font-size: 18px;
-		}
-	}
+	@include managementWorkspace.management-workspace-shell(1120px);
 
 	&__handle {
 		display: grid;
@@ -756,14 +701,8 @@ function linkedEntityLabel(row: SuggestionRecord) {
 	}
 
 	&__handle-time {
-		font-size: 12px;
-		color: var(--el-text-color-secondary);
-	}
-
-	&__pagination {
-		display: flex;
-		justify-content: flex-end;
-		margin-top: 16px;
+		font-size: var(--app-font-size-caption);
+		color: var(--app-text-secondary);
 	}
 }
 </style>

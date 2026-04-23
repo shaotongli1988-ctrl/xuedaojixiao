@@ -67,6 +67,7 @@ import {
 	type GoalUpdatePayload,
 } from "/@/types/performance-goal";
 import GoalState from "./components/goal-state.vue";
+import { PERMISSIONS } from "/@/generated/permissions.generated";
 
 const { service, router } = useCool();
 const { user } = useStore();
@@ -116,7 +117,7 @@ async function load() {
 		return;
 	}
 
-	if (!user.hasPerm("performance:goal:update")) {
+	if (!user.hasPerm(PERMISSIONS.performance.goal.update)) {
 		state.value = { mode: "denied", error: "" };
 		return;
 	}

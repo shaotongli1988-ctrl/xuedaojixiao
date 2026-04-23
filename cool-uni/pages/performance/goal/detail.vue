@@ -78,14 +78,14 @@
 				<view class="detail-actions">
 					<cl-button plain @tap="backToList">返回</cl-button>
 					<cl-button
-						v-if="canGoalEdit(detail) && user.hasPerm('performance:goal:update')"
+						v-if="canGoalEdit(detail) && user.hasPerm(PERMISSIONS.performance.goal.update)"
 						plain
 						@tap="openEdit"
 					>
 						编辑目标
 					</cl-button>
 					<cl-button
-						v-if="canGoalProgressUpdate(detail) && user.hasPerm('performance:goal:progressUpdate')"
+						v-if="canGoalProgressUpdate(detail) && user.hasPerm(PERMISSIONS.performance.goal.progressUpdate)"
 						type="primary"
 						@tap="openProgress"
 					>
@@ -108,9 +108,12 @@ import {
 } from "/@/types/performance-goal";
 import GoalState from "./components/goal-state.vue";
 import GoalStatusTag from "./components/goal-status-tag.vue";
+import { PERMISSIONS } from "/@/generated/permissions.generated";
 
 const { service, router } = useCool();
-const { user } = useStore();
+const { user, dict } = useStore();
+
+const GOAL_STATUS_DICT_KEY = "performance.goal.status";
 
 const detail = ref<GoalRecord | null>(null);
 const state = ref({
@@ -139,6 +142,7 @@ async function load() {
 	}
 
 	try {
+		await dict.refresh([GOAL_STATUS_DICT_KEY]);
 		detail.value = await (service as any).performance.goal.fetchInfo({ id: recordId });
 		state.value = { mode: "ready", error: "" };
 	} catch (error: any) {

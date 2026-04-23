@@ -9,33 +9,31 @@ import type { User } from "../types";
 import { adminBaseCommService } from "/@/service/admin/base/comm";
 import { adminBaseOpenService } from "/@/service/admin/base/open";
 import {
+	PERMISSION_BIT_BY_KEY,
+	hasPermissionBit,
+	resolvePermissionMask,
+} from "/@/generated/permission-bits.generated";
+import {
 	canAccessMobileRoute,
 	resolveMobileRoleKind,
 	resolveWorkbenchPages,
 } from "/@/types/performance-mobile";
+import { resolveMobilePerformanceRoleFact } from "../utils/performance-role-fact";
 
 const data = storage.info();
 const storedPerms = storage.get("userPerms") || [];
 const storedWorkbenchPages = storage.get("userWorkbenchPages") || [];
+const storedPerformanceAccessContext =
+	storage.get("userPerformanceAccessContext") || null;
 
 function uniqueStrings(values: string[]) {
 	return Array.from(new Set((values || []).filter(Boolean)));
 }
 
-function hasPermValue(perms: string[], target: string) {
-	return (perms || []).some((item) => {
-		const normalizedItem = String(item || "").replace(/\s/g, "");
-		const normalizedTarget = target.replace(/\s/g, "");
-
-		return (
-			normalizedItem === normalizedTarget ||
-			normalizedItem.includes(normalizedTarget.replace(/:/g, "/"))
-		);
-	});
-}
-
 const useUserStore = defineStore("user", function () {
 	const token = ref(data.token || "");
+	const performanceAccessContextSynced = ref(false);
+	let performanceAccessContextSyncPromise: Promise<any> | null = null;
 
 	function setToken(data: User.Token) {
 		token.value = data.token;
@@ -57,10 +55,35 @@ const useUserStore = defineStore("user", function () {
 	const info = ref<User.Info | undefined>(data.userInfo);
 	const perms = ref<string[]>(storedPerms);
 	const workbenchPages = ref<string[]>(storedWorkbenchPages);
-	const roleKind = computed(() => resolveMobileRoleKind(perms.value));
+	const performanceAccessContext = ref<any>(storedPerformanceAccessContext);
+	const roleKind = computed(
+		() =>
+			performanceAccessContext.value?.roleKind ||
+			resolveMobileRoleKind(perms.value)
+	);
+	const roleFact = computed(() =>
+		resolveMobilePerformanceRoleFact({
+			activePersonaKey: performanceAccessContext.value?.activePersonaKey || null,
+			roleKind: roleKind.value,
+		})
+	);
+	const roleLabel = computed(() => roleFact.value.roleLabel);
+	const permissionMask = computed(() => {
+		const tokenPermissionMask = String(info.value?.permissionMask || "").trim();
+		return tokenPermissionMask || resolvePermissionMask(perms.value || []);
+	});
 
 	function hasPerm(value: string) {
-		return hasPermValue(perms.value, value);
+		const permissionBit =
+			PERMISSION_BIT_BY_KEY[
+				String(value || "").trim() as keyof typeof PERMISSION_BIT_BY_KEY
+			];
+
+		if (permissionBit === undefined) {
+			return false;
+		}
+
+		return hasPermissionBit(permissionMask.value, permissionBit);
 	}
 
 	function canAccessRoute(path: string) {
@@ -70,17 +93,41 @@ const useUserStore = defineStore("user", function () {
 	function set(value: User.Info) {
 		info.value = value;
 		storage.set("userInfo", value);
+
+		if (value && (value as any).performanceAccessContext) {
+			performanceAccessContext.value = (value as any).performanceAccessContext;
+			storage.set(
+				"userPerformanceAccessContext",
+				(value as any).performanceAccessContext
+			);
+		}
 	}
 
-	function setPermContext(value: { perms?: string[] }) {
+	function setPermContext(value: {
+		perms?: string[];
+		performanceAccessContext?: any;
+	}) {
 		const nextPerms = uniqueStrings(value?.perms || []);
-		const nextWorkbenchPages = resolveWorkbenchPages(nextPerms);
+		const nextPerformanceAccessContext =
+			value?.performanceAccessContext || performanceAccessContext.value || null;
+		const nextWorkbenchPages =
+			Array.isArray(nextPerformanceAccessContext?.workbenchPages) &&
+			nextPerformanceAccessContext.workbenchPages.length
+				? uniqueStrings(nextPerformanceAccessContext.workbenchPages)
+				: resolveWorkbenchPages(nextPerms);
 
 		perms.value = nextPerms;
 		workbenchPages.value = nextWorkbenchPages;
+		performanceAccessContext.value = nextPerformanceAccessContext;
+		performanceAccessContextSynced.value = true;
 
 		storage.set("userPerms", nextPerms);
 		storage.set("userWorkbenchPages", nextWorkbenchPages);
+		if (nextPerformanceAccessContext) {
+			storage.set("userPerformanceAccessContext", nextPerformanceAccessContext);
+		} else {
+			storage.remove("userPerformanceAccessContext");
+		}
 	}
 
 	async function fetchPermMenu() {
@@ -88,6 +135,27 @@ const useUserStore = defineStore("user", function () {
 			setPermContext(res || {});
 			return res;
 		});
+	}
+
+	async function refreshPerformanceAccessContext() {
+		if (performanceAccessContextSyncPromise) {
+			return performanceAccessContextSyncPromise;
+		}
+
+		performanceAccessContextSyncPromise = adminBaseCommService
+			.performanceAccessContext()
+			.then((res: any) => {
+				setPermContext({
+					perms: perms.value,
+					performanceAccessContext: res,
+				});
+				return res;
+			})
+			.finally(() => {
+				performanceAccessContextSyncPromise = null;
+			});
+
+		return performanceAccessContextSyncPromise;
 	}
 
 	async function update(data: User.Info & { [key: string]: any }) {
@@ -101,10 +169,13 @@ const useUserStore = defineStore("user", function () {
 		storage.remove("refreshToken");
 		storage.remove("userPerms");
 		storage.remove("userWorkbenchPages");
+		storage.remove("userPerformanceAccessContext");
 		token.value = "";
 		info.value = undefined;
 		perms.value = [];
 		workbenchPages.value = [];
+		performanceAccessContext.value = null;
+		performanceAccessContextSynced.value = false;
 	}
 
 	async function logout(options?: { remote?: boolean; reLaunch?: boolean }) {
@@ -148,6 +219,8 @@ const useUserStore = defineStore("user", function () {
 
 		if (!perms.value.length) {
 			tasks.push(fetchPermMenu());
+		} else if (!performanceAccessContextSynced.value) {
+			tasks.push(refreshPerformanceAccessContext());
 		}
 
 		if (tasks.length) {
@@ -168,9 +241,14 @@ const useUserStore = defineStore("user", function () {
 		perms,
 		workbenchPages,
 		roleKind,
+		roleFact,
+		roleLabel,
+		performanceAccessContext,
+		permissionMask,
 		hasPerm,
 		canAccessRoute,
 		fetchPermMenu,
+		refreshPerformanceAccessContext,
 		hydrate,
 		logout,
 	};

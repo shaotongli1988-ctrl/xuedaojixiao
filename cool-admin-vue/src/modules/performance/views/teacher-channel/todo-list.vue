@@ -1,7 +1,13 @@
 <!-- 文件职责：承接主题19班主任待跟进 today / overdue 清单与跳转动作；不负责资源编辑、合作标记或复杂看板统计；依赖 teacherTodo service 和主题19路由预置参数；维护重点是待办只允许 today / overdue 两类派生桶，不能扩展新主状态。 -->
 <template>
-	<div v-if="canAccess" class="teacher-channel-todo-page">
-		<el-card shadow="never">
+	<permission-overlay
+		:denied="!canAccess"
+		:permission-key="performanceTeacherTodoService.permission.page"
+		title="当前账号暂未开通待跟进页权限"
+		description="页面内容已切换到保护态。请联系管理员开通待跟进查看权限后再处理 today / overdue 资源。"
+	>
+		<div class="teacher-channel-todo-page">
+		<el-card shadow="never" class="teacher-channel-todo-page__toolbar-card">
 			<div class="teacher-channel-todo-page__toolbar">
 				<div class="teacher-channel-todo-page__toolbar-left">
 					<el-input
@@ -18,7 +24,7 @@
 						style="width: 180px"
 					>
 						<el-option
-							v-for="item in teacherTodoBucketOptions"
+							v-for="item in todoBucketOptions"
 							:key="item.value"
 							:label="item.label"
 							:value="item.value"
@@ -35,13 +41,13 @@
 
 		<el-row :gutter="16">
 			<el-col :xs="24" :md="12">
-				<el-card shadow="never">
+				<el-card shadow="never" class="teacher-channel-todo-page__summary-card">
 					<div class="teacher-channel-todo-page__summary-label">今日待跟进</div>
 					<div class="teacher-channel-todo-page__summary-value">{{ bucketSummary.today }}</div>
 				</el-card>
 			</el-col>
 			<el-col :xs="24" :md="12">
-				<el-card shadow="never">
+				<el-card shadow="never" class="teacher-channel-todo-page__summary-card">
 					<div class="teacher-channel-todo-page__summary-label">已逾期待跟进</div>
 					<div class="teacher-channel-todo-page__summary-value teacher-channel-todo-page__summary-value--danger">
 						{{ bucketSummary.overdue }}
@@ -50,7 +56,7 @@
 			</el-col>
 		</el-row>
 
-		<el-card shadow="never">
+		<el-card shadow="never" class="teacher-channel-todo-page__content-card">
 			<template #header>
 				<div class="teacher-channel-todo-page__header">
 					<div>
@@ -88,15 +94,15 @@
 				</el-table-column>
 				<el-table-column prop="todoBucket" label="待办桶" width="140">
 					<template #default="{ row }">
-						<el-tag :type="row.todoBucket === 'overdue' ? 'danger' : 'warning'">
-							{{ teacherTodoBucketLabel(row.todoBucket) }}
+						<el-tag :type="todoBucketTagType(row.todoBucket)">
+							{{ todoBucketLabel(row.todoBucket) }}
 						</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column prop="cooperationStatus" label="合作状态" width="120">
 					<template #default="{ row }">
-						<el-tag :type="teacherCooperationStatusTagType(row.cooperationStatus)">
-							{{ teacherCooperationStatusLabel(row.cooperationStatus) }}
+						<el-tag :type="cooperationStatusTagType(row.cooperationStatus)">
+							{{ cooperationStatusLabel(row.cooperationStatus) }}
 						</el-tag>
 					</template>
 				</el-table-column>
@@ -128,11 +134,8 @@
 				/>
 			</div>
 		</el-card>
-	</div>
-
-	<el-card v-else shadow="never">
-		<el-empty description="当前账号没有该页面权限" />
-	</el-card>
+		</div>
+	</permission-overlay>
 </template>
 
 <script lang="ts" setup>
@@ -144,32 +147,20 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
+import { useDict } from '/$/dict';
+import PermissionOverlay from '../../components/permission-overlay.vue';
+import { useListPage } from '../../composables/use-list-page.js';
 import { performanceTeacherTodoService } from '../../service/teacherTodo';
 import { performanceTeacherFollowService } from '../../service/teacherFollow';
+import { resolveErrorMessage } from '../shared/error-message';
 import type { TeacherTodoBucket, TeacherTodoRecord } from '../../types';
-import {
-	teacherCooperationStatusLabel,
-	teacherCooperationStatusTagType,
-	teacherTodoBucketLabel,
-	teacherTodoBucketOptions
-} from '../../utils/teacher-channel.js';
+
+const TEACHER_COOPERATION_STATUS_DICT_KEY = 'performance.teacherChannel.cooperationStatus';
+const TEACHER_TODO_BUCKET_DICT_KEY = 'performance.teacherChannel.todoBucket';
 
 const router = useRouter();
-const loading = ref(false);
+const { dict } = useDict();
 const pageError = ref('');
-const rows = ref<TeacherTodoRecord[]>([]);
-
-const filters = reactive({
-	keyword: '',
-	todoBucket: '' as TeacherTodoBucket | ''
-});
-
-const pagination = reactive({
-	page: 1,
-	size: 10,
-	total: 0
-});
-
 const bucketSummary = reactive({
 	today: 0,
 	overdue: 0
@@ -177,6 +168,38 @@ const bucketSummary = reactive({
 
 const canAccess = computed(() => checkPerm(performanceTeacherTodoService.permission.page));
 const canOpenFollow = computed(() => checkPerm(performanceTeacherFollowService.permission.add));
+const todoBucketOptions = computed<Array<{ label: string; value: TeacherTodoBucket }>>(() =>
+	dict.get(TEACHER_TODO_BUCKET_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as TeacherTodoBucket
+	}))
+);
+const todoList = useListPage({
+	createFilters: () => ({
+		keyword: '',
+		todoBucket: '' as TeacherTodoBucket | ''
+	}),
+	canLoad: () => canAccess.value,
+	fetchPage: async params => {
+		const result = await performanceTeacherTodoService.fetchPage({
+			page: params.page,
+			size: params.size,
+			keyword: params.keyword || undefined,
+			todoBucket: params.todoBucket || undefined
+		});
+		bucketSummary.today = result.bucketSummary?.today || 0;
+		bucketSummary.overdue = result.bucketSummary?.overdue || 0;
+		return result;
+	},
+	onError: (error: unknown) => {
+		pageError.value = resolveErrorMessage(error, '班主任待办加载失败');
+		ElMessage.error(pageError.value);
+	}
+});
+const rows = todoList.rows;
+const loading = todoList.loading;
+const filters = todoList.filters;
+const pagination = todoList.pager;
 const bucketModel = computed<TeacherTodoBucket | undefined>({
 	get: () => filters.todoBucket || undefined,
 	set: value => {
@@ -184,47 +207,22 @@ const bucketModel = computed<TeacherTodoBucket | undefined>({
 	}
 });
 
-onMounted(() => {
-	refresh();
+onMounted(async () => {
+	await dict.refresh([TEACHER_COOPERATION_STATUS_DICT_KEY, TEACHER_TODO_BUCKET_DICT_KEY]);
+	await refresh();
 });
 
 async function refresh() {
-	if (!canAccess.value) {
-		return;
-	}
-
-	loading.value = true;
 	pageError.value = '';
-
-	try {
-		const result = await performanceTeacherTodoService.fetchPage({
-			page: pagination.page,
-			size: pagination.size,
-			keyword: filters.keyword || undefined,
-			todoBucket: filters.todoBucket || undefined
-		});
-		rows.value = result.list || [];
-		pagination.total = result.pagination?.total || 0;
-		bucketSummary.today = result.bucketSummary?.today || 0;
-		bucketSummary.overdue = result.bucketSummary?.overdue || 0;
-	} catch (error: any) {
-		pageError.value = error.message || '班主任待办加载失败';
-		ElMessage.error(pageError.value);
-	} finally {
-		loading.value = false;
-	}
+	await todoList.reload();
 }
 
 function handleReset() {
-	filters.keyword = '';
-	filters.todoBucket = '';
-	pagination.page = 1;
-	refresh();
+	void todoList.reset();
 }
 
 function changePage(page: number) {
-	pagination.page = page;
-	refresh();
+	void todoList.goToPage(page);
 }
 
 function openTeacher(row: TeacherTodoRecord, openFollow: boolean) {
@@ -243,59 +241,52 @@ function openTeacher(row: TeacherTodoRecord, openFollow: boolean) {
 		}
 	});
 }
+
+function todoBucketLabel(value?: TeacherTodoBucket | '') {
+	return dict.getLabel(TEACHER_TODO_BUCKET_DICT_KEY, value) || value || '-';
+}
+
+function todoBucketTagType(value?: TeacherTodoBucket | '') {
+	return dict.getMeta(TEACHER_TODO_BUCKET_DICT_KEY, value)?.tone || 'info';
+}
+
+function cooperationStatusLabel(value?: string) {
+	return dict.getLabel(TEACHER_COOPERATION_STATUS_DICT_KEY, value) || value || '-';
+}
+
+function cooperationStatusTagType(value?: string) {
+	return dict.getMeta(TEACHER_COOPERATION_STATUS_DICT_KEY, value)?.tone || 'info';
+}
 </script>
 
 <style lang="scss" scoped>
-.teacher-channel-todo-page {
-	display: grid;
-	gap: 16px;
+@use '../../../../styles/patterns.teacher-channel.scss' as teacherChannel;
 
-	&__toolbar,
-	&__toolbar-left,
-	&__toolbar-right,
+.teacher-channel-todo-page {
+	@include teacherChannel.teacher-channel-workspace-shell(1040px);
+
 	&__header {
 		display: flex;
 		align-items: center;
-		gap: 12px;
+		justify-content: space-between;
+		gap: var(--app-space-3);
 		flex-wrap: wrap;
 	}
 
-	&__toolbar,
-	&__header {
-		justify-content: space-between;
-	}
-
 	&__summary-label {
-		color: var(--el-text-color-secondary);
-		font-size: 13px;
+		color: var(--app-text-secondary);
+		font-size: var(--app-font-size-caption);
 	}
 
 	&__summary-value {
 		margin-top: 8px;
-		font-size: 28px;
+		font-size: var(--app-font-size-kpi);
 		font-weight: 700;
-		color: var(--el-color-warning);
+		color: var(--app-accent-warning);
 	}
 
 	&__summary-value--danger {
-		color: var(--el-color-danger);
-	}
-
-	&__pagination {
-		display: flex;
-		justify-content: flex-end;
-		padding-top: 16px;
-	}
-
-	h2,
-	p {
-		margin: 0;
-	}
-
-	p {
-		margin-top: 4px;
-		color: var(--el-text-color-secondary);
-		font-size: 13px;
+		color: var(--app-accent-danger);
 	}
 }
 </style>

@@ -4,45 +4,65 @@
  * 不负责资质、评级、结算中心或其他供应商扩展能力。
  */
 import { BaseService } from '/@/cool';
-import type { SupplierPageResult, SupplierRecord } from '../types';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeSupplierPageResult,
+	decodeSupplierRecord
+} from './supplier-contract';
+import type {
+	SupplierCreatePayload,
+	SupplierInfoQuery,
+	SupplierPageQuery,
+	SupplierPageResult,
+	SupplierRecord,
+	SupplierRemovePayload,
+	SupplierUpdatePayload
+} from '../types';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 
 export default class PerformanceSupplierService extends BaseService {
 	permission = {
-		page: 'performance:supplier:page',
-		info: 'performance:supplier:info',
-		add: 'performance:supplier:add',
-		update: 'performance:supplier:update',
-		delete: 'performance:supplier:delete'
+		page: PERMISSIONS.performance.supplier.page,
+		info: PERMISSIONS.performance.supplier.info,
+		add: PERMISSIONS.performance.supplier.add,
+		update: PERMISSIONS.performance.supplier.update,
+		delete: PERMISSIONS.performance.supplier.delete
 	};
 
 	constructor() {
 		super('admin/performance/supplier');
 	}
 
-	fetchPage(data: {
-		page: number;
-		size: number;
-		keyword?: string;
-		category?: string;
-		status?: string;
-	}) {
-		return super.page(data) as unknown as Promise<SupplierPageResult>;
+	fetchPage(data: SupplierPageQuery) {
+		return asPerformanceServicePromise<SupplierPageResult>(
+			super.page(data),
+			decodeSupplierPageResult
+		);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<SupplierRecord>;
+	fetchInfo(params: SupplierInfoQuery) {
+		return asPerformanceServicePromise<SupplierRecord>(
+			super.info(params),
+			decodeSupplierRecord
+		);
 	}
 
-	createSupplier(data: Partial<SupplierRecord>) {
-		return super.add(data) as unknown as Promise<SupplierRecord>;
+	createSupplier(data: SupplierCreatePayload) {
+		return asPerformanceServicePromise<SupplierRecord>(
+			super.add(data),
+			decodeSupplierRecord
+		);
 	}
 
-	updateSupplier(data: Partial<SupplierRecord> & { id: number }) {
-		return super.update(data) as unknown as Promise<SupplierRecord>;
+	updateSupplier(data: SupplierUpdatePayload) {
+		return asPerformanceServicePromise<SupplierRecord>(
+			super.update(data),
+			decodeSupplierRecord
+		);
 	}
 
-	removeSupplier(data: { ids: number[] }) {
-		return super.delete(data) as unknown as Promise<void>;
+	removeSupplier(data: SupplierRemovePayload) {
+		return asPerformanceServicePromise<void>(super.delete(data));
 	}
 }
 

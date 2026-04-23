@@ -4,107 +4,125 @@
  * 不负责付款、对账、库存总账或其他采购域扩张。
  */
 import { BaseService } from '/@/cool';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodePurchaseOrderPageResult,
+	decodePurchaseOrderRecord
+} from './purchase-order-contract';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import type {
+	PurchaseOrderApprovePayload,
+	PurchaseOrderClosePayload,
+	PurchaseOrderCreatePayload,
+	PurchaseOrderInfoQuery,
+	PurchaseOrderPageQuery,
 	PurchaseOrderPageResult,
 	PurchaseOrderRecord,
-	PurchaseOrderStatus
+	PurchaseOrderReceivePayload,
+	PurchaseOrderRejectPayload,
+	PurchaseOrderRemovePayload,
+	PurchaseOrderSubmitApprovalPayload,
+	PurchaseOrderSubmitInquiryPayload,
+	PurchaseOrderUpdatePayload
 } from '../types';
 
 export default class PerformancePurchaseOrderService extends BaseService {
 	permission = {
-		page: 'performance:purchaseOrder:page',
-		info: 'performance:purchaseOrder:info',
-		add: 'performance:purchaseOrder:add',
-		update: 'performance:purchaseOrder:update',
-		delete: 'performance:purchaseOrder:delete',
-		submitInquiry: 'performance:purchaseOrder:submitInquiry',
-		submitApproval: 'performance:purchaseOrder:submitApproval',
-		approve: 'performance:purchaseOrder:approve',
-		reject: 'performance:purchaseOrder:reject',
-		receive: 'performance:purchaseOrder:receive',
-		close: 'performance:purchaseOrder:close'
+		page: PERMISSIONS.performance.purchaseOrder.page,
+		info: PERMISSIONS.performance.purchaseOrder.info,
+		add: PERMISSIONS.performance.purchaseOrder.add,
+		update: PERMISSIONS.performance.purchaseOrder.update,
+		delete: PERMISSIONS.performance.purchaseOrder.delete,
+		submitInquiry: PERMISSIONS.performance.purchaseOrder.submitInquiry,
+		submitApproval: PERMISSIONS.performance.purchaseOrder.submitApproval,
+		approve: PERMISSIONS.performance.purchaseOrder.approve,
+		reject: PERMISSIONS.performance.purchaseOrder.reject,
+		receive: PERMISSIONS.performance.purchaseOrder.receive,
+		close: PERMISSIONS.performance.purchaseOrder.close
 	};
 
 	constructor() {
 		super('admin/performance/purchaseOrder');
 	}
 
-	fetchPage(data: {
-		page: number;
-		size: number;
-		keyword?: string;
-		supplierId?: number;
-		departmentId?: number;
-		status?: PurchaseOrderStatus;
-		statusList?: PurchaseOrderStatus[];
-		startDate?: string;
-		endDate?: string;
-	}) {
-		return super.page(data) as unknown as Promise<PurchaseOrderPageResult>;
+	fetchPage(data: PurchaseOrderPageQuery) {
+		return asPerformanceServicePromise<PurchaseOrderPageResult>(
+			super.page(data),
+			decodePurchaseOrderPageResult
+		);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<PurchaseOrderRecord>;
+	fetchInfo(params: PurchaseOrderInfoQuery) {
+		return asPerformanceServicePromise<PurchaseOrderRecord>(
+			super.info(params),
+			decodePurchaseOrderRecord
+		);
 	}
 
-	createPurchaseOrder(data: Partial<PurchaseOrderRecord>) {
-		return super.add(data) as unknown as Promise<PurchaseOrderRecord>;
+	createPurchaseOrder(data: PurchaseOrderCreatePayload) {
+		return asPerformanceServicePromise<PurchaseOrderRecord>(
+			super.add(data),
+			decodePurchaseOrderRecord
+		);
 	}
 
-	updatePurchaseOrder(data: Partial<PurchaseOrderRecord> & { id: number }) {
-		return super.update(data) as unknown as Promise<PurchaseOrderRecord>;
+	updatePurchaseOrder(data: PurchaseOrderUpdatePayload) {
+		return asPerformanceServicePromise<PurchaseOrderRecord>(
+			super.update(data),
+			decodePurchaseOrderRecord
+		);
 	}
 
-	removePurchaseOrder(data: { ids: number[] }) {
-		return super.delete(data) as unknown as Promise<void>;
+	removePurchaseOrder(data: PurchaseOrderRemovePayload) {
+		return asPerformanceServicePromise<void>(super.delete(data));
 	}
 
-	submitInquiry(data: { id: number; remark?: string }) {
-		return this.request({
+	submitInquiry(data: PurchaseOrderSubmitInquiryPayload) {
+		return asPerformanceServicePromise<PurchaseOrderRecord>(this.request({
 			url: '/submitInquiry',
 			method: 'POST',
 			data
-		}) as unknown as Promise<PurchaseOrderRecord>;
+		}), decodePurchaseOrderRecord);
 	}
 
-	submitApproval(data: { id: number; remark?: string }) {
-		return this.request({
+	submitApproval(data: PurchaseOrderSubmitApprovalPayload) {
+		return asPerformanceServicePromise<PurchaseOrderRecord>(this.request({
 			url: '/submitApproval',
 			method: 'POST',
 			data
-		}) as unknown as Promise<PurchaseOrderRecord>;
+		}), decodePurchaseOrderRecord);
 	}
 
-	approve(data: { id: number; approvalRemark?: string }) {
-		return this.request({
+	approve(data: PurchaseOrderApprovePayload) {
+		return asPerformanceServicePromise<PurchaseOrderRecord>(this.request({
 			url: '/approve',
 			method: 'POST',
 			data
-		}) as unknown as Promise<PurchaseOrderRecord>;
+		}), decodePurchaseOrderRecord);
 	}
 
-	reject(data: { id: number; approvalRemark?: string }) {
-		return this.request({
+	reject(data: PurchaseOrderRejectPayload) {
+		return asPerformanceServicePromise<PurchaseOrderRecord>(this.request({
 			url: '/reject',
 			method: 'POST',
 			data
-		}) as unknown as Promise<PurchaseOrderRecord>;
+		}), decodePurchaseOrderRecord);
 	}
 
-	receive(data: { id: number; receivedQuantity?: number; receivedAt?: string; remark?: string }) {
-		return this.request({
+	receive(data: PurchaseOrderReceivePayload) {
+		return asPerformanceServicePromise<PurchaseOrderRecord>(this.request({
 			url: '/receive',
 			method: 'POST',
 			data
-		}) as unknown as Promise<PurchaseOrderRecord>;
+		}), decodePurchaseOrderRecord);
 	}
 
-	close(data: { id: number; closedReason: string }) {
-		return this.request({
+	close(data: PurchaseOrderClosePayload) {
+		return asPerformanceServicePromise<PurchaseOrderRecord>(this.request({
 			url: '/close',
 			method: 'POST',
 			data
-		}) as unknown as Promise<PurchaseOrderRecord>;
+		}), decodePurchaseOrderRecord);
 	}
 }
 

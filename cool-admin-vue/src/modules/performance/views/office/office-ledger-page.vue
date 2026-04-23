@@ -8,7 +8,7 @@
 					<div class="office-ledger-page__title-row">
 						<h2>{{ config.title }}</h2>
 						<el-tag effect="plain">{{ config.badgeLabel }}</el-tag>
-						<el-tag effect="plain" type="info">{{ config.audienceLabel }}</el-tag>
+						<el-tag effect="plain" type="info">{{ roleFact.roleLabel }}</el-tag>
 					</div>
 					<p>{{ config.description }}</p>
 				</div>
@@ -27,19 +27,21 @@
 					<template v-for="field in config.filters" :key="field.prop">
 						<el-input
 							v-if="field.type === 'text'"
-							v-model="filters[field.prop]"
+							:model-value="getFilterTextValue(field.prop)"
 							:placeholder="field.placeholder || field.label"
 							clearable
 							:style="{ width: field.width || '220px' }"
+							@update:model-value="value => setFilterTextValue(field.prop, value)"
 							@keyup.enter="applyFilters"
 						/>
 						<el-select
 							v-else-if="field.type === 'select'"
-							v-model="filters[field.prop]"
+							:model-value="getFilterSelectValue(field.prop)"
 							:placeholder="field.placeholder || field.label"
 							clearable
 							filterable
 							:style="{ width: field.width || '180px' }"
+							@update:model-value="value => setFilterSelectValue(field.prop, value)"
 						>
 							<el-option
 								v-for="item in resolveFieldOptions(field)"
@@ -185,28 +187,32 @@
 						<el-form-item :label="field.label" :prop="field.prop">
 							<el-input
 								v-if="field.type === 'text'"
-								v-model="form[field.prop]"
+								:model-value="getFormTextValue(field.prop)"
 								:placeholder="field.placeholder || field.label"
+								@update:model-value="value => setFormTextValue(field.prop, value)"
 							/>
 							<el-input
 								v-else-if="field.type === 'textarea'"
-								v-model="form[field.prop]"
+								:model-value="getFormTextValue(field.prop)"
 								type="textarea"
 								:rows="field.rows || 4"
 								:placeholder="field.placeholder || field.label"
+								@update:model-value="value => setFormTextValue(field.prop, value)"
 							/>
 							<el-input
 								v-else-if="field.type === 'tags-input'"
-								v-model="form[field.prop]"
+								:model-value="getFormTextValue(field.prop)"
 								placeholder="多个标签使用中文逗号、英文逗号或空格分隔"
+								@update:model-value="value => setFormTextValue(field.prop, value)"
 							/>
 							<el-select
 								v-else-if="field.type === 'select'"
-								v-model="form[field.prop]"
+								:model-value="getFormSelectValue(field.prop)"
 								clearable
 								filterable
 								style="width: 100%"
 								:placeholder="field.placeholder || field.label"
+								@update:model-value="value => setFormSelectValue(field.prop, value)"
 							>
 								<el-option
 									v-for="item in resolveFieldOptions(field)"
@@ -217,27 +223,30 @@
 							</el-select>
 							<el-date-picker
 								v-else-if="field.type === 'date'"
-								v-model="form[field.prop]"
+								:model-value="getFormDateValue(field.prop)"
 								type="date"
 								value-format="YYYY-MM-DD"
 								style="width: 100%"
 								:placeholder="field.placeholder || field.label"
+								@update:model-value="value => setFormDateValue(field.prop, value)"
 							/>
 							<el-input-number
 								v-else-if="field.type === 'number'"
-								v-model="form[field.prop]"
+								:model-value="getFormNumberValue(field.prop)"
 								:min="field.min ?? 0"
 								:precision="field.precision ?? 0"
 								style="width: 100%"
+								@update:model-value="value => setFormNumberValue(field.prop, value)"
 							/>
 							<el-select
 								v-else-if="field.type === 'document-multi'"
-								v-model="form[field.prop]"
+								:model-value="getFormDocumentIds(field.prop)"
 								multiple
 								filterable
 								clearable
 								style="width: 100%"
 								:placeholder="field.placeholder || field.label"
+								@update:model-value="value => setFormDocumentIds(field.prop, value)"
 							>
 								<el-option
 									v-for="item in documentOptions"
@@ -265,132 +274,87 @@
 	</el-card>
 </template>
 
-<script lang="ts" setup>
+<script lang="ts" setup generic="TRecord extends OfficeLedgerBaseRecord, TStats extends OfficeLedgerStats">
 import { computed, onMounted, reactive, ref } from 'vue';
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
 import { useListPage } from '../../composables/use-list-page.js';
+import {
+	performanceAccessContextService
+} from '../../service/access-context';
 import { performanceDocumentCenterService } from '../../service/documentCenter';
-
-interface OfficeLedgerPermission {
-	page: string;
-	info: string;
-	stats: string;
-	add: string;
-	update: string;
-	delete: string;
-}
-
-interface OfficeLedgerService {
-	permission: OfficeLedgerPermission;
-	fetchPage: (params: any) => Promise<{
-		list?: Array<Record<string, any>>;
-		pagination?: { total?: number | null } | null;
-	}>;
-	fetchInfo: (params: { id: number }) => Promise<Record<string, any>>;
-	fetchStats: (params?: Record<string, unknown>) => Promise<Record<string, any>>;
-	createItem: (payload: Record<string, unknown>) => Promise<unknown>;
-	updateItem: (payload: Record<string, unknown> & { id: number }) => Promise<unknown>;
-	removeItem: (payload: { ids: number[] }) => Promise<void>;
-}
-
-interface OfficeLedgerFieldOption {
-	label: string;
-	value: string | number;
-	type?: string;
-}
-
-interface OfficeLedgerField {
-	prop: string;
-	label: string;
-	type?: string;
-	options?: OfficeLedgerFieldOption[];
-	optionsProp?: string;
-	required?: boolean;
-	rows?: number;
-	span?: number;
-	width?: string | number;
-	minWidth?: string | number;
-	min?: number;
-	precision?: number;
-	placeholder?: string;
-	tag?: boolean;
-	formatter?: (row: Record<string, any>) => string | number;
-}
-
-interface OfficeLedgerStatsCard {
-	key: string;
-	label: string;
-	helper: string;
-}
-
-interface OfficeLedgerConfig {
-	moduleKey: string;
-	title: string;
-	description: string;
-	entityLabel: string;
-	notice: string;
-	phaseLabel: string;
-	badgeLabel: string;
-	audienceLabel: string;
-	filters: OfficeLedgerField[];
-	tableColumns: OfficeLedgerField[];
-	detailFields: OfficeLedgerField[];
-	formFields: OfficeLedgerField[];
-	statsCards: OfficeLedgerStatsCard[];
-	initialPageSize?: number;
-	formWidth?: string;
-	documentReference?: { prop: string; label: string } | null;
-	createFilters: () => Record<string, unknown>;
-	normalizeFilters: (filters: Record<string, unknown>) => Record<string, unknown>;
-	createEmptyForm: () => Record<string, any>;
-	toFormValues: (record: Record<string, any>) => Record<string, any>;
-	toPayload: (form: Record<string, any>) => Record<string, any>;
-	canEditRow?: (row: Record<string, any>) => boolean;
-	canDeleteRow?: (row: Record<string, any>) => boolean;
-	getDeleteMessage?: (row: Record<string, any>) => string;
-	formatStatsValue?: (value: unknown, card: OfficeLedgerStatsCard) => unknown;
-	statusMap?: Record<string, { label: string; type?: string }>;
-}
+import { resolvePerformanceRoleFact } from '../../service/role-fact';
+import {
+	confirmElementAction,
+	runTrackedElementAction
+} from '../shared/action-feedback';
+import {
+	resolveErrorMessage,
+	showElementErrorFromError,
+	showElementWarningFromError
+} from '../shared/error-message';
+import type { PerformanceAccessContext } from '../../types';
+import type {
+	OfficeLedgerBaseRecord,
+	OfficeLedgerStats,
+} from '../../service/office-ledger';
+import type {
+	OfficeLedgerConfig,
+	OfficeLedgerCrudService,
+	OfficeLedgerField,
+	OfficeLedgerFieldOption,
+	OfficeLedgerFilterState,
+	OfficeLedgerFormState,
+	OfficeLedgerStatsCard,
+	OfficeLedgerStatsView,
+	OfficeLedgerTagType
+} from './office-ledger.types';
 
 const props = defineProps<{
-	config: OfficeLedgerConfig;
-	service: OfficeLedgerService;
+	config: OfficeLedgerConfig<TRecord>;
+	service: OfficeLedgerCrudService<TRecord, TStats>;
 }>();
 
 const formRef = ref<FormInstance>();
 const detailVisible = ref(false);
 const formVisible = ref(false);
 const submitLoading = ref(false);
-const detailRecord = ref<Record<string, any> | null>(null);
-const editingRecord = ref<Record<string, any> | null>(null);
-const stats = ref<Record<string, any>>({});
+const detailRecord = ref<TRecord | null>(null);
+const editingRecord = ref<TRecord | null>(null);
+const stats = ref<OfficeLedgerStatsView>({});
 const documentOptions = ref<Array<{ id: number; label: string }>>([]);
-const form = reactive<Record<string, any>>({});
+const accessContext = ref<PerformanceAccessContext | null>(null);
+const form = reactive<OfficeLedgerFormState>({});
 
 const canAccess = computed(() => checkPerm(props.service.permission.page));
+const roleFact = computed(() =>
+	resolvePerformanceRoleFact({
+		personaKey: accessContext.value?.activePersonaKey || null,
+		roleKind: accessContext.value?.roleKind || null
+	})
+);
 const showInfoButton = computed(() => checkPerm(props.service.permission.info));
 const showStatsSection = computed(() => checkPerm(props.service.permission.stats));
 const showAddButton = computed(() => checkPerm(props.service.permission.add));
 const showEditButton = computed(() => checkPerm(props.service.permission.update));
 const showDeleteButton = computed(() => checkPerm(props.service.permission.delete));
 
-const pageState = useListPage({
-	createFilters: () => props.config.createFilters(),
+const pageState = useListPage<TRecord, OfficeLedgerFilterState>({
+	createFilters: props.config.createFilters,
 	canLoad: () => canAccess.value,
 	initialPageSize: props.config.initialPageSize,
 	fetchPage: params =>
 		props.service.fetchPage({
 			page: params.page,
 			size: params.size,
-			...props.config.normalizeFilters(params as Record<string, unknown>)
+			...props.config.normalizeFilters(params)
 		}),
-	onError: (error: any) => {
-		ElMessage.error(error?.message || `${props.config.entityLabel}列表加载失败`);
+	onError: (error: unknown) => {
+		showElementErrorFromError(error, `${props.config.entityLabel}列表加载失败`);
 	}
 });
 
-const filters = pageState.filters as Record<string, any>;
+const filters = pageState.filters;
 const rows = pageState.rows;
 const tableLoading = pageState.loading;
 const pager = pageState.pager;
@@ -421,7 +385,16 @@ onMounted(() => {
 });
 
 async function initializePage() {
-	await Promise.all([pageState.reload(), loadStats(), loadDocumentReferences()]);
+	await Promise.all([loadAccessContext(), pageState.reload(), loadStats(), loadDocumentReferences()]);
+}
+
+async function loadAccessContext() {
+	try {
+		accessContext.value = await performanceAccessContextService.fetchContext();
+	} catch (error: unknown) {
+		accessContext.value = null;
+		showElementWarningFromError(error, '角色上下文加载失败，已使用兼容展示视角');
+	}
 }
 
 async function loadStats() {
@@ -430,9 +403,9 @@ async function loadStats() {
 		return;
 	}
 	try {
-		stats.value = await props.service.fetchStats(props.config.normalizeFilters({ ...filters }));
-	} catch (error: any) {
-		ElMessage.error(error?.message || `${props.config.entityLabel}统计加载失败`);
+		stats.value = normalizeStats(await props.service.fetchStats(props.config.normalizeFilters({ ...filters })));
+	} catch (error: unknown) {
+		showElementErrorFromError(error, `${props.config.entityLabel}统计加载失败`);
 	}
 }
 
@@ -451,8 +424,8 @@ async function loadDocumentReferences() {
 			id: Number(item.id),
 			label: `${item.fileNo || '未编号'} / ${item.fileName || '未命名'}`
 		}));
-	} catch (error: any) {
-		ElMessage.warning(error?.message || '引用文件元数据加载失败');
+	} catch (error: unknown) {
+		showElementWarningFromError(error, '引用文件元数据加载失败');
 	}
 }
 
@@ -469,12 +442,75 @@ function changePage(page: number) {
 	return pageState.goToPage(page);
 }
 
-function assignForm(payload: Record<string, any>) {
+function assignForm(payload: OfficeLedgerFormState) {
 	Object.keys(form).forEach(key => delete form[key]);
 	Object.assign(form, payload);
 }
 
-function resolveFieldOptions(field: OfficeLedgerField) {
+function getFilterTextValue(prop: string) {
+	const value = filters[prop];
+	return typeof value === 'string' || typeof value === 'number' ? String(value) : '';
+}
+
+function setFilterTextValue(prop: string, value: string) {
+	filters[prop] = value;
+}
+
+function getFilterSelectValue(prop: string) {
+	const value = filters[prop];
+	return typeof value === 'string' || typeof value === 'number' ? value : undefined;
+}
+
+function setFilterSelectValue(prop: string, value: string | number | undefined) {
+	filters[prop] = value;
+}
+
+function getFormTextValue(prop: string) {
+	const value = form[prop];
+	return typeof value === 'string' || typeof value === 'number' ? String(value) : '';
+}
+
+function setFormTextValue(prop: string, value: string) {
+	form[prop] = value;
+}
+
+function getFormSelectValue(prop: string) {
+	const value = form[prop];
+	return typeof value === 'string' || typeof value === 'number' ? value : undefined;
+}
+
+function setFormSelectValue(prop: string, value: string | number | undefined) {
+	form[prop] = value;
+}
+
+function getFormDateValue(prop: string) {
+	const value = form[prop];
+	return typeof value === 'string' ? value : undefined;
+}
+
+function setFormDateValue(prop: string, value: string | undefined) {
+	form[prop] = value;
+}
+
+function getFormNumberValue(prop: string) {
+	const value = form[prop];
+	return typeof value === 'number' ? value : undefined;
+}
+
+function setFormNumberValue(prop: string, value: number | undefined) {
+	form[prop] = value;
+}
+
+function getFormDocumentIds(prop: string) {
+	const value = form[prop];
+	return Array.isArray(value) ? value.map(item => Number(item)).filter(item => Number.isFinite(item)) : [];
+}
+
+function setFormDocumentIds(prop: string, value: number[]) {
+	form[prop] = value;
+}
+
+function resolveFieldOptions(field: OfficeLedgerField<TRecord>) {
 	if (field.type === 'document-multi') {
 		return documentOptions.value.map(item => ({
 			label: item.label,
@@ -499,11 +535,16 @@ function resolveLabel(options: OfficeLedgerFieldOption[], value: unknown) {
 	return matched?.label || value || '-';
 }
 
-function resolveTagType(field: OfficeLedgerField, row: Record<string, any>) {
+function resolveTagType(
+	field: OfficeLedgerField<TRecord>,
+	row: OfficeLedgerBaseRecord | null | undefined
+) {
 	const value = row?.[field.prop];
 	const options = field.options || resolveOptionsByProp(field.optionsProp);
 	const matched = options.find(item => String(item.value) === String(value));
-	return (matched?.type || props.config.statusMap?.[String(value)]?.type || 'info') as any;
+	return (matched?.type as OfficeLedgerTagType) ||
+		(props.config.statusMap?.[String(value)]?.type as OfficeLedgerTagType) ||
+		'info';
 }
 
 function renderDocumentLabels(value: unknown) {
@@ -516,9 +557,12 @@ function renderDocumentLabels(value: unknown) {
 		.join('，');
 }
 
-function renderFieldValue(field: OfficeLedgerField, row: Record<string, any>) {
+function renderFieldValue(
+	field: OfficeLedgerField<TRecord>,
+	row: OfficeLedgerBaseRecord | null | undefined
+) {
 	if (typeof field.formatter === 'function') {
-		return field.formatter(row);
+		return row ? field.formatter(row as TRecord) : '-';
 	}
 
 	const value = row?.[field.prop];
@@ -540,13 +584,14 @@ function renderFieldValue(field: OfficeLedgerField, row: Record<string, any>) {
 	return value === null || value === undefined || value === '' ? '-' : value;
 }
 
-async function openDetail(row: Record<string, any>) {
+async function openDetail(row: TRecord) {
 	try {
+		const rowId = resolveNumericId(row.id);
 		detailRecord.value =
-			showInfoButton.value && row?.id ? await props.service.fetchInfo({ id: Number(row.id) }) : row;
+			showInfoButton.value && rowId ? await props.service.fetchInfo({ id: rowId }) : row;
 		detailVisible.value = true;
-	} catch (error: any) {
-		ElMessage.error(error?.message || `${props.config.entityLabel}详情加载失败`);
+	} catch (error: unknown) {
+		showElementErrorFromError(error, `${props.config.entityLabel}详情加载失败`);
 	}
 }
 
@@ -556,26 +601,26 @@ function openCreate() {
 	formVisible.value = true;
 }
 
-async function openEdit(row: Record<string, any>) {
+async function openEdit(row: TRecord) {
 	try {
-		const source =
-			showInfoButton.value && row?.id ? await props.service.fetchInfo({ id: Number(row.id) }) : row;
+		const rowId = resolveNumericId(row.id);
+		const source = showInfoButton.value && rowId ? await props.service.fetchInfo({ id: rowId }) : row;
 		editingRecord.value = row;
 		assignForm({
 			...props.config.createEmptyForm(),
 			...props.config.toFormValues(source)
 		});
 		formVisible.value = true;
-	} catch (error: any) {
-		ElMessage.error(error?.message || `${props.config.entityLabel}详情加载失败`);
+	} catch (error: unknown) {
+		showElementErrorFromError(error, `${props.config.entityLabel}详情加载失败`);
 	}
 }
 
-function canEditRecord(row: Record<string, any>) {
+function canEditRecord(row: TRecord) {
 	return props.config.canEditRow ? props.config.canEditRow(row) : true;
 }
 
-function canDeleteRecord(row: Record<string, any>) {
+function canDeleteRecord(row: TRecord) {
 	return props.config.canDeleteRow ? props.config.canDeleteRow(row) : true;
 }
 
@@ -586,11 +631,12 @@ async function submitForm() {
 	await formRef.value.validate();
 	submitLoading.value = true;
 	try {
-		const payload = props.config.toPayload({ ...form });
-		if (editingRecord.value?.id) {
+		const payload = props.config.toPayload({ ...form } as OfficeLedgerFormState);
+		const editingId = resolveNumericId(editingRecord.value?.id);
+		if (editingId) {
 			await props.service.updateItem({
 				...payload,
-				id: Number(editingRecord.value.id)
+				id: editingId
 			});
 			ElMessage.success(`${props.config.entityLabel}已更新`);
 		} else {
@@ -599,52 +645,75 @@ async function submitForm() {
 		}
 		formVisible.value = false;
 		await Promise.all([pageState.search(), loadStats()]);
-	} catch (error: any) {
-		ElMessage.error(error?.message || `${props.config.entityLabel}保存失败`);
+	} catch (error: unknown) {
+		showElementErrorFromError(error, `${props.config.entityLabel}保存失败`);
 	} finally {
 		submitLoading.value = false;
 	}
 }
 
-async function handleDelete(row: Record<string, any>) {
-	if (!row?.id) {
+async function handleDelete(row: TRecord) {
+	const rowId = resolveNumericId(row.id);
+	if (!rowId) {
 		return;
 	}
-	try {
-		await ElMessageBox.confirm(
-			props.config.getDeleteMessage?.(row) || `确认删除当前${props.config.entityLabel}吗？`,
-			'删除确认',
-			{
-				type: 'warning'
-			}
-		);
-		await props.service.removeItem({
-			ids: [Number(row.id)]
-		});
-		ElMessage.success(`${props.config.entityLabel}已删除`);
-		await Promise.all([pageState.search(), loadStats()]);
-	} catch (error: any) {
-		if (error === 'cancel') {
-			return;
-		}
-		ElMessage.error(error?.message || `${props.config.entityLabel}删除失败`);
+
+	const confirmed = await confirmElementAction(
+		props.config.getDeleteMessage?.(row) || `确认删除当前${props.config.entityLabel}吗？`,
+		'删除确认'
+	);
+
+	if (!confirmed) {
+		return;
 	}
+
+	await runTrackedElementAction({
+		rowId,
+		actionType: 'delete',
+		request: () =>
+			props.service.removeItem({
+				ids: [rowId]
+			}),
+		successMessage: `${props.config.entityLabel}已删除`,
+		errorMessage: `${props.config.entityLabel}删除失败`,
+		refresh: async () => {
+			await Promise.all([pageState.search(), loadStats()]);
+		}
+	});
+}
+
+function resolveNumericId(value: unknown) {
+	const parsed = Number(value);
+	return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function normalizeStats(value: TStats): OfficeLedgerStatsView {
+	return Object.entries(value || {}).reduce<OfficeLedgerStatsView>((result, [key, item]) => {
+		if (typeof item === 'string' || typeof item === 'number' || item === null || item === undefined) {
+			result[key] = item;
+		}
+		return result;
+	}, {});
 }
 </script>
 
 <style lang="scss" scoped>
+@use '../../../../styles/patterns.metadata-workspace.scss' as metadataWorkspace;
+
 .office-ledger-page {
-	display: grid;
-	gap: 16px;
+	@include metadataWorkspace.metadata-workspace-shell(1180px);
 
 	&__header {
 		display: grid;
-		gap: 16px;
+		gap: var(--app-space-4);
+		padding: 4px;
+		border-radius: var(--app-radius-lg);
+		background: var(--app-surface-hero);
 	}
 
 	&__eyebrow {
-		font-size: 12px;
-		color: var(--el-text-color-secondary);
+		font-size: var(--app-font-size-caption);
+		color: var(--app-text-tertiary);
 	}
 
 	&__title-row {
@@ -657,51 +726,13 @@ async function handleDelete(row: Record<string, any>) {
 
 	h2 {
 		margin: 0;
+		color: var(--app-text-primary);
 	}
 
 	p {
 		margin: 0;
-		color: var(--el-text-color-regular);
+		color: var(--app-text-secondary);
 		line-height: 1.6;
-	}
-
-	&__toolbar {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		gap: 16px;
-		flex-wrap: wrap;
-	}
-
-	&__filters,
-	&__actions {
-		display: flex;
-		gap: 12px;
-		flex-wrap: wrap;
-	}
-
-	&__metric-label {
-		font-size: 13px;
-		color: var(--el-text-color-secondary);
-	}
-
-	&__metric-value {
-		font-size: 28px;
-		font-weight: 600;
-		margin-top: 8px;
-	}
-
-	&__metric-helper {
-		margin-top: 8px;
-		font-size: 12px;
-		color: var(--el-text-color-secondary);
-		line-height: 1.5;
-	}
-
-	&__pagination {
-		display: flex;
-		justify-content: flex-end;
-		margin-top: 16px;
 	}
 }
 </style>

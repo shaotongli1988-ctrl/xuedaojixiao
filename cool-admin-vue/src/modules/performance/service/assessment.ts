@@ -1,8 +1,22 @@
 import { BaseService } from '/@/cool';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeAssessmentExportRows,
+	decodeAssessmentPageResult,
+	decodeAssessmentRecord
+} from './assessment-contract';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import type {
-	AssessmentExportRow,
+	AssessmentActionRequest,
+	AssessmentExportQuery,
+	AssessmentExportRows,
+	AssessmentInfoQuery,
+	AssessmentPageQuery,
 	AssessmentPageResult,
-	AssessmentRecord
+	AssessmentRecord,
+	AssessmentReviewRequest,
+	AssessmentSaveRequest,
+	DeleteIdsRequest
 } from '../types';
 
 /**
@@ -11,73 +25,85 @@ import type {
  */
 export default class PerformanceAssessmentService extends BaseService {
 	permission = {
-		myPage: 'performance:assessment:myPage',
-		page: 'performance:assessment:page',
-		pendingPage: 'performance:assessment:pendingPage',
-		info: 'performance:assessment:info',
-		add: 'performance:assessment:add',
-		update: 'performance:assessment:update',
-		delete: 'performance:assessment:delete',
-		submit: 'performance:assessment:submit',
-		approve: 'performance:assessment:approve',
-		reject: 'performance:assessment:reject',
-		export: 'performance:assessment:export'
+		myPage: PERMISSIONS.performance.assessment.myPage,
+		page: PERMISSIONS.performance.assessment.page,
+		pendingPage: PERMISSIONS.performance.assessment.pendingPage,
+		info: PERMISSIONS.performance.assessment.info,
+		add: PERMISSIONS.performance.assessment.add,
+		update: PERMISSIONS.performance.assessment.update,
+		delete: PERMISSIONS.performance.assessment.delete,
+		submit: PERMISSIONS.performance.assessment.submit,
+		approve: PERMISSIONS.performance.assessment.approve,
+		reject: PERMISSIONS.performance.assessment.reject,
+		export: PERMISSIONS.performance.assessment.export
 	};
 
 	constructor() {
 		super('admin/performance/assessment');
 	}
 
-	fetchPage(data: any) {
-		return super.page(data) as unknown as Promise<AssessmentPageResult>;
+	fetchPage(data: AssessmentPageQuery) {
+		return asPerformanceServicePromise<AssessmentPageResult>(
+			super.page(data),
+			decodeAssessmentPageResult
+		);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<AssessmentRecord>;
+	fetchInfo(params: AssessmentInfoQuery) {
+		return asPerformanceServicePromise<AssessmentRecord>(
+			super.info(params),
+			decodeAssessmentRecord
+		);
 	}
 
-	createAssessment(data: AssessmentRecord) {
-		return super.add(data) as unknown as Promise<AssessmentRecord>;
+	createAssessment(data: AssessmentSaveRequest) {
+		return asPerformanceServicePromise<AssessmentRecord>(
+			super.add(data),
+			decodeAssessmentRecord
+		);
 	}
 
-	updateAssessment(data: AssessmentRecord) {
-		return super.update(data) as unknown as Promise<AssessmentRecord>;
+	updateAssessment(data: AssessmentSaveRequest & { id: number }) {
+		return asPerformanceServicePromise<AssessmentRecord>(
+			super.update(data),
+			decodeAssessmentRecord
+		);
 	}
 
-	removeAssessment(data: { ids: number[] }) {
-		return super.delete(data) as unknown as Promise<void>;
+	removeAssessment(data: DeleteIdsRequest) {
+		return asPerformanceServicePromise<void>(super.delete(data));
 	}
 
-	submit(data: { id: number }) {
-		return this.request({
+	submit(data: AssessmentActionRequest) {
+		return asPerformanceServicePromise<AssessmentRecord>(this.request({
 			url: '/submit',
 			method: 'POST',
 			data
-		}) as unknown as Promise<AssessmentRecord>;
+		}), decodeAssessmentRecord);
 	}
 
-	approve(data: { id: number; comment?: string }) {
-		return this.request({
+	approve(data: AssessmentReviewRequest) {
+		return asPerformanceServicePromise<AssessmentRecord>(this.request({
 			url: '/approve',
 			method: 'POST',
 			data
-		}) as unknown as Promise<AssessmentRecord>;
+		}), decodeAssessmentRecord);
 	}
 
-	reject(data: { id: number; comment?: string }) {
-		return this.request({
+	reject(data: AssessmentReviewRequest) {
+		return asPerformanceServicePromise<AssessmentRecord>(this.request({
 			url: '/reject',
 			method: 'POST',
 			data
-		}) as unknown as Promise<AssessmentRecord>;
+		}), decodeAssessmentRecord);
 	}
 
-	exportSummary(data: any) {
-		return this.request({
+	exportSummary(data: AssessmentExportQuery) {
+		return asPerformanceServicePromise<AssessmentExportRows>(this.request({
 			url: '/export',
 			method: 'POST',
 			data
-		}) as unknown as Promise<AssessmentExportRow[]>;
+		}), decodeAssessmentExportRows);
 	}
 }
 

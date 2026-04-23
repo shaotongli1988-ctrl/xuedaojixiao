@@ -1,4 +1,4 @@
-<!-- 文件职责：承接培训课程管理的列表、详情、新增、编辑和报名摘要只读查询；不负责员工报名、移动端课程页和培训全域扩展；依赖 course service、权限工具和 Element Plus 组件；维护重点是经理只读、员工无入口，且 published 状态下只能暴露冻结允许的编辑字段。 -->
+<!-- 文件职责：承接培训课程管理的列表、详情、新增、编辑和报名摘要只读查询；不负责员工报名、移动端课程页和培训全域扩展；依赖 course service、权限工具和 Element Plus 组件；维护重点是角色展示统一消费 access-context 事实源，published 状态下仍只暴露冻结允许的编辑字段。 -->
 <template>
 	<div v-if="canAccess" class="course-page">
 		<el-card shadow="never">
@@ -50,7 +50,7 @@
 						<h2>培训课程管理</h2>
 						<p>课程主链仅覆盖后台管理能力，不开放员工报名页。</p>
 					</div>
-					<el-tag effect="plain">{{ isReadOnlyRole ? '经理只读' : 'HR 管理' }}</el-tag>
+					<el-tag effect="plain">{{ roleFact.roleLabel }}</el-tag>
 				</div>
 			</template>
 
@@ -203,7 +203,7 @@
 						<el-col :span="12">
 							<el-form-item label="开始日期">
 								<el-date-picker
-									v-model="form.startDate"
+									v-model="startDateModel"
 									type="date"
 									value-format="YYYY-MM-DD"
 									placeholder="可选"
@@ -214,7 +214,7 @@
 						<el-col :span="12">
 							<el-form-item label="结束日期">
 								<el-date-picker
-									v-model="form.endDate"
+									v-model="endDateModel"
 									type="date"
 									value-format="YYYY-MM-DD"
 									placeholder="可选"
@@ -261,7 +261,7 @@
 						<el-col :span="12">
 							<el-form-item label="结束日期">
 								<el-date-picker
-									v-model="form.endDate"
+									v-model="endDateModel"
 									type="date"
 									value-format="YYYY-MM-DD"
 									placeholder="可选"
@@ -431,16 +431,28 @@ defineOptions({
 });
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus';
+import { ElMessage, type FormInstance } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
+import { useDict } from '/$/dict';
 import { useRoute, useRouter } from 'vue-router';
 import { useListPage } from '../../composables/use-list-page.js';
+import { performanceAccessContextService } from '../../service/access-context';
 import { performanceCertificateService } from '../../service/certificate';
+import {
+	confirmElementAction,
+	runTrackedElementAction
+} from '../shared/action-feedback';
+import {
+	showElementErrorFromError,
+	showElementWarningFromError,
+	resolveErrorMessage
+} from '../shared/error-message';
 import {
 	consumeRoutePreset,
 	firstQueryValue,
 	normalizeQueryNumber
 } from '../../utils/route-preset.js';
+import { resolvePerformanceRoleFact } from '../../service/role-fact';
 import {
 	performanceCourseExamService,
 	performanceCoursePracticeService,
@@ -450,20 +462,14 @@ import {
 	type CourseEnrollmentRecord,
 	type CourseRecord,
 	type CourseStatus,
+	type PerformanceAccessContext,
 	createEmptyCourse
 } from '../../types';
 import { performanceCourseService } from '../../service/course';
 
-interface CourseFormModel {
-	title: string;
-	code: string;
-	category: string;
-	description: string;
-	startDate?: string;
-	endDate?: string;
-	status: CourseStatus;
-}
+const COURSE_STATUS_DICT_KEY = 'performance.course.status';
 
+const { dict } = useDict();
 const submitLoading = ref(false);
 const formVisible = ref(false);
 const detailVisible = ref(false);
@@ -476,8 +482,21 @@ const enrollmentLoading = ref(false);
 const formRef = ref<FormInstance>();
 const route = useRoute();
 const router = useRouter();
+const accessContext = ref<PerformanceAccessContext | null>(null);
 
-const form = reactive<CourseFormModel>(createEmptyCourseForm());
+const form = reactive<CourseRecord>(createEmptyCourse());
+const startDateModel = computed({
+	get: (): string | undefined => form.startDate || undefined,
+	set: (value: string | undefined) => {
+		form.startDate = value || undefined;
+	}
+});
+const endDateModel = computed({
+	get: (): string | undefined => form.endDate || undefined,
+	set: (value: string | undefined) => {
+		form.endDate = value || undefined;
+	}
+});
 
 const enrollmentFilters = reactive({
 	keyword: '',
@@ -495,21 +514,20 @@ const rules = {
 	status: [{ required: true, message: '请选择课程状态', trigger: 'change' }]
 };
 
-const courseStatusOptions: Array<{ label: string; value: CourseStatus }> = [
-	{ label: '草稿', value: 'draft' },
-	{ label: '已发布', value: 'published' },
-	{ label: '已关闭', value: 'closed' }
-];
+const courseStatusOptions = computed<Array<{ label: string; value: CourseStatus }>>(() =>
+	dict.get(COURSE_STATUS_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as CourseStatus
+	}))
+);
 
-const draftEditableStatusOptions: Array<{ label: string; value: CourseStatus }> = [
-	{ label: '草稿', value: 'draft' },
-	{ label: '发布', value: 'published' }
-];
+const draftEditableStatusOptions = computed<Array<{ label: string; value: CourseStatus }>>(() =>
+	courseStatusOptions.value.filter(item => item.value === 'draft' || item.value === 'published')
+);
 
-const publishedEditableStatusOptions: Array<{ label: string; value: CourseStatus }> = [
-	{ label: '保持已发布', value: 'published' },
-	{ label: '关闭课程', value: 'closed' }
-];
+const publishedEditableStatusOptions = computed<Array<{ label: string; value: CourseStatus }>>(() =>
+	courseStatusOptions.value.filter(item => item.value === 'published' || item.value === 'closed')
+);
 
 const canAccess = computed(() => checkPerm(performanceCourseService.permission.page));
 const showInfoButton = computed(() => checkPerm(performanceCourseService.permission.info));
@@ -529,6 +547,12 @@ const showCourseLearningButton = computed(() =>
 		performanceCourseExamService.permission.summary
 	].some(checkPerm)
 );
+const roleFact = computed(() =>
+	resolvePerformanceRoleFact({
+		personaKey: accessContext.value?.activePersonaKey || null,
+		roleKind: accessContext.value?.roleKind || null
+	})
+);
 const isReadOnlyRole = computed(() => canAccess.value && !showAddButton.value && !showEditButton.value);
 const isPublishedEditing = computed(() => editingCourse.value?.status === 'published');
 const courseList = useListPage({
@@ -546,8 +570,8 @@ const courseList = useListPage({
 			category: normalizeOptionalText(String(params.category || '')),
 			status: params.status ? String(params.status) : undefined
 		}),
-	onError: (error: any) => {
-		ElMessage.error(error.message || '课程列表加载失败');
+	onError: (error: unknown) => {
+		showElementErrorFromError(error, '课程列表加载失败');
 	}
 });
 const rows = courseList.rows;
@@ -556,6 +580,7 @@ const filters = courseList.filters;
 const pager = courseList.pager;
 
 onMounted(async () => {
+	await Promise.all([dict.refresh([COURSE_STATUS_DICT_KEY]), loadAccessContext()]);
 	await syncList();
 	await consumeRouteDetailQuery();
 });
@@ -569,6 +594,15 @@ watch(
 
 async function syncList() {
 	await courseList.reload();
+}
+
+async function loadAccessContext() {
+	try {
+		accessContext.value = await performanceAccessContextService.fetchContext();
+	} catch (error: unknown) {
+		accessContext.value = null;
+		showElementWarningFromError(error, '角色上下文加载失败，已使用兼容展示视角');
+	}
 }
 
 function changeListPage(page: number) {
@@ -585,7 +619,7 @@ function resetListFilters() {
 
 function openCreate() {
 	editingCourse.value = null;
-	Object.assign(form, createEmptyCourseForm());
+	Object.assign(form, createEmptyCourse());
 	formVisible.value = true;
 }
 
@@ -666,8 +700,8 @@ async function openEnrollment(row: CourseRecord) {
 async function fetchDetail(id: number) {
 	try {
 		return await performanceCourseService.fetchInfo({ id });
-	} catch (error: any) {
-		ElMessage.error(error.message || '课程详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '课程详情加载失败');
 		return null;
 	}
 }
@@ -714,31 +748,33 @@ async function submitForm() {
 		ElMessage.success('保存成功');
 		formVisible.value = false;
 		await syncList();
-	} catch (error: any) {
-		ElMessage.error(error.message || '课程保存失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '课程保存失败');
 	} finally {
 		submitLoading.value = false;
 	}
 }
 
 async function handleDelete(row: CourseRecord) {
-	try {
-		await ElMessageBox.confirm(`确认删除课程「${row.title}」吗？`, '删除确认', {
-			type: 'warning'
-		});
-		await performanceCourseService.removeCourse({ ids: [row.id!] });
-		ElMessage.success('删除成功');
+	const confirmed = await confirmElementAction(`确认删除课程「${row.title}」吗？`, '删除确认');
 
-		if (rows.value.length === 1 && pager.page > 1) {
-			pager.page -= 1;
-		}
-
-		await syncList();
-	} catch (error: any) {
-		if (error !== 'cancel') {
-			ElMessage.error(error.message || '课程删除失败');
-		}
+	if (!confirmed) {
+		return;
 	}
+
+	await runTrackedElementAction({
+		rowId: Number(row.id || 0),
+		actionType: 'delete',
+		request: () => performanceCourseService.removeCourse({ ids: [row.id!] }),
+		successMessage: '删除成功',
+		errorMessage: '课程删除失败',
+		onSuccess: () => {
+			if (rows.value.length === 1 && pager.page > 1) {
+				pager.page -= 1;
+			}
+		},
+		refresh: syncList
+	});
 }
 
 async function refreshEnrollment() {
@@ -759,8 +795,8 @@ async function refreshEnrollment() {
 
 		enrollmentRows.value = result.list || [];
 		enrollmentPagination.total = result.pagination?.total || 0;
-	} catch (error: any) {
-		ElMessage.error(error.message || '报名摘要加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '报名摘要加载失败');
 	} finally {
 		enrollmentLoading.value = false;
 	}
@@ -853,17 +889,11 @@ function canViewEnrollment(row: CourseRecord) {
 }
 
 function statusLabel(status?: CourseStatus) {
-	return courseStatusOptions.find(item => item.value === status)?.label || status || '-';
+	return dict.getLabel(COURSE_STATUS_DICT_KEY, status) || status || '-';
 }
 
 function statusTagType(status?: CourseStatus) {
-	const map: Record<CourseStatus, 'info' | 'success' | 'warning'> = {
-		draft: 'info',
-		published: 'success',
-		closed: 'warning'
-	};
-
-	return status ? map[status] : 'info';
+	return dict.getMeta(COURSE_STATUS_DICT_KEY, status)?.tone || 'info';
 }
 
 function formatDateRange(startDate?: string | null, endDate?: string | null) {
@@ -877,20 +907,7 @@ function normalizeOptionalText(value?: string | null) {
 	return normalized ? normalized : undefined;
 }
 
-function createEmptyCourseForm(): CourseFormModel {
-	const course = createEmptyCourse();
-	return {
-		title: course.title,
-		code: course.code || '',
-		category: course.category || '',
-		description: course.description || '',
-		startDate: course.startDate || undefined,
-		endDate: course.endDate || undefined,
-		status: course.status || 'draft'
-	};
-}
-
-function mapCourseToForm(course: CourseRecord): CourseFormModel {
+function mapCourseToForm(course: CourseRecord): CourseRecord {
 	return {
 		title: course.title || '',
 		code: course.code || '',
@@ -903,60 +920,45 @@ function mapCourseToForm(course: CourseRecord): CourseFormModel {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@use '../../../../styles/patterns.management-workspace.scss' as managementWorkspace;
+
 .course-page {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-}
+	@include managementWorkspace.management-workspace-shell(980px);
 
-.course-page__toolbar,
-.course-page__header,
-.course-page__enrollment-toolbar {
-	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: 16px;
-	flex-wrap: wrap;
-}
+	&__enrollment-toolbar,
+	&__enrollment-filters {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--app-space-3);
+		align-items: center;
+	}
 
-.course-page__filters,
-.course-page__actions,
-.course-page__enrollment-filters {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	flex-wrap: wrap;
-}
+	&__enrollment-toolbar {
+		justify-content: space-between;
+		align-items: flex-start;
+	}
 
-.course-page__header h2,
-.course-page__enrollment-title h3 {
-	margin: 0;
-	font-size: 20px;
-	color: var(--el-text-color-primary);
-}
+	&__enrollment-title h3 {
+		margin: 0;
+		font-size: var(--app-font-size-title);
+		color: var(--app-text-primary);
+	}
 
-.course-page__header p,
-.course-page__enrollment-title p {
-	margin: 6px 0 0;
-	color: var(--el-text-color-secondary);
-}
+	&__enrollment-title p {
+		margin: 6px 0 0;
+		color: var(--app-text-secondary);
+		line-height: 1.6;
+	}
 
-.course-page__pagination {
-	display: flex;
-	justify-content: flex-end;
-	margin-top: 16px;
-}
+	&__locked-summary {
+		margin-bottom: var(--app-space-4);
+	}
 
-.course-page__locked-summary {
-	margin-bottom: 16px;
-}
-
-@media (max-width: 768px) {
-	.course-page__toolbar,
-	.course-page__header,
-	.course-page__enrollment-toolbar {
-		flex-direction: column;
+	@media (max-width: 768px) {
+		&__enrollment-toolbar {
+			flex-direction: column;
+		}
 	}
 }
 </style>

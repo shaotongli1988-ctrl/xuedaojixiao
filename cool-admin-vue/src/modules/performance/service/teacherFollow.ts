@@ -4,24 +4,38 @@
  * 不负责资源详情、合作标记或班级动作。
  */
 import { BaseService } from '/@/cool';
-import type { TeacherFollowPageResult, TeacherFollowRecord } from '../types';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeTeacherFollowPageResult,
+	decodeTeacherFollowRecord
+} from './teacher-contract';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import type {
+	TeacherFollowCreatePayload,
+	TeacherFollowPageQuery,
+	TeacherFollowPageResult,
+	TeacherFollowRecord
+} from '../types';
 
 export default class PerformanceTeacherFollowService extends BaseService {
-	permission = {
-		page: 'performance:teacherFollow:page',
-		add: 'performance:teacherFollow:add'
-	};
+	permission = PERMISSIONS.performance.teacherFollow;
 
 	constructor() {
 		super('admin/performance/teacherFollow');
 	}
 
-	fetchPage(data: any) {
-		return super.page(data) as unknown as Promise<TeacherFollowPageResult>;
+	fetchPage(data: TeacherFollowPageQuery) {
+		return asPerformanceServicePromise<TeacherFollowPageResult>(
+			super.page(data),
+			decodeTeacherFollowPageResult
+		);
 	}
 
-	createTeacherFollow(data: Partial<TeacherFollowRecord>) {
-		return super.add(data) as unknown as Promise<TeacherFollowRecord>;
+	createTeacherFollow(data: TeacherFollowCreatePayload) {
+		return asPerformanceServicePromise<TeacherFollowRecord>(
+			super.add(data),
+			decodeTeacherFollowRecord
+		);
 	}
 }
 

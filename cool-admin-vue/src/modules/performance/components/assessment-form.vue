@@ -105,7 +105,13 @@
 </template>
 
 <script lang="ts" setup>
-import type { AssessmentMode, AssessmentRecord, UserOption } from '../types';
+import type {
+	AssessmentDraft,
+	AssessmentMode,
+	AssessmentRecord,
+	AssessmentSaveRequest,
+	UserOption
+} from '../types';
 import { computed, reactive, ref, watch } from 'vue';
 import { ElMessage, type FormInstance } from 'element-plus';
 import ScoreItemTable from './score-item-table.vue';
@@ -119,12 +125,12 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-	(e: 'submit', value: AssessmentRecord): void;
+	(e: 'submit', value: AssessmentSaveRequest & { id?: number }): void;
 	(e: 'cancel'): void;
 }>();
 
 const formRef = ref<FormInstance>();
-const form = reactive<AssessmentRecord>(createEmptyAssessment());
+const form = reactive<AssessmentDraft>(createEmptyAssessment());
 
 const isSelfMode = computed(() => props.mode === 'my');
 
@@ -143,13 +149,14 @@ const rules = {
 watch(
 	() => props.modelValue,
 	value => {
+		const sourceScoreItems = value?.scoreItems ?? [];
 		const next = value
 			? {
 					...createEmptyAssessment(),
 					...value,
 					scoreItems:
-						value.scoreItems?.length > 0
-							? value.scoreItems.map(item => ({
+						sourceScoreItems.length > 0
+							? sourceScoreItems.map(item => ({
 									...item,
 									score: Number(item.score || 0),
 									weight: Number(item.weight || 0)
@@ -186,8 +193,21 @@ async function submit() {
 
 	syncDepartment();
 
+	if (form.employeeId == null || form.assessorId == null) {
+		ElMessage.error('请选择被考核人和评估负责人');
+		return;
+	}
+
 	emit('submit', {
-		...form,
+		id: form.id,
+		code: form.code,
+		employeeId: form.employeeId,
+		assessorId: form.assessorId,
+		departmentId: form.departmentId,
+		periodType: form.periodType,
+		periodValue: form.periodValue,
+		targetCompletion: form.targetCompletion,
+		selfEvaluation: form.selfEvaluation,
 		scoreItems: form.scoreItems.map(item => ({
 			...item,
 			score: Number(item.score || 0),
@@ -199,14 +219,18 @@ async function submit() {
 </script>
 
 <style lang="scss" scoped>
+@use '../../../styles/patterns.overlay-responsive.scss' as overlayResponsive;
+
 .assessment-form {
 	display: grid;
-	gap: 16px;
+	gap: var(--app-space-4);
 
 	&__footer {
 		display: flex;
 		justify-content: flex-end;
-		gap: 12px;
+		gap: var(--app-space-3);
 	}
+
+	@include overlayResponsive.overlay-responsive;
 }
 </style>

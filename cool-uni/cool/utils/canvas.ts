@@ -87,7 +87,7 @@ class Canvas {
 
 	// 块
 	div(options: DivRenderOptions) {
-		let render = () => {
+		const render = () => {
 			this.divRender(options);
 		};
 		this.renderQuene.push(render);
@@ -96,7 +96,7 @@ class Canvas {
 
 	// 文本
 	text(options: TextRenderOptions) {
-		let render = () => {
+		const render = () => {
 			this.textRender(options);
 		};
 		this.renderQuene.push(render);
@@ -105,7 +105,7 @@ class Canvas {
 
 	// 图片
 	image(options: ImageRenderOptions) {
-		let render = () => {
+		const render = () => {
 			this.imageRender(options);
 		};
 		this.imageQueue.push(options);
@@ -116,7 +116,7 @@ class Canvas {
 	// 绘画
 	draw(save = false) {
 		return new Promise((resolve) => {
-			let next = () => {
+			const next = () => {
 				this.render();
 				this.ctx.draw(save, () => {
 					resolve(true);
@@ -134,7 +134,7 @@ class Canvas {
 	// 生成图片
 	createImage(options?: CreateImageOptins): Promise<string> {
 		return new Promise((resolve, reject) => {
-			let data = {
+			const data = {
 				canvasId: this.canvasId,
 				...options,
 				success: (res: any) => {
@@ -279,7 +279,7 @@ class Canvas {
 		}
 
 		if (isObject(options.backgroundColor)) {
-			let { startX, startY, endX, endY, gradient } = options.backgroundColor;
+			const { startX, startY, endX, endY, gradient } = options.backgroundColor;
 			const rgb = this.ctx.createLinearGradient(startX, startY, endX, endY);
 			for (let i = 0, l = gradient.length; i < l; i++) {
 				rgb.addColorStop(gradient[i].step, gradient[i].color);
@@ -296,7 +296,7 @@ class Canvas {
 	setBorder(options: any) {
 		if (!options.border) return this;
 
-		let { x, y, width: w, height: h, border, radius: r } = options;
+		const { x, y, width: w, height: h, border, radius: r } = options;
 
 		if (border.width) {
 			this.ctx.setLineWidth(border.width);
@@ -307,7 +307,7 @@ class Canvas {
 		}
 
 		// 偏移距离
-		let p = border.width / 2;
+		const p = border.width / 2;
 
 		// 是否有圆角
 		if (r) {
@@ -357,13 +357,13 @@ class Canvas {
 		switch (mode) {
 			case "aspectFill":
 				if (width <= height) {
-					let p = width / sWidth;
+					const p = width / sWidth;
 					cw = width;
 					ch = sHeight * p;
 					cx = 0;
 					cy = (height - ch) / 2;
 				} else {
-					let p = height / sHeight;
+					const p = height / sHeight;
 					cw = sWidth * p;
 					ch = height;
 					cx = (width - cw) / 2;
@@ -372,13 +372,13 @@ class Canvas {
 				break;
 			case "aspectFit":
 				if (width <= height) {
-					let p = height / sHeight;
+					const p = height / sHeight;
 					sw = width / p;
 					sh = sHeight;
 					sx = x + (sWidth - sw) / 2;
 					sy = y;
 				} else {
-					let p = width / sWidth;
+					const p = width / sWidth;
 					sw = sWidth;
 					sh = height / p;
 					sx = x;
@@ -398,11 +398,11 @@ class Canvas {
 		overflow,
 		letterSpace = 0,
 	}: any) {
-		let arr: any[] = [[]];
+		const arr: any[] = [[]];
 		let a = 0;
 
 		for (let i = 0; i < text.length; i++) {
-			let b = this.getFontPx(text[i], { fontSize, letterSpace });
+			const b = this.getFontPx(text[i], { fontSize, letterSpace });
 
 			if (a + b > width) {
 				a = b;
@@ -432,7 +432,7 @@ class Canvas {
 			return fontSize / 2 + fontSize / 14 + letterSpace;
 		}
 
-		let ch = text.charCodeAt(0);
+		const ch = text.charCodeAt(0);
 
 		if ((ch >= 0x0001 && ch <= 0x007e) || (0xff60 <= ch && ch <= 0xff9f)) {
 			return fontSize / 2 + fontSize / 14 + letterSpace;
@@ -450,10 +450,10 @@ class Canvas {
 
 		// 区分是否有圆角采用不同模式渲染
 		if (options.radius) {
-			let { x, y } = options;
-			let w = options.width || 0;
-			let h = options.height || 0;
-			let r = options.radius || 0;
+			const { x, y } = options;
+			const w = options.width || 0;
+			const h = options.height || 0;
+			const r = options.radius || 0;
 			// 画路径
 			this.drawRadiusRoute(x, y, w, h, r);
 			// 填充
@@ -466,7 +466,7 @@ class Canvas {
 
 	// 渲染文本
 	textRender(options: TextRenderOptions) {
-		let {
+		const {
 			fontSize = 14,
 			textAlign,
 			width,
@@ -486,10 +486,10 @@ class Canvas {
 		this.ctx.setFillStyle(color);
 
 		// 获取文本内容
-		let rows = this.getTextRows(options);
+		const rows = this.getTextRows(options);
 
 		// 获取文本行高
-		let lh = lineHeight - fontSize;
+		const lh = lineHeight - fontSize;
 
 		// 左偏移
 		let offsetLeft = 0;
@@ -549,10 +549,10 @@ class Canvas {
 			// 裁剪
 			this.ctx.clip();
 		}
-		let temp = cloneDeep(this.imageQueue[0]);
+		const temp = cloneDeep(this.imageQueue[0]);
 
 		if (options.mode) {
-			let { cx, cy, cw, ch, sx, sy, sw, sh } = this.cropImage(
+			const { cx, cy, cw, ch, sx, sy, sw, sh } = this.cropImage(
 				options.mode,
 				temp.swidth,
 				temp.sheight,

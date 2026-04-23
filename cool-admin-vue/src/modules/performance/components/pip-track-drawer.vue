@@ -227,16 +227,18 @@ function resolveAssessmentPagePath() {
 </script>
 
 <style lang="scss" scoped>
+@use '../../../styles/patterns.overlay-responsive.scss' as overlayResponsive;
+
 .pip-track-drawer {
 	display: grid;
-	gap: 16px;
+	gap: var(--app-space-4);
 
 	&__text,
 	&__record-progress,
 	&__record-plan {
 		white-space: pre-wrap;
 		line-height: 1.7;
-		color: var(--el-text-color-regular);
+		color: var(--app-text-secondary);
 	}
 
 	&__record {
@@ -245,14 +247,16 @@ function resolveAssessmentPagePath() {
 	}
 
 	&__record-meta {
-		font-size: 12px;
-		color: var(--el-text-color-secondary);
+		font-size: var(--app-font-size-caption);
+		color: var(--app-text-tertiary);
 	}
 
 	&__footer {
 		display: flex;
 		justify-content: flex-end;
-		gap: 12px;
+		gap: var(--app-space-3);
 	}
+
+	@include overlayResponsive.overlay-responsive;
 }
 </style>

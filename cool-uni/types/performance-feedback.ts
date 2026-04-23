@@ -1,94 +1,76 @@
 /**
- * cool-uni 360 环评模块类型与纯前端规则。
- * 这里只定义任务、反馈和汇总页复用结构，不处理请求发送、角色判定或脱敏裁剪。
+ * cool-uni 360 环评模块类型与前端守卫。
+ * 这里只转发 OpenAPI 生成的反馈任务契约，并补充移动端提交条件判断。
  */
-export type FeedbackTaskStatus = "draft" | "running" | "closed";
-export type FeedbackRecordStatus = "draft" | "submitted";
+import type {
+	ApiResponse_FeedbackPageResult,
+	ApiResponse_FeedbackSummary,
+	FeedbackRecord as GeneratedFeedbackRecord,
+	FeedbackTaskRecord as GeneratedFeedbackTaskRecord,
+} from "/@/generated/performance-feedback.generated";
 
-export interface FeedbackRecord {
-	id?: number;
-	feedbackUserId?: number;
-	feedbackUserName?: string;
-	relationType: string;
-	score?: number;
-	content?: string;
-	status?: FeedbackRecordStatus | string;
+type ApiResponseData<T extends { data: unknown }> = T["data"];
+
+export type {
+	FeedbackExportRow,
+	FeedbackFetchInfoQuery,
+	FeedbackFetchPageRequest,
+	FeedbackFetchSummaryQuery,
+	FeedbackRecord,
+	FeedbackSubmitFeedbackRequest,
+	FeedbackTaskRelationItem,
+} from "/@/generated/performance-feedback.generated";
+
+export type FeedbackTaskStateValue = "draft" | "running" | "closed";
+export type FeedbackRecordStateValue = "draft" | "submitted";
+export type FeedbackRelationType = "上级" | "同级" | "下级" | "协作人";
+
+export interface FeedbackCurrentUserEntry {
+	id: number;
+	status: FeedbackRecordStateValue | string;
+	relationType: FeedbackRelationType | string;
 	submitTime?: string;
 }
 
-export interface FeedbackTaskRecord {
-	id?: number;
-	assessmentId?: number | null;
-	employeeId: number | undefined;
-	employeeName?: string;
+export interface FeedbackUserEntry extends GeneratedFeedbackRecord {
+	relationType: FeedbackRelationType | string;
+	status?: FeedbackRecordStateValue | string;
+}
+
+export type FeedbackTaskRecord = Omit<GeneratedFeedbackTaskRecord, "status"> & {
 	departmentId?: number;
 	departmentName?: string;
-	title: string;
-	deadline?: string;
-	status?: FeedbackTaskStatus | string;
-	submittedCount?: number;
-	totalCount?: number;
+	creatorId?: number;
+	creatorName?: string;
+	status: FeedbackTaskStateValue | string;
 	averageScore?: number;
-	currentUserRecordStatus?: string;
-	currentUserRelationType?: string;
+	currentUserRecordStatus?: FeedbackRecordStateValue | string;
+	currentUserRelationType?: FeedbackRelationType | string;
 	currentUserSubmitTime?: string;
-	currentUserRecord?: {
-		id: number;
-		status?: string;
-		relationType?: string;
-		submitTime?: string;
-	} | null;
-	feedbackUsers?: FeedbackRecord[];
-	createTime?: string;
-	updateTime?: string;
-}
+	currentUserRecord?: FeedbackCurrentUserEntry | null;
+	feedbackUsers?: FeedbackUserEntry[];
+};
 
-export interface FeedbackSummary {
-	taskId: number;
-	averageScore: number;
-	submittedCount: number;
-	totalCount: number;
-	records: FeedbackRecord[];
-}
+export type FeedbackSummary = Omit<ApiResponseData<ApiResponse_FeedbackSummary>, "records"> & {
+	records: FeedbackUserEntry[];
+};
 
-export interface FeedbackPageResult {
+export type FeedbackPageResult = Omit<ApiResponseData<ApiResponse_FeedbackPageResult>, "list"> & {
 	list: FeedbackTaskRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
+};
+
+export interface FeedbackFetchPagePayload {
+	page?: number;
+	size?: number;
+	keyword?: string;
+	status?: string;
+	employeeId?: number;
 }
 
-export function feedbackStatusLabel(status?: string) {
-	switch (status) {
-		case "draft":
-			return "草稿";
-		case "running":
-			return "进行中";
-		case "closed":
-			return "已关闭";
-		case "submitted":
-			return "已提交";
-		default:
-			return "未知";
-	}
-}
-
-export function feedbackStatusTone(status?: string) {
-	switch (status) {
-		case "draft":
-			return "info";
-		case "running":
-			return "warning";
-		case "closed":
-			return "success";
-		case "submitted":
-			return "success";
-		default:
-			return "info";
-	}
-}
+export type FeedbackSummaryQuery = import("/@/generated/performance-feedback.generated").FeedbackFetchSummaryQuery;
+export type FeedbackSubmitPayload = import("/@/generated/performance-feedback.generated").FeedbackSubmitFeedbackRequest & {
+	relationType: FeedbackRelationType | string;
+};
 
 export function canFeedbackSubmit(task?: FeedbackTaskRecord) {
 	return (

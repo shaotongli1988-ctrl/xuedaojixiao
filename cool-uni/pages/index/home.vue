@@ -8,7 +8,7 @@
 					<text class="workbench__hello">你好，{{ user.info?.name || user.info?.username }}</text>
 					<text class="workbench__meta">
 						{{ user.info?.departmentName || "当前账号" }} ·
-						{{ roleLabel }}
+						{{ user.roleLabel }}
 					</text>
 				</view>
 
@@ -16,16 +16,16 @@
 			</view>
 
 			<view class="workbench__summary">
-				<text class="workbench__summary-title">首批工作台</text>
+				<text class="workbench__summary-title">移动工作台</text>
 				<text class="workbench__summary-text">
-					只展示当前账号在移动端首批冻结范围内且拥有权限的入口，不下沉驾驶舱、薪资、PIP、晋升和导出。
+					只展示当前账号在移动端已开放且拥有权限的入口，优先承接高频查看、跟进和状态动作。
 				</text>
 			</view>
 
 			<page-state
 				v-if="!cards.length"
 				title="当前账号暂无可访问入口"
-				description="请使用员工或部门经理测试账号登录。HR 与其他非首批角色不开放移动端业务入口。"
+				description="请使用员工、部门经理、HR 或只读测试账号登录。其他未开放角色不提供移动端业务入口。"
 				action-text="退出登录"
 				@action="logout"
 			/>
@@ -57,31 +57,48 @@ import { onPullDownRefresh, onShow } from "@dcloudio/uni-app";
 import { router } from "/@/cool/router";
 import { useStore } from "/@/cool/store";
 import { performanceAssessmentService } from "/@/service/performance/assessment";
+import { performanceCapabilityService } from "/@/service/performance/capability";
+import { performanceCertificateService } from "/@/service/performance/certificate";
+import { performanceContractService } from "/@/service/performance/contract";
+import {
+	performanceCourseExamService,
+	performanceCoursePracticeService,
+	performanceCourseReciteService,
+} from "/@/service/performance/courseLearning";
+import { performanceDashboardService } from "/@/service/performance/dashboard";
 import { performanceFeedbackService } from "/@/service/performance/feedback";
 import { performanceGoalService } from "/@/service/performance/goal";
+import { performanceIndicatorService } from "/@/service/performance/indicator";
+import { performancePipService } from "/@/service/performance/pip";
+import { performancePromotionService } from "/@/service/performance/promotion";
+import { performanceRecruitPlanService } from "/@/service/performance/recruitPlan";
+import { performanceResumePoolService } from "/@/service/performance/resumePool";
+import { performanceSalaryService } from "/@/service/performance/salary";
+import { performanceMeetingService } from "/@/service/performance/meeting";
+import { performanceSuggestionService } from "/@/service/performance/suggestion";
+import { performanceSupplierService } from "/@/service/performance/supplier";
+import { performanceTalentAssetService } from "/@/service/performance/talentAsset";
+import {
+	performanceTeacherClassService,
+	performanceTeacherDashboardService,
+	performanceTeacherInfoService,
+	performanceTeacherTodoService,
+} from "/@/service/performance/teacherChannel";
+import { performanceCourseService } from "/@/service/performance/course";
+import { performanceJobStandardService } from "/@/service/performance/jobStandard";
+import { performanceWorkPlanService } from "/@/service/performance/workPlan";
 import { workbenchCards } from "/@/types/performance-mobile";
 import PageState from "/@/pages/performance/components/page-state.vue";
 
 const { user } = useStore();
 
-const summary = reactive<Record<string, number>>({});
+const summary = reactive<Record<string, number | string>>({});
 const countLoading = reactive<Record<string, boolean>>({});
 
 const cards = computed(() => {
 	return user.workbenchPages
 		.map((id) => workbenchCards[id as keyof typeof workbenchCards])
 		.filter(Boolean);
-});
-
-const roleLabel = computed(() => {
-	switch (user.roleKind) {
-		case "manager":
-			return "部门经理";
-		case "employee":
-			return "员工";
-		default:
-			return "非首批角色";
-	}
 });
 
 async function refreshSummary() {
@@ -124,9 +141,188 @@ async function refreshSummary() {
 						summary[card.id] = res?.pagination?.total || 0;
 						break;
 					}
+					case "course-learning": {
+						const hasLearningData =
+							user.hasPerm(performanceCourseReciteService.permission.page) ||
+							user.hasPerm(performanceCoursePracticeService.permission.page) ||
+							user.hasPerm(performanceCourseExamService.permission.summary);
+						summary[card.id] = hasLearningData ? "输入ID" : 0;
+						break;
+					}
+					case "teacher-todo": {
+						const res = await performanceTeacherTodoService.fetchPage({
+							page: 1,
+							size: 1,
+						});
+						summary[card.id] = res?.pagination?.total || 0;
+						break;
+					}
+					case "dashboard": {
+						const res = await performanceDashboardService.fetchSummary();
+						summary[card.id] = Number(res?.pendingApprovalCount || 0);
+						break;
+					}
+					case "work-plan": {
+						const res = await performanceWorkPlanService.fetchPage({
+							page: 1,
+							size: 1,
+						});
+						summary[card.id] = res?.pagination?.total || 0;
+						break;
+					}
+					case "teacher-dashboard": {
+						const res = await performanceTeacherDashboardService.fetchSummary();
+						summary[card.id] = Number(res?.resourceTotal || 0);
+						break;
+					}
+					case "teacher-list": {
+						const res = await performanceTeacherInfoService.fetchPage({
+							page: 1,
+							size: 1,
+						});
+						summary[card.id] = res?.pagination?.total || 0;
+						break;
+					}
+					case "teacher-class": {
+						const res = await performanceTeacherClassService.fetchPage({
+							page: 1,
+							size: 1,
+						});
+						summary[card.id] = res?.pagination?.total || 0;
+						break;
+					}
+					case "initiated": {
+						const res = await performanceAssessmentService.fetchPage({
+							page: 1,
+							size: 1,
+							mode: "initiated",
+						});
+						summary[card.id] = res?.pagination?.total || 0;
+						break;
+					}
+					case "course": {
+						const res = await performanceCourseService.fetchPage({
+							page: 1,
+							size: 1,
+						});
+						summary[card.id] = res?.pagination?.total || 0;
+						break;
+					}
+					case "meeting": {
+						const res = await performanceMeetingService.fetchPage({
+							page: 1,
+							size: 1,
+						});
+						summary[card.id] = res?.pagination?.total || 0;
+						break;
+					}
+					case "suggestion": {
+						const res = await performanceSuggestionService.fetchPage({
+							page: 1,
+							size: 1,
+						});
+						summary[card.id] = res?.pagination?.total || 0;
+						break;
+					}
+					case "capability": {
+						const res = await performanceCapabilityService.fetchPage({
+							page: 1,
+							size: 1,
+						});
+						summary[card.id] = res?.pagination?.total || 0;
+						break;
+					}
+					case "certificate": {
+						const res = await performanceCertificateService.fetchPage({
+							page: 1,
+							size: 1,
+						});
+						summary[card.id] = res?.pagination?.total || 0;
+						break;
+					}
+					case "contract": {
+						const res = await performanceContractService.fetchPage({
+							page: 1,
+							size: 1,
+						});
+						summary[card.id] = res?.pagination?.total || 0;
+						break;
+					}
+					case "job-standard": {
+						const res = await performanceJobStandardService.fetchPage({
+							page: 1,
+							size: 1,
+						});
+						summary[card.id] = res?.pagination?.total || 0;
+						break;
+					}
+					case "indicator-library": {
+						const res = await performanceIndicatorService.fetchPage({
+							page: 1,
+							size: 1,
+						});
+						summary[card.id] = res?.pagination?.total || 0;
+						break;
+					}
+					case "salary": {
+						const res = await performanceSalaryService.fetchPage({
+							page: 1,
+							size: 1,
+						});
+						summary[card.id] = res?.pagination?.total || 0;
+						break;
+					}
+					case "supplier": {
+						const res = await performanceSupplierService.fetchPage({
+							page: 1,
+							size: 1,
+						});
+						summary[card.id] = res?.pagination?.total || 0;
+						break;
+					}
+					case "pip": {
+						const res = await performancePipService.fetchPage({
+							page: 1,
+							size: 1,
+						});
+						summary[card.id] = res?.pagination?.total || 0;
+						break;
+					}
+					case "promotion": {
+						const res = await performancePromotionService.fetchPage({
+							page: 1,
+							size: 1,
+						});
+						summary[card.id] = res?.pagination?.total || 0;
+						break;
+					}
+					case "talent-asset": {
+						const res = await performanceTalentAssetService.fetchPage({
+							page: 1,
+							size: 1,
+						});
+						summary[card.id] = res?.pagination?.total || 0;
+						break;
+					}
+					case "recruit-plan": {
+						const res = await performanceRecruitPlanService.fetchPage({
+							page: 1,
+							size: 1,
+						});
+						summary[card.id] = res?.pagination?.total || 0;
+						break;
+					}
+					case "resume-pool": {
+						const res = await performanceResumePoolService.fetchPage({
+							page: 1,
+							size: 1,
+						});
+						summary[card.id] = res?.pagination?.total || 0;
+						break;
+					}
 				}
 			} catch (error) {
-				summary[card.id] = 0;
+				summary[card.id] = card.id === "course-learning" ? "输入ID" : 0;
 			} finally {
 				countLoading[card.id] = false;
 			}

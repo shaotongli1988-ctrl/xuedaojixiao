@@ -1,11 +1,21 @@
 function getStorageDriver() {
-	if (typeof uni !== "undefined") {
+	const runtimeUni = (globalThis as typeof globalThis & {
+		uni?: {
+			getStorageSync: (key: string) => any;
+			getStorageInfoSync: () => { keys: string[] };
+			setStorageSync: (key: string, value: any) => void;
+			removeStorageSync: (key: string) => void;
+			clearStorageSync: () => void;
+		};
+	}).uni;
+
+	if (runtimeUni) {
 		return {
-			get: (key: string) => uni.getStorageSync(key),
-			info: () => uni.getStorageInfoSync(),
-			set: (key: string, value: any) => uni.setStorageSync(key, value),
-			remove: (key: string) => uni.removeStorageSync(key),
-			clear: () => uni.clearStorageSync(),
+			get: (key: string) => runtimeUni.getStorageSync(key),
+			info: () => runtimeUni.getStorageInfoSync(),
+			set: (key: string, value: any) => runtimeUni.setStorageSync(key, value),
+			remove: (key: string) => runtimeUni.removeStorageSync(key),
+			clear: () => runtimeUni.clearStorageSync(),
 		};
 	}
 

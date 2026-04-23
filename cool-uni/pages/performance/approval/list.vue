@@ -40,8 +40,8 @@
 							<text class="record-card__meta">{{ item.departmentName || "-" }}</text>
 						</view>
 						<status-pill
-							:label="assessmentStatusLabel(item.status)"
-							:tone="assessmentStatusTone(item.status)"
+							:label="statusLabel(item.status)"
+							:tone="statusTone(item.status)"
 						/>
 					</view>
 
@@ -69,15 +69,13 @@ import { onPullDownRefresh, onShow } from "@dcloudio/uni-app";
 import { router } from "/@/cool/router";
 import { useStore } from "/@/cool/store";
 import { performanceAssessmentService } from "/@/service/performance/assessment";
-import {
-	assessmentStatusLabel,
-	assessmentStatusTone,
-	type AssessmentRecord,
-} from "/@/types/performance-assessment";
+import { type AssessmentRecord } from "/@/types/performance-assessment";
 import PageState from "/@/pages/performance/components/page-state.vue";
 import StatusPill from "/@/pages/performance/components/status-pill.vue";
 
-const { user } = useStore();
+const ASSESSMENT_STATUS_DICT_KEY = "performance.assessment.status";
+
+const { user, dict } = useStore();
 
 const state = reactive({
 	loading: false,
@@ -96,6 +94,7 @@ async function load() {
 	state.error = "";
 
 	try {
+		await dict.refresh([ASSESSMENT_STATUS_DICT_KEY]);
 		const res = await performanceAssessmentService.fetchPage({
 			page: 1,
 			size: 20,
@@ -126,6 +125,15 @@ function openDetail(id?: number) {
 			source: "approval",
 		},
 	});
+}
+
+function statusLabel(value?: string | null) {
+	return dict.getLabel(ASSESSMENT_STATUS_DICT_KEY, value) || value || "未知";
+}
+
+function statusTone(value?: string | null): "info" | "warning" | "success" | "error" {
+	const tone = dict.getMeta(ASSESSMENT_STATUS_DICT_KEY, value)?.tone;
+	return tone === "success" || tone === "warning" ? tone : tone === "danger" ? "error" : "info";
 }
 
 onShow(load);

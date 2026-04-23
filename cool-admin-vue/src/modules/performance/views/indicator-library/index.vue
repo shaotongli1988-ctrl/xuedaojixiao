@@ -31,7 +31,7 @@
 						style="width: 160px"
 					>
 						<el-option
-							v-for="item in statusOptions"
+							v-for="item in indicatorStatusOptions"
 							:key="item.value"
 							:label="item.label"
 							:value="item.value"
@@ -81,8 +81,8 @@
 				</el-table-column>
 				<el-table-column prop="status" label="状态" min-width="100">
 					<template #default="{ row }">
-						<el-tag :type="row.status === 1 ? 'success' : 'info'">
-							{{ row.status === 1 ? '启用' : '禁用' }}
+						<el-tag :type="statusTagType(row.status)">
+							{{ statusLabel(row.status) }}
 						</el-tag>
 					</template>
 				</el-table-column>
@@ -157,7 +157,7 @@
 						<el-form-item label="适用范围" prop="applyScope">
 							<el-select v-model="form.applyScope" style="width: 100%">
 								<el-option
-									v-for="item in applyScopeOptions"
+									v-for="item in indicatorApplyScopeOptions"
 									:key="item.value"
 									:label="item.label"
 									:value="item.value"
@@ -190,8 +190,13 @@
 					<el-col :span="24">
 						<el-form-item label="状态" prop="status">
 							<el-radio-group v-model="form.status">
-								<el-radio :value="1">启用</el-radio>
-								<el-radio :value="0">禁用</el-radio>
+								<el-radio
+									v-for="item in indicatorStatusOptions"
+									:key="item.value"
+									:value="item.value"
+								>
+									{{ item.label }}
+								</el-radio>
 							</el-radio-group>
 						</el-form-item>
 					</el-col>
@@ -238,7 +243,7 @@
 					{{ detailIndicator.scoreScale }}
 				</el-descriptions-item>
 				<el-descriptions-item label="状态">
-					{{ detailIndicator.status === 1 ? '启用' : '禁用' }}
+					{{ statusLabel(detailIndicator.status) }}
 				</el-descriptions-item>
 				<el-descriptions-item label="更新时间">
 					{{ detailIndicator.updateTime || '-' }}
@@ -261,36 +266,38 @@ defineOptions({
 });
 
 import { computed, onMounted, reactive, ref } from 'vue';
-import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus';
+import { ElMessage, type FormInstance } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
+import { useDict } from '/$/dict';
+import { useListPage } from '../../composables/use-list-page.js';
+import {
+	confirmElementAction,
+	runTrackedElementAction
+} from '../shared/action-feedback';
+import {
+	resolveErrorMessage,
+	showElementErrorFromError
+} from '../shared/error-message';
 import {
 	type IndicatorApplyScope,
 	type IndicatorCategory,
 	type IndicatorRecord,
+	type IndicatorStatus,
 	createEmptyIndicator
 } from '../../types';
 import { performanceIndicatorService } from '../../service/indicator';
 
-const rows = ref<IndicatorRecord[]>([]);
-const tableLoading = ref(false);
+const INDICATOR_CATEGORY_DICT_KEY = 'performance.indicator.category';
+const INDICATOR_STATUS_DICT_KEY = 'performance.indicator.status';
+const INDICATOR_APPLY_SCOPE_DICT_KEY = 'performance.indicator.applyScope';
+
+const { dict } = useDict();
 const submitLoading = ref(false);
 const formVisible = ref(false);
 const detailVisible = ref(false);
 const editingIndicator = ref<IndicatorRecord | null>(null);
 const detailIndicator = ref<IndicatorRecord | null>(null);
 const formRef = ref<FormInstance>();
-
-const filters = reactive({
-	keyword: '',
-	category: '' as IndicatorCategory | '',
-	status: '' as number | ''
-});
-
-const pagination = reactive({
-	page: 1,
-	size: 10,
-	total: 0
-});
 
 const form = reactive<IndicatorRecord>(createEmptyIndicator());
 
@@ -304,74 +311,80 @@ const rules = {
 	status: [{ required: true, message: '请选择状态', trigger: 'change' }]
 };
 
-const categoryOptions: Array<{ label: string; value: IndicatorCategory }> = [
-	{ label: '考核指标', value: 'assessment' },
-	{ label: '目标指标', value: 'goal' },
-	{ label: '环评指标', value: 'feedback' }
-];
+const categoryOptions = computed<Array<{ label: string; value: IndicatorCategory }>>(() =>
+	dict.get(INDICATOR_CATEGORY_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as IndicatorCategory
+	}))
+);
 
-const applyScopeOptions: Array<{ label: string; value: IndicatorApplyScope }> = [
-	{ label: '全员', value: 'all' },
-	{ label: '部门', value: 'department' },
-	{ label: '员工/岗位', value: 'employee' }
-];
+const indicatorApplyScopeOptions = computed<Array<{ label: string; value: IndicatorApplyScope }>>(
+	() =>
+		dict.get(INDICATOR_APPLY_SCOPE_DICT_KEY).value.map(item => ({
+			label: item.label,
+			value: item.value as IndicatorApplyScope
+		}))
+);
 
-const statusOptions = [
-	{ label: '启用', value: 1 },
-	{ label: '禁用', value: 0 }
-];
+const indicatorStatusOptions = computed<Array<{ label: string; value: number }>>(() =>
+	dict.get(INDICATOR_STATUS_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: Number(item.value)
+	}))
+);
 
 const canAccess = computed(() => checkPerm(performanceIndicatorService.permission.page));
 const showInfoButton = computed(() => checkPerm(performanceIndicatorService.permission.info));
 const showAddButton = computed(() => checkPerm(performanceIndicatorService.permission.add));
 const showEditButton = computed(() => checkPerm(performanceIndicatorService.permission.update));
 const showDeleteButton = computed(() => checkPerm(performanceIndicatorService.permission.delete));
+const indicatorList = useListPage({
+	createFilters: () => ({
+		keyword: '',
+		category: '' as IndicatorCategory | '',
+		status: '' as IndicatorStatus | ''
+	}),
+	canLoad: () => canAccess.value,
+	fetchPage: async params =>
+		performanceIndicatorService.fetchPage({
+			page: params.page,
+			size: params.size,
+			keyword: params.keyword || undefined,
+			category: params.category || undefined,
+			status: params.status === '' ? undefined : params.status
+		}),
+	onError: (error: unknown) => {
+		showElementErrorFromError(error, '指标列表加载失败');
+	}
+});
+const rows = indicatorList.rows;
+const tableLoading = indicatorList.loading;
+const filters = indicatorList.filters;
+const pagination = indicatorList.pager;
 
 onMounted(async () => {
+	await dict.refresh([
+		INDICATOR_CATEGORY_DICT_KEY,
+		INDICATOR_STATUS_DICT_KEY,
+		INDICATOR_APPLY_SCOPE_DICT_KEY
+	]);
 	await refresh();
 });
 
 async function refresh() {
-	if (!canAccess.value) {
-		return;
-	}
-
-	tableLoading.value = true;
-
-	try {
-		const result = await performanceIndicatorService.fetchPage({
-			page: pagination.page,
-			size: pagination.size,
-			keyword: filters.keyword || undefined,
-			category: filters.category || undefined,
-			status: filters.status === '' ? undefined : filters.status
-		});
-
-		rows.value = result.list || [];
-		pagination.total = result.pagination?.total || 0;
-	} catch (error: any) {
-		ElMessage.error(error.message || '指标列表加载失败');
-	} finally {
-		tableLoading.value = false;
-	}
+	await indicatorList.reload();
 }
 
 function changePage(page: number) {
-	pagination.page = page;
-	refresh();
+	void indicatorList.goToPage(page);
 }
 
 function handleSearch() {
-	pagination.page = 1;
-	refresh();
+	void indicatorList.search();
 }
 
 function handleReset() {
-	filters.keyword = '';
-	filters.category = '';
-	filters.status = '';
-	pagination.page = 1;
-	refresh();
+	void indicatorList.reset();
 }
 
 function openCreate() {
@@ -406,8 +419,8 @@ async function openDetail(row: IndicatorRecord) {
 async function fetchDetail(id: number) {
 	try {
 		return await performanceIndicatorService.fetchInfo({ id });
-	} catch (error: any) {
-		ElMessage.error(error.message || '指标详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '指标详情加载失败');
 		return null;
 	}
 }
@@ -429,7 +442,10 @@ async function submitForm() {
 
 	try {
 		if (editingIndicator.value?.id) {
-			await performanceIndicatorService.updateIndicator(form);
+			await performanceIndicatorService.updateIndicator({
+				...form,
+				id: editingIndicator.value.id
+			});
 		} else {
 			await performanceIndicatorService.createIndicator(form);
 		}
@@ -437,86 +453,56 @@ async function submitForm() {
 		ElMessage.success('保存成功');
 		formVisible.value = false;
 		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '指标保存失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '指标保存失败');
 	} finally {
 		submitLoading.value = false;
 	}
 }
 
 async function handleDelete(row: IndicatorRecord) {
-	try {
-		await ElMessageBox.confirm(`确认删除指标「${row.name}」吗？`, '删除确认', {
-			type: 'warning'
-		});
-		await performanceIndicatorService.removeIndicator({ ids: [row.id!] });
-		ElMessage.success('删除成功');
+	const confirmed = await confirmElementAction(`确认删除指标「${row.name}」吗？`, '删除确认');
 
-		if (rows.value.length === 1 && pagination.page > 1) {
-			pagination.page -= 1;
-		}
-
-		await refresh();
-	} catch (error: any) {
-		if (error !== 'cancel') {
-			ElMessage.error(error.message || '指标删除失败');
-		}
+	if (!confirmed) {
+		return;
 	}
+
+	await runTrackedElementAction({
+		rowId: Number(row.id || 0),
+		actionType: 'delete',
+		request: () => performanceIndicatorService.removeIndicator({ ids: [row.id!] }),
+		successMessage: '删除成功',
+		errorMessage: '指标删除失败',
+		onSuccess: () => {
+			if (rows.value.length === 1 && pagination.page > 1) {
+				pagination.page -= 1;
+			}
+		},
+		refresh
+	});
 }
 
 function categoryLabel(category: IndicatorCategory) {
-	return categoryOptions.find(item => item.value === category)?.label || category;
+	return dict.getLabel(INDICATOR_CATEGORY_DICT_KEY, category) || category;
 }
 
 function applyScopeLabel(scope: IndicatorApplyScope) {
-	return applyScopeOptions.find(item => item.value === scope)?.label || scope;
+	return dict.getLabel(INDICATOR_APPLY_SCOPE_DICT_KEY, scope) || scope;
+}
+
+function statusLabel(status: number) {
+	return dict.getLabel(INDICATOR_STATUS_DICT_KEY, status) || String(status ?? '-');
+}
+
+function statusTagType(status: number) {
+	return dict.getMeta(INDICATOR_STATUS_DICT_KEY, status)?.tone || 'info';
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@use '../../../../styles/patterns.management-workspace.scss' as managementWorkspace;
+
 .indicator-page {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-}
-
-.indicator-page__toolbar {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	gap: 16px;
-	flex-wrap: wrap;
-}
-
-.indicator-page__filters,
-.indicator-page__actions {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	flex-wrap: wrap;
-}
-
-.indicator-page__header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 16px;
-}
-
-.indicator-page__header h2 {
-	margin: 0;
-	font-size: 20px;
-	color: var(--el-text-color-primary);
-}
-
-.indicator-page__header p {
-	margin: 6px 0 0;
-	color: var(--el-text-color-secondary);
-}
-
-.indicator-page__pagination {
-	display: flex;
-	justify-content: flex-end;
-	margin-top: 16px;
+	@include managementWorkspace.management-workspace-shell(1040px);
 }
 </style>

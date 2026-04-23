@@ -1,4 +1,4 @@
-<!-- 文件职责：承接主题13能力地图的能力模型列表、能力项详情和员工能力画像摘要查询；不负责课程主链、人才资产、面试流程或员工移动端；依赖 capability service、基础用户接口与 Element Plus 组件；维护重点是经理只读、员工无入口，且页面只消费冻结允许的摘要字段。 -->
+<!-- 文件职责：承接主题13能力地图的能力模型列表、能力项详情和员工能力画像摘要查询；不负责课程主链、人才资产、面试流程或员工移动端；依赖 capability service、基础用户接口与 Element Plus 组件；维护重点是角色展示统一消费 access-context 事实源，写权限与摘要字段边界仍以页面权限和冻结口径为准。 -->
 <template>
 	<div v-if="canAccess" class="capability-page">
 		<el-card shadow="never">
@@ -50,7 +50,7 @@
 						<h2>能力地图</h2>
 						<el-tag effect="plain">主题 13</el-tag>
 					</div>
-					<el-tag effect="plain" type="info">{{ isReadOnlyRole ? '经理只读' : 'HR 管理' }}</el-tag>
+					<el-tag effect="plain" type="info">{{ roleFact.roleLabel }}</el-tag>
 				</div>
 			</template>
 
@@ -375,12 +375,21 @@ defineOptions({
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
+import { useDict } from '/$/dict';
 import { service } from '/@/cool';
 import { useRoute, useRouter } from 'vue-router';
 import { useListPage } from '../../composables/use-list-page.js';
 import { performanceCapabilityService } from '../../service/capability';
+import { performanceAccessContextService } from '../../service/access-context';
 import { performanceCertificateService } from '../../service/certificate';
+import { resolvePerformanceRoleFact } from '../../service/role-fact';
 import { loadUserOptions } from '../../utils/lookup-options.js';
+import {
+	createElementWarningFromErrorHandler,
+	resolveErrorMessage,
+	showElementErrorFromError,
+	showElementWarningFromError
+} from '../shared/error-message';
 import {
 	consumeRoutePreset,
 	firstQueryValue,
@@ -391,11 +400,15 @@ import type {
 	CapabilityModelRecord,
 	CapabilityModelStatus,
 	CapabilityPortraitRecord,
+	PerformanceAccessContext,
 	UserOption
 } from '../../types';
 import { createEmptyCapabilityModel } from '../../types';
 
+const CAPABILITY_STATUS_DICT_KEY = 'performance.capability.status';
+
 const userOptions = ref<UserOption[]>([]);
+const { dict } = useDict();
 const submitLoading = ref(false);
 const formVisible = ref(false);
 const detailVisible = ref(false);
@@ -410,6 +423,7 @@ const itemLookupId = ref('');
 const formRef = ref<FormInstance>();
 const route = useRoute();
 const router = useRouter();
+const accessContext = ref<PerformanceAccessContext | null>(null);
 
 const form = reactive<CapabilityModelRecord>(createEmptyCapabilityModel());
 
@@ -421,11 +435,12 @@ const rules: FormRules = {
 	status: [{ required: true, message: '请选择状态', trigger: 'change' }]
 };
 
-const filterStatusOptions: Array<{ label: string; value: CapabilityModelStatus }> = [
-	{ label: '草稿', value: 'draft' },
-	{ label: '已生效', value: 'active' },
-	{ label: '已归档', value: 'archived' }
-];
+const filterStatusOptions = computed<Array<{ label: string; value: CapabilityModelStatus }>>(() =>
+	dict.get(CAPABILITY_STATUS_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as CapabilityModelStatus
+	}))
+);
 
 const canAccess = computed(() => checkPerm(performanceCapabilityService.permission.page));
 const showInfoButton = computed(() => checkPerm(performanceCapabilityService.permission.info));
@@ -437,25 +452,29 @@ const showCertificateRecordButton = computed(
 		checkPerm(performanceCertificateService.permission.page) &&
 		checkPerm(performanceCertificateService.permission.recordPage)
 );
+const roleFact = computed(() =>
+	resolvePerformanceRoleFact({
+		personaKey: accessContext.value?.activePersonaKey || null,
+		roleKind: accessContext.value?.roleKind || null
+	})
+);
 const isReadOnlyRole = computed(
 	() => !showAddButton.value && !checkPerm(performanceCapabilityService.permission.update)
 );
 const formStatusOptions = computed<Array<{ label: string; value: CapabilityModelStatus }>>(() => {
 	if (!editingModel.value?.id) {
-		return [{ label: '草稿', value: 'draft' }];
+		return filterStatusOptions.value.filter(item => item.value === 'draft');
 	}
 
 	if (editingModel.value.status === 'active') {
-		return [
-			{ label: '已生效', value: 'active' },
-			{ label: '已归档', value: 'archived' }
-		];
+		return filterStatusOptions.value.filter(
+			item => item.value === 'active' || item.value === 'archived'
+		);
 	}
 
-	return [
-		{ label: '草稿', value: 'draft' },
-		{ label: '已生效', value: 'active' }
-	];
+	return filterStatusOptions.value.filter(
+		item => item.value === 'draft' || item.value === 'active'
+	);
 });
 const modelList = useListPage({
 	createFilters: () => ({
@@ -472,8 +491,8 @@ const modelList = useListPage({
 			category: params.category || undefined,
 			status: params.status || undefined
 		}),
-	onError: (error: any) => {
-		ElMessage.error(error.message || '能力模型列表加载失败');
+	onError: (error: unknown) => {
+		showElementErrorFromError(error, '能力模型列表加载失败');
 	}
 });
 const rows = modelList.rows;
@@ -482,6 +501,7 @@ const filters = modelList.filters;
 const pager = modelList.pager;
 
 onMounted(async () => {
+	await Promise.all([dict.refresh([CAPABILITY_STATUS_DICT_KEY]), loadAccessContext()]);
 	await loadUsers();
 	await syncList();
 	await consumePortraitPresetQuery();
@@ -501,10 +521,17 @@ async function loadUsers() {
 				page: 1,
 				size: 200
 			}),
-		(error: any) => {
-			ElMessage.warning(error.message || '员工选项加载失败');
-		}
+		createElementWarningFromErrorHandler('员工选项加载失败')
 	);
+}
+
+async function loadAccessContext() {
+	try {
+		accessContext.value = await performanceAccessContextService.fetchContext();
+	} catch (error: unknown) {
+		accessContext.value = null;
+		showElementWarningFromError(error, '角色上下文加载失败，已使用兼容展示视角');
+	}
 }
 
 async function syncList() {
@@ -537,8 +564,8 @@ async function openDetail(row: CapabilityModelRecord) {
 	try {
 		detailModel.value = await performanceCapabilityService.fetchInfo({ id: row.id });
 		detailVisible.value = true;
-	} catch (error: any) {
-		ElMessage.error(error.message || '能力模型详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '能力模型详情加载失败');
 	}
 }
 
@@ -554,8 +581,8 @@ async function openEdit(row: CapabilityModelRecord) {
 		editingModel.value = detail;
 		Object.assign(form, createEmptyCapabilityModel(), detail);
 		formVisible.value = true;
-	} catch (error: any) {
-		ElMessage.error(error.message || '能力模型详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '能力模型详情加载失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -591,8 +618,8 @@ async function submitForm() {
 
 		formVisible.value = false;
 		await syncList();
-	} catch (error: any) {
-		ElMessage.error(error.message || '能力模型保存失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '能力模型保存失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -611,8 +638,8 @@ async function openItemDetail() {
 	try {
 		itemDetail.value = await performanceCapabilityService.fetchItemInfo({ id });
 		itemVisible.value = true;
-	} catch (error: any) {
-		ElMessage.error(error.message || '能力项详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '能力项详情加载失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -631,8 +658,8 @@ async function openPortraitDetail() {
 			employeeId: portraitEmployeeId.value
 		});
 		portraitVisible.value = true;
-	} catch (error: any) {
-		ElMessage.error(error.message || '能力画像摘要加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '能力画像摘要加载失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -702,27 +729,11 @@ function resolvePortraitUpdateTime(record: CapabilityPortraitRecord | null) {
 }
 
 function statusLabel(status?: CapabilityModelStatus) {
-	switch (status) {
-		case 'active':
-			return '已生效';
-		case 'archived':
-			return '已归档';
-		case 'draft':
-		default:
-			return '草稿';
-	}
+	return dict.getLabel(CAPABILITY_STATUS_DICT_KEY, status) || status || '-';
 }
 
 function statusTagType(status?: CapabilityModelStatus) {
-	switch (status) {
-		case 'active':
-			return 'success';
-		case 'archived':
-			return 'info';
-		case 'draft':
-		default:
-			return 'warning';
-	}
+	return dict.getMeta(CAPABILITY_STATUS_DICT_KEY, status)?.tone || 'info';
 }
 
 function normalizeOptionalText(value?: string | null) {
@@ -732,57 +743,37 @@ function normalizeOptionalText(value?: string | null) {
 </script>
 
 <style lang="scss" scoped>
-.capability-page {
-	display: grid;
-	gap: 16px;
+@use '../../../../styles/patterns.management-workspace.scss' as managementWorkspace;
 
-	&__toolbar,
-	&__header,
+.capability-page {
+	@include managementWorkspace.management-workspace-shell(1120px);
+
 	&__quick-form {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 12px;
+		gap: var(--app-space-3);
 		flex-wrap: wrap;
-	}
-
-	&__toolbar-left,
-	&__toolbar-right,
-	&__header-main {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		flex-wrap: wrap;
-	}
-
-	&__header-main h2 {
-		margin: 0;
 	}
 
 	&__quick-actions {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-		gap: 16px;
-		margin-bottom: 16px;
+		gap: var(--app-space-4);
+		margin-bottom: var(--app-space-4);
 	}
 
 	&__quick-title {
-		margin-bottom: 12px;
+		margin-bottom: var(--app-space-3);
 		font-size: 14px;
 		font-weight: 600;
-		color: var(--el-text-color-primary);
-	}
-
-	&__pagination {
-		display: flex;
-		justify-content: flex-end;
-		margin-top: 16px;
+		color: var(--app-text-primary);
 	}
 
 	&__detail,
 	&__tags {
 		display: grid;
-		gap: 12px;
+		gap: var(--app-space-3);
 	}
 
 	&__tags {

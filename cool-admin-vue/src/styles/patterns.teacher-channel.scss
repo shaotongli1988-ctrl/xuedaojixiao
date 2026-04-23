@@ -1,0 +1,262 @@
+/* 文件职责：提供 teacher-channel 页面族的共享壳层、英雄区、摘要卡、跟进表单和表格观感；不负责班主任/班级/待办/看板的业务字段与动作语义；维护重点是主题 19 页面统一消费 app token，不再保留局部业务 theme 入口。 */
+
+@use './patterns.data-panel.scss' as dataPanel;
+@use './patterns.overlay-responsive.scss' as overlayResponsive;
+
+@mixin teacher-channel-workspace-shell($table-min-width: 960px) {
+	@include dataPanel.data-panel-shell;
+
+	--teacher-channel-card-bg: var(--app-surface-card);
+	--teacher-channel-hero-bg: var(--app-surface-hero);
+	--teacher-channel-muted-bg: var(--app-surface-muted);
+	--teacher-channel-border: var(--app-border-strong);
+	--teacher-channel-border-soft: var(--app-border-soft);
+	--teacher-channel-text: var(--app-text-primary);
+	--teacher-channel-text-secondary: var(--app-text-secondary);
+	--teacher-channel-text-tertiary: var(--app-text-tertiary);
+	--teacher-channel-hover-bg:
+		color-mix(in srgb, var(--app-accent-brand-soft) 52%, transparent);
+
+	:deep(.el-card) {
+		border-color: var(--teacher-channel-border);
+		background: var(--teacher-channel-card-bg);
+		box-shadow: var(--app-shadow-surface);
+	}
+
+	:deep(.el-card__header) {
+		border-bottom: 1px solid var(--app-divider);
+	}
+
+	:deep(.el-table) {
+		@include dataPanel.data-panel-table;
+		--el-table-border-color: var(--teacher-channel-border);
+		--el-table-header-bg-color: var(--teacher-channel-muted-bg);
+		--el-table-tr-bg-color: transparent;
+		--el-table-row-hover-bg-color: var(--teacher-channel-hover-bg);
+
+		background: transparent;
+	}
+
+	:deep(.el-table th.el-table__cell) {
+		color: var(--app-text-emphasis);
+	}
+
+	:deep(.el-table__cell) {
+		background: transparent;
+	}
+
+	:deep(.el-table .el-table__inner-wrapper::before) {
+		background-color: var(--teacher-channel-border);
+	}
+
+	:deep(.el-descriptions__label) {
+		background: var(--teacher-channel-muted-bg);
+		color: var(--teacher-channel-text-secondary);
+	}
+
+	:deep(.el-descriptions__content) {
+		background: transparent;
+	}
+
+	@include overlayResponsive.horizontal-scroll-table($table-min-width);
+
+	&__toolbar,
+	&__toolbar-left,
+	&__toolbar-right,
+	&__header-main,
+	&__section-header,
+	&__detail-actions {
+		display: flex;
+		align-items: center;
+		gap: var(--app-space-3);
+		flex-wrap: wrap;
+	}
+
+	&__toolbar,
+	&__header-main,
+	&__section-header {
+		justify-content: space-between;
+	}
+
+	&__header,
+	&__drawer,
+	&__follow-section {
+		display: grid;
+		gap: var(--app-space-4);
+	}
+
+	&__toolbar-card,
+	&__hero-card {
+		border-color: var(--teacher-channel-border);
+		background: var(--teacher-channel-hero-bg);
+	}
+
+	&__summary-card,
+	&__metric-card,
+	&__todo-item,
+	&__distribution-item,
+	&__follow-form {
+		border: 1px solid var(--teacher-channel-border-soft);
+		background: var(--teacher-channel-muted-bg);
+		box-shadow: var(--app-shadow-inset);
+	}
+
+	h2,
+	h3 {
+		margin: 0;
+		color: var(--teacher-channel-text);
+	}
+
+	p {
+		margin: 4px 0 0;
+		color: var(--teacher-channel-text-secondary);
+		font-size: var(--app-font-size-caption);
+		line-height: 1.6;
+	}
+
+	&__error {
+		margin-bottom: var(--app-space-4);
+	}
+
+	&__pagination {
+		display: flex;
+		justify-content: flex-end;
+		padding-top: var(--app-space-4);
+	}
+
+	&__follow-form {
+		border-radius: var(--app-radius-lg);
+		padding: var(--app-space-4);
+	}
+
+	@include overlayResponsive.overlay-responsive;
+
+	@media (max-width: 768px) {
+		&__toolbar,
+		&__toolbar-left,
+		&__toolbar-right,
+		&__header-main,
+		&__section-header,
+		&__detail-actions {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		&__pagination {
+			justify-content: flex-start;
+		}
+
+		&__toolbar-left,
+		&__toolbar-right {
+			> * {
+				max-width: 100%;
+				min-width: 0;
+			}
+
+			:deep(.el-input),
+			:deep(.el-select),
+			:deep(.el-input-number),
+			:deep(.el-date-editor.el-input),
+			:deep(.el-date-editor.el-date-editor) {
+				width: 100% !important;
+			}
+		}
+	}
+}
+
+@mixin teacher-channel-dashboard-shell {
+	&__hero,
+	&__hero-actions,
+	&__section-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--app-space-3);
+		flex-wrap: wrap;
+	}
+
+	&__eyebrow {
+		font-size: var(--app-font-size-caption);
+		color: var(--app-text-tertiary);
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	h2 {
+		margin: 4px 0 8px;
+		font-size: calc(var(--app-font-size-title) + 2px);
+	}
+
+	p {
+		margin: 0;
+	}
+
+	&__error {
+		margin-top: -4px;
+		margin-bottom: 0;
+	}
+
+	&__metric-card,
+	&__todo-item {
+		min-height: 132px;
+	}
+
+	&__metric-card {
+		display: grid;
+		gap: var(--app-space-2);
+	}
+
+	&__metric-label,
+	&__todo-label {
+		color: var(--app-text-secondary);
+		font-size: var(--app-font-size-caption);
+	}
+
+	&__metric-value,
+	&__todo-value {
+		font-size: calc(var(--app-font-size-kpi) + 2px);
+		font-weight: 700;
+		line-height: 1;
+		color: var(--app-text-primary);
+	}
+
+	&__metric-tip {
+		font-size: var(--app-font-size-caption);
+		color: var(--app-text-secondary);
+	}
+
+	&__todo-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		gap: var(--app-space-4);
+	}
+
+	&__todo-item,
+	&__distribution-item {
+		border-radius: var(--app-radius-lg);
+		padding: var(--app-space-4);
+	}
+
+	&__todo-item {
+		display: grid;
+		align-content: space-between;
+	}
+
+	&__todo-value--danger {
+		color: var(--app-accent-danger);
+	}
+
+	&__distribution {
+		display: grid;
+		gap: var(--app-space-3);
+	}
+
+	@media (max-width: 768px) {
+		&__hero,
+		&__hero-actions,
+		&__section-header {
+			flex-direction: column;
+			align-items: stretch;
+		}
+	}
+}

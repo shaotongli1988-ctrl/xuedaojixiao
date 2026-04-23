@@ -40,8 +40,8 @@
 							</text>
 						</view>
 						<status-pill
-							:label="feedbackStatusLabel(item.status)"
-							:tone="feedbackStatusTone(item.status)"
+							:label="taskStatusLabel(item.status)"
+							:tone="taskStatusTone(item.status)"
 						/>
 					</view>
 
@@ -65,17 +65,15 @@
 import { computed, reactive } from "vue";
 import { onPullDownRefresh, onShow } from "@dcloudio/uni-app";
 import { useCool, useStore } from "/@/cool";
-import {
-	feedbackStatusLabel,
-	feedbackStatusTone,
-	type FeedbackTaskRecord,
-} from "/@/types/performance-feedback";
+import { type FeedbackTaskRecord } from "/@/types/performance-feedback";
 import PageState from "/@/pages/performance/components/page-state.vue";
 import StatusPill from "/@/pages/performance/components/status-pill.vue";
 import { buildFeedbackDetailQuery } from "./utils";
 
+const FEEDBACK_TASK_STATUS_DICT_KEY = "performance.feedback.taskStatus";
+
 const { service, router } = useCool();
-const { user } = useStore();
+const { user, dict } = useStore();
 
 const state = reactive({
 	loading: false,
@@ -94,6 +92,7 @@ async function load() {
 	state.error = "";
 
 	try {
+		await dict.refresh([FEEDBACK_TASK_STATUS_DICT_KEY]);
 		const res = await (service as any).performance.feedback.fetchPage({
 			page: 1,
 			size: 20,
@@ -120,6 +119,15 @@ function openDetail(id?: number) {
 		path: "/pages/performance/feedback/detail",
 		query: buildFeedbackDetailQuery(id),
 	});
+}
+
+function taskStatusLabel(value?: string | null) {
+	return dict.getLabel(FEEDBACK_TASK_STATUS_DICT_KEY, value) || value || "未知";
+}
+
+function taskStatusTone(value?: string | null): "info" | "warning" | "success" | "error" {
+	const tone = dict.getMeta(FEEDBACK_TASK_STATUS_DICT_KEY, value)?.tone;
+	return tone === "success" || tone === "warning" ? tone : tone === "danger" ? "error" : "info";
 }
 
 onShow(load);

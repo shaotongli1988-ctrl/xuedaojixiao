@@ -116,8 +116,11 @@ import { computed, ref, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useRouter } from 'vue-router';
 import { checkPerm } from '/$/base/utils/permission';
+import { useDict } from '/$/dict';
 import type { PromotionRecord } from '../types';
 import { performanceAssessmentService } from '../service/assessment';
+
+const PROMOTION_STATUS_DICT_KEY = 'performance.promotion.status';
 
 const props = defineProps<{
 	modelValue: boolean;
@@ -134,19 +137,11 @@ const emit = defineEmits<{
 const decision = ref<'approved' | 'rejected'>('approved');
 const comment = ref('');
 const router = useRouter();
+const { dict } = useDict();
 
-const statusLabel = computed(() => {
-	switch (props.promotion?.status) {
-		case 'reviewing':
-			return '评审中';
-		case 'approved':
-			return '已通过';
-		case 'rejected':
-			return '已驳回';
-		default:
-			return '草稿';
-	}
-});
+const statusLabel = computed(
+	() => dict.getLabel(PROMOTION_STATUS_DICT_KEY, props.promotion?.status) || props.promotion?.status || '草稿'
+);
 
 const showSourceAssessmentButton = computed(() => {
 	return (
@@ -218,14 +213,16 @@ function resolveAssessmentPagePath() {
 </script>
 
 <style lang="scss" scoped>
+@use '../../../styles/patterns.overlay-responsive.scss' as overlayResponsive;
+
 .promotion-review-drawer {
 	display: grid;
-	gap: 16px;
+	gap: var(--app-space-4);
 
 	&__text {
 		white-space: pre-wrap;
 		line-height: 1.7;
-		color: var(--el-text-color-regular);
+		color: var(--app-text-secondary);
 	}
 
 	&__record {
@@ -234,14 +231,16 @@ function resolveAssessmentPagePath() {
 	}
 
 	&__record-meta {
-		font-size: 12px;
-		color: var(--el-text-color-secondary);
+		font-size: var(--app-font-size-caption);
+		color: var(--app-text-tertiary);
 	}
 
 	&__footer {
 		display: flex;
 		justify-content: flex-end;
-		gap: 12px;
+		gap: var(--app-space-3);
 	}
+
+	@include overlayResponsive.overlay-responsive;
 }
 </style>

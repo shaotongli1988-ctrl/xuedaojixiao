@@ -6,7 +6,7 @@ export function getParent(name: string, k1: string[], k2?: string[]) {
 	const { proxy }: any = getCurrentInstance();
 
 	const d = ref();
-	let n = 10;
+	const n = 10;
 
 	const next = () => {
 		let parent = proxy.$parent;

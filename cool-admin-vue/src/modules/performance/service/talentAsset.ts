@@ -4,39 +4,64 @@
  * 不负责面试自动转化、简历全文下载或联系方式导出能力。
  */
 import { BaseService } from '/@/cool';
-import type { TalentAssetPageResult, TalentAssetRecord } from '../types';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeTalentAssetPageResult,
+	decodeTalentAssetRecord
+} from './talent-asset-contract';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import type {
+	DeleteIdsRequest,
+	TalentAssetPageQuery,
+	TalentAssetPageResult,
+	TalentAssetInfoQuery,
+	TalentAssetRecord,
+	TalentAssetSaveRequest
+} from '../types';
 
 export default class PerformanceTalentAssetService extends BaseService {
 	permission = {
-		page: 'performance:talentAsset:page',
-		info: 'performance:talentAsset:info',
-		add: 'performance:talentAsset:add',
-		update: 'performance:talentAsset:update',
-		delete: 'performance:talentAsset:delete'
+		page: PERMISSIONS.performance.talentAsset.page,
+		info: PERMISSIONS.performance.talentAsset.info,
+		add: PERMISSIONS.performance.talentAsset.add,
+		update: PERMISSIONS.performance.talentAsset.update,
+		delete: PERMISSIONS.performance.talentAsset.delete
 	};
 
 	constructor() {
 		super('admin/performance/talentAsset');
 	}
 
-	fetchPage(data: any) {
-		return super.page(data) as unknown as Promise<TalentAssetPageResult>;
+	fetchPage(data: TalentAssetPageQuery) {
+		return asPerformanceServicePromise<TalentAssetPageResult>(
+			super.page(data),
+			decodeTalentAssetPageResult
+		);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<TalentAssetRecord>;
+	fetchInfo(params: TalentAssetInfoQuery) {
+		return asPerformanceServicePromise<TalentAssetRecord>(
+			super.info(params),
+			decodeTalentAssetRecord
+		);
 	}
 
-	createTalentAsset(data: Partial<TalentAssetRecord>) {
-		return super.add(data) as unknown as Promise<TalentAssetRecord>;
+	createTalentAsset(data: TalentAssetSaveRequest) {
+		return asPerformanceServicePromise<TalentAssetRecord>(
+			super.add(data),
+			decodeTalentAssetRecord
+		);
 	}
 
-	updateTalentAsset(data: Partial<TalentAssetRecord> & { id: number }) {
-		return super.update(data) as unknown as Promise<TalentAssetRecord>;
+	updateTalentAsset(data: TalentAssetSaveRequest & { id: number }) {
+		return asPerformanceServicePromise<TalentAssetRecord>(
+			super.update(data),
+			decodeTalentAssetRecord
+		);
 	}
 
-	removeTalentAsset(data: { ids: number[] }) {
-		return super.delete(data) as unknown as Promise<void>;
+	removeTalentAsset(data: DeleteIdsRequest) {
+		return asPerformanceServicePromise<void>(super.delete(data));
 	}
 }
 

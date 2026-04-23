@@ -38,8 +38,8 @@
 							<text class="record-card__meta">{{ item.code || "未生成编码" }}</text>
 						</view>
 						<status-pill
-							:label="assessmentStatusLabel(item.status)"
-							:tone="assessmentStatusTone(item.status)"
+							:label="statusLabel(item.status)"
+							:tone="statusTone(item.status)"
 						/>
 					</view>
 
@@ -53,7 +53,7 @@
 					<view class="record-card__actions">
 						<cl-button plain size="mini" @tap="openDetail(item.id)">查看详情</cl-button>
 						<cl-button
-							v-if="canAssessmentEdit(item) && user.hasPerm('performance:assessment:update')"
+							v-if="canAssessmentEdit(item) && user.hasPerm(PERMISSIONS.performance.assessment.update)"
 							plain
 							size="mini"
 							@tap="openEdit(item.id)"
@@ -61,7 +61,7 @@
 							编辑草稿
 						</cl-button>
 						<cl-button
-							v-if="canAssessmentSubmit(item) && user.hasPerm('performance:assessment:submit')"
+							v-if="canAssessmentSubmit(item) && user.hasPerm(PERMISSIONS.performance.assessment.submit)"
 							type="primary"
 							size="mini"
 							@tap="submitItem(item.id)"
@@ -82,8 +82,6 @@ import { router } from "/@/cool/router";
 import { useStore } from "/@/cool/store";
 import { performanceAssessmentService } from "/@/service/performance/assessment";
 import {
-	assessmentStatusLabel,
-	assessmentStatusTone,
 	canAssessmentEdit,
 	canAssessmentSubmit,
 	type AssessmentRecord,
@@ -91,8 +89,11 @@ import {
 import { useUi } from "/$/cool-ui";
 import PageState from "/@/pages/performance/components/page-state.vue";
 import StatusPill from "/@/pages/performance/components/status-pill.vue";
+import { PERMISSIONS } from "/@/generated/permissions.generated";
 
-const { user } = useStore();
+const ASSESSMENT_STATUS_DICT_KEY = "performance.assessment.status";
+
+const { user, dict } = useStore();
 const ui = useUi();
 
 const state = reactive({
@@ -112,6 +113,7 @@ async function load() {
 	state.error = "";
 
 	try {
+		await dict.refresh([ASSESSMENT_STATUS_DICT_KEY]);
 		const res = await performanceAssessmentService.fetchPage({
 			page: 1,
 			size: 20,
@@ -162,6 +164,15 @@ async function submitItem(id?: number) {
 	} catch (error: any) {
 		ui.showTips(error?.message || "提交失败");
 	}
+}
+
+function statusLabel(value?: string | null) {
+	return dict.getLabel(ASSESSMENT_STATUS_DICT_KEY, value) || value || "未知";
+}
+
+function statusTone(value?: string | null): "info" | "warning" | "success" | "error" {
+	const tone = dict.getMeta(ASSESSMENT_STATUS_DICT_KEY, value)?.tone;
+	return tone === "success" || tone === "warning" ? tone : tone === "danger" ? "error" : "info";
 }
 
 onShow(load);

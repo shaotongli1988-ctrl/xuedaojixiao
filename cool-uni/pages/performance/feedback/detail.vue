@@ -35,8 +35,8 @@
 							</text>
 						</view>
 						<status-pill
-							:label="feedbackStatusLabel(detail.status)"
-							:tone="feedbackStatusTone(detail.status)"
+							:label="taskStatusLabel(detail.status)"
+							:tone="taskStatusTone(detail.status)"
 						/>
 					</view>
 
@@ -51,7 +51,7 @@
 				<view class="detail-card">
 					<text class="detail-card__section">我的状态</text>
 					<text class="detail-card__paragraph">
-						{{ detail.currentUserRecord?.status === "submitted" ? "已提交反馈" : "待提交反馈" }}
+						{{ recordStatusLabel(detail.currentUserRecord?.status || "draft") }}
 					</text>
 				</view>
 
@@ -63,8 +63,8 @@
 							<text class="record-row__meta">{{ item.relationType || "-" }}</text>
 						</view>
 						<status-pill
-							:label="feedbackStatusLabel(item.status)"
-							:tone="feedbackStatusTone(item.status)"
+							:label="recordStatusLabel(item.status)"
+							:tone="recordStatusTone(item.status)"
 						/>
 					</view>
 				</view>
@@ -72,14 +72,14 @@
 				<view class="detail-actions">
 					<cl-button plain @tap="backToList">返回</cl-button>
 					<cl-button
-						v-if="canFeedbackSubmit(detail) && user.hasPerm('performance:feedback:submit')"
+						v-if="canFeedbackSubmit(detail) && user.hasPerm(PERMISSIONS.performance.feedback.submit)"
 						type="primary"
 						@tap="openSubmit"
 					>
 						提交反馈
 					</cl-button>
 					<cl-button
-						v-if="user.hasPerm('performance:feedback:summary')"
+						v-if="user.hasPerm(PERMISSIONS.performance.feedback.summary)"
 						plain
 						@tap="openSummary"
 					>
@@ -97,20 +97,22 @@ import { onShow } from "@dcloudio/uni-app";
 import { useCool, useStore } from "/@/cool";
 import {
 	canFeedbackSubmit,
-	feedbackStatusLabel,
-	feedbackStatusTone,
 	type FeedbackTaskRecord,
 } from "/@/types/performance-feedback";
 import PageState from "/@/pages/performance/components/page-state.vue";
 import StatusPill from "/@/pages/performance/components/status-pill.vue";
+import { PERMISSIONS } from "/@/generated/permissions.generated";
 import {
 	buildFeedbackSubmitQuery,
 	buildFeedbackSummaryQuery,
 	isRouteSourceValid,
 } from "./utils";
 
+const FEEDBACK_TASK_STATUS_DICT_KEY = "performance.feedback.taskStatus";
+const FEEDBACK_RECORD_STATUS_DICT_KEY = "performance.feedback.recordStatus";
+
 const { service, router } = useCool();
-const { user } = useStore();
+const { user, dict } = useStore();
 
 const detail = ref<FeedbackTaskRecord | null>(null);
 const state = ref({
@@ -149,6 +151,7 @@ async function load() {
 	}
 
 	try {
+		await dict.refresh([FEEDBACK_TASK_STATUS_DICT_KEY, FEEDBACK_RECORD_STATUS_DICT_KEY]);
 		detail.value = await (service as any).performance.feedback.fetchInfo({ id: recordId });
 		state.value = { mode: "ready", error: "" };
 	} catch (error: any) {
@@ -183,6 +186,24 @@ function openSummary() {
 		path: "/pages/performance/feedback/summary",
 		query: buildFeedbackSummaryQuery(recordId),
 	});
+}
+
+function taskStatusLabel(value?: string | null) {
+	return dict.getLabel(FEEDBACK_TASK_STATUS_DICT_KEY, value) || value || "未知";
+}
+
+function taskStatusTone(value?: string | null): "info" | "warning" | "success" | "error" {
+	const tone = dict.getMeta(FEEDBACK_TASK_STATUS_DICT_KEY, value)?.tone;
+	return tone === "success" || tone === "warning" ? tone : tone === "danger" ? "error" : "info";
+}
+
+function recordStatusLabel(value?: string | null) {
+	return dict.getLabel(FEEDBACK_RECORD_STATUS_DICT_KEY, value) || value || "未知";
+}
+
+function recordStatusTone(value?: string | null): "info" | "warning" | "success" | "error" {
+	const tone = dict.getMeta(FEEDBACK_RECORD_STATUS_DICT_KEY, value)?.tone;
+	return tone === "success" || tone === "warning" ? tone : tone === "danger" ? "error" : "info";
 }
 
 onShow(load);

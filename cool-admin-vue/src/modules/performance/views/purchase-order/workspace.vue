@@ -85,7 +85,7 @@
 						<h2>{{ workspaceConfig.title }}</h2>
 						<el-tag effect="plain">主题 11</el-tag>
 						<el-tag effect="plain" type="info">
-							{{ isHrRole ? 'HR 全量视角' : '经理部门树视角' }}
+							{{ roleFact.scopeLabel }}
 						</el-tag>
 						<el-tag effect="plain" type="success">
 							{{ workspaceConfig.statusSummary }}
@@ -627,29 +627,44 @@ defineOptions({
 });
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
+import { useDict } from '/$/dict';
 import { service } from '/@/cool';
 import { useUserStore } from '/$/base/store/user';
+import { useListPage } from '../../composables/use-list-page.js';
+import { performanceAccessContextService } from '../../service/access-context';
 import { performancePurchaseOrderService } from '../../service/purchase-order';
+import { resolvePerformanceRoleFact } from '../../service/role-fact';
 import { performanceSupplierService } from '../../service/supplier';
+import {
+	confirmElementAction,
+	promptElementAction,
+	runTrackedElementAction
+} from '../shared/action-feedback';
+import {
+	createElementWarningFromErrorHandler,
+	showElementErrorFromError,
+	showElementWarningFromError
+} from '../shared/error-message';
 import {
 	loadDepartmentOptions,
 	loadUserOptions
 } from '../../utils/lookup-options.js';
 import type {
-	PurchaseOrderApprovalLog,
-	PurchaseOrderInquiryRecord,
+	DepartmentOption,
+	PerformanceAccessContext,
 	PurchaseOrderItemRecord,
-	PurchaseOrderReceiptRecord,
 	PurchaseOrderRecord,
 	PurchaseOrderStatus,
+	SupplierOption,
 	SupplierRecord,
 	UserOption
 } from '../../types';
 import {
 	createEmptyPurchaseOrder,
-	createEmptyPurchaseOrderItem
+	createEmptyPurchaseOrderItem,
+	normalizePurchaseOrderDomainRecord
 } from '../../types';
 
 type PurchaseWorkspaceViewKey = 'main' | 'inquiry' | 'approval' | 'execution' | 'receipt';
@@ -664,17 +679,6 @@ type PurchaseActionKey =
 	| 'receive'
 	| 'close';
 
-interface DepartmentOption {
-	id: number;
-	label: string;
-}
-
-interface SupplierOption {
-	id: number;
-	name: string;
-	status?: SupplierRecord['status'];
-}
-
 interface PurchaseWorkspaceConfig {
 	title: string;
 	statusSummary: string;
@@ -683,6 +687,8 @@ interface PurchaseWorkspaceConfig {
 	actionKeys: PurchaseActionKey[];
 	allowCreate: boolean;
 }
+
+const PURCHASE_ORDER_STATUS_DICT_KEY = 'performance.purchaseOrder.status';
 
 const props = withDefaults(
 	defineProps<{
@@ -751,24 +757,13 @@ const WORKSPACE_CONFIG_MAP: Record<PurchaseWorkspaceViewKey, PurchaseWorkspaceCo
 	}
 };
 
-const ALL_STATUS_OPTIONS: Array<{ label: string; value: PurchaseOrderStatus }> = [
-	{ label: '草稿', value: 'draft' },
-	{ label: '询价中', value: 'inquiring' },
-	{ label: '待审批', value: 'pendingApproval' },
-	{ label: '已审批', value: 'approved' },
-	{ label: '已收货', value: 'received' },
-	{ label: '已关闭', value: 'closed' },
-	{ label: '已取消', value: 'cancelled' }
-];
-
 const MERGED_VIEW_FETCH_SIZE = 200;
 
 const user = useUserStore();
-const rows = ref<PurchaseOrderRecord[]>([]);
+const { dict } = useDict();
 const userOptions = ref<UserOption[]>([]);
 const departmentOptions = ref<DepartmentOption[]>([]);
 const supplierOptions = ref<SupplierOption[]>([]);
-const tableLoading = ref(false);
 const submitLoading = ref(false);
 const formVisible = ref(false);
 const detailVisible = ref(false);
@@ -777,21 +772,7 @@ const detailOrder = ref<PurchaseOrderRecord | null>(null);
 const formRef = ref<FormInstance>();
 const actionLoadingId = ref<number | null>(null);
 const actionLoadingType = ref<PurchaseActionKey | null>(null);
-
-const filters = reactive({
-	keyword: '',
-	supplierId: undefined as number | undefined,
-	departmentId: undefined as number | undefined,
-	status: '' as PurchaseOrderStatus | '',
-	startDate: '',
-	endDate: ''
-});
-
-const pagination = reactive({
-	page: 1,
-	size: 10,
-	total: 0
-});
+const accessContext = ref<PerformanceAccessContext | null>(null);
 
 const form = reactive<PurchaseOrderRecord>(createEmptyPurchaseOrder());
 
@@ -819,17 +800,97 @@ const rules: FormRules = {
 
 const workspaceConfig = computed(() => WORKSPACE_CONFIG_MAP[props.viewKey]);
 const canAccess = computed(() => checkPerm(performancePurchaseOrderService.permission.page));
-const isHrRole = computed(() => checkPerm(performanceSupplierService.permission.add));
+const roleFact = computed(() =>
+	resolvePerformanceRoleFact({
+		personaKey: accessContext.value?.activePersonaKey || null,
+		roleKind: accessContext.value?.roleKind || null
+	})
+);
 const showAddButton = computed(
 	() => workspaceConfig.value.allowCreate && checkPerm(performancePurchaseOrderService.permission.add)
 );
+const purchaseOrderStatusOptions = computed<Array<{ label: string; value: PurchaseOrderStatus }>>(() =>
+	dict.get(PURCHASE_ORDER_STATUS_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as PurchaseOrderStatus
+	}))
+);
 const currentStatusOptions = computed(() => {
 	if (!workspaceConfig.value.fixedStatuses.length) {
-		return ALL_STATUS_OPTIONS;
+		return purchaseOrderStatusOptions.value;
 	}
 
-	return ALL_STATUS_OPTIONS.filter(item => workspaceConfig.value.fixedStatuses.includes(item.value));
+	return purchaseOrderStatusOptions.value.filter(item =>
+		workspaceConfig.value.fixedStatuses.includes(item.value)
+	);
 });
+const purchaseOrderList = useListPage({
+	createFilters: () => ({
+		keyword: '',
+		supplierId: undefined as number | undefined,
+		departmentId: undefined as number | undefined,
+		status: '' as PurchaseOrderStatus | '',
+		startDate: '',
+		endDate: ''
+	}),
+	canLoad: () => canAccess.value,
+	fetchPage: async params => {
+		const requestFilters = buildQueryFilters();
+		const explicitStatus = params.status || undefined;
+
+		if (workspaceConfig.value.fixedStatuses.length > 1 && !explicitStatus) {
+			const resultList = await Promise.all(
+				workspaceConfig.value.fixedStatuses.map(status =>
+					performancePurchaseOrderService.fetchPage({
+						...requestFilters,
+						page: 1,
+						size: MERGED_VIEW_FETCH_SIZE,
+						status
+					})
+				)
+			);
+			const merged = dedupeOrders(
+				resultList.flatMap(item => item.list || []).map(normalizePurchaseOrderDomainRecord)
+			);
+			const total = merged.length;
+			const maxPage = Math.max(1, Math.ceil(total / params.size));
+			const page = Math.min(params.page, maxPage);
+
+			if (page !== params.page) {
+				purchaseOrderList.pager.page = page;
+			}
+
+			return {
+				list: merged.slice((page - 1) * params.size, page * params.size),
+				pagination: { total }
+			};
+		}
+
+		const resolvedStatus =
+			explicitStatus ||
+			(workspaceConfig.value.fixedStatuses.length === 1
+				? workspaceConfig.value.fixedStatuses[0]
+				: undefined);
+		const result = await performancePurchaseOrderService.fetchPage({
+			...requestFilters,
+			page: params.page,
+			size: params.size,
+			status: resolvedStatus
+		});
+
+		return {
+			...result,
+			list: (result.list || []).map(normalizePurchaseOrderDomainRecord)
+		};
+	},
+	onError: (error: unknown) => {
+		showElementErrorFromError(error, '采购单列表加载失败');
+	}
+});
+const rows = purchaseOrderList.rows;
+const tableLoading = purchaseOrderList.loading;
+const filters = purchaseOrderList.filters;
+const pagination = purchaseOrderList.pager;
 const filterSupplierIdModel = computed<number | undefined>({
 	get: () => filters.supplierId ?? undefined,
 	set: value => {
@@ -900,9 +961,18 @@ watch(
 );
 
 onMounted(async () => {
-	await Promise.all([loadUsers(), loadDepartments(), loadSuppliers()]);
+	await dict.refresh([PURCHASE_ORDER_STATUS_DICT_KEY]);
+	await Promise.all([loadAccessContext(), loadUsers(), loadDepartments(), loadSuppliers()]);
 	await refresh();
 });
+
+async function loadAccessContext() {
+	try {
+		accessContext.value = await performanceAccessContextService.fetchContext();
+	} catch {
+		accessContext.value = null;
+	}
+}
 
 async function loadUsers() {
 	userOptions.value = await loadUserOptions(
@@ -911,18 +981,14 @@ async function loadUsers() {
 				page: 1,
 				size: 500
 			}),
-		(error: any) => {
-			ElMessage.warning(error.message || '申请人选项加载失败');
-		}
+		createElementWarningFromErrorHandler('申请人选项加载失败')
 	);
 }
 
 async function loadDepartments() {
 	departmentOptions.value = await loadDepartmentOptions(
 		() => service.base.sys.department.list(),
-		(error: any) => {
-			ElMessage.warning(error.message || '部门选项加载失败');
-		}
+		createElementWarningFromErrorHandler('部门选项加载失败')
 	);
 }
 
@@ -937,60 +1003,14 @@ async function loadSuppliers() {
 			name: item.name,
 			status: item.status
 		}));
-	} catch (error: any) {
+	} catch (error: unknown) {
 		supplierOptions.value = [];
-		ElMessage.warning(error.message || '供应商选项加载失败');
+		showElementWarningFromError(error, '供应商选项加载失败');
 	}
 }
 
 async function refresh() {
-	if (!canAccess.value) {
-		return;
-	}
-
-	tableLoading.value = true;
-
-	try {
-		const requestFilters = buildQueryFilters();
-		const explicitStatus = filters.status || undefined;
-
-		if (workspaceConfig.value.fixedStatuses.length > 1 && !explicitStatus) {
-			const resultList = await Promise.all(
-				workspaceConfig.value.fixedStatuses.map(status =>
-					performancePurchaseOrderService.fetchPage({
-						...requestFilters,
-						page: 1,
-						size: MERGED_VIEW_FETCH_SIZE,
-						status
-					})
-				)
-			);
-			const merged = dedupeOrders(resultList.flatMap(item => item.list || []).map(normalizeOrder));
-			pagination.total = merged.length;
-			ensureCurrentPageInRange();
-			rows.value = merged.slice((pagination.page - 1) * pagination.size, pagination.page * pagination.size);
-			return;
-		}
-
-		const resolvedStatus =
-			explicitStatus ||
-			(workspaceConfig.value.fixedStatuses.length === 1
-				? workspaceConfig.value.fixedStatuses[0]
-				: undefined);
-		const result = await performancePurchaseOrderService.fetchPage({
-			...requestFilters,
-			page: pagination.page,
-			size: pagination.size,
-			status: resolvedStatus
-		});
-
-		rows.value = (result.list || []).map(normalizeOrder);
-		pagination.total = result.pagination?.total || 0;
-	} catch (error: any) {
-		ElMessage.error(error.message || '采购单列表加载失败');
-	} finally {
-		tableLoading.value = false;
-	}
+	await purchaseOrderList.reload();
 }
 
 function buildQueryFilters() {
@@ -1009,24 +1029,18 @@ function handleSearch() {
 		return;
 	}
 
-	pagination.page = 1;
-	refresh();
+	void purchaseOrderList.search();
 }
 
 function handleReset() {
-	filters.keyword = '';
-	filters.supplierId = undefined;
-	filters.departmentId = undefined;
-	filters.status = '';
-	filters.startDate = '';
-	filters.endDate = '';
-	pagination.page = 1;
-	refresh();
+	void purchaseOrderList.reset({
+		supplierId: undefined,
+		departmentId: undefined
+	});
 }
 
 function changePage(page: number) {
-	pagination.page = page;
-	refresh();
+	void purchaseOrderList.goToPage(page);
 }
 
 function openCreate() {
@@ -1046,10 +1060,12 @@ async function openDetail(row: PurchaseOrderRecord) {
 	}
 
 	try {
-		detailOrder.value = normalizeOrder(await performancePurchaseOrderService.fetchInfo({ id: row.id }));
+		detailOrder.value = normalizePurchaseOrderDomainRecord(
+			await performancePurchaseOrderService.fetchInfo({ id: row.id })
+		);
 		detailVisible.value = true;
-	} catch (error: any) {
-		ElMessage.error(error.message || '采购单详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '采购单详情加载失败');
 	}
 }
 
@@ -1060,7 +1076,9 @@ async function openEdit(row: PurchaseOrderRecord) {
 	}
 
 	try {
-		const detail = normalizeOrder(await performancePurchaseOrderService.fetchInfo({ id: row.id }));
+		const detail = normalizePurchaseOrderDomainRecord(
+			await performancePurchaseOrderService.fetchInfo({ id: row.id })
+		);
 		if (detail.status !== 'draft') {
 			ElMessage.warning('仅 draft 采购单允许编辑');
 			return;
@@ -1075,8 +1093,8 @@ async function openEdit(row: PurchaseOrderRecord) {
 			items: detail.items?.length ? detail.items.map(cloneItem) : [createEmptyPurchaseOrderItem()]
 		});
 		formVisible.value = true;
-	} catch (error: any) {
-		ElMessage.error(error.message || '采购单详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '采购单详情加载失败');
 	}
 }
 
@@ -1119,8 +1137,8 @@ async function submitForm() {
 		ElMessage.success('保存成功');
 		formVisible.value = false;
 		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '采购单保存失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '采购单保存失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -1131,15 +1149,12 @@ async function handleDelete(row: PurchaseOrderRecord) {
 		return;
 	}
 
-	try {
-		await ElMessageBox.confirm(
-			`确认删除采购单「${row.title || row.orderNo || row.id}」吗？`,
-			'删除确认',
-			{
-				type: 'warning'
-			}
-		);
-	} catch {
+	const confirmed = await confirmElementAction(
+		`确认删除采购单「${row.title || row.orderNo || row.id}」吗？`,
+		'删除确认'
+	);
+
+	if (!confirmed) {
 		return;
 	}
 
@@ -1155,11 +1170,12 @@ async function handleSubmitInquiry(row: PurchaseOrderRecord) {
 		return;
 	}
 
-	try {
-		await ElMessageBox.confirm(`确认提交采购单「${row.title}」进入询价吗？`, '询价确认', {
-			type: 'warning'
-		});
-	} catch {
+	const confirmed = await confirmElementAction(
+		`确认提交采购单「${row.title}」进入询价吗？`,
+		'询价确认'
+	);
+
+	if (!confirmed) {
 		return;
 	}
 
@@ -1173,11 +1189,12 @@ async function handleSubmitApproval(row: PurchaseOrderRecord) {
 		return;
 	}
 
-	try {
-		await ElMessageBox.confirm(`确认提交采购单「${row.title}」进入审批吗？`, '提交审批确认', {
-			type: 'warning'
-		});
-	} catch {
+	const confirmed = await confirmElementAction(
+		`确认提交采购单「${row.title}」进入审批吗？`,
+		'提交审批确认'
+	);
+
+	if (!confirmed) {
 		return;
 	}
 
@@ -1191,24 +1208,22 @@ async function handleApprove(row: PurchaseOrderRecord) {
 		return;
 	}
 
-	try {
-		const { value } = await ElMessageBox.prompt('请输入审批备注，可留空', '审批通过', {
-			inputValue: row.approvalRemark || '',
-			confirmButtonText: '通过',
-			cancelButtonText: '取消'
-		});
-		await runRowAction(row, 'approve', async () => {
-			await performancePurchaseOrderService.approve({
-				id: row.id!,
-				approvalRemark: normalizeOptionalText(value)
-			});
-		});
-	} catch (error: any) {
-		if (error === 'cancel' || error === 'close') {
-			return;
-		}
-		ElMessage.error(error.message || '审批操作失败');
+	const result = await promptElementAction('请输入审批备注，可留空', '审批通过', {
+		inputValue: row.approvalRemark || '',
+		confirmButtonText: '通过',
+		cancelButtonText: '取消'
+	});
+
+	if (!result) {
+		return;
 	}
+
+	await runRowAction(row, 'approve', async () => {
+		await performancePurchaseOrderService.approve({
+			id: row.id!,
+			approvalRemark: normalizeOptionalText(result.value)
+		});
+	});
 }
 
 async function handleReject(row: PurchaseOrderRecord) {
@@ -1216,24 +1231,22 @@ async function handleReject(row: PurchaseOrderRecord) {
 		return;
 	}
 
-	try {
-		const { value } = await ElMessageBox.prompt('请输入驳回原因', '审批驳回', {
-			inputValidator: input => String(input || '').trim().length > 0 || '请输入驳回原因',
-			confirmButtonText: '驳回',
-			cancelButtonText: '取消'
-		});
-		await runRowAction(row, 'reject', async () => {
-			await performancePurchaseOrderService.reject({
-				id: row.id!,
-				approvalRemark: String(value || '').trim()
-			});
-		});
-	} catch (error: any) {
-		if (error === 'cancel' || error === 'close') {
-			return;
-		}
-		ElMessage.error(error.message || '驳回操作失败');
+	const result = await promptElementAction('请输入驳回原因', '审批驳回', {
+		inputValidator: input => String(input || '').trim().length > 0 || '请输入驳回原因',
+		confirmButtonText: '驳回',
+		cancelButtonText: '取消'
+	});
+
+	if (!result) {
+		return;
 	}
+
+	await runRowAction(row, 'reject', async () => {
+		await performancePurchaseOrderService.reject({
+			id: row.id!,
+			approvalRemark: String(result.value || '').trim()
+		});
+	});
 }
 
 async function handleReceive(row: PurchaseOrderRecord) {
@@ -1241,30 +1254,28 @@ async function handleReceive(row: PurchaseOrderRecord) {
 		return;
 	}
 
-	try {
-		const { value } = await ElMessageBox.prompt('请输入本次收货数量', '收货登记', {
-			inputType: 'number',
-			inputValue: '1',
-			inputValidator: input => {
-				const parsed = Number(input);
-				return parsed > 0 || '收货数量必须大于 0';
-			},
-			confirmButtonText: '登记收货',
-			cancelButtonText: '取消'
-		});
-		await runRowAction(row, 'receive', async () => {
-			await performancePurchaseOrderService.receive({
-				id: row.id!,
-				receivedQuantity: Number(value),
-				receivedAt: new Date().toISOString().slice(0, 10)
-			});
-		});
-	} catch (error: any) {
-		if (error === 'cancel' || error === 'close') {
-			return;
-		}
-		ElMessage.error(error.message || '收货操作失败');
+	const result = await promptElementAction('请输入本次收货数量', '收货登记', {
+		inputType: 'number',
+		inputValue: '1',
+		inputValidator: input => {
+			const parsed = Number(input);
+			return parsed > 0 || '收货数量必须大于 0';
+		},
+		confirmButtonText: '登记收货',
+		cancelButtonText: '取消'
+	});
+
+	if (!result) {
+		return;
 	}
+
+	await runRowAction(row, 'receive', async () => {
+		await performancePurchaseOrderService.receive({
+			id: row.id!,
+			receivedQuantity: Number(result.value),
+			receivedAt: new Date().toISOString().slice(0, 10)
+		});
+	});
 }
 
 async function handleClose(row: PurchaseOrderRecord) {
@@ -1272,24 +1283,22 @@ async function handleClose(row: PurchaseOrderRecord) {
 		return;
 	}
 
-	try {
-		const { value } = await ElMessageBox.prompt('请输入关闭原因', '关闭采购单', {
-			inputValidator: input => String(input || '').trim().length > 0 || '关闭原因不能为空',
-			confirmButtonText: '关闭',
-			cancelButtonText: '取消'
-		});
-		await runRowAction(row, 'close', async () => {
-			await performancePurchaseOrderService.close({
-				id: row.id!,
-				closedReason: String(value || '').trim()
-			});
-		});
-	} catch (error: any) {
-		if (error === 'cancel' || error === 'close') {
-			return;
-		}
-		ElMessage.error(error.message || '关闭操作失败');
+	const result = await promptElementAction('请输入关闭原因', '关闭采购单', {
+		inputValidator: input => String(input || '').trim().length > 0 || '关闭原因不能为空',
+		confirmButtonText: '关闭',
+		cancelButtonText: '取消'
+	});
+
+	if (!result) {
+		return;
 	}
+
+	await runRowAction(row, 'close', async () => {
+		await performancePurchaseOrderService.close({
+			id: row.id!,
+			closedReason: String(result.value || '').trim()
+		});
+	});
 }
 
 async function runRowAction(
@@ -1297,22 +1306,23 @@ async function runRowAction(
 	action: PurchaseActionKey,
 	request: () => Promise<unknown>
 ) {
-	actionLoadingId.value = Number(row.id || 0);
-	actionLoadingType.value = action;
-
-	try {
-		await request();
-		ElMessage.success(actionSuccessText(action));
-		await refresh();
-		if (detailVisible.value && detailOrder.value?.id === row.id) {
-			await openDetail(row);
-		}
-	} catch (error: any) {
-		ElMessage.error(error.message || actionFailText(action));
-	} finally {
-		actionLoadingId.value = null;
-		actionLoadingType.value = null;
-	}
+	await runTrackedElementAction<PurchaseActionKey>({
+		rowId: Number(row.id || 0),
+		actionType: action,
+		request,
+		successMessage: actionSuccessText(action),
+		errorMessage: actionFailText(action),
+		setLoading: (rowId, actionType) => {
+			actionLoadingId.value = rowId;
+			actionLoadingType.value = actionType;
+		},
+		onSuccess: async () => {
+			if (detailVisible.value && detailOrder.value?.id === row.id) {
+				await openDetail(row);
+			}
+		},
+		refresh
+	});
 }
 
 function syncDepartmentByRequester(value?: number) {
@@ -1405,91 +1415,6 @@ function isActionLoading(row: PurchaseOrderRecord, action: PurchaseActionKey) {
 	return Number(row.id || 0) === actionLoadingId.value && actionLoadingType.value === action;
 }
 
-function normalizeOrder(record: any): PurchaseOrderRecord {
-	return {
-		...record,
-		status: normalizeStatus(record?.status),
-		orderNo: record?.orderNo || '',
-		expectedDeliveryDate: record?.expectedDeliveryDate || '',
-		currency: record?.currency || 'CNY',
-		totalAmount: Number(record?.totalAmount || 0),
-		receivedQuantity: Number(record?.receivedQuantity || 0),
-		items: normalizeItemList(record?.items),
-		inquiryRecords: normalizeInquiryList(record?.inquiryRecords),
-		approvalLogs: normalizeApprovalList(record?.approvalLogs),
-		receiptRecords: normalizeReceiptList(record?.receiptRecords)
-	};
-}
-
-function normalizeStatus(status?: string): PurchaseOrderStatus | undefined {
-	return ALL_STATUS_OPTIONS.some(item => item.value === status)
-		? (status as PurchaseOrderStatus)
-		: undefined;
-}
-
-function normalizeItemList(items: any): PurchaseOrderItemRecord[] {
-	if (!Array.isArray(items)) {
-		return [];
-	}
-
-	return items.map((item: any) => ({
-		id: item?.id,
-		itemName: String(item?.itemName || ''),
-		specification: normalizeOptionalText(item?.specification),
-		unit: normalizeOptionalText(item?.unit),
-		quantity: Number(item?.quantity || 0),
-		unitPrice: Number(item?.unitPrice || 0),
-		amount: Number(item?.amount || Number(item?.quantity || 0) * Number(item?.unitPrice || 0)),
-		remark: normalizeOptionalText(item?.remark)
-	}));
-}
-
-function normalizeInquiryList(records: any): PurchaseOrderInquiryRecord[] {
-	if (!Array.isArray(records)) {
-		return [];
-	}
-
-	return records.map((item: any) => ({
-		id: item?.id,
-		supplierId: item?.supplierId ? Number(item.supplierId) : undefined,
-		supplierName: item?.supplierName || '',
-		quotedAmount: Number(item?.quotedAmount || 0),
-		inquiryRemark: normalizeOptionalText(item?.inquiryRemark),
-		createdBy: item?.createdBy || '',
-		createdAt: item?.createdAt || ''
-	}));
-}
-
-function normalizeApprovalList(records: any): PurchaseOrderApprovalLog[] {
-	if (!Array.isArray(records)) {
-		return [];
-	}
-
-	return records.map((item: any) => ({
-		id: item?.id,
-		action: item?.action || '',
-		approverId: item?.approverId ? Number(item.approverId) : undefined,
-		approverName: item?.approverName || '',
-		remark: normalizeOptionalText(item?.remark),
-		createdAt: item?.createdAt || ''
-	}));
-}
-
-function normalizeReceiptList(records: any): PurchaseOrderReceiptRecord[] {
-	if (!Array.isArray(records)) {
-		return [];
-	}
-
-	return records.map((item: any) => ({
-		id: item?.id,
-		receivedQuantity: Number(item?.receivedQuantity || 0),
-		receivedAt: item?.receivedAt || '',
-		receiverId: item?.receiverId ? Number(item.receiverId) : undefined,
-		receiverName: item?.receiverName || '',
-		remark: normalizeOptionalText(item?.remark)
-	}));
-}
-
 function sanitizeItems(items?: PurchaseOrderItemRecord[]) {
 	return (items || [])
 		.map(item => {
@@ -1522,13 +1447,6 @@ function dedupeOrders(list: PurchaseOrderRecord[]) {
 	return Array.from(recordMap.values()).sort((a, b) => {
 		return resolveSortTimestamp(b) - resolveSortTimestamp(a);
 	});
-}
-
-function ensureCurrentPageInRange() {
-	const maxPage = Math.max(1, Math.ceil((pagination.total || 0) / pagination.size));
-	if (pagination.page > maxPage) {
-		pagination.page = maxPage;
-	}
 }
 
 function resolveSortTimestamp(item: PurchaseOrderRecord) {
@@ -1614,29 +1532,11 @@ function actionFailText(action: PurchaseActionKey) {
 }
 
 function statusLabel(status?: PurchaseOrderStatus | '') {
-	const item = ALL_STATUS_OPTIONS.find(option => option.value === status);
-	return item?.label || status || '-';
+	return dict.getLabel(PURCHASE_ORDER_STATUS_DICT_KEY, status) || status || '-';
 }
 
 function statusTagType(status?: PurchaseOrderStatus | '') {
-	switch (status) {
-		case 'draft':
-			return 'info';
-		case 'inquiring':
-			return 'warning';
-		case 'pendingApproval':
-			return 'danger';
-		case 'approved':
-			return 'primary';
-		case 'received':
-			return 'success';
-		case 'closed':
-			return 'info';
-		case 'cancelled':
-			return 'warning';
-		default:
-			return 'info';
-	}
+	return dict.getMeta(PURCHASE_ORDER_STATUS_DICT_KEY, status)?.tone || 'info';
 }
 
 function supplierLabel(id?: number) {
@@ -1698,16 +1598,36 @@ function cloneItem(item: PurchaseOrderItemRecord) {
 </script>
 
 <style lang="scss" scoped>
+@use '../../../../styles/patterns.data-panel.scss' as dataPanel;
+@use '../../../../styles/patterns.overlay-responsive.scss' as overlayResponsive;
+
 .purchase-workspace {
-	display: grid;
-	gap: 16px;
+	@include dataPanel.data-panel-shell;
+
+	--purchase-workspace-card-bg: var(--app-surface-card);
+	--purchase-workspace-muted-bg: var(--app-surface-muted);
+	--purchase-workspace-border: var(--app-border-strong);
+	--purchase-workspace-text: var(--app-text-primary);
+	--purchase-workspace-text-secondary: var(--app-text-secondary);
+
+	:deep(.el-card) {
+		border-color: var(--purchase-workspace-border);
+		background: var(--purchase-workspace-card-bg);
+		box-shadow: var(--app-shadow-surface);
+	}
+
+	:deep(.el-table) {
+		@include dataPanel.data-panel-table;
+	}
+
+	:deep(.el-dialog__body .el-descriptions__label) {
+		background: var(--purchase-workspace-muted-bg);
+	}
+
+	@include overlayResponsive.horizontal-scroll-table(920px);
 
 	&__toolbar {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 16px;
-		flex-wrap: wrap;
+		@include dataPanel.data-panel-toolbar;
 	}
 
 	&__toolbar-left,
@@ -1717,37 +1637,38 @@ function cloneItem(item: PurchaseOrderItemRecord) {
 	&__items-header {
 		display: flex;
 		align-items: center;
-		gap: 12px;
+		gap: var(--app-space-3);
 		flex-wrap: wrap;
 	}
 
 	&__header,
 	&__detail {
 		display: grid;
-		gap: 12px;
+		gap: var(--app-space-3);
 	}
 
 	&__header-main h2 {
 		margin: 0;
-		font-size: 18px;
+		font-size: var(--app-font-size-title);
+		color: var(--purchase-workspace-text);
 	}
 
 	&__pagination {
 		display: flex;
 		justify-content: flex-end;
-		padding-top: 16px;
+		padding-top: var(--app-space-4);
 	}
 
 	&__dialog-footer {
 		display: flex;
 		justify-content: flex-end;
-		gap: 12px;
+		gap: var(--app-space-3);
 	}
 
 	&__items-card,
 	&__detail-grid {
 		display: grid;
-		gap: 12px;
+		gap: var(--app-space-3);
 	}
 
 	&__detail-grid {
@@ -1755,15 +1676,52 @@ function cloneItem(item: PurchaseOrderItemRecord) {
 	}
 
 	&__item-row {
-		padding: 12px;
-		border: 1px solid var(--el-border-color-light);
-		border-radius: 8px;
+		padding: var(--app-space-3);
+		border: 1px solid var(--purchase-workspace-border);
+		border-radius: var(--app-radius-md);
+		background: var(--purchase-workspace-card-bg);
 	}
 
 	&__item-action {
 		display: flex;
 		align-items: center;
 		justify-content: flex-end;
+	}
+
+	@include overlayResponsive.overlay-responsive;
+
+	@media (max-width: 768px) {
+		&__toolbar-left,
+		&__toolbar-right,
+		&__header-main,
+		&__metrics,
+		&__items-header {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		&__detail-grid {
+			grid-template-columns: 1fr;
+		}
+
+		&__pagination {
+			justify-content: flex-start;
+		}
+
+		&__toolbar-left,
+		&__toolbar-right {
+			> * {
+				max-width: 100%;
+				min-width: 0;
+			}
+
+			:deep(.el-input),
+			:deep(.el-select),
+			:deep(.el-date-editor.el-input),
+			:deep(.el-date-editor.el-date-editor) {
+				width: 100% !important;
+			}
+		}
 	}
 }
 </style>

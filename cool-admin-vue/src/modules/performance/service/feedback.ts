@@ -4,10 +4,23 @@
  * 维护重点是 page/info/add/submit/summary 五个接口必须与后端契约保持同名同义。
  */
 import { BaseService } from '/@/cool';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeFeedbackExportRows,
+	decodeFeedbackPageResult,
+	decodeFeedbackSummary,
+	decodeFeedbackTaskRecord
+} from './feedback-contract';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import type {
 	FeedbackExportRow,
+	FeedbackExportQuery,
+	FeedbackInfoQuery,
+	FeedbackPageQuery,
 	FeedbackPageResult,
+	FeedbackSubmitPayload,
 	FeedbackSummary,
+	FeedbackSummaryQuery,
 	FeedbackTaskRecord
 } from '../types';
 
@@ -18,59 +31,63 @@ import type {
  */
 export default class PerformanceFeedbackService extends BaseService {
 	permission = {
-		page: 'performance:feedback:page',
-		info: 'performance:feedback:info',
-		add: 'performance:feedback:add',
-		submit: 'performance:feedback:submit',
-		summary: 'performance:feedback:summary',
-		export: 'performance:feedback:export'
+		page: PERMISSIONS.performance.feedback.page,
+		info: PERMISSIONS.performance.feedback.info,
+		add: PERMISSIONS.performance.feedback.add,
+		submit: PERMISSIONS.performance.feedback.submit,
+		summary: PERMISSIONS.performance.feedback.summary,
+		export: PERMISSIONS.performance.feedback.export
 	};
 
 	constructor() {
 		super('admin/performance/feedback');
 	}
 
-	fetchPage(data: any) {
-		return super.page(data) as unknown as Promise<FeedbackPageResult>;
+	fetchPage(data: FeedbackPageQuery) {
+		return asPerformanceServicePromise<FeedbackPageResult>(
+			super.page(data),
+			decodeFeedbackPageResult
+		);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<FeedbackTaskRecord>;
+	fetchInfo(params: FeedbackInfoQuery) {
+		return asPerformanceServicePromise<FeedbackTaskRecord>(
+			super.info(params),
+			decodeFeedbackTaskRecord
+		);
 	}
 
 	createTask(data: FeedbackTaskRecord) {
-		return super.add(data) as unknown as Promise<FeedbackTaskRecord>;
+		return asPerformanceServicePromise<FeedbackTaskRecord>(
+			super.add(data),
+			decodeFeedbackTaskRecord
+		);
 	}
 
-	submitFeedback(data: {
-		taskId: number;
-		score: number;
-		content?: string;
-		relationType: string;
-	}) {
-		return this.request({
+	submitFeedback(data: FeedbackSubmitPayload) {
+		return asPerformanceServicePromise<FeedbackTaskRecord>(this.request({
 			url: '/submit',
 			method: 'POST',
 			data
-		}) as unknown as Promise<FeedbackTaskRecord>;
+		}), decodeFeedbackTaskRecord);
 	}
 
-	fetchSummary(params: { taskId: number }) {
-		return this.request({
+	fetchSummary(params: FeedbackSummaryQuery) {
+		return asPerformanceServicePromise<FeedbackSummary>(this.request({
 			url: '/summary',
 			method: 'GET',
 			params: {
 				id: params.taskId
 			}
-		}) as unknown as Promise<FeedbackSummary>;
+		}), decodeFeedbackSummary);
 	}
 
-	exportSummary(data: any) {
-		return this.request({
+	exportSummary(data: FeedbackExportQuery) {
+		return asPerformanceServicePromise<FeedbackExportRow[]>(this.request({
 			url: '/export',
 			method: 'POST',
 			data
-		}) as unknown as Promise<FeedbackExportRow[]>;
+		}), decodeFeedbackExportRows);
 	}
 }
 

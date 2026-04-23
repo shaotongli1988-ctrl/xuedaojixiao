@@ -1,13 +1,14 @@
 <!-- 文件职责：承接主题20资产采购入库页面；不负责主题11采购审批中心、供应商台账或财务凭证；依赖 asset-procurement service、共享状态映射和通用资产 CRUD 页面壳；维护重点是 submit/receive/cancel 必须与冻结接口动作保持一致。 -->
 <template>
 	<AssetCrudPage
+		class="asset-procurement-page"
 		title="采购入库"
 		description="记录资产侧入库单、入库数量和采购金额，并通过确认入库生成台账资产。"
 		notice="采购入库只是资产侧入库结果，不扩展为采购审批中心。"
-		page-permission="performance:assetProcurement:page"
-		info-permission="performance:assetProcurement:info"
-		add-permission="performance:assetProcurement:add"
-		update-permission="performance:assetProcurement:update"
+		:page-permission="PERMISSIONS.performance.assetProcurement.page"
+		:info-permission="PERMISSIONS.performance.assetProcurement.info"
+		:add-permission="PERMISSIONS.performance.assetProcurement.add"
+		:update-permission="PERMISSIONS.performance.assetProcurement.update"
 		:columns="columns"
 		:filters="filters"
 		:form-fields="formFields"
@@ -25,16 +26,26 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, ref } from 'vue';
-import { ElMessage } from 'element-plus';
 import AssetCrudPage from './asset-crud-page.vue';
 import { performanceAssetProcurementService } from '../../service/asset-procurement';
-import { createEmptyAssetProcurement } from '../../types';
 import {
+	createEmptyAssetProcurement,
+	type AssetProcurementRecord
+} from '../../types';
+import {
+	createElementLookupWarningHandler,
 	loadAssetDepartmentOptions,
 	loadAssetSupplierOptions,
-	loadAssetUserOptions
+	loadAssetUserOptions,
+	toSelectOptions,
+	toSupplierSelectOptions,
+	toUserSelectOptions,
+	type DepartmentOption,
+	type SupplierOption
 } from './lookups';
 import { enumOptions, formatMoney, procurementStatusTagMap } from './shared';
+import { PERMISSIONS } from '../../../base/generated/permissions.generated';
+import type { CrudRowAction, CrudSelectOption } from '../shared/crud-page-shell';
 
 const columns = [
 	{ prop: 'procurementNo', label: '入库单号', minWidth: 160 },
@@ -51,9 +62,9 @@ const filters = [
 	{ prop: 'status', label: '状态', type: 'select', options: enumOptions(procurementStatusTagMap) }
 ];
 
-const departmentOptions = ref<any[]>([]);
-const userOptions = ref<any[]>([]);
-const supplierOptions = ref<any[]>([]);
+const departmentOptions = ref<CrudSelectOption[]>([]);
+const userOptions = ref<CrudSelectOption[]>([]);
+const supplierOptions = ref<CrudSelectOption[]>([]);
 
 const formFields = computed(() => [
 	{ prop: 'title', label: '标题', type: 'text' },
@@ -68,33 +79,33 @@ const formFields = computed(() => [
 	{ prop: 'remark', label: '备注', type: 'textarea', span: 24 }
 ]);
 
-const rowActions = [
+const rowActions: CrudRowAction<AssetProcurementRecord>[] = [
 	{
 		key: 'submit',
 		label: '提交',
-		permission: 'performance:assetProcurement:submit',
-		visible: (row: any) => row.status === 'draft',
+		permission: PERMISSIONS.performance.assetProcurement.submit,
+		visible: row => row.status === 'draft',
 		confirmText: () => '确认提交该入库单吗？',
-		handler: (row: any) => performanceAssetProcurementService.submitProcurement({ id: row.id }),
+		handler: row => performanceAssetProcurementService.submitProcurement({ id: row.id! }),
 		successMessage: '已提交'
 	},
 	{
 		key: 'receive',
 		label: '确认入库',
-		permission: 'performance:assetProcurement:receive',
-		visible: (row: any) => row.status === 'submitted',
+		permission: PERMISSIONS.performance.assetProcurement.receive,
+		visible: row => row.status === 'submitted',
 		confirmText: () => '确认入库后将生成资产台账，是否继续？',
-		handler: (row: any) => performanceAssetProcurementService.receiveProcurement({ id: row.id }),
+		handler: row => performanceAssetProcurementService.receiveProcurement({ id: row.id! }),
 		successMessage: '已确认入库'
 	},
 	{
 		key: 'cancel',
 		label: '取消',
-		permission: 'performance:assetProcurement:cancel',
+		permission: PERMISSIONS.performance.assetProcurement.cancel,
 		type: 'danger',
-		visible: (row: any) => ['draft', 'submitted'].includes(row.status),
+		visible: row => ['draft', 'submitted'].includes(row.status || ''),
 		confirmText: () => '确认取消该入库单吗？',
-		handler: (row: any) => performanceAssetProcurementService.cancelProcurement({ id: row.id }),
+		handler: row => performanceAssetProcurementService.cancelProcurement({ id: row.id! }),
 		successMessage: '已取消'
 	}
 ];
@@ -113,21 +124,10 @@ onMounted(async () => {
 		loadAssetSupplierOptions(notifyLookupError)
 	]);
 
-	departmentOptions.value = departments.map(item => ({
-		label: item.label,
-		value: item.id
-	}));
-	userOptions.value = users.map(item => ({
-		label: item.departmentName ? `${item.name} / ${item.departmentName}` : item.name,
-		value: item.id
-	}));
-	supplierOptions.value = suppliers.map(item => ({
-		label: item.name,
-		value: item.id
-	}));
+	departmentOptions.value = toSelectOptions<DepartmentOption>(departments);
+	userOptions.value = toUserSelectOptions(users);
+	supplierOptions.value = toSupplierSelectOptions(suppliers as SupplierOption[]);
 });
 
-function notifyLookupError(error: any) {
-	ElMessage.warning(error?.message || '入库基础选项加载失败');
-}
+const notifyLookupError = createElementLookupWarningHandler('入库基础选项加载失败');
 </script>

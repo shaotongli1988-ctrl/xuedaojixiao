@@ -6,6 +6,14 @@ import { isDev } from "/@/config";
 import { isString } from "lodash-es";
 import type { Dict } from "../types";
 
+function resolveItems(group: any): any[] {
+	if (Array.isArray(group)) {
+		return group;
+	}
+
+	return Array.isArray(group?.items) ? group.items : [];
+}
+
 const useDictStore = defineStore("dict", () => {
 	// 对象数据
 	const data = reactive<Dict.Data>({});
@@ -21,10 +29,22 @@ const useDictStore = defineStore("dict", () => {
 
 		return arr
 			.map((e) => {
-				return (isString(name) ? get(name) : name).find((a) => a.value == e)?.label;
+				return (isString(name) ? get(name) : name).find((a: any) => a.value == e)?.label;
 			})
 			.filter(Boolean)
 			.join(",");
+	}
+
+	// 获取单项
+	function getItem(name: Dict.Key | any[], value: any) {
+		return (
+			(isString(name) ? get(name) : name).find((item: any) => item.value == value) || null
+		);
+	}
+
+	// 获取元数据
+	function getMeta(name: Dict.Key | any[], value: any) {
+		return getItem(name, value);
 	}
 
 	// 刷新
@@ -33,10 +53,12 @@ const useDictStore = defineStore("dict", () => {
 			.data({
 				types,
 			})
-			.then((res: Dict.Data) => {
+			.then((res: any) => {
 				const d: any = {};
 
-				for (const [i, arr] of Object.entries(res)) {
+				for (const [i, group] of Object.entries(res || {})) {
+					const arr = resolveItems(group);
+
 					arr.forEach((e) => {
 						e.label = e.name;
 						e.value = isEmpty(e.value) ? e.id : e.value;
@@ -60,6 +82,8 @@ const useDictStore = defineStore("dict", () => {
 		data,
 		get,
 		getLabel,
+		getItem,
+		getMeta,
 		refresh,
 	};
 });

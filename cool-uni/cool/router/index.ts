@@ -118,7 +118,7 @@ const router = {
 			// 页面配置
 			const style = this.routes.find((e) => e.path == route)?.style;
 
-			let d = {
+			const d = {
 				$vm,
 				$getAppWebview,
 				path: `/${route}`,
@@ -144,9 +144,8 @@ const router = {
 			};
 		}
 
-		let {
-			path,
-			mode = "navigateTo",
+		let { path, mode = "navigateTo" } = options || {};
+		const {
 			animationType,
 			animationDuration,
 			events,
@@ -159,9 +158,9 @@ const router = {
 		} = options || {};
 
 		if (query) {
-			let arr = [];
+			const arr = [];
 
-			for (let i in query) {
+			for (const i in query) {
 				if (query[i] !== undefined) {
 					arr.push(`${i}=${query[i]}`);
 				}
@@ -174,7 +173,7 @@ const router = {
 			storage.set("router-params", params);
 		}
 
-		let data = {
+		const data = {
 			url: path,
 			animationType,
 			animationDuration,
@@ -258,7 +257,7 @@ const router = {
 
 	// 跳转 Tab 页
 	switchTab(name: string) {
-		let item = this.tabs.find((e) => e.pagePath.includes(name));
+		const item = this.tabs.find((e) => e.pagePath.includes(name));
 
 		if (item) {
 			this.push({

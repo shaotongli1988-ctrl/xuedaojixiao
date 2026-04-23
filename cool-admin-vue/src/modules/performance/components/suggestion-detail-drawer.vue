@@ -91,7 +91,11 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
+import { useDict } from '/$/dict';
 import type { SuggestionRecord } from '../types';
+
+const SUGGESTION_TYPE_DICT_KEY = 'performance.suggestion.type';
+const SUGGESTION_STATUS_DICT_KEY = 'performance.suggestion.status';
 
 const props = defineProps<{
 	modelValue: boolean;
@@ -113,6 +117,8 @@ defineEmits<{
 	(e: 'go-create'): void;
 }>();
 
+const { dict } = useDict();
+
 const canOperate = computed(() => {
 	return Boolean(
 		props.canAccept || props.canIgnore || props.canReject || props.canRevoke || props.canGoCreate
@@ -120,11 +126,19 @@ const canOperate = computed(() => {
 });
 
 const typeLabel = computed(() => {
-	return props.suggestion?.suggestionType === 'promotion' ? '晋升建议' : 'PIP 建议';
+	return (
+		dict.getLabel(SUGGESTION_TYPE_DICT_KEY, props.suggestion?.suggestionType) ||
+		props.suggestion?.suggestionType ||
+		'-'
+	);
 });
 
 const targetLabel = computed(() => {
-	return props.suggestion?.suggestionType === 'promotion' ? '晋升单' : 'PIP';
+	return (
+		dict.getMeta(SUGGESTION_TYPE_DICT_KEY, props.suggestion?.suggestionType)?.extra?.targetLabel ||
+		props.suggestion?.suggestionType ||
+		'-'
+	);
 });
 
 const periodLabel = computed(() => {
@@ -140,56 +154,46 @@ const linkedEntityLabel = computed(() => {
 		return '-';
 	}
 
-	return `${props.suggestion.linkedEntityType} #${props.suggestion.linkedEntityId}`;
+	const target =
+		dict.getMeta(SUGGESTION_TYPE_DICT_KEY, props.suggestion.linkedEntityType)?.extra?.targetLabel ||
+		props.suggestion.linkedEntityType;
+
+	return `${target} #${props.suggestion.linkedEntityId}`;
 });
 
 const statusLabel = computed(() => {
-	switch (props.suggestion?.status) {
-		case 'accepted':
-			return '已采用';
-		case 'ignored':
-			return '已忽略';
-		case 'rejected':
-			return '已驳回';
-		case 'revoked':
-			return '已撤销';
-		default:
-			return '待处理';
-	}
+	return (
+		dict.getLabel(SUGGESTION_STATUS_DICT_KEY, props.suggestion?.status) ||
+		props.suggestion?.status ||
+		'-'
+	);
 });
 
 const statusTagType = computed(() => {
-	switch (props.suggestion?.status) {
-		case 'accepted':
-			return 'success';
-		case 'ignored':
-			return 'info';
-		case 'rejected':
-			return 'warning';
-		case 'revoked':
-			return 'danger';
-		default:
-			return undefined;
-	}
+	return dict.getMeta(SUGGESTION_STATUS_DICT_KEY, props.suggestion?.status)?.tone;
 });
 </script>
 
 <style lang="scss" scoped>
+@use '../../../styles/patterns.overlay-responsive.scss' as overlayResponsive;
+
 .suggestion-detail-drawer {
 	display: grid;
-	gap: 16px;
+	gap: var(--app-space-4);
 
 	&__text {
 		white-space: pre-wrap;
 		line-height: 1.7;
-		color: var(--el-text-color-regular);
+		color: var(--app-text-secondary);
 	}
 
 	&__footer {
 		display: flex;
 		flex-wrap: wrap;
 		justify-content: flex-end;
-		gap: 12px;
+		gap: var(--app-space-3);
 	}
+
+	@include overlayResponsive.overlay-responsive;
 }
 </style>

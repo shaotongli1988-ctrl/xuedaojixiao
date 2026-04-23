@@ -590,9 +590,12 @@
 								style="width: 130px"
 								@change="handlePlanFilterChange"
 							>
-								<el-option label="日目标" value="day" />
-								<el-option label="周目标" value="week" />
-								<el-option label="月目标" value="month" />
+								<el-option
+									v-for="item in periodTypeOptions"
+									:key="item.value"
+									:label="item.label"
+									:value="item.value"
+								/>
 							</el-select>
 							<el-select
 								v-model="planFilters.sourceType"
@@ -601,8 +604,12 @@
 								style="width: 150px"
 								@change="handlePlanFilterChange"
 							>
-								<el-option label="公共目标" value="public" />
-								<el-option label="个人补充目标" value="personal" />
+								<el-option
+									v-for="item in sourceTypeOptions"
+									:key="item.value"
+									:label="item.label"
+									:value="item.value"
+								/>
 							</el-select>
 							<el-input
 								v-model="planFilters.keyword"
@@ -822,17 +829,25 @@
 					<el-col :span="12">
 						<el-form-item label="目标来源" prop="sourceType">
 							<el-radio-group v-model="planForm.sourceType" :disabled="Boolean(editingPlanId)">
-								<el-radio label="public">公共目标</el-radio>
-								<el-radio label="personal">个人补充目标</el-radio>
+								<el-radio
+									v-for="item in sourceTypeOptions"
+									:key="item.value"
+									:label="item.value"
+								>
+									{{ item.label }}
+								</el-radio>
 							</el-radio-group>
 						</el-form-item>
 					</el-col>
 					<el-col :span="12">
 						<el-form-item label="周期类型" prop="periodType">
 							<el-select v-model="planForm.periodType" @change="handlePlanTypeChange">
-								<el-option label="日目标" value="day" />
-								<el-option label="周目标" value="week" />
-								<el-option label="月目标" value="month" />
+								<el-option
+									v-for="item in periodTypeOptions"
+									:key="item.value"
+									:label="item.label"
+									:value="item.value"
+								/>
 							</el-select>
 						</el-form-item>
 					</el-col>
@@ -841,7 +856,7 @@
 							<el-select
 								v-model="planForm.employeeId"
 								filterable
-								:disabled="planForm.sourceType === 'personal' && !isHrRole"
+								:disabled="planForm.sourceType === 'personal' && !hasCompanyGoalScope"
 							>
 								<el-option
 									v-for="item in scopedUserOptions"
@@ -935,16 +950,32 @@ defineOptions({
 });
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
 import { useUserStore } from '/$/base/store/user';
+import { useDict } from '/$/dict';
 import { service } from '/@/cool';
+import { useListPage } from '../../composables/use-list-page.js';
 import { performanceGoalService } from '../../service/goal';
+import { resolvePerformanceRoleFact } from '../../service/role-fact';
+import {
+	confirmElementAction,
+	promptElementAction,
+	runTrackedElementAction
+} from '../shared/action-feedback';
+import {
+	createElementWarningFromErrorHandler,
+	resolveErrorMessage,
+	showElementErrorFromError,
+	showElementWarningFromError
+} from '../shared/error-message';
 import { loadDepartmentOptions, loadUserOptions } from '../../utils/lookup-options.js';
 import type {
+	DepartmentOption,
 	GoalOpsAccessProfile,
 	GoalOpsDepartmentConfig,
 	GoalOpsOverview,
+	GoalOpsOverviewQuery,
 	GoalOpsOverviewRow,
 	GoalOpsPlanPageResult,
 	GoalOpsPlanRecord,
@@ -953,6 +984,7 @@ import type {
 	GoalOpsReportInfo,
 	GoalOpsReportStatus,
 	GoalOpsSourceType,
+	GoalOpsTrendRow,
 	UserOption
 } from '../../types';
 import {
@@ -961,29 +993,27 @@ import {
 	createEmptyGoalOpsPlan
 } from '../../types';
 
-type DepartmentOption = {
-	id: number;
-	label: string;
-};
-
-interface TrendRow {
-	planDate: string;
-	publicActualValue: number;
-	personalActualValue: number;
-	totalActualValue: number;
-	totalTargetValue: number;
-	completionRate: number;
-}
+const GOAL_SOURCE_TYPE_DICT_KEY = 'performance.goal.sourceType';
+const GOAL_PERIOD_TYPE_DICT_KEY = 'performance.goal.periodType';
+const GOAL_PLAN_STATUS_DICT_KEY = 'performance.goal.planStatus';
+const GOAL_REPORT_STATUS_DICT_KEY = 'performance.goal.reportStatus';
 
 const user = useUserStore();
+const { dict } = useDict();
 const canAccess = computed(() => checkPerm(performanceGoalService.permission.page));
 const accessProfile = reactive<GoalOpsAccessProfile>(createEmptyGoalOpsAccessProfile());
-const isHrRole = computed(() => accessProfile.isHr);
+const hasCompanyGoalScope = computed(() => accessProfile.scopeKey === 'company');
 const canManageDepartmentView = computed(() => accessProfile.canManageDepartment);
 const canCreatePersonalPlan = computed(() => accessProfile.canMaintainPersonalPlan);
+const roleFact = computed(() =>
+	resolvePerformanceRoleFact({
+		personaKey: accessProfile.activePersonaKey || null,
+		roleKind: accessProfile.roleKind || null
+	})
+);
 const manageableDepartmentOptions = computed(() => {
 	if (accessProfile.manageableDepartmentIds.length === 0) {
-		if (isHrRole.value) {
+		if (hasCompanyGoalScope.value) {
 			return departmentOptions.value;
 		}
 		return departmentOptions.value.filter(item => item.id === currentDepartmentId.value);
@@ -994,7 +1024,9 @@ const manageableDepartmentOptions = computed(() => {
 	);
 });
 const showDepartmentFilter = computed(() => manageableDepartmentOptions.value.length > 1);
-const showEmployeeFilter = computed(() => isHrRole.value || canManageDepartmentView.value);
+const showEmployeeFilter = computed(
+	() => hasCompanyGoalScope.value || canManageDepartmentView.value
+);
 
 const filters = reactive({
 	planDate: formatDate(new Date()),
@@ -1009,23 +1041,29 @@ const planFilters = reactive({
 	keyword: ''
 });
 
-const planPagination = reactive({
-	page: 1,
-	size: 10,
-	total: 0
-});
+const sourceTypeOptions = computed<Array<{ label: string; value: GoalOpsSourceType }>>(() =>
+	dict.get(GOAL_SOURCE_TYPE_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as GoalOpsSourceType
+	}))
+);
+
+const periodTypeOptions = computed<Array<{ label: string; value: GoalOpsPeriodType }>>(() =>
+	dict.get(GOAL_PERIOD_TYPE_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as GoalOpsPeriodType
+	}))
+);
 
 const userOptions = ref<UserOption[]>([]);
 const departmentOptions = ref<DepartmentOption[]>([]);
 const overview = ref<GoalOpsOverview | null>(null);
 const todayPlans = ref<GoalOpsPlanRecord[]>([]);
 const trendPlans = ref<GoalOpsPlanRecord[]>([]);
-const planRows = ref<GoalOpsPlanRecord[]>([]);
 const reportInfo = ref<GoalOpsReportInfo | null>(null);
 
 const overviewLoading = ref(false);
 const todayPlansLoading = ref(false);
-const planPageLoading = ref(false);
 const dailySubmitLoading = ref(false);
 const configSaving = ref(false);
 const reportActionLoading = ref('');
@@ -1094,13 +1132,13 @@ const scopedUserOptions = computed(() => {
 	});
 });
 const roleLabel = computed(() => {
-	if (isHrRole.value) {
-		return 'HR / 管理员视角';
+	if (hasCompanyGoalScope.value) {
+		return `${roleFact.value.roleLabel} / 全局范围`;
 	}
 	if (canManageDepartmentView.value) {
-		return '主管视角';
+		return `${roleFact.value.roleLabel} / 部门范围`;
 	}
-	return '员工视角';
+	return `${roleFact.value.roleLabel} / 个人范围`;
 });
 const overviewSummary = computed(() => {
 	return (
@@ -1137,13 +1175,17 @@ const contributionRows = computed(() => {
 		return [];
 	}
 
-	if (!canManageDepartmentView.value && !isHrRole.value && currentUserSummary.value) {
+	if (
+		!canManageDepartmentView.value &&
+		!hasCompanyGoalScope.value &&
+		currentUserSummary.value
+	) {
 		return [currentUserSummary.value];
 	}
 
 	return overview.value.rows;
 });
-const trendRows = computed<TrendRow[]>(() => buildTrendRows(trendPlans.value));
+const trendRows = computed<GoalOpsTrendRow[]>(() => buildTrendRows(trendPlans.value));
 
 const assignTimeModel = computed({
 	get: () => departmentConfig.assignTime || '09:00',
@@ -1193,6 +1235,37 @@ const descriptionModel = computed({
 		planForm.description = String(value || '').trim();
 	}
 });
+const goalPlanList = useListPage({
+	createFilters: () => ({
+		periodType: 'day' as GoalOpsPeriodType,
+		sourceType: '' as GoalOpsSourceType | '',
+		keyword: ''
+	}),
+	canLoad: () => canAccess.value,
+	fetchPage: async params => {
+		const result = await performanceGoalService.fetchOpsPlanPage({
+			page: params.page,
+			size: params.size,
+			periodType: params.periodType,
+			planDate: params.periodType === 'day' ? filters.planDate : undefined,
+			departmentId: scopedDepartmentId.value,
+			employeeId: planScopedEmployeeId.value,
+			sourceType: params.sourceType || undefined,
+			keyword: params.keyword || undefined
+		});
+
+		return {
+			...result,
+			list: normalizePlanList(result)
+		};
+	},
+	onError: (error: unknown) => {
+		showElementErrorFromError(error, '计划池加载失败');
+	}
+});
+const planRows = goalPlanList.rows;
+const planPageLoading = goalPlanList.loading;
+const planPagination = goalPlanList.pager;
 
 watch(
 	() => [filters.departmentId, filters.employeeId, filters.planDate],
@@ -1202,6 +1275,12 @@ watch(
 );
 
 onMounted(async () => {
+	await dict.refresh([
+		GOAL_SOURCE_TYPE_DICT_KEY,
+		GOAL_PERIOD_TYPE_DICT_KEY,
+		GOAL_PLAN_STATUS_DICT_KEY,
+		GOAL_REPORT_STATUS_DICT_KEY
+	]);
 	await ensureUserLoaded();
 	await Promise.all([loadUsers(), loadDepartments()]);
 	initializeDefaultFilters();
@@ -1227,18 +1306,14 @@ async function loadUsers() {
 				page: 1,
 				size: 500
 			}),
-		(error: any) => {
-			ElMessage.warning(error.message || '员工选项加载失败');
-		}
+		createElementWarningFromErrorHandler('员工选项加载失败')
 	);
 }
 
 async function loadDepartments() {
 	departmentOptions.value = await loadDepartmentOptions(
 		() => service.base.sys.department.list(),
-		(error: any) => {
-			ElMessage.warning(error.message || '部门选项加载失败');
-		}
+		createElementWarningFromErrorHandler('部门选项加载失败')
 	);
 }
 
@@ -1272,7 +1347,11 @@ async function loadAccessProfile() {
 		});
 		Object.assign(accessProfile, createEmptyGoalOpsAccessProfile(), result);
 
-		if (!result.isHr && Array.isArray(result.manageableDepartmentIds) && result.manageableDepartmentIds.length) {
+		if (
+			result.scopeKey !== 'company' &&
+			Array.isArray(result.manageableDepartmentIds) &&
+			result.manageableDepartmentIds.length
+		) {
 			if (!filters.departmentId || !result.manageableDepartmentIds.includes(Number(filters.departmentId))) {
 				filters.departmentId = Number(result.manageableDepartmentIds[0]);
 			}
@@ -1282,11 +1361,11 @@ async function loadAccessProfile() {
 		if (!filters.departmentId && result.departmentId) {
 			filters.departmentId = Number(result.departmentId);
 		}
-	} catch (error: any) {
+	} catch (error: unknown) {
 		Object.assign(accessProfile, createEmptyGoalOpsAccessProfile(), {
 			departmentId: requestedDepartmentId || null
 		});
-		ElMessage.error(error.message || '目标运营台权限加载失败');
+		showElementErrorFromError(error, '目标运营台权限加载失败');
 	}
 }
 
@@ -1294,14 +1373,15 @@ async function loadOverview() {
 	overviewLoading.value = true;
 
 	try {
-		overview.value = await performanceGoalService.fetchOpsOverview({
+		const request: GoalOpsOverviewQuery = {
 			planDate: filters.planDate,
 			departmentId: scopedDepartmentId.value,
 			employeeId: showEmployeeFilter.value ? filters.employeeId : undefined
-		} as any);
-	} catch (error: any) {
+		};
+		overview.value = await performanceGoalService.fetchOpsOverview(request);
+	} catch (error: unknown) {
 		overview.value = null;
-		ElMessage.error(error.message || '目标运营台总览加载失败');
+		showElementErrorFromError(error, '目标运营台总览加载失败');
 	} finally {
 		overviewLoading.value = false;
 	}
@@ -1322,9 +1402,9 @@ async function loadTodayPlans() {
 		});
 		todayPlans.value = normalizePlanList(result);
 		syncDailyDrafts();
-	} catch (error: any) {
+	} catch (error: unknown) {
 		todayPlans.value = [];
-		ElMessage.error(error.message || '今日目标加载失败');
+		showElementErrorFromError(error, '今日目标加载失败');
 	} finally {
 		todayPlansLoading.value = false;
 	}
@@ -1342,35 +1422,15 @@ async function loadTrendPlans() {
 			periodEndDate: filters.planDate
 		});
 		trendPlans.value = normalizePlanList(result);
-	} catch (error: any) {
+	} catch (error: unknown) {
 		trendPlans.value = [];
-		ElMessage.warning(error.message || '趋势数据加载失败');
+		showElementWarningFromError(error, '趋势数据加载失败');
 	}
 }
 
 async function loadPlanPage() {
-	planPageLoading.value = true;
-
-	try {
-		const result = await performanceGoalService.fetchOpsPlanPage({
-			page: planPagination.page,
-			size: planPagination.size,
-			periodType: planFilters.periodType,
-			planDate: planFilters.periodType === 'day' ? filters.planDate : undefined,
-			departmentId: scopedDepartmentId.value,
-			employeeId: planScopedEmployeeId.value,
-			sourceType: planFilters.sourceType || undefined,
-			keyword: planFilters.keyword || undefined
-		});
-		planRows.value = normalizePlanList(result);
-		planPagination.total = result.pagination?.total || 0;
-	} catch (error: any) {
-		planRows.value = [];
-		planPagination.total = 0;
-		ElMessage.error(error.message || '计划池加载失败');
-	} finally {
-		planPageLoading.value = false;
-	}
+	Object.assign(goalPlanList.filters, planFilters);
+	await goalPlanList.reload();
 }
 
 async function loadDepartmentConfig() {
@@ -1378,7 +1438,7 @@ async function loadDepartmentConfig() {
 		return;
 	}
 
-	if (!canManageDepartmentView.value && !isHrRole.value) {
+	if (!canManageDepartmentView.value && !hasCompanyGoalScope.value) {
 		Object.assign(departmentConfig, createEmptyGoalOpsDepartmentConfig(), {
 			departmentId: scopedDepartmentId.value,
 			departmentName: scopedDepartmentLabel.value
@@ -1391,15 +1451,15 @@ async function loadDepartmentConfig() {
 			departmentId: scopedDepartmentId.value
 		});
 		Object.assign(departmentConfig, createEmptyGoalOpsDepartmentConfig(), result);
-	} catch (error: any) {
-		if (canManageDepartmentView.value || isHrRole.value) {
-			ElMessage.warning(error.message || '部门配置加载失败');
+	} catch (error: unknown) {
+		if (canManageDepartmentView.value || hasCompanyGoalScope.value) {
+			showElementWarningFromError(error, '部门配置加载失败');
 		}
 	}
 }
 
 async function loadReportInfo() {
-	if (!canManageDepartmentView.value && !isHrRole.value) {
+	if (!canManageDepartmentView.value && !hasCompanyGoalScope.value) {
 		reportInfo.value = null;
 		return;
 	}
@@ -1414,13 +1474,13 @@ async function loadReportInfo() {
 			departmentId: scopedDepartmentId.value,
 			reportDate: filters.planDate
 		});
-	} catch (error: any) {
-		if (String(error.message || '').includes('日报不存在')) {
+	} catch (error: unknown) {
+		if (isMissingDailyReportError(error)) {
 			reportInfo.value = null;
 			return;
 		}
 		reportInfo.value = null;
-		ElMessage.warning(error.message || '日报信息加载失败');
+		showElementWarningFromError(error, '日报信息加载失败');
 	}
 }
 
@@ -1456,8 +1516,8 @@ async function handleSubmitMyDaily() {
 		});
 		ElMessage.success('当日结果提交成功');
 		await Promise.all([loadTodayPlans(), loadTrendPlans(), loadReportInfo()]);
-	} catch (error: any) {
-		ElMessage.error(error.message || '当日结果提交失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '当日结果提交失败');
 	} finally {
 		dailySubmitLoading.value = false;
 	}
@@ -1478,8 +1538,8 @@ async function handleSaveDepartmentConfig() {
 		});
 		Object.assign(departmentConfig, createEmptyGoalOpsDepartmentConfig(), result);
 		ElMessage.success('部门配置已保存');
-	} catch (error: any) {
-		ElMessage.error(error.message || '部门配置保存失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '部门配置保存失败');
 	} finally {
 		configSaving.value = false;
 	}
@@ -1491,30 +1551,33 @@ async function handleFinalizeDaily() {
 		return;
 	}
 
-	await ElMessageBox.confirm(
+	const confirmed = await confirmElementAction(
 		`将对 ${filters.planDate} 未填报项执行自动补零，该操作会按真实状态写入日报留痕。`,
-		'执行未填补零',
-		{
-			type: 'warning'
-		}
+		'执行未填补零'
 	);
 
-	reportActionLoading.value = 'finalize';
-
-	try {
-		const result = await performanceGoalService.finalizeOpsDailyResults({
-			departmentId: scopedDepartmentId.value,
-			planDate: filters.planDate
-		});
-		ElMessage.success(`已完成补零，共处理 ${result.autoZeroCount} 项`);
-		await Promise.all([loadOverview(), loadTodayPlans(), loadTrendPlans(), loadReportInfo()]);
-	} catch (error: any) {
-		if (error !== 'cancel') {
-			ElMessage.error(error.message || '自动补零失败');
-		}
-	} finally {
-		reportActionLoading.value = '';
+	if (!confirmed) {
+		return;
 	}
+
+	await runTrackedElementAction({
+		rowId: scopedDepartmentId.value,
+		actionType: 'finalize',
+		request: async () => {
+			const result = await performanceGoalService.finalizeOpsDailyResults({
+				departmentId: scopedDepartmentId.value!,
+				planDate: filters.planDate
+			});
+			ElMessage.success(`已完成补零，共处理 ${result.autoZeroCount} 项`);
+		},
+		errorMessage: '自动补零失败',
+		setLoading: rowId => {
+			reportActionLoading.value = rowId ? 'finalize' : '';
+		},
+		refresh: async () => {
+			await Promise.all([loadOverview(), loadTodayPlans(), loadTrendPlans(), loadReportInfo()]);
+		}
+	});
 }
 
 async function handleGenerateReport() {
@@ -1532,8 +1595,8 @@ async function handleGenerateReport() {
 		});
 		ElMessage.success('日报已生成');
 		await loadOverview();
-	} catch (error: any) {
-		ElMessage.error(error.message || '日报生成失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '日报生成失败');
 	} finally {
 		reportActionLoading.value = '';
 	}
@@ -1552,31 +1615,32 @@ async function handleReportStatusUpdate(status: GoalOpsReportStatus) {
 
 	let remark = '';
 	if (status === 'intercepted' || status === 'delayed') {
-		try {
-			const result = await ElMessageBox.prompt('请输入本次操作备注', reportStatusLabel(status), {
-				inputPlaceholder: '例如：主管暂缓发送，待补充异常说明'
-			});
-			remark = result.value;
-		} catch (error) {
+		const result = await promptElementAction('请输入本次操作备注', reportStatusLabel(status), {
+			inputPlaceholder: '例如：主管暂缓发送，待补充异常说明'
+		});
+		if (!result) {
 			return;
 		}
+		remark = result.value;
 	}
 
-	reportActionLoading.value = status;
-
-	try {
-		reportInfo.value = await performanceGoalService.updateOpsReportStatus({
-			departmentId: scopedDepartmentId.value,
-			reportDate: filters.planDate,
-			status,
-			remark
-		});
-		ElMessage.success(`日报状态已更新为${reportStatusLabel(status)}`);
-	} catch (error: any) {
-		ElMessage.error(error.message || '日报状态更新失败');
-	} finally {
-		reportActionLoading.value = '';
-	}
+	await runTrackedElementAction({
+		rowId: scopedDepartmentId.value,
+		actionType: status,
+		request: async () => {
+			reportInfo.value = await performanceGoalService.updateOpsReportStatus({
+				departmentId: scopedDepartmentId.value!,
+				reportDate: filters.planDate,
+				status,
+				remark
+			});
+		},
+		successMessage: `日报状态已更新为${reportStatusLabel(status)}`,
+		errorMessage: '日报状态更新失败',
+		setLoading: rowId => {
+			reportActionLoading.value = rowId ? status : '';
+		}
+	});
 }
 
 function openCreatePlan(sourceType: GoalOpsSourceType) {
@@ -1613,8 +1677,8 @@ async function openEditPlan(row: GoalOpsPlanRecord) {
 		editingPlanId.value = Number(detail.id || 0);
 		Object.assign(planForm, createEmptyGoalOpsPlan(currentUserId.value), detail);
 		planDialogVisible.value = true;
-	} catch (error: any) {
-		ElMessage.error(error.message || '目标计划详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '目标计划详情加载失败');
 	}
 }
 
@@ -1635,7 +1699,7 @@ async function handleSavePlan() {
 		planForm.planDate = planForm.periodStartDate;
 	}
 
-	if (planForm.sourceType === 'personal' && !isHrRole.value && currentUserId.value) {
+	if (planForm.sourceType === 'personal' && !hasCompanyGoalScope.value && currentUserId.value) {
 		planForm.employeeId = currentUserId.value;
 	}
 
@@ -1650,8 +1714,8 @@ async function handleSavePlan() {
 		ElMessage.success('目标计划已保存');
 		planDialogVisible.value = false;
 		await Promise.all([loadPlanPage(), loadTodayPlans(), loadOverview(), loadTrendPlans()]);
-	} catch (error: any) {
-		ElMessage.error(error.message || '目标计划保存失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '目标计划保存失败');
 	} finally {
 		planSubmitLoading.value = false;
 	}
@@ -1662,40 +1726,44 @@ async function handleDeletePlan(row: GoalOpsPlanRecord) {
 		return;
 	}
 
-	await ElMessageBox.confirm(`确认删除目标“${row.title}”吗？`, '删除目标计划', {
-		type: 'warning'
-	});
+	const confirmed = await confirmElementAction(`确认删除目标“${row.title}”吗？`, '删除目标计划');
 
-	try {
-		await performanceGoalService.deleteOpsPlan({
-			ids: [Number(row.id)]
-		});
-		ElMessage.success('目标计划已删除');
-		await Promise.all([loadPlanPage(), loadTodayPlans(), loadOverview(), loadTrendPlans()]);
-	} catch (error: any) {
-		if (error !== 'cancel') {
-			ElMessage.error(error.message || '目标计划删除失败');
-		}
+	if (!confirmed) {
+		return;
 	}
+
+	await runTrackedElementAction({
+		rowId: Number(row.id),
+		actionType: 'deletePlan',
+		request: () =>
+			performanceGoalService.deleteOpsPlan({
+				ids: [Number(row.id)]
+			}),
+		successMessage: '目标计划已删除',
+		errorMessage: '目标计划删除失败',
+		refresh: async () => {
+			await Promise.all([loadPlanPage(), loadTodayPlans(), loadOverview(), loadTrendPlans()]);
+		}
+	});
 }
 
 function canDeletePlan(row: GoalOpsPlanRecord) {
 	if (row.sourceType === 'public') {
-		return canManageDepartmentView.value || isHrRole.value;
+		return canManageDepartmentView.value || hasCompanyGoalScope.value;
 	}
 	return (
 		(canCreatePersonalPlan.value && Number(row.employeeId) === Number(currentUserId.value || 0)) ||
-		isHrRole.value
+		hasCompanyGoalScope.value
 	);
 }
 
 function canEditPlan(row: GoalOpsPlanRecord) {
 	if (row.sourceType === 'public') {
-		return canManageDepartmentView.value || isHrRole.value;
+		return canManageDepartmentView.value || hasCompanyGoalScope.value;
 	}
 	return (
 		(canCreatePersonalPlan.value && Number(row.employeeId) === Number(currentUserId.value || 0)) ||
-		isHrRole.value
+		hasCompanyGoalScope.value
 	);
 }
 
@@ -1716,13 +1784,12 @@ function handlePlanTypeChange() {
 }
 
 async function handlePlanFilterChange() {
-	planPagination.page = 1;
-	await loadPlanPage();
+	Object.assign(goalPlanList.filters, planFilters);
+	await goalPlanList.search();
 }
 
 async function handlePlanPageChange(page: number) {
-	planPagination.page = page;
-	await loadPlanPage();
+	await goalPlanList.goToPage(page);
 }
 
 function normalizePlanList(result: GoalOpsPlanPageResult) {
@@ -1734,8 +1801,8 @@ function normalizePlanList(result: GoalOpsPlanPageResult) {
 	}));
 }
 
-function buildTrendRows(list: GoalOpsPlanRecord[]): TrendRow[] {
-	const grouped = new Map<string, TrendRow>();
+function buildTrendRows(list: GoalOpsPlanRecord[]): GoalOpsTrendRow[] {
+	const grouped = new Map<string, GoalOpsTrendRow>();
 
 	for (const item of list) {
 		const planDate = String(item.planDate || '');
@@ -1777,69 +1844,27 @@ function buildTrendRows(list: GoalOpsPlanRecord[]): TrendRow[] {
 }
 
 function sourceTypeLabel(value?: GoalOpsSourceType) {
-	return value === 'personal' ? '个人补充' : '公共目标';
+	return dict.getLabel(GOAL_SOURCE_TYPE_DICT_KEY, value) || value || '-';
 }
 
 function periodTypeLabel(value?: GoalOpsPeriodType) {
-	if (value === 'week') {
-		return '周';
-	}
-	if (value === 'month') {
-		return '月';
-	}
-	return '日';
+	return dict.getLabel(GOAL_PERIOD_TYPE_DICT_KEY, value) || value || '-';
 }
 
 function planStatusLabel(value?: GoalOpsPlanStatus) {
-	if (value === 'submitted') {
-		return '已提交';
-	}
-	if (value === 'auto_zero') {
-		return '自动补零';
-	}
-	return '待填报';
+	return dict.getLabel(GOAL_PLAN_STATUS_DICT_KEY, value) || value || '-';
 }
 
 function planStatusTagType(value?: GoalOpsPlanStatus) {
-	if (value === 'submitted') {
-		return 'success';
-	}
-	if (value === 'auto_zero') {
-		return 'warning';
-	}
-	return 'info';
+	return dict.getMeta(GOAL_PLAN_STATUS_DICT_KEY, value)?.tone || 'info';
 }
 
 function reportStatusLabel(value?: GoalOpsReportStatus) {
-	if (value === 'sent') {
-		return '已发送';
-	}
-	if (value === 'intercepted') {
-		return '已拦截';
-	}
-	if (value === 'delayed') {
-		return '已延期';
-	}
-	if (value === 'generated') {
-		return '已生成';
-	}
-	return '未生成';
+	return dict.getLabel(GOAL_REPORT_STATUS_DICT_KEY, value) || value || '未生成';
 }
 
 function reportStatusTagType(value?: GoalOpsReportStatus) {
-	if (value === 'sent') {
-		return 'success';
-	}
-	if (value === 'intercepted') {
-		return 'danger';
-	}
-	if (value === 'delayed') {
-		return 'warning';
-	}
-	if (value === 'generated') {
-		return 'info';
-	}
-	return 'info';
+	return dict.getMeta(GOAL_REPORT_STATUS_DICT_KEY, value)?.tone || 'info';
 }
 
 function formatPercent(value: number) {
@@ -1850,9 +1875,13 @@ function formatNumber(value: number) {
 	return Number(value || 0).toFixed(2);
 }
 
-function normalizeNumber(value: any) {
+function normalizeNumber(value: unknown) {
 	const normalized = Number(value || 0);
 	return Number.isFinite(normalized) && normalized > 0 ? normalized : undefined;
+}
+
+function isMissingDailyReportError(error: unknown) {
+	return resolveErrorMessage(error, '').includes('日报不存在');
 }
 
 function formatDate(value: Date) {
@@ -1871,23 +1900,23 @@ function offsetDate(baseDate: string, offset: number) {
 
 <style scoped lang="scss">
 .goal-ops-page {
-	--goal-ops-bg: linear-gradient(180deg, #fffaf3 0%, #f6f8ff 100%);
-	--goal-ops-panel: rgba(255, 255, 255, 0.92);
-	--goal-ops-line: rgba(25, 48, 89, 0.08);
-	--goal-ops-text: #1f2f43;
-	--goal-ops-muted: #6f7b8a;
-	--goal-ops-accent: #e08a24;
-	--goal-ops-accent-soft: rgba(224, 138, 36, 0.12);
-	--goal-ops-accent-text: #8a5315;
-	--goal-ops-primary-bg: linear-gradient(135deg, #173150 0%, #244b77 100%);
-	--goal-ops-primary-text: #fff;
-	--goal-ops-primary-muted: rgba(255, 255, 255, 0.8);
-	--goal-ops-shadow: 0 20px 48px rgba(27, 45, 82, 0.08);
+	--goal-ops-bg: var(--app-surface-card);
+	--goal-ops-panel: var(--app-surface-muted);
+	--goal-ops-line: var(--app-border-soft);
+	--goal-ops-text: var(--app-text-primary);
+	--goal-ops-muted: var(--app-text-secondary);
+	--goal-ops-accent: var(--app-accent-warm);
+	--goal-ops-accent-soft: var(--app-accent-warm-soft);
+	--goal-ops-accent-text: var(--app-accent-warm-text);
+	--goal-ops-primary-bg: var(--app-surface-primary);
+	--goal-ops-primary-text: var(--app-text-on-primary);
+	--goal-ops-primary-muted: var(--app-text-on-primary-muted);
+	--goal-ops-shadow: var(--app-shadow-surface);
 
 	display: flex;
 	flex-direction: column;
-	gap: 16px;
-	padding-bottom: 24px;
+	gap: var(--app-space-4);
+	padding-bottom: var(--app-space-6);
 	color: var(--goal-ops-text);
 }
 
@@ -1911,7 +1940,7 @@ function offsetDate(baseDate: string, offset: number) {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	gap: 12px;
+	gap: var(--app-space-3);
 	flex-wrap: wrap;
 }
 
@@ -1932,7 +1961,7 @@ function offsetDate(baseDate: string, offset: number) {
 .goal-ops-page__eyebrow {
 	margin-bottom: 8px;
 	color: var(--goal-ops-accent);
-	font-size: 12px;
+	font-size: var(--app-font-size-caption);
 	font-weight: 700;
 	letter-spacing: 0.12em;
 	text-transform: uppercase;
@@ -1942,7 +1971,7 @@ function offsetDate(baseDate: string, offset: number) {
 .goal-ops-page__toolbar-right {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 12px;
+	gap: var(--app-space-3);
 }
 
 .goal-ops-page__summary {
@@ -1991,7 +2020,7 @@ function offsetDate(baseDate: string, offset: number) {
 .goal-ops-page__stack {
 	display: flex;
 	flex-direction: column;
-	gap: 16px;
+	gap: var(--app-space-4);
 	height: 100%;
 }
 
@@ -2007,13 +2036,13 @@ function offsetDate(baseDate: string, offset: number) {
 .goal-ops-page__report-kpis {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: 12px;
-	margin-bottom: 16px;
+	gap: var(--app-space-3);
+	margin-bottom: var(--app-space-4);
 }
 
 .goal-ops-page__summary-grid {
 	grid-template-columns: repeat(2, minmax(0, 1fr));
-	margin-top: 16px;
+	margin-top: var(--app-space-4);
 	margin-bottom: 0;
 }
 
@@ -2022,8 +2051,8 @@ function offsetDate(baseDate: string, offset: number) {
 .goal-ops-page__report-summary > div,
 .goal-ops-page__report-kpis > div {
 	padding: 12px 14px;
-	border-radius: 14px;
-	background: rgba(255, 255, 255, 0.72);
+	border-radius: var(--app-radius-md);
+	background: var(--app-surface-card);
 	border: 1px solid var(--goal-ops-line);
 }
 
@@ -2098,21 +2127,6 @@ function offsetDate(baseDate: string, offset: number) {
 	background: var(--goal-ops-accent-soft);
 	color: var(--goal-ops-accent-text);
 	line-height: 1.6;
-}
-
-:global(html.dark .goal-ops-page) {
-	--goal-ops-bg: linear-gradient(180deg, rgba(38, 31, 20, 0.96) 0%, rgba(18, 24, 37, 0.98) 100%);
-	--goal-ops-panel: rgba(24, 30, 44, 0.92);
-	--goal-ops-line: rgba(126, 145, 186, 0.18);
-	--goal-ops-text: #e8eefc;
-	--goal-ops-muted: #a7b3c8;
-	--goal-ops-accent: #f0ab4d;
-	--goal-ops-accent-soft: rgba(240, 171, 77, 0.18);
-	--goal-ops-accent-text: #ffd9a8;
-	--goal-ops-primary-bg: linear-gradient(135deg, #25466d 0%, #37659d 100%);
-	--goal-ops-primary-text: #f4f8ff;
-	--goal-ops-primary-muted: rgba(244, 248, 255, 0.82);
-	--goal-ops-shadow: 0 20px 48px rgba(0, 0, 0, 0.32);
 }
 
 @media (max-width: 1200px) {

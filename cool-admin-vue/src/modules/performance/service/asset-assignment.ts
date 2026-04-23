@@ -4,60 +4,82 @@
  * 不负责资产台账主数据维护或其他子单据流程。
  */
 import { BaseService } from '/@/cool';
-import type { AssetAssignmentPageResult, AssetAssignmentRecord } from '../types';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeAssetAssignmentPageResult,
+	decodeAssetAssignmentRecord
+} from './asset-assignment-contract';
+import type {
+	AssetAssignmentCreatePayload,
+	AssetAssignmentMarkLostPayload,
+	AssetAssignmentPageQuery,
+	AssetAssignmentPageResult,
+	AssetAssignmentRecord,
+	AssetAssignmentRemovePayload,
+	AssetAssignmentReturnPayload,
+	AssetAssignmentUpdatePayload
+} from '../types';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 
 export default class PerformanceAssetAssignmentService extends BaseService {
 	permission = {
-		page: 'performance:assetAssignment:page',
-		add: 'performance:assetAssignment:add',
-		update: 'performance:assetAssignment:update',
-		return: 'performance:assetAssignment:return',
-		markLost: 'performance:assetAssignment:markLost',
-		delete: 'performance:assetAssignment:delete'
+		page: PERMISSIONS.performance.assetAssignment.page,
+		add: PERMISSIONS.performance.assetAssignment.add,
+		update: PERMISSIONS.performance.assetAssignment.update,
+		return: PERMISSIONS.performance.assetAssignment.return,
+		markLost: PERMISSIONS.performance.assetAssignment.markLost,
+		delete: PERMISSIONS.performance.assetAssignment.delete
 	};
 
 	constructor() {
 		super('admin/performance/assetAssignment');
 	}
 
-	fetchPage(data: {
-		page: number;
-		size: number;
-		keyword?: string;
-		status?: AssetAssignmentRecord['status'];
-		assetId?: number;
-		assigneeId?: number;
-		departmentId?: number;
-	}) {
-		return super.page(data) as unknown as Promise<AssetAssignmentPageResult>;
+	fetchPage(data: AssetAssignmentPageQuery) {
+		return asPerformanceServicePromise<AssetAssignmentPageResult>(
+			super.page(data),
+			decodeAssetAssignmentPageResult
+		);
 	}
 
-	createAssignment(data: Partial<AssetAssignmentRecord>) {
-		return super.add(data) as unknown as Promise<AssetAssignmentRecord>;
+	createAssignment(data: AssetAssignmentCreatePayload) {
+		return asPerformanceServicePromise<AssetAssignmentRecord>(
+			super.add(data),
+			decodeAssetAssignmentRecord
+		);
 	}
 
-	updateAssignment(data: Partial<AssetAssignmentRecord> & { id: number }) {
-		return super.update(data) as unknown as Promise<AssetAssignmentRecord>;
+	updateAssignment(data: AssetAssignmentUpdatePayload) {
+		return asPerformanceServicePromise<AssetAssignmentRecord>(
+			super.update(data),
+			decodeAssetAssignmentRecord
+		);
 	}
 
-	returnAsset(data: { id: number; actualReturnDate?: string; returnRemark?: string }) {
-		return this.request({
-			url: '/return',
-			method: 'POST',
-			data
-		}) as unknown as Promise<AssetAssignmentRecord>;
+	returnAsset(data: AssetAssignmentReturnPayload) {
+		return asPerformanceServicePromise<AssetAssignmentRecord>(
+			this.request({
+				url: '/return',
+				method: 'POST',
+				data
+			}),
+			decodeAssetAssignmentRecord
+		);
 	}
 
-	markLost(data: { id: number; returnRemark?: string }) {
-		return this.request({
-			url: '/markLost',
-			method: 'POST',
-			data
-		}) as unknown as Promise<AssetAssignmentRecord>;
+	markLost(data: AssetAssignmentMarkLostPayload) {
+		return asPerformanceServicePromise<AssetAssignmentRecord>(
+			this.request({
+				url: '/markLost',
+				method: 'POST',
+				data
+			}),
+			decodeAssetAssignmentRecord
+		);
 	}
 
-	removeAssignment(data: { ids: number[] }) {
-		return super.delete(data) as unknown as Promise<void>;
+	removeAssignment(data: AssetAssignmentRemovePayload) {
+		return asPerformanceServicePromise<void>(super.delete(data));
 	}
 }
 

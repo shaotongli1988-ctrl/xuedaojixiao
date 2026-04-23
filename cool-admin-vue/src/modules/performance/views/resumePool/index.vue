@@ -531,15 +531,25 @@
 
 <script lang="ts" setup>
 defineOptions({
-	name: 'performance-resumePool'
+	name: 'performance-resume-pool'
 });
 
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
+import { useDict } from '/$/dict';
 import { service } from '/@/cool';
 import { exportJsonToExcel } from '/@/plugins/excel/utils';
 import { useRoute, useRouter } from 'vue-router';
+import { useListPage } from '../../composables/use-list-page.js';
+import {
+	confirmElementAction,
+	runTrackedElementAction
+} from '../shared/action-feedback';
+import {
+	createElementWarningFromErrorHandler,
+	showElementErrorFromError
+} from '../shared/error-message';
 import { loadDepartmentOptions } from '../../utils/lookup-options.js';
 import { performanceResumePoolService } from '../../service/resumePool';
 import {
@@ -548,26 +558,36 @@ import {
 	normalizeQueryNumber
 } from '../../utils/route-preset.js';
 import {
+	createEmptyResumePool,
+	normalizeResumePoolDomainRecord,
+	type DepartmentOption,
+	type ResumePoolSaveRequest,
 	type ResumePoolAttachmentSummary,
+	type ResumePoolExportRow,
 	type ResumePoolRecord,
 	type ResumePoolSourceType,
 	type ResumePoolStatus
 } from '../../types';
 
-interface DepartmentOption {
-	id: number;
-	label: string;
-}
+const RESUME_POOL_STATUS_DICT_KEY = 'performance.resumePool.status';
+const RESUME_POOL_SOURCE_TYPE_DICT_KEY = 'performance.resumePool.sourceType';
 
-interface SpaceFileItem {
+interface SpaceSelectionFile {
 	id: number;
 	name?: string;
 	url?: string;
 }
 
-const rows = ref<ResumePoolRecord[]>([]);
+interface SpaceSelectorRef {
+	open: (options: {
+		title: string;
+		limit: number;
+		multiple: boolean;
+	}) => void;
+}
+
+const { dict } = useDict();
 const departmentOptions = ref<DepartmentOption[]>([]);
-const tableLoading = ref(false);
 const submitLoading = ref(false);
 const importLoading = ref(false);
 const exportLoading = ref(false);
@@ -576,28 +596,15 @@ const formVisible = ref(false);
 const detailRecord = ref<ResumePoolRecord | null>(null);
 const editingRecord = ref<ResumePoolRecord | null>(null);
 const formRef = ref<FormInstance>();
-const importSpaceRef = ref<any>();
-const attachmentSpaceRef = ref<any>();
+const importSpaceRef = ref<SpaceSelectorRef>();
+const attachmentSpaceRef = ref<SpaceSelectorRef>();
 const actionLoadingId = ref<number | null>(null);
 const actionLoadingType = ref<'convert' | 'interview' | null>(null);
 const pendingAttachmentResumeId = ref<number | null>(null);
 const route = useRoute();
 const router = useRouter();
 
-const filters = reactive({
-	keyword: '',
-	targetDepartmentId: undefined as number | undefined,
-	status: '' as ResumePoolStatus | '',
-	sourceType: '' as ResumePoolSourceType | ''
-});
-
-const pagination = reactive({
-	page: 1,
-	size: 10,
-	total: 0
-});
-
-const form = reactive<ResumePoolRecord>(createDefaultResumePoolRecord());
+const form = reactive<ResumePoolRecord>(createEmptyResumePool());
 
 const rules: FormRules = {
 	candidateName: [
@@ -613,19 +620,19 @@ const rules: FormRules = {
 	resumeText: [{ required: true, message: '请输入简历正文', trigger: 'blur' }]
 };
 
-const statusOptions: Array<{ label: string; value: ResumePoolStatus }> = [
-	{ label: '新建', value: 'new' },
-	{ label: '筛选中', value: 'screening' },
-	{ label: '面试中', value: 'interviewing' },
-	{ label: '已归档', value: 'archived' }
-];
+const statusOptions = computed<Array<{ label: string; value: ResumePoolStatus }>>(() =>
+	dict.get(RESUME_POOL_STATUS_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as ResumePoolStatus
+	}))
+);
 
-const sourceTypeOptions: Array<{ label: string; value: ResumePoolSourceType }> = [
-	{ label: '手工录入', value: 'manual' },
-	{ label: '附件解析', value: 'attachment' },
-	{ label: '外部来源', value: 'external' },
-	{ label: '内推', value: 'referral' }
-];
+const sourceTypeOptions = computed<Array<{ label: string; value: ResumePoolSourceType }>>(() =>
+	dict.get(RESUME_POOL_SOURCE_TYPE_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as ResumePoolSourceType
+	}))
+);
 
 const canAccess = computed(() => checkPerm(performanceResumePoolService.permission.page));
 const showInfoButton = computed(() => checkPerm(performanceResumePoolService.permission.info));
@@ -635,6 +642,37 @@ const showExportButton = computed(() => checkPerm(performanceResumePoolService.p
 const showDownloadAttachmentButton = computed(() =>
 	checkPerm(performanceResumePoolService.permission.downloadAttachment)
 );
+const resumePoolList = useListPage({
+	createFilters: () => ({
+		keyword: '',
+		targetDepartmentId: undefined as number | undefined,
+		status: '' as ResumePoolStatus | '',
+		sourceType: '' as ResumePoolSourceType | ''
+	}),
+	canLoad: () => canAccess.value,
+	fetchPage: async params => {
+		const result = await performanceResumePoolService.fetchPage({
+			page: params.page,
+			size: params.size,
+			keyword: params.keyword || undefined,
+			targetDepartmentId: params.targetDepartmentId || undefined,
+			status: params.status || undefined,
+			sourceType: params.sourceType || undefined
+		});
+
+		return {
+			...result,
+			list: (result.list || []).map(item => normalizeResumePoolDomainRecord(item))
+		};
+	},
+	onError: (error: unknown) => {
+		showElementErrorFromError(error, '简历列表加载失败');
+	}
+});
+const rows = resumePoolList.rows;
+const tableLoading = resumePoolList.loading;
+const filters = resumePoolList.filters;
+const pagination = resumePoolList.pager;
 const targetDepartmentIdModel = computed<number | undefined>({
 	get: () => filters.targetDepartmentId,
 	set: value => {
@@ -659,70 +697,44 @@ const canUploadAttachmentInForm = computed(() => {
 });
 
 onMounted(async () => {
+	await dict.refresh([RESUME_POOL_STATUS_DICT_KEY, RESUME_POOL_SOURCE_TYPE_DICT_KEY]);
 	await loadDepartments();
 	await refresh();
 	await consumeRoutePrefill();
+	await consumeRouteOpenDetail();
 });
 
 watch(
 	() => route.fullPath,
 	() => {
 		void consumeRoutePrefill();
+		void consumeRouteOpenDetail();
 	}
 );
 
 async function loadDepartments() {
 	departmentOptions.value = await loadDepartmentOptions(
 		() => service.base.sys.department.list(),
-		(error: any) => {
-			ElMessage.warning(error.message || '部门选项加载失败');
-		}
+		createElementWarningFromErrorHandler('部门选项加载失败')
 	);
 }
 
 async function refresh() {
-	if (!canAccess.value) {
-		return;
-	}
-
-	tableLoading.value = true;
-
-	try {
-		const result = await performanceResumePoolService.fetchPage({
-			page: pagination.page,
-			size: pagination.size,
-			keyword: filters.keyword || undefined,
-			targetDepartmentId: filters.targetDepartmentId || undefined,
-			status: filters.status || undefined,
-			sourceType: filters.sourceType || undefined
-		});
-
-		rows.value = (result.list || []).map(item => normalizeResumeRecord(item));
-		pagination.total = result.pagination?.total || 0;
-	} catch (error: any) {
-		ElMessage.error(error.message || '简历列表加载失败');
-	} finally {
-		tableLoading.value = false;
-	}
+	await resumePoolList.reload();
 }
 
 function handleSearch() {
-	pagination.page = 1;
-	refresh();
+	void resumePoolList.search();
 }
 
 function handleReset() {
-	filters.keyword = '';
-	filters.targetDepartmentId = undefined;
-	filters.status = '';
-	filters.sourceType = '';
-	pagination.page = 1;
-	refresh();
+	void resumePoolList.reset({
+		targetDepartmentId: undefined
+	});
 }
 
 function changePage(page: number) {
-	pagination.page = page;
-	refresh();
+	void resumePoolList.goToPage(page);
 }
 
 function openCreate() {
@@ -742,7 +754,7 @@ async function openEdit(row: ResumePoolRecord) {
 		}
 
 		editingRecord.value = record;
-		Object.assign(form, createDefaultResumePoolRecord(), {
+		Object.assign(form, createEmptyResumePool(), {
 			...record,
 			targetDepartmentId: record.targetDepartmentId ?? undefined,
 			targetPosition: record.targetPosition || '',
@@ -770,15 +782,15 @@ async function openDetail(row: ResumePoolRecord) {
 
 async function loadDetail(id: number, next: (record: ResumePoolRecord) => void) {
 	try {
-		const record = normalizeResumeRecord(
+		const record = normalizeResumePoolDomainRecord(
 			await performanceResumePoolService.fetchInfo({ id })
 		);
 		next({
 			...record,
 			attachmentSummaryList: record.attachmentSummaryList || []
 		});
-	} catch (error: any) {
-		ElMessage.error(error.message || '简历详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '简历详情加载失败');
 	}
 }
 
@@ -793,9 +805,10 @@ async function submitForm() {
 	submitLoading.value = true;
 
 	try {
-		const payload: Partial<ResumePoolRecord> = {
+		const targetDepartmentId = Number(form.targetDepartmentId);
+		const payload: ResumePoolSaveRequest = {
 			candidateName: form.candidateName.trim(),
-			targetDepartmentId: form.targetDepartmentId,
+			targetDepartmentId,
 			targetPosition: normalizeOptionalText(form.targetPosition),
 			phone: form.phone.trim(),
 			email: normalizeOptionalText(form.email),
@@ -804,7 +817,6 @@ async function submitForm() {
 			sourceRemark: normalizeOptionalText(form.sourceRemark),
 			recruitPlanId: form.recruitPlanId || undefined,
 			jobStandardId: form.jobStandardId || undefined,
-			sourceSnapshot: form.sourceSnapshot || undefined,
 			externalLink:
 				form.sourceType === 'external' ? normalizeOptionalText(form.externalLink) : undefined,
 			attachmentIdList: form.attachmentIdList?.length ? form.attachmentIdList : undefined,
@@ -823,8 +835,8 @@ async function submitForm() {
 		ElMessage.success('保存成功');
 		formVisible.value = false;
 		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '保存失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '保存失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -838,7 +850,7 @@ function openImportSelector() {
 	});
 }
 
-async function handleImportFileSelected(list: SpaceFileItem[]) {
+async function handleImportFileSelected(list: SpaceSelectionFile[]) {
 	const fileId = Number(list?.[0]?.id);
 
 	if (!fileId) {
@@ -853,8 +865,8 @@ async function handleImportFileSelected(list: SpaceFileItem[]) {
 		ElMessage.success('导入成功');
 		pagination.page = 1;
 		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '导入失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '导入失败');
 	} finally {
 		importLoading.value = false;
 	}
@@ -870,16 +882,17 @@ async function handleExport() {
 			status: filters.status || undefined,
 			sourceType: filters.sourceType || undefined
 		});
+		const responseData = toRecord(response);
 
 		if (Array.isArray(response)) {
 			downloadExportAsExcel(response);
 			return;
 		}
 
-		const list = Array.isArray(response?.list)
-			? response.list
-			: Array.isArray(response?.data)
-				? response.data
+		const list = Array.isArray(responseData?.list)
+			? responseData.list
+			: Array.isArray(responseData?.data)
+				? responseData.data
 				: null;
 
 		if (list) {
@@ -887,7 +900,7 @@ async function handleExport() {
 			return;
 		}
 
-		const downloadUrl = extractDownloadUrl(response);
+		const downloadUrl = extractDownloadUrl(responseData);
 		if (downloadUrl) {
 			openUrl(downloadUrl);
 			ElMessage.success('导出任务已触发');
@@ -895,14 +908,14 @@ async function handleExport() {
 		}
 
 		ElMessage.success('导出请求已提交');
-	} catch (error: any) {
-		ElMessage.error(error.message || '导出失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '导出失败');
 	} finally {
 		exportLoading.value = false;
 	}
 }
 
-function downloadExportAsExcel(list: ResumePoolRecord[]) {
+function downloadExportAsExcel(list: ResumePoolExportRow[]) {
 	exportJsonToExcel({
 		header: [
 			'候选人',
@@ -954,7 +967,7 @@ function openAttachmentSelectorFromForm() {
 	openAttachmentSelector(editingRecord.value);
 }
 
-async function handleAttachmentFileSelected(list: SpaceFileItem[]) {
+async function handleAttachmentFileSelected(list: SpaceSelectionFile[]) {
 	const resumeId = pendingAttachmentResumeId.value;
 	const fileId = Number(list?.[0]?.id);
 	pendingAttachmentResumeId.value = null;
@@ -976,8 +989,8 @@ async function handleAttachmentFileSelected(list: SpaceFileItem[]) {
 		ElMessage.success('附件上传成功');
 		await refresh();
 		await refreshDialogRecord(resumeId);
-	} catch (error: any) {
-		ElMessage.error(error.message || '附件上传失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '附件上传失败');
 	}
 }
 
@@ -1002,8 +1015,8 @@ async function handleDownloadAttachment(
 		}
 
 		ElMessage.success('下载请求已提交');
-	} catch (error: any) {
-		ElMessage.error(error.message || '附件下载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '附件下载失败');
 	}
 }
 
@@ -1012,28 +1025,30 @@ async function handleConvertToTalentAsset(row: ResumePoolRecord) {
 		return;
 	}
 
-	await ElMessageBox.confirm(
+	const rowId = row.id;
+
+	const confirmed = await confirmElementAction(
 		`确认将「${row.candidateName}」转为人才资产吗？`,
-		'转人才资产确认',
-		{
-			type: 'warning'
-		}
+		'转人才资产确认'
 	);
 
-	actionLoadingId.value = row.id;
-	actionLoadingType.value = 'convert';
-
-	try {
-		await performanceResumePoolService.convertToTalentAsset({ id: row.id });
-		ElMessage.success('已发起转人才资产');
-		await refresh();
-		await refreshDialogRecord(row.id);
-	} catch (error: any) {
-		ElMessage.error(error.message || '转人才资产失败');
-	} finally {
-		actionLoadingId.value = null;
-		actionLoadingType.value = null;
+	if (!confirmed) {
+		return;
 	}
+
+	await runTrackedElementAction<'convert' | 'interview'>({
+		rowId,
+		actionType: 'convert',
+		request: () => performanceResumePoolService.convertToTalentAsset({ id: rowId }),
+		successMessage: '已发起转人才资产',
+		errorMessage: '转人才资产失败',
+		setLoading: (rowId, actionType) => {
+			actionLoadingId.value = rowId;
+			actionLoadingType.value = actionType;
+		},
+		onSuccess: () => refreshDialogRecord(rowId),
+		refresh
+	});
 }
 
 async function handleCreateInterview(row: ResumePoolRecord) {
@@ -1041,31 +1056,41 @@ async function handleCreateInterview(row: ResumePoolRecord) {
 		return;
 	}
 
-	await ElMessageBox.confirm(`确认前往面试页并为「${row.candidateName}」预置面试信息吗？`, '发起面试确认', {
-		type: 'warning'
-	});
+	const rowId = row.id;
 
-	actionLoadingId.value = row.id;
-	actionLoadingType.value = 'interview';
+	const confirmed = await confirmElementAction(
+		`确认直接为「${row.candidateName}」创建面试记录吗？`,
+		'发起面试确认'
+	);
 
-	try {
-		await router.push({
-			path: '/performance/interview',
-			query: {
-				openCreate: '1',
-				resumePoolId: String(row.id),
-				recruitPlanId: row.recruitPlanId ? String(row.recruitPlanId) : undefined,
-				candidateName: row.candidateName || undefined,
-				targetDepartmentId: row.targetDepartmentId ? String(row.targetDepartmentId) : undefined,
-				targetPosition: row.targetPosition || undefined
-			}
-		});
-	} catch (error: any) {
-		ElMessage.error(error.message || '面试跳转失败');
-	} finally {
-		actionLoadingId.value = null;
-		actionLoadingType.value = null;
+	if (!confirmed) {
+		return;
 	}
+
+	await runTrackedElementAction<'convert' | 'interview'>({
+		rowId,
+		actionType: 'interview',
+		request: async () => {
+			const result = await performanceResumePoolService.createInterview({ id: rowId });
+			const interviewId = Number(result?.interviewId || 0);
+			if (!interviewId) {
+				throw new Error('面试创建成功但未返回 interviewId');
+			}
+			await router.push({
+				path: '/performance/interview',
+				query: {
+					openDetail: '1',
+					interviewId: String(interviewId)
+				}
+			});
+		},
+		successMessage: '面试已创建',
+		errorMessage: '发起面试失败',
+		setLoading: (rowId, actionType) => {
+			actionLoadingId.value = rowId;
+			actionLoadingType.value = actionType;
+		}
+	});
 }
 
 async function refreshDialogRecord(id: number) {
@@ -1078,7 +1103,7 @@ async function refreshDialogRecord(id: number) {
 	if (formVisible.value && editingRecord.value?.id === id) {
 		await loadDetail(id, record => {
 			editingRecord.value = record;
-			Object.assign(form, createDefaultResumePoolRecord(), {
+			Object.assign(form, createEmptyResumePool(), {
 				...record,
 				targetDepartmentId: record.targetDepartmentId ?? undefined,
 				targetPosition: record.targetPosition || '',
@@ -1119,28 +1144,15 @@ function canCreateInterview(row: ResumePoolRecord) {
 }
 
 function statusLabel(status?: ResumePoolStatus | '') {
-	const item = statusOptions.find(option => option.value === status);
-	return item?.label || status || '-';
+	return dict.getLabel(RESUME_POOL_STATUS_DICT_KEY, status) || status || '-';
 }
 
 function statusTagType(status?: ResumePoolStatus | '') {
-	switch (status) {
-		case 'new':
-			return 'info';
-		case 'screening':
-			return 'warning';
-		case 'interviewing':
-			return 'success';
-		case 'archived':
-			return undefined;
-		default:
-			return 'info';
-	}
+	return dict.getMeta(RESUME_POOL_STATUS_DICT_KEY, status)?.tone;
 }
 
 function sourceTypeLabel(sourceType?: ResumePoolSourceType | null) {
-	const item = sourceTypeOptions.find(option => option.value === sourceType);
-	return item?.label || sourceType || '-';
+	return dict.getLabel(RESUME_POOL_SOURCE_TYPE_DICT_KEY, sourceType) || sourceType || '-';
 }
 
 function departmentLabel(id?: number | null) {
@@ -1195,6 +1207,29 @@ async function consumeRoutePrefill() {
 	});
 }
 
+async function consumeRouteOpenDetail() {
+	await consumeRoutePreset({
+		route,
+		router,
+		keys: ['openDetail', 'resumePoolId'],
+		parse: query => ({
+			shouldOpenDetail: firstQueryValue(query.openDetail) === '1',
+			resumePoolId: normalizeQueryNumber(query.resumePoolId)
+		}),
+		shouldConsume: payload => Boolean(payload.shouldOpenDetail && payload.resumePoolId),
+		consume: async payload => {
+			if (!showInfoButton.value || !payload.resumePoolId) {
+				return;
+			}
+
+			await loadDetail(payload.resumePoolId, record => {
+				detailRecord.value = record;
+				detailVisible.value = true;
+			});
+		}
+	});
+}
+
 function openCreateWithPrefill(prefill?: {
 	targetDepartmentId?: number;
 	targetPosition?: string;
@@ -1207,7 +1242,7 @@ function openCreateWithPrefill(prefill?: {
 }) {
 	const sourceSummary = buildResumeSourceSummary(prefill);
 	editingRecord.value = null;
-	Object.assign(form, createDefaultResumePoolRecord(), {
+	Object.assign(form, createEmptyResumePool(), {
 		targetDepartmentId: prefill?.targetDepartmentId,
 		targetPosition: prefill?.targetPosition || '',
 		recruitPlanId: prefill?.recruitPlanId,
@@ -1240,30 +1275,6 @@ function openCreateWithPrefill(prefill?: {
 	nextTick(() => {
 		formRef.value?.clearValidate();
 	});
-}
-
-function normalizeResumeRecord(record: any): ResumePoolRecord {
-	const sourceSnapshot =
-		(record?.sourceSnapshot && typeof record.sourceSnapshot === 'object'
-			? record.sourceSnapshot
-			: record?.recruitPlanSnapshot && typeof record.recruitPlanSnapshot === 'object'
-				? record.recruitPlanSnapshot
-				: record?.jobStandardSnapshot && typeof record.jobStandardSnapshot === 'object'
-					? record.jobStandardSnapshot
-					: null) || null;
-
-	return {
-		...record,
-		recruitPlanId: normalizeNumberOrUndefined(record?.recruitPlanId),
-		jobStandardId: normalizeNumberOrUndefined(record?.jobStandardId),
-		recruitPlanTitle:
-			record?.recruitPlanTitle || sourceSnapshot?.recruitPlanTitle || null,
-		jobStandardPositionName:
-			record?.jobStandardPositionName ||
-			sourceSnapshot?.jobStandardPositionName ||
-			null,
-		sourceSnapshot
-	};
 }
 
 function resumeRecruitPlanLabel(record?: ResumePoolRecord | null) {
@@ -1327,11 +1338,6 @@ function normalizeQueryText(value: unknown) {
 	return text || undefined;
 }
 
-function normalizeNumberOrUndefined(value: unknown) {
-	const parsed = Number(value);
-	return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
-}
-
 function normalizeRecruitPlanStatus(value: unknown) {
 	return value === 'draft' || value === 'active' || value === 'voided' || value === 'closed'
 		? value
@@ -1363,31 +1369,7 @@ function buildResumeSourceSummary(prefill?: {
 	return parts.join('；');
 }
 
-function createDefaultResumePoolRecord(): ResumePoolRecord {
-	return {
-		candidateName: '',
-		targetDepartmentId: undefined,
-		targetPosition: '',
-		phone: '',
-		email: '',
-		resumeText: '',
-		sourceType: 'manual',
-		sourceRemark: '',
-		externalLink: '',
-		recruitPlanId: undefined,
-		recruitPlanTitle: '',
-		jobStandardId: undefined,
-		jobStandardPositionName: '',
-		sourceSnapshot: null,
-		recruitPlanSnapshot: null,
-		jobStandardSnapshot: null,
-		attachmentIdList: [],
-		attachmentSummaryList: [],
-		status: 'new'
-	};
-}
-
-function extractDownloadUrl(response: any): string | undefined {
+function extractDownloadUrl(response: unknown): string | undefined {
 	if (!response) {
 		return undefined;
 	}
@@ -1396,24 +1378,30 @@ function extractDownloadUrl(response: any): string | undefined {
 		return response;
 	}
 
-	if (typeof response.url === 'string') {
-		return response.url;
+	const topLevel = toRecord(response);
+	if (!topLevel) {
+		return undefined;
 	}
 
-	if (typeof response.downloadUrl === 'string') {
-		return response.downloadUrl;
+	if (typeof topLevel.url === 'string') {
+		return topLevel.url;
 	}
 
-	if (typeof response.data === 'string') {
-		return response.data;
+	if (typeof topLevel.downloadUrl === 'string') {
+		return topLevel.downloadUrl;
 	}
 
-	if (typeof response.data?.url === 'string') {
-		return response.data.url;
+	if (typeof topLevel.data === 'string') {
+		return topLevel.data;
 	}
 
-	if (typeof response.data?.downloadUrl === 'string') {
-		return response.data.downloadUrl;
+	const data = toRecord(topLevel.data);
+	if (typeof data?.url === 'string') {
+		return data.url;
+	}
+
+	if (typeof data?.downloadUrl === 'string') {
+		return data.downloadUrl;
 	}
 
 	return undefined;
@@ -1421,6 +1409,10 @@ function extractDownloadUrl(response: any): string | undefined {
 
 function openUrl(url: string) {
 	window.open(url, '_blank', 'noopener');
+}
+
+function toRecord(value: unknown): Record<string, unknown> | undefined {
+	return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : undefined;
 }
 
 function formatFileSize(size?: number | null) {
@@ -1445,97 +1437,47 @@ function formatFileSize(size?: number | null) {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@use '../../../../styles/patterns.management-workspace.scss' as managementWorkspace;
+
 .resumePool-page {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-}
+	@include managementWorkspace.management-workspace-shell(1260px);
 
-.resumePool-page__toolbar {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	gap: 12px;
-	flex-wrap: wrap;
-}
+	&__source-cell {
+		display: grid;
+		gap: 4px;
+	}
 
-.resumePool-page__toolbar-left,
-.resumePool-page__toolbar-right {
-	display: flex;
-	gap: 10px;
-	align-items: center;
-	flex-wrap: wrap;
-}
+	&__source-meta {
+		line-height: 1.5;
+	}
 
-.resumePool-page__header {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-}
+	&__attachment-table {
+		margin-top: var(--app-space-2);
+	}
 
-.resumePool-page__header-main {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-}
+	&__form-attachments {
+		margin-top: var(--app-space-2);
+		padding: 10px 12px;
+		border: 1px solid var(--app-border-soft);
+		border-radius: var(--app-radius-md);
+		background: var(--app-surface-muted);
+	}
 
-.resumePool-page__header-main h2 {
-	margin: 0;
-	font-size: 20px;
-}
+	&__form-attachments-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 10px;
+		font-weight: 500;
+	}
 
-.resumePool-page__pagination {
-	margin-top: 12px;
-	display: flex;
-	justify-content: flex-end;
-}
-
-.resumePool-page__detail {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-}
-
-.resumePool-page__resume-text {
-	white-space: pre-wrap;
-	line-height: 1.6;
-}
-
-.resumePool-page__source-summary {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	flex-wrap: wrap;
-}
-
-.resumePool-page__source-cell {
-	display: grid;
-	gap: 4px;
-}
-
-.resumePool-page__source-meta {
-	font-size: 12px;
-	line-height: 1.5;
-	color: var(--el-text-color-secondary);
-}
-
-.resumePool-page__attachment-table {
-	margin-top: 8px;
-}
-
-.resumePool-page__form-attachments {
-	margin-top: 8px;
-	padding: 10px 12px;
-	border: 1px solid var(--el-border-color-lighter);
-	border-radius: 6px;
-}
-
-.resumePool-page__form-attachments-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	margin-bottom: 10px;
-	font-weight: 500;
+	@media (max-width: 768px) {
+		&__form-attachments-header {
+			flex-direction: column;
+			align-items: stretch;
+			gap: var(--app-space-2);
+		}
+	}
 }
 </style>

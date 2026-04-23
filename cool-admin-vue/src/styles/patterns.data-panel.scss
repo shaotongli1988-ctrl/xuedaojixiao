@@ -1,0 +1,27 @@
+/* 文件职责：提供 CRUD / 表格 / 工具栏等数据面板共享 mixin；不负责页面路由、查询或交互逻辑；维护重点是重复壳层要优先收敛到这里。 */
+
+@mixin data-panel-shell {
+	display: grid;
+	gap: var(--app-space-4);
+}
+
+@mixin data-panel-card {
+	border: 1px solid var(--app-border-strong);
+	border-radius: var(--app-radius-lg);
+	background: var(--app-surface-card);
+	box-shadow: var(--app-shadow-surface);
+}
+
+@mixin data-panel-toolbar {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--app-space-4);
+	flex-wrap: wrap;
+}
+
+@mixin data-panel-table {
+	--el-table-border-color: var(--app-border-soft);
+	--el-table-header-bg-color: var(--app-surface-muted);
+	--el-fill-color-light: var(--app-surface-muted);
+}

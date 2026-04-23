@@ -1,4 +1,4 @@
-<!-- 文件职责：承接主题21文件管理的列表、统计、详情、新增、编辑和删除元数据主链；不负责目录树、权限继承、真实文件上传器或二进制内容下载；依赖 documentCenter service 与共享权限工具；维护重点是页面只消费冻结允许的元数据字段，且状态切换只在 HR 管理员权限内进行。 -->
+<!-- 文件职责：承接主题21文件管理的列表、统计、详情、新增、编辑和删除元数据主链；不负责目录树、权限继承、真实文件上传器或二进制内容下载；依赖 documentCenter service 与共享权限工具；维护重点是角色展示统一消费 access-context 事实源，页面只消费冻结允许的元数据字段且状态切换仍以页面权限为准。 -->
 <template>
 	<div v-if="canAccess" class="document-center-page">
 		<el-card shadow="never">
@@ -91,7 +91,7 @@
 					<div class="document-center-page__header-main">
 						<h2>文件管理</h2>
 						<el-tag effect="plain">主题 21</el-tag>
-						<el-tag effect="plain" type="info">HR 管理员</el-tag>
+						<el-tag effect="plain" type="info">{{ roleFact.roleLabel }}</el-tag>
 					</div>
 					<el-alert
 						title="首批只维护文件元数据台账与统计，不展示真实文件内容、存储路径、外部协作链接或权限继承链路。"
@@ -423,37 +423,41 @@ defineOptions({
 });
 
 import { computed, onMounted, reactive, ref } from 'vue';
-import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus';
+import { ElMessage, type FormInstance } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
+import { useDict } from '/$/dict';
 import { useListPage } from '../../composables/use-list-page.js';
+import { performanceAccessContextService } from '../../service/access-context';
 import { performanceDocumentCenterService } from '../../service/documentCenter';
+import { resolvePerformanceRoleFact } from '../../service/role-fact';
+import {
+	confirmElementAction,
+	runTrackedElementAction
+} from '../shared/action-feedback';
+import {
+	resolveErrorMessage,
+	showElementErrorFromError,
+	showElementWarningFromError
+} from '../shared/error-message';
 import {
 	type DocumentCenterCategory,
 	type DocumentCenterConfidentiality,
 	type DocumentCenterFileType,
+	type DocumentCenterFormModel,
+	type PerformanceAccessContext,
 	type DocumentCenterRecord,
 	type DocumentCenterStats,
 	type DocumentCenterStatus,
 	type DocumentCenterStorage,
-	createEmptyDocumentCenter
+	createEmptyDocumentCenterForm,
+	createEmptyDocumentCenterStats
 } from '../../types';
 
-interface DocumentCenterFormModel {
-	fileNo: string;
-	fileName: string;
-	category: DocumentCenterCategory;
-	fileType: DocumentCenterFileType;
-	storage: DocumentCenterStorage;
-	confidentiality: DocumentCenterConfidentiality;
-	ownerName: string;
-	department: string;
-	status: DocumentCenterStatus;
-	version: string;
-	sizeMb: number;
-	expireDate: string;
-	tagsText: string;
-	notes: string;
-}
+const DOCUMENT_CENTER_CATEGORY_DICT_KEY = 'performance.documentCenter.category';
+const DOCUMENT_CENTER_FILE_TYPE_DICT_KEY = 'performance.documentCenter.fileType';
+const DOCUMENT_CENTER_STORAGE_DICT_KEY = 'performance.documentCenter.storage';
+const DOCUMENT_CENTER_CONFIDENTIALITY_DICT_KEY = 'performance.documentCenter.confidentiality';
+const DOCUMENT_CENTER_STATUS_DICT_KEY = 'performance.documentCenter.status';
 
 const detailVisible = ref(false);
 const formVisible = ref(false);
@@ -461,45 +465,41 @@ const submitLoading = ref(false);
 const detailRecord = ref<DocumentCenterRecord | null>(null);
 const editingRecord = ref<DocumentCenterRecord | null>(null);
 const formRef = ref<FormInstance>();
-const stats = ref<DocumentCenterStats>(createEmptyStats());
-
-const statusOptions: Array<{ label: string; value: DocumentCenterStatus }> = [
-	{ label: '草稿', value: 'draft' },
-	{ label: '待审核', value: 'review' },
-	{ label: '已发布', value: 'published' },
-	{ label: '已归档', value: 'archived' }
-];
-
-const categoryOptions: Array<{ label: string; value: DocumentCenterCategory }> = [
-	{ label: '制度', value: 'policy' },
-	{ label: '流程', value: 'process' },
-	{ label: '模板', value: 'template' },
-	{ label: '合同', value: 'contract' },
-	{ label: '归档', value: 'archive' },
-	{ label: '其他', value: 'other' }
-];
-
-const fileTypeOptions: Array<{ label: string; value: DocumentCenterFileType }> = [
-	{ label: 'PDF', value: 'pdf' },
-	{ label: 'DOC', value: 'doc' },
-	{ label: 'XLS', value: 'xls' },
-	{ label: 'PPT', value: 'ppt' },
-	{ label: '图片', value: 'img' },
-	{ label: 'ZIP', value: 'zip' },
-	{ label: '其他', value: 'other' }
-];
-
-const storageOptions: Array<{ label: string; value: DocumentCenterStorage }> = [
-	{ label: '本地', value: 'local' },
-	{ label: '云端', value: 'cloud' },
-	{ label: '混合', value: 'hybrid' }
-];
-
-const confidentialityOptions: Array<{ label: string; value: DocumentCenterConfidentiality }> = [
-	{ label: '公开', value: 'public' },
-	{ label: '内部', value: 'internal' },
-	{ label: '机密', value: 'secret' }
-];
+const stats = ref<DocumentCenterStats>(createEmptyDocumentCenterStats());
+const accessContext = ref<PerformanceAccessContext | null>(null);
+const { dict } = useDict();
+const statusOptions = computed<Array<{ label: string; value: DocumentCenterStatus }>>(() =>
+	dict.get(DOCUMENT_CENTER_STATUS_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as DocumentCenterStatus
+	}))
+);
+const categoryOptions = computed<Array<{ label: string; value: DocumentCenterCategory }>>(() =>
+	dict.get(DOCUMENT_CENTER_CATEGORY_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as DocumentCenterCategory
+	}))
+);
+const fileTypeOptions = computed<Array<{ label: string; value: DocumentCenterFileType }>>(() =>
+	dict.get(DOCUMENT_CENTER_FILE_TYPE_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as DocumentCenterFileType
+	}))
+);
+const storageOptions = computed<Array<{ label: string; value: DocumentCenterStorage }>>(() =>
+	dict.get(DOCUMENT_CENTER_STORAGE_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as DocumentCenterStorage
+	}))
+);
+const confidentialityOptions = computed<
+	Array<{ label: string; value: DocumentCenterConfidentiality }>
+>(() =>
+	dict.get(DOCUMENT_CENTER_CONFIDENTIALITY_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as DocumentCenterConfidentiality
+	}))
+);
 
 const rules = {
 	fileNo: [{ required: true, message: '请输入文件编号', trigger: 'blur' }],
@@ -514,9 +514,15 @@ const rules = {
 	status: [{ required: true, message: '请选择状态', trigger: 'change' }]
 };
 
-const form = reactive<DocumentCenterFormModel>(createEmptyForm());
+const form = reactive<DocumentCenterFormModel>(createEmptyDocumentCenterForm());
 
 const canAccess = computed(() => checkPerm(performanceDocumentCenterService.permission.page));
+const roleFact = computed(() =>
+	resolvePerformanceRoleFact({
+		personaKey: accessContext.value?.activePersonaKey || null,
+		roleKind: accessContext.value?.roleKind || null
+	})
+);
 const showInfoButton = computed(() => checkPerm(performanceDocumentCenterService.permission.info));
 const showStatsSection = computed(() => checkPerm(performanceDocumentCenterService.permission.stats));
 const showAddButton = computed(() => checkPerm(performanceDocumentCenterService.permission.add));
@@ -542,8 +548,8 @@ const documentList = useListPage({
 			confidentiality: params.confidentiality || undefined,
 			storage: params.storage || undefined
 		}),
-	onError: (error: any) => {
-		ElMessage.error(error?.message || '文件列表加载失败');
+	onError: (error: unknown) => {
+		showElementErrorFromError(error, '文件列表加载失败');
 	}
 });
 
@@ -563,37 +569,44 @@ const metricCards = computed(() => [
 
 const formStatusOptions = computed(() => {
 	if (!editingRecord.value?.id) {
-		return [{ label: '草稿', value: 'draft' as DocumentCenterStatus }];
+		return buildDocumentCenterStatusOptions(['draft']);
 	}
 
 	if (editingRecord.value.status === 'published') {
-		return [
-			{ label: '保持已发布', value: 'published' as DocumentCenterStatus },
-			{ label: '归档', value: 'archived' as DocumentCenterStatus }
-		];
+		return buildDocumentCenterStatusOptions(['published', 'archived']);
 	}
 
 	if (editingRecord.value.status === 'review') {
-		return [
-			{ label: '待审核', value: 'review' as DocumentCenterStatus },
-			{ label: '发布', value: 'published' as DocumentCenterStatus },
-			{ label: '归档', value: 'archived' as DocumentCenterStatus }
-		];
+		return buildDocumentCenterStatusOptions(['review', 'published', 'archived']);
 	}
 
-	return [
-		{ label: '草稿', value: 'draft' as DocumentCenterStatus },
-		{ label: '提交审核', value: 'review' as DocumentCenterStatus },
-		{ label: '发布', value: 'published' as DocumentCenterStatus },
-		{ label: '归档', value: 'archived' as DocumentCenterStatus }
-	];
+	return buildDocumentCenterStatusOptions(['draft', 'review', 'published', 'archived']);
 });
 
-onMounted(() => {
+onMounted(async () => {
+	await Promise.all([
+		dict.refresh([
+			DOCUMENT_CENTER_CATEGORY_DICT_KEY,
+			DOCUMENT_CENTER_FILE_TYPE_DICT_KEY,
+			DOCUMENT_CENTER_STORAGE_DICT_KEY,
+			DOCUMENT_CENTER_CONFIDENTIALITY_DICT_KEY,
+			DOCUMENT_CENTER_STATUS_DICT_KEY
+		]),
+		loadAccessContext()
+	]);
 	if (canAccess.value) {
-		void syncPage();
+		await syncPage();
 	}
 });
+
+async function loadAccessContext() {
+	try {
+		accessContext.value = await performanceAccessContextService.fetchContext();
+	} catch (error: unknown) {
+		accessContext.value = null;
+		showElementWarningFromError(error, '角色上下文加载失败，已使用兼容展示视角');
+	}
+}
 
 async function syncPage() {
 	await Promise.all([documentList.reload(), loadStats()]);
@@ -601,7 +614,7 @@ async function syncPage() {
 
 async function loadStats() {
 	if (!showStatsSection.value) {
-		stats.value = createEmptyStats();
+		stats.value = createEmptyDocumentCenterStats();
 		return;
 	}
 
@@ -613,8 +626,8 @@ async function loadStats() {
 			confidentiality: filters.confidentiality || undefined,
 			storage: filters.storage || undefined
 		});
-	} catch (error: any) {
-		ElMessage.error(error?.message || '文件统计加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '文件统计加载失败');
 	}
 }
 
@@ -632,7 +645,7 @@ function resetListFilters() {
 
 function openCreate() {
 	editingRecord.value = null;
-	Object.assign(form, createEmptyForm());
+	Object.assign(form, createEmptyDocumentCenterForm());
 	formVisible.value = true;
 }
 
@@ -671,8 +684,8 @@ async function fetchDetail(id?: number) {
 
 	try {
 		return await performanceDocumentCenterService.fetchInfo({ id });
-	} catch (error: any) {
-		ElMessage.error(error?.message || '文件详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '文件详情加载失败');
 		return null;
 	}
 }
@@ -702,8 +715,8 @@ async function submitForm() {
 
 		formVisible.value = false;
 		await syncPage();
-	} catch (error: any) {
-		ElMessage.error(error?.message || '文件元数据保存失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '文件元数据保存失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -714,20 +727,24 @@ async function handleDelete(row: DocumentCenterRecord) {
 		return;
 	}
 
-	try {
-		await ElMessageBox.confirm(
-			`确认删除文件元数据“${row.fileName || row.fileNo}”吗？此操作只移除台账记录，不代表真实文件被物理删除。`,
-			'删除确认',
-			{ type: 'warning' }
-		);
-		await performanceDocumentCenterService.removeDocument({ ids: [row.id] });
-		ElMessage.success('文件元数据已删除');
-		await syncPage();
-	} catch (error: any) {
-		if (error !== 'cancel') {
-			ElMessage.error(error?.message || '文件元数据删除失败');
-		}
+	const rowId = row.id;
+	const confirmed = await confirmElementAction(
+		`确认删除文件元数据“${row.fileName || row.fileNo}”吗？此操作只移除台账记录，不代表真实文件被物理删除。`,
+		'删除确认'
+	);
+
+	if (!confirmed) {
+		return;
 	}
+
+	await runTrackedElementAction({
+		rowId,
+		actionType: 'delete',
+		request: () => performanceDocumentCenterService.removeDocument({ ids: [rowId] }),
+		successMessage: '文件元数据已删除',
+		errorMessage: '文件元数据删除失败',
+		refresh: syncPage
+	});
 }
 
 function canEdit(row: DocumentCenterRecord) {
@@ -776,83 +793,36 @@ function mapRecordToForm(record: DocumentCenterRecord): DocumentCenterFormModel 
 	};
 }
 
-function createEmptyForm(): DocumentCenterFormModel {
-	const record = createEmptyDocumentCenter();
-	return {
-		fileNo: record.fileNo,
-		fileName: record.fileName,
-		category: record.category,
-		fileType: record.fileType,
-		storage: record.storage,
-		confidentiality: record.confidentiality,
-		ownerName: record.ownerName,
-		department: record.department,
-		status: record.status || 'draft',
-		version: record.version,
-		sizeMb: Number(record.sizeMb || 0),
-		expireDate: record.expireDate || '',
-		tagsText: '',
-		notes: record.notes || ''
-	};
-}
-
-function createEmptyStats(): DocumentCenterStats {
-	return {
-		total: 0,
-		publishedCount: 0,
-		reviewCount: 0,
-		archivedCount: 0,
-		totalSizeMb: 0,
-		totalDownloads: 0
-	};
+function buildDocumentCenterStatusOptions(values: DocumentCenterStatus[]) {
+	return statusOptions.value.filter(item => values.includes(item.value));
 }
 
 function categoryLabel(value?: DocumentCenterCategory) {
-	return categoryOptions.find(item => item.value === value)?.label || value || '-';
+	return dict.getLabel(DOCUMENT_CENTER_CATEGORY_DICT_KEY, value) || value || '-';
 }
 
 function fileTypeLabel(value?: DocumentCenterFileType) {
-	return fileTypeOptions.find(item => item.value === value)?.label || value || '-';
+	return dict.getLabel(DOCUMENT_CENTER_FILE_TYPE_DICT_KEY, value) || value || '-';
 }
 
 function storageLabel(value?: DocumentCenterStorage) {
-	return storageOptions.find(item => item.value === value)?.label || value || '-';
+	return dict.getLabel(DOCUMENT_CENTER_STORAGE_DICT_KEY, value) || value || '-';
 }
 
 function confidentialityLabel(value?: DocumentCenterConfidentiality) {
-	return confidentialityOptions.find(item => item.value === value)?.label || value || '-';
+	return dict.getLabel(DOCUMENT_CENTER_CONFIDENTIALITY_DICT_KEY, value) || value || '-';
 }
 
 function confidentialityTagType(value?: DocumentCenterConfidentiality) {
-	if (value === 'secret') {
-		return 'danger';
-	}
-
-	if (value === 'internal') {
-		return 'warning';
-	}
-
-	return 'success';
+	return dict.getMeta(DOCUMENT_CENTER_CONFIDENTIALITY_DICT_KEY, value)?.tone || 'info';
 }
 
 function statusLabel(value?: DocumentCenterStatus) {
-	return statusOptions.find(item => item.value === value)?.label || value || '-';
+	return dict.getLabel(DOCUMENT_CENTER_STATUS_DICT_KEY, value) || value || '-';
 }
 
 function statusTagType(value?: DocumentCenterStatus) {
-	if (value === 'published') {
-		return 'success';
-	}
-
-	if (value === 'review') {
-		return 'warning';
-	}
-
-	if (value === 'archived') {
-		return 'info';
-	}
-
-	return undefined;
+	return dict.getMeta(DOCUMENT_CENTER_STATUS_DICT_KEY, value)?.tone;
 }
 
 function formatDecimal(value?: number | null) {
@@ -873,50 +843,9 @@ function normalizeOptionalText(value?: string | null) {
 </script>
 
 <style lang="scss" scoped>
+@use '../../../../styles/patterns.metadata-workspace.scss' as metadataWorkspace;
+
 .document-center-page {
-	display: grid;
-	gap: 16px;
-
-	&__toolbar,
-	&__toolbar-left,
-	&__toolbar-right,
-	&__header-main,
-	&__tag-list {
-		display: flex;
-		gap: 12px;
-		flex-wrap: wrap;
-		align-items: center;
-	}
-
-	&__toolbar {
-		justify-content: space-between;
-	}
-
-	&__header {
-		display: grid;
-		gap: 12px;
-	}
-
-	&__metric-label,
-	&__metric-helper {
-		color: var(--el-text-color-secondary);
-	}
-
-	&__metric-label,
-	&__metric-helper {
-		font-size: 12px;
-	}
-
-	&__metric-value {
-		margin-top: 8px;
-		font-size: 28px;
-		font-weight: 600;
-	}
-
-	&__pagination {
-		display: flex;
-		justify-content: flex-end;
-		margin-top: 16px;
-	}
+	@include metadataWorkspace.metadata-workspace-shell(1240px);
 }
 </style>

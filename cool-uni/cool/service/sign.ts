@@ -3,7 +3,7 @@ import md5 from "md5";
 function useSign(params: any) {
 	const timestamp = new Date().getTime();
 
-	let arr = [`timestamp=${timestamp}`];
+	const arr = [`timestamp=${timestamp}`];
 
 	for (const i in params) {
 		arr.push(`${i}=${decodeURIComponent(params[i])}`);

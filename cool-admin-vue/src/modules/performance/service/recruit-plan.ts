@@ -4,102 +4,130 @@
  * 维护重点是接口前缀、权限键和动作集合必须固定为 page/info/add/update/delete/import/export/submit/close/void/reopen。
  */
 import { BaseService } from '/@/cool';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeRecruitPlanDeleteResult,
+	decodeRecruitPlanExportRows,
+	decodeRecruitPlanImportResult,
+	decodeRecruitPlanPageResult,
+	decodeRecruitPlanRecord
+} from './recruit-plan-contract';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import type {
+	RecruitPlanActionRequest,
+	RecruitPlanDeleteResult,
+	RecruitPlanExportQuery,
 	RecruitPlanExportRow,
-	RecruitPlanImportRow,
+	RecruitPlanInfoQuery,
+	RecruitPlanImportRequest,
+	RecruitPlanImportResult,
+	RecruitPlanPageQuery,
 	RecruitPlanPageResult,
-	RecruitPlanRecord
+	RecruitPlanRecord,
+	RecruitPlanSaveRequest
 } from '../types';
 
 export default class PerformanceRecruitPlanService extends BaseService {
 	permission = {
-		page: 'performance:recruitPlan:page',
-		info: 'performance:recruitPlan:info',
-		add: 'performance:recruitPlan:add',
-		update: 'performance:recruitPlan:update',
-		delete: 'performance:recruitPlan:delete',
-		import: 'performance:recruitPlan:import',
-		export: 'performance:recruitPlan:export',
-		submit: 'performance:recruitPlan:submit',
-		close: 'performance:recruitPlan:close',
-		void: 'performance:recruitPlan:void',
-		reopen: 'performance:recruitPlan:reopen'
+		page: PERMISSIONS.performance.recruitPlan.page,
+		info: PERMISSIONS.performance.recruitPlan.info,
+		add: PERMISSIONS.performance.recruitPlan.add,
+		update: PERMISSIONS.performance.recruitPlan.update,
+		delete: PERMISSIONS.performance.recruitPlan.delete,
+		import: PERMISSIONS.performance.recruitPlan.import,
+		export: PERMISSIONS.performance.recruitPlan.export,
+		submit: PERMISSIONS.performance.recruitPlan.submit,
+		close: PERMISSIONS.performance.recruitPlan.close,
+		void: PERMISSIONS.performance.recruitPlan.void,
+		reopen: PERMISSIONS.performance.recruitPlan.reopen
 	};
 
 	constructor() {
 		super('admin/performance/recruitPlan');
 	}
 
-	fetchPage(data: any) {
-		return super.page(data) as unknown as Promise<RecruitPlanPageResult>;
+	fetchPage(data: RecruitPlanPageQuery) {
+		return asPerformanceServicePromise<RecruitPlanPageResult>(
+			super.page(data),
+			decodeRecruitPlanPageResult
+		);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<RecruitPlanRecord>;
+	fetchInfo(params: RecruitPlanInfoQuery) {
+		return asPerformanceServicePromise<RecruitPlanRecord>(
+			super.info(params),
+			decodeRecruitPlanRecord
+		);
 	}
 
-	createRecruitPlan(data: Partial<RecruitPlanRecord>) {
-		return super.add(data) as unknown as Promise<RecruitPlanRecord>;
+	createRecruitPlan(data: RecruitPlanSaveRequest) {
+		return asPerformanceServicePromise<RecruitPlanRecord>(
+			super.add(data),
+			decodeRecruitPlanRecord
+		);
 	}
 
-	updateRecruitPlan(data: Partial<RecruitPlanRecord> & { id: number }) {
-		return super.update(data) as unknown as Promise<RecruitPlanRecord>;
+	updateRecruitPlan(data: RecruitPlanSaveRequest & { id: number }) {
+		return asPerformanceServicePromise<RecruitPlanRecord>(
+			super.update(data),
+			decodeRecruitPlanRecord
+		);
 	}
 
-	removeRecruitPlan(data: { id: number }) {
-		return this.request({
+	removeRecruitPlan(data: RecruitPlanActionRequest) {
+		return asPerformanceServicePromise<RecruitPlanDeleteResult>(this.request({
 			url: '/delete',
 			method: 'POST',
 			data
-		}) as unknown as Promise<void>;
+		}), decodeRecruitPlanDeleteResult);
 	}
 
-	importRecruitPlan(data: { fileId: number | string; rows: RecruitPlanImportRow[] }) {
-		return this.request({
+	importRecruitPlan(data: RecruitPlanImportRequest) {
+		return asPerformanceServicePromise<RecruitPlanImportResult>(this.request({
 			url: '/import',
 			method: 'POST',
 			data
-		}) as unknown as Promise<void>;
+		}), decodeRecruitPlanImportResult);
 	}
 
-	exportRecruitPlanSummary(data: any) {
-		return this.request({
+	exportRecruitPlanSummary(data: RecruitPlanExportQuery) {
+		return asPerformanceServicePromise<RecruitPlanExportRow[]>(this.request({
 			url: '/export',
 			method: 'POST',
 			data
-		}) as unknown as Promise<RecruitPlanExportRow[]>;
+		}), decodeRecruitPlanExportRows);
 	}
 
-	submitRecruitPlan(data: { id: number }) {
-		return this.request({
+	submitRecruitPlan(data: RecruitPlanActionRequest) {
+		return asPerformanceServicePromise<RecruitPlanRecord>(this.request({
 			url: '/submit',
 			method: 'POST',
 			data
-		}) as unknown as Promise<RecruitPlanRecord>;
+		}), decodeRecruitPlanRecord);
 	}
 
-	closeRecruitPlan(data: { id: number }) {
-		return this.request({
+	closeRecruitPlan(data: RecruitPlanActionRequest) {
+		return asPerformanceServicePromise<RecruitPlanRecord>(this.request({
 			url: '/close',
 			method: 'POST',
 			data
-		}) as unknown as Promise<RecruitPlanRecord>;
+		}), decodeRecruitPlanRecord);
 	}
 
-	voidRecruitPlan(data: { id: number }) {
-		return this.request({
+	voidRecruitPlan(data: RecruitPlanActionRequest) {
+		return asPerformanceServicePromise<RecruitPlanRecord>(this.request({
 			url: '/void',
 			method: 'POST',
 			data
-		}) as unknown as Promise<RecruitPlanRecord>;
+		}), decodeRecruitPlanRecord);
 	}
 
-	reopenRecruitPlan(data: { id: number }) {
-		return this.request({
+	reopenRecruitPlan(data: RecruitPlanActionRequest) {
+		return asPerformanceServicePromise<RecruitPlanRecord>(this.request({
 			url: '/reopen',
 			method: 'POST',
 			data
-		}) as unknown as Promise<RecruitPlanRecord>;
+		}), decodeRecruitPlanRecord);
 	}
 }
 

@@ -1,7 +1,13 @@
 <!-- 文件职责：承接主题19班主任资源列表、详情、新增编辑、负责人分配、跟进记录与合作动作主链；不负责后端数据范围裁剪、代理/绩效扩展或附件链路；依赖 teacherInfo/teacherFollow/teacherCooperation service、基础用户部门选项和路由预置参数；维护重点是只读态、合作状态门禁和建班前置条件必须与冻结契约一致。 -->
 <template>
-	<div v-if="canAccess" class="teacher-channel-teacher-page">
-		<el-card shadow="never">
+	<permission-overlay
+		:denied="!canAccess"
+		:permission-key="performanceTeacherInfoService.permission.page"
+		title="当前账号暂未开通班主任资源页权限"
+		description="页面内容已切换到保护态。请联系管理员按岗位开通班主任资源查看权限。"
+	>
+		<div class="teacher-channel-teacher-page">
+		<el-card shadow="never" class="teacher-channel-teacher-page__toolbar-card">
 			<div class="teacher-channel-teacher-page__toolbar">
 				<div class="teacher-channel-teacher-page__toolbar-left">
 					<el-input
@@ -59,14 +65,15 @@
 			</div>
 		</el-card>
 
-		<el-card shadow="never">
+		<el-card shadow="never" class="teacher-channel-teacher-page__content-card">
 			<template #header>
 				<div class="teacher-channel-teacher-page__header">
 					<div class="teacher-channel-teacher-page__header-main">
 						<h2>班主任资源列表</h2>
 						<el-tag effect="plain">主题 19</el-tag>
-						<el-tag effect="plain" :type="isReadOnlyRole ? 'info' : 'success'">
-							{{ isReadOnlyRole ? '只读账号' : '主链可操作' }}
+						<el-tag effect="plain" type="info">{{ roleFact.roleLabel }}</el-tag>
+						<el-tag effect="plain" :type="teacherCapabilityTagType">
+							{{ teacherCapabilityLabel }}
 						</el-tag>
 					</div>
 					<el-alert
@@ -135,8 +142,8 @@
 				</el-table-column>
 				<el-table-column prop="cooperationStatus" label="合作状态" width="120">
 					<template #default="{ row }">
-						<el-tag :type="teacherCooperationStatusTagType(row.cooperationStatus)">
-							{{ teacherCooperationStatusLabel(row.cooperationStatus) }}
+						<el-tag :type="cooperationStatusTagType(row.cooperationStatus)">
+							{{ cooperationStatusLabel(row.cooperationStatus) }}
 						</el-tag>
 					</template>
 				</el-table-column>
@@ -223,9 +230,9 @@
 					</el-descriptions-item>
 					<el-descriptions-item label="合作状态">
 						<el-tag
-							:type="teacherCooperationStatusTagType(detailTeacher.cooperationStatus)"
+							:type="cooperationStatusTagType(detailTeacher.cooperationStatus)"
 						>
-							{{ teacherCooperationStatusLabel(detailTeacher.cooperationStatus) }}
+							{{ cooperationStatusLabel(detailTeacher.cooperationStatus) }}
 						</el-tag>
 					</el-descriptions-item>
 					<el-descriptions-item label="联系电话">
@@ -328,43 +335,52 @@
 						show-icon
 					/>
 
-					<el-descriptions v-if="attributionInfo?.currentAttribution" :column="2" border>
-						<el-descriptions-item label="当前归因">
-							{{ attributionInfo.currentAttribution.agentName || '直营' }}
-						</el-descriptions-item>
-						<el-descriptions-item label="归因状态">
-							<el-tag
-								:type="
-									attributionInfo.currentAttribution.status === 'active'
-										? 'success'
-										: attributionInfo.currentAttribution.status === 'conflicted'
-											? 'warning'
-											: 'info'
-								"
-							>
-								{{ attributionInfo.currentAttribution.status || '-' }}
-							</el-tag>
-						</el-descriptions-item>
-						<el-descriptions-item label="归因类型">
-							{{ attributionInfo.currentAttribution.attributionType || '-' }}
-						</el-descriptions-item>
-						<el-descriptions-item label="生效时间">
-							{{ attributionInfo.currentAttribution.effectiveTime || '-' }}
-						</el-descriptions-item>
-						<el-descriptions-item label="来源类型">
-							{{ attributionInfo.currentAttribution.sourceType || '-' }}
-						</el-descriptions-item>
-						<el-descriptions-item label="操作人">
-							{{ attributionInfo.currentAttribution.operatorName || '-' }}
-						</el-descriptions-item>
-						<el-descriptions-item label="来源说明" :span="2">
-							{{ attributionInfo.currentAttribution.sourceRemark || '-' }}
-						</el-descriptions-item>
-					</el-descriptions>
-					<el-empty
-						v-else
-						description="当前班主任尚未建立代理归因，可在下方选择代理主体发起归因。"
+					<el-alert
+						v-if="!showAttributionInfoButton"
+						type="info"
+						title="当前账号暂无代理归因详情与历史权限，已隐藏归因明细。"
+						:closable="false"
+						show-icon
 					/>
+					<template v-else>
+						<el-descriptions v-if="attributionInfo?.currentAttribution" :column="2" border>
+							<el-descriptions-item label="当前归因">
+								{{ attributionInfo.currentAttribution.agentName || '直营' }}
+							</el-descriptions-item>
+							<el-descriptions-item label="归因状态">
+								<el-tag
+									:type="
+										attributionInfo.currentAttribution.status === 'active'
+											? 'success'
+											: attributionInfo.currentAttribution.status === 'conflicted'
+												? 'warning'
+												: 'info'
+									"
+								>
+									{{ attributionInfo.currentAttribution.status || '-' }}
+								</el-tag>
+							</el-descriptions-item>
+							<el-descriptions-item label="归因类型">
+								{{ attributionInfo.currentAttribution.attributionType || '-' }}
+							</el-descriptions-item>
+							<el-descriptions-item label="生效时间">
+								{{ attributionInfo.currentAttribution.effectiveTime || '-' }}
+							</el-descriptions-item>
+							<el-descriptions-item label="来源类型">
+								{{ attributionInfo.currentAttribution.sourceType || '-' }}
+							</el-descriptions-item>
+							<el-descriptions-item label="操作人">
+								{{ attributionInfo.currentAttribution.operatorName || '-' }}
+							</el-descriptions-item>
+							<el-descriptions-item label="来源说明" :span="2">
+								{{ attributionInfo.currentAttribution.sourceRemark || '-' }}
+							</el-descriptions-item>
+						</el-descriptions>
+						<el-empty
+							v-else
+							description="当前班主任尚未建立代理归因，可在下方选择代理主体发起归因。"
+						/>
+					</template>
 
 					<el-form
 						v-if="showAttributionWriteActions && detailTeacher"
@@ -430,7 +446,12 @@
 						</div>
 					</el-form>
 
-					<el-table :data="attributionHistoryRows" border v-loading="attributionHistoryLoading">
+					<el-table
+						v-if="showAttributionInfoButton"
+						:data="attributionHistoryRows"
+						border
+						v-loading="attributionHistoryLoading"
+					>
 						<el-table-column prop="createTime" label="记录时间" min-width="170" />
 						<el-table-column prop="agentName" label="归因主体" min-width="160">
 							<template #default="{ row }">
@@ -928,11 +949,8 @@
 				</el-button>
 			</template>
 		</el-dialog>
-	</div>
-
-	<el-card v-else shadow="never">
-		<el-empty description="当前账号没有该页面权限" />
-	</el-card>
+		</div>
+	</permission-overlay>
 </template>
 
 <script lang="ts" setup>
@@ -941,10 +959,25 @@ defineOptions({
 });
 
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { useRoute, useRouter } from 'vue-router';
 import { checkPerm } from '/$/base/utils/permission';
+import { useDict } from '/$/dict';
 import { service } from '/@/cool';
+import PermissionOverlay from '../../components/permission-overlay.vue';
+import { useListPage } from '../../composables/use-list-page.js';
+import { performanceAccessContextService } from '../../service/access-context';
+import { resolvePerformanceRoleFact } from '../../service/role-fact';
+import {
+	confirmElementAction,
+	runTrackedElementAction
+} from '../shared/action-feedback';
+import {
+	createElementWarningFromErrorHandler,
+	resolveErrorMessage,
+	showElementErrorFromError,
+	showElementWarningFromError
+} from '../shared/error-message';
 import { loadDepartmentOptions, loadUserOptions } from '../../utils/lookup-options.js';
 import {
 	consumeRoutePreset,
@@ -961,6 +994,8 @@ import { performanceTeacherAttributionService } from '../../service/teacherAttri
 import { performanceTeacherAttributionConflictService } from '../../service/teacherAttributionConflict';
 import { performanceTeacherAgentAuditService } from '../../service/teacherAgentAudit';
 import type {
+	DepartmentOption,
+	PerformanceAccessContext,
 	TeacherAgentAuditRecord,
 	TeacherAgentRecord,
 	TeacherAgentRelationRecord,
@@ -978,7 +1013,8 @@ import {
 	createEmptyTeacherAgentRelation,
 	createEmptyTeacherAttribution,
 	createEmptyTeacherFollow,
-	createEmptyTeacherInfo
+	createEmptyTeacherInfo,
+	normalizeTeacherInfoDomainRecord
 } from '../../types';
 import {
 	canCreateTeacherClass,
@@ -989,21 +1025,15 @@ import {
 	normalizeStringArray,
 	resolveFollowContent,
 	resolveFollowOperator,
-	stringifyTagList,
-	teacherCooperationStatusLabel,
-	teacherCooperationStatusOptions,
-	teacherCooperationStatusTagType
+	stringifyTagList
 } from '../../utils/teacher-channel.js';
 
-interface DepartmentOption {
-	id: number;
-	label: string;
-}
+const TEACHER_COOPERATION_STATUS_DICT_KEY = 'performance.teacherChannel.cooperationStatus';
 
 const route = useRoute();
 const router = useRouter();
+const { dict } = useDict();
 
-const rows = ref<TeacherInfoRecord[]>([]);
 const userOptions = ref<UserOption[]>([]);
 const departmentOptions = ref<DepartmentOption[]>([]);
 const followRows = ref<TeacherFollowRecord[]>([]);
@@ -1012,7 +1042,7 @@ const relationRows = ref<TeacherAgentRelationRecord[]>([]);
 const conflictRows = ref<TeacherAttributionConflictRecord[]>([]);
 const auditRows = ref<TeacherAgentAuditRecord[]>([]);
 const attributionHistoryRows = ref<TeacherAttributionRecord[]>([]);
-const tableLoading = ref(false);
+const accessContext = ref<PerformanceAccessContext | null>(null);
 const detailLoading = ref(false);
 const followLoading = ref(false);
 const agentLoading = ref(false);
@@ -1050,18 +1080,6 @@ const relationEditingRecord = ref<TeacherAgentRelationRecord | null>(null);
 const conflictDetail = ref<TeacherAttributionConflictDetail | null>(null);
 const attributionInfo = ref<TeacherAttributionInfo | null>(null);
 const assigningTeacherId = ref<number | null>(null);
-
-const filters = reactive({
-	keyword: '',
-	cooperationStatus: '' as TeacherCooperationStatus | '',
-	ownerDepartmentId: undefined as number | undefined
-});
-
-const pagination = reactive({
-	page: 1,
-	size: 10,
-	total: 0
-});
 
 const form = reactive<TeacherInfoRecord>(createEmptyTeacherInfo());
 const followForm = reactive<TeacherFollowRecord>(createEmptyTeacherFollow());
@@ -1151,8 +1169,14 @@ const showAgentRelationUpdateButton = computed(() =>
 const showAgentRelationDeleteButton = computed(() =>
 	checkPerm(performanceTeacherAgentRelationService.permission.delete)
 );
+const canViewAttributionInfo = computed(() =>
+	checkPerm(performanceTeacherInfoService.permission.attributionInfo)
+);
+const canViewAttributionHistory = computed(() =>
+	checkPerm(performanceTeacherInfoService.permission.attributionHistory)
+);
 const showAttributionInfoButton = computed(() =>
-	showInfoButton.value || checkPerm(performanceTeacherAttributionService.permission.info)
+	canViewAttributionInfo.value && canViewAttributionHistory.value
 );
 const showAttributionWriteActions = computed(
 	() =>
@@ -1177,6 +1201,48 @@ const isReadOnlyRole = computed(
 			classDelete: checkPerm(performanceTeacherClassService.permission.delete)
 		})
 );
+const roleFact = computed(() =>
+	resolvePerformanceRoleFact({
+		personaKey: accessContext.value?.activePersonaKey || null,
+		roleKind: accessContext.value?.roleKind || null
+	})
+);
+const teacherCapabilityLabel = computed(() =>
+	isReadOnlyRole.value ? '只读能力' : '可写能力'
+);
+const teacherCapabilityTagType = computed(() =>
+	isReadOnlyRole.value ? 'info' : 'success'
+);
+const teacherList = useListPage({
+	createFilters: () => ({
+		keyword: '',
+		cooperationStatus: '' as TeacherCooperationStatus | '',
+		ownerDepartmentId: undefined as number | undefined
+	}),
+	canLoad: () => canAccess.value,
+	fetchPage: async params => {
+		const result = await performanceTeacherInfoService.fetchPage({
+			page: params.page,
+			size: params.size,
+			keyword: params.keyword || undefined,
+			cooperationStatus: params.cooperationStatus || undefined,
+			ownerDepartmentId: params.ownerDepartmentId || undefined
+		});
+
+		return {
+			...result,
+			list: (result.list || []).map(normalizeTeacherInfoDomainRecord)
+		};
+	},
+	onError: (error: unknown) => {
+		pageError.value = resolveErrorMessage(error, '班主任资源列表加载失败');
+		ElMessage.error(pageError.value);
+	}
+});
+const rows = teacherList.rows;
+const tableLoading = teacherList.loading;
+const filters = teacherList.filters;
+const pagination = teacherList.pager;
 
 const filterDepartmentIdModel = computed<number | undefined>({
 	get: () => filters.ownerDepartmentId ?? undefined,
@@ -1255,7 +1321,14 @@ const followNextFollowTimeModel = computed<string | undefined>({
 	}
 });
 
-const cooperationStatusOptions = teacherCooperationStatusOptions;
+const cooperationStatusOptions = computed<
+	Array<{ label: string; value: TeacherCooperationStatus }>
+>(() =>
+	dict.get(TEACHER_COOPERATION_STATUS_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as TeacherCooperationStatus
+	}))
+);
 
 const detailAlertMessage = computed(() => {
 	if (isReadOnlyRole.value) {
@@ -1270,11 +1343,24 @@ const detailAlertMessage = computed(() => {
 });
 
 onMounted(async () => {
+	await Promise.all([
+		dict.refresh([TEACHER_COOPERATION_STATUS_DICT_KEY]),
+		loadAccessContext()
+	]);
 	await loadUsers();
 	await loadDepartments();
 	await refresh();
 	await consumeTeacherRoutePreset();
 });
+
+async function loadAccessContext() {
+	try {
+		accessContext.value = await performanceAccessContextService.fetchContext();
+	} catch (error: unknown) {
+		accessContext.value = null;
+		showElementWarningFromError(error, '角色上下文加载失败，已使用兼容展示视角');
+	}
+}
 
 watch(
 	() => route.query,
@@ -1291,64 +1377,34 @@ async function loadUsers() {
 				page: 1,
 				size: 200
 			}),
-		(error: any) => {
-			ElMessage.warning(error.message || '负责人选项加载失败');
-		}
+		createElementWarningFromErrorHandler('负责人选项加载失败')
 	);
 }
 
 async function loadDepartments() {
 	departmentOptions.value = await loadDepartmentOptions(
 		() => service.base.sys.department.list(),
-		(error: any) => {
-			ElMessage.warning(error.message || '部门选项加载失败');
-		}
+		createElementWarningFromErrorHandler('部门选项加载失败')
 	);
 }
 
 async function refresh() {
-	if (!canAccess.value) {
-		return;
-	}
-
-	tableLoading.value = true;
 	pageError.value = '';
-
-	try {
-		const result = await performanceTeacherInfoService.fetchPage({
-			page: pagination.page,
-			size: pagination.size,
-			keyword: filters.keyword || undefined,
-			cooperationStatus: filters.cooperationStatus || undefined,
-			ownerDepartmentId: filters.ownerDepartmentId || undefined
-		});
-
-		rows.value = (result.list || []).map(normalizeTeacherRecord);
-		pagination.total = result.pagination?.total || 0;
-	} catch (error: any) {
-		pageError.value = error.message || '班主任资源列表加载失败';
-		ElMessage.error(pageError.value);
-	} finally {
-		tableLoading.value = false;
-	}
+	await teacherList.reload();
 }
 
 function handleSearch() {
-	pagination.page = 1;
-	refresh();
+	void teacherList.search();
 }
 
 function handleReset() {
-	filters.keyword = '';
-	filters.cooperationStatus = '';
-	filters.ownerDepartmentId = undefined;
-	pagination.page = 1;
-	refresh();
+	void teacherList.reset({
+		ownerDepartmentId: undefined
+	});
 }
 
 function changePage(page: number) {
-	pagination.page = page;
-	refresh();
+	void teacherList.goToPage(page);
 }
 
 function openCreate() {
@@ -1372,7 +1428,7 @@ async function openEdit(row: TeacherInfoRecord) {
 	}
 
 	try {
-		const detail = normalizeTeacherRecord(
+		const detail = normalizeTeacherInfoDomainRecord(
 			await performanceTeacherInfoService.fetchInfo({ id })
 		);
 		editingTeacher.value = detail;
@@ -1381,8 +1437,8 @@ async function openEdit(row: TeacherInfoRecord) {
 		nextTick(() => {
 			formRef.value?.clearValidate();
 		});
-	} catch (error: any) {
-		ElMessage.error(error.message || '班主任详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '班主任详情加载失败');
 	}
 }
 
@@ -1421,8 +1477,8 @@ async function submitForm() {
 		ElMessage.success('保存成功');
 		formVisible.value = false;
 		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '班主任资源保存失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '班主任资源保存失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -1461,7 +1517,7 @@ async function openDetailById(
 			loadAgentRows()
 		]);
 
-		detailTeacher.value = normalizeTeacherRecord(detail);
+		detailTeacher.value = normalizeTeacherInfoDomainRecord(detail);
 		followRows.value = followResult;
 
 		if (options.focusFollow && showFollowAddButton.value) {
@@ -1472,8 +1528,8 @@ async function openDetailById(
 				followFormRef.value?.clearValidate();
 			});
 		}
-	} catch (error: any) {
-		ElMessage.error(error.message || '班主任详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '班主任详情加载失败');
 	} finally {
 		detailLoading.value = false;
 	}
@@ -1495,8 +1551,8 @@ async function loadFollowList(teacherId: number) {
 		});
 
 		return result.list || [];
-	} catch (error: any) {
-		followError.value = error.message || '跟进记录加载失败';
+	} catch (error: unknown) {
+		followError.value = resolveErrorMessage(error, '跟进记录加载失败');
 		return [];
 	} finally {
 		followLoading.value = false;
@@ -1525,8 +1581,8 @@ async function submitFollow() {
 			focusFollow: true
 		});
 		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '跟进新增失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '跟进新增失败');
 	} finally {
 		followSubmitLoading.value = false;
 	}
@@ -1564,8 +1620,8 @@ async function submitAssign() {
 		if (detailTeacher.value?.id === assigningTeacherId.value) {
 			await openDetailById(assigningTeacherId.value);
 		}
-	} catch (error: any) {
-		ElMessage.error(error.message || '负责人分配失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '负责人分配失败');
 	} finally {
 		assignLoading.value = false;
 	}
@@ -1579,32 +1635,31 @@ async function handleMarkCooperation(row: TeacherInfoRecord) {
 		return;
 	}
 
-	try {
-		await ElMessageBox.confirm(
-			`确认将班主任「${row.teacherName}」标记为已合作吗？`,
-			'合作确认',
-			{
-				type: 'warning'
-			}
-		);
-	} catch {
+	const confirmed = await confirmElementAction(
+		`确认将班主任「${row.teacherName}」标记为已合作吗？`,
+		'合作确认'
+	);
+
+	if (!confirmed) {
 		return;
 	}
 
-	detailActionLoading.value = 'partnered';
-
-	try {
-		await performanceTeacherCooperationService.mark({ id });
-		ElMessage.success('已标记为合作');
-		await refresh();
-		if (detailTeacher.value?.id === id) {
-			await openDetailById(id);
-		}
-	} catch (error: any) {
-		ElMessage.error(error.message || '合作标记失败');
-	} finally {
-		detailActionLoading.value = '';
-	}
+	await runTrackedElementAction({
+		rowId: id,
+		actionType: 'partnered',
+		request: () => performanceTeacherCooperationService.mark({ id }),
+		successMessage: '已标记为合作',
+		errorMessage: '合作标记失败',
+		setLoading: rowId => {
+			detailActionLoading.value = rowId ? 'partnered' : '';
+		},
+		onSuccess: async () => {
+			if (detailTeacher.value?.id === id) {
+				await openDetailById(id);
+			}
+		},
+		refresh
+	});
 }
 
 async function handleUpdateStatus(
@@ -1620,37 +1675,41 @@ async function handleUpdateStatus(
 	const actionLabel =
 		cooperationStatus === 'negotiating'
 			? '推进为洽谈中'
-			: teacherCooperationStatusLabel(cooperationStatus);
+			: cooperationStatusLabel(cooperationStatus);
 
-	try {
-		await ElMessageBox.confirm(
-			`确认将班主任「${row.teacherName}」${actionLabel}吗？`,
-			'状态确认',
-			{
-				type: 'warning'
-			}
-		);
-	} catch {
+	const confirmed = await confirmElementAction(
+		`确认将班主任「${row.teacherName}」${actionLabel}吗？`,
+		'状态确认'
+	);
+
+	if (!confirmed) {
 		return;
 	}
 
-	detailActionLoading.value = cooperationStatus === 'negotiating' ? 'negotiating' : 'terminated';
-
-	try {
-		await performanceTeacherInfoService.updateStatus({
-			id,
-			status: cooperationStatus
-		});
-		ElMessage.success('状态更新成功');
-		await refresh();
-		if (detailTeacher.value?.id === id) {
-			await openDetailById(id);
-		}
-	} catch (error: any) {
-		ElMessage.error(error.message || '状态更新失败');
-	} finally {
-		detailActionLoading.value = '';
-	}
+	await runTrackedElementAction({
+		rowId: id,
+		actionType: cooperationStatus === 'negotiating' ? 'negotiating' : 'terminated',
+		request: () =>
+			performanceTeacherInfoService.updateStatus({
+				id,
+				status: cooperationStatus
+			}),
+		successMessage: '状态更新成功',
+		errorMessage: '状态更新失败',
+		setLoading: rowId => {
+			detailActionLoading.value = rowId
+				? cooperationStatus === 'negotiating'
+					? 'negotiating'
+					: 'terminated'
+				: '';
+		},
+		onSuccess: async () => {
+			if (detailTeacher.value?.id === id) {
+				await openDetailById(id);
+			}
+		},
+		refresh
+	});
 }
 
 function canEdit(row: TeacherInfoRecord) {
@@ -1683,6 +1742,14 @@ function canTerminate(row: TeacherInfoRecord) {
 		showAssignButton.value &&
 		row.cooperationStatus === 'partnered'
 	);
+}
+
+function cooperationStatusLabel(value?: TeacherCooperationStatus | '') {
+	return dict.getLabel(TEACHER_COOPERATION_STATUS_DICT_KEY, value) || value || '-';
+}
+
+function cooperationStatusTagType(value?: TeacherCooperationStatus | '') {
+	return dict.getMeta(TEACHER_COOPERATION_STATUS_DICT_KEY, value)?.tone || 'info';
 }
 
 function goCreateClass(row: TeacherInfoRecord) {
@@ -1736,8 +1803,8 @@ async function loadAgentRows() {
 		});
 		agentRows.value = result.list || [];
 		return agentRows.value;
-	} catch (error: any) {
-		ElMessage.error(error.message || '代理主体列表加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '代理主体列表加载失败');
 		return [];
 	} finally {
 		agentLoading.value = false;
@@ -1759,8 +1826,8 @@ async function loadRelationRows() {
 		});
 		relationRows.value = result.list || [];
 		return relationRows.value;
-	} catch (error: any) {
-		ElMessage.error(error.message || '代理关系列表加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '代理关系列表加载失败');
 		return [];
 	} finally {
 		relationLoading.value = false;
@@ -1815,8 +1882,8 @@ async function submitAgentForm() {
 		ElMessage.success('代理主体保存成功');
 		agentFormVisible.value = false;
 		await loadAgentRows();
-	} catch (error: any) {
-		ElMessage.error(error.message || '代理主体保存失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '代理主体保存失败');
 	} finally {
 		agentFormLoading.value = false;
 	}
@@ -1827,28 +1894,32 @@ async function toggleAgentStatus(row: TeacherAgentRecord) {
 		return;
 	}
 
+	const rowId = row.id;
 	const targetStatus = row.status === 'active' ? 'inactive' : 'active';
 
-	try {
-		await ElMessageBox.confirm(
-			`确认将代理主体「${row.name}」切换为 ${targetStatus} 吗？`,
-			'状态确认',
-			{ type: 'warning' }
-		);
-	} catch {
+	const confirmed = await confirmElementAction(
+		`确认将代理主体「${row.name}」切换为 ${targetStatus} 吗？`,
+		'状态确认'
+	);
+
+	if (!confirmed) {
 		return;
 	}
 
-	try {
-		await performanceTeacherAgentService.updateStatus({
-			id: row.id,
-			status: targetStatus
-		});
-		ElMessage.success('代理主体状态已更新');
-		await loadAgentRows();
-	} catch (error: any) {
-		ElMessage.error(error.message || '代理主体状态更新失败');
-	}
+	await runTrackedElementAction({
+		rowId,
+		actionType: 'toggleAgentStatus',
+		request: () =>
+			performanceTeacherAgentService.updateStatus({
+				id: rowId,
+				status: targetStatus
+			}),
+		successMessage: '代理主体状态已更新',
+		errorMessage: '代理主体状态更新失败',
+		refresh: async () => {
+			await loadAgentRows();
+		}
+	});
 }
 
 async function toggleAgentBlacklist(row: TeacherAgentRecord, shouldBlacklist: boolean) {
@@ -1856,29 +1927,31 @@ async function toggleAgentBlacklist(row: TeacherAgentRecord, shouldBlacklist: bo
 		return;
 	}
 
-	try {
-		await ElMessageBox.confirm(
-			shouldBlacklist
-				? `确认将代理主体「${row.name}」加入黑名单吗？`
-				: `确认将代理主体「${row.name}」移出黑名单吗？`,
-			'黑名单确认',
-			{ type: 'warning' }
-		);
-	} catch {
+	const rowId = row.id;
+	const confirmed = await confirmElementAction(
+		shouldBlacklist
+			? `确认将代理主体「${row.name}」加入黑名单吗？`
+			: `确认将代理主体「${row.name}」移出黑名单吗？`,
+		'黑名单确认'
+	);
+
+	if (!confirmed) {
 		return;
 	}
 
-	try {
-		if (shouldBlacklist) {
-			await performanceTeacherAgentService.blacklist({ id: row.id });
-		} else {
-			await performanceTeacherAgentService.unblacklist({ id: row.id });
+	await runTrackedElementAction({
+		rowId,
+		actionType: shouldBlacklist ? 'blacklistAgent' : 'unblacklistAgent',
+		request: () =>
+			shouldBlacklist
+				? performanceTeacherAgentService.blacklist({ id: rowId })
+				: performanceTeacherAgentService.unblacklist({ id: rowId }),
+		successMessage: shouldBlacklist ? '已拉黑代理主体' : '已解除黑名单',
+		errorMessage: '代理主体黑名单状态更新失败',
+		refresh: async () => {
+			await loadAgentRows();
 		}
-		ElMessage.success(shouldBlacklist ? '已拉黑代理主体' : '已解除黑名单');
-		await loadAgentRows();
-	} catch (error: any) {
-		ElMessage.error(error.message || '代理主体黑名单状态更新失败');
-	}
+	});
 }
 
 async function openRelationForm(row?: TeacherAgentRelationRecord) {
@@ -1923,8 +1996,8 @@ async function submitRelationForm() {
 		ElMessage.success('代理关系保存成功');
 		relationFormVisible.value = false;
 		await loadRelationRows();
-	} catch (error: any) {
-		ElMessage.error(error.message || '代理关系保存失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '代理关系保存失败');
 	} finally {
 		relationFormLoading.value = false;
 	}
@@ -1935,25 +2008,29 @@ async function removeRelation(row: TeacherAgentRelationRecord) {
 		return;
 	}
 
-	try {
-		await ElMessageBox.confirm(
-			`确认将代理关系「${row.parentAgentName || '-'} -> ${row.childAgentName || '-'}」置为失效吗？`,
-			'关系失效确认',
-			{ type: 'warning' }
-		);
-	} catch {
+	const rowId = row.id;
+	const confirmed = await confirmElementAction(
+		`确认将代理关系「${row.parentAgentName || '-'} -> ${row.childAgentName || '-'}」置为失效吗？`,
+		'关系失效确认'
+	);
+
+	if (!confirmed) {
 		return;
 	}
 
-	try {
-		await performanceTeacherAgentRelationService.removeTeacherAgentRelation({
-			id: row.id
-		});
-		ElMessage.success('代理关系已失效');
-		await loadRelationRows();
-	} catch (error: any) {
-		ElMessage.error(error.message || '代理关系失效失败');
-	}
+	await runTrackedElementAction({
+		rowId,
+		actionType: 'removeRelation',
+		request: () =>
+			performanceTeacherAgentRelationService.removeTeacherAgentRelation({
+				id: rowId
+			}),
+		successMessage: '代理关系已失效',
+		errorMessage: '代理关系失效失败',
+		refresh: async () => {
+			await loadRelationRows();
+		}
+	});
 }
 
 async function loadConflicts() {
@@ -1971,8 +2048,8 @@ async function loadConflicts() {
 		});
 		conflictRows.value = result.list || [];
 		return conflictRows.value;
-	} catch (error: any) {
-		ElMessage.error(error.message || '归因冲突列表加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '归因冲突列表加载失败');
 		return [];
 	} finally {
 		conflictLoading.value = false;
@@ -2001,8 +2078,8 @@ async function openConflictDetail(row: TeacherAttributionConflictRecord) {
 			resolutionRemark: detail.resolutionRemark || ''
 		});
 		await loadAgentRows();
-	} catch (error: any) {
-		ElMessage.error(error.message || '归因冲突详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '归因冲突详情加载失败');
 	}
 }
 
@@ -2030,8 +2107,8 @@ async function submitConflictResolve(resolution: 'resolved' | 'cancelled') {
 		if (currentTeacherId && currentTeacherId === conflictDetail.value.teacherId) {
 			await loadAttributionDetail(currentTeacherId);
 		}
-	} catch (error: any) {
-		ElMessage.error(error.message || '归因冲突处理失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '归因冲突处理失败');
 	} finally {
 		conflictResolveLoading.value = '';
 	}
@@ -2052,8 +2129,8 @@ async function loadAuditRows() {
 		});
 		auditRows.value = result.list || [];
 		return auditRows.value;
-	} catch (error: any) {
-		ElMessage.error(error.message || '代理体系审计加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '代理体系审计加载失败');
 		return [];
 	} finally {
 		auditLoading.value = false;
@@ -2072,6 +2149,11 @@ async function loadAttributionDetail(teacherId: number) {
 	if (!showAttributionInfoButton.value) {
 		attributionInfo.value = null;
 		attributionHistoryRows.value = [];
+		Object.assign(attributionForm, createEmptyTeacherAttribution(), {
+			teacherId,
+			agentId: undefined,
+			sourceRemark: ''
+		});
 		attributionHistoryLoading.value = false;
 		return null;
 	}
@@ -2089,10 +2171,10 @@ async function loadAttributionDetail(teacherId: number) {
 			sourceRemark: ''
 		});
 		return info;
-	} catch (error: any) {
+	} catch (error: unknown) {
 		attributionInfo.value = null;
 		attributionHistoryRows.value = [];
-		attributionError.value = error.message || '班主任归因信息加载失败';
+		attributionError.value = resolveErrorMessage(error, '班主任归因信息加载失败');
 		return null;
 	} finally {
 		attributionHistoryLoading.value = false;
@@ -2133,77 +2215,19 @@ async function submitAttribution(action: 'assign' | 'change' | 'remove') {
 			refresh(),
 			conflictCenterVisible.value ? loadConflicts() : Promise.resolve([])
 		]);
-	} catch (error: any) {
-		ElMessage.error(error.message || '归因操作失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '归因操作失败');
 	} finally {
 		attributionLoading.value = '';
 	}
 }
 
-function normalizeTeacherRecord(record: TeacherInfoRecord) {
-	return {
-		...record,
-		projectTags: normalizeStringArray(record.projectTags)
-	};
-}
 </script>
 
 <style lang="scss" scoped>
+@use '../../../../styles/patterns.teacher-channel.scss' as teacherChannel;
+
 .teacher-channel-teacher-page {
-	display: grid;
-	gap: 16px;
-
-	&__toolbar,
-	&__toolbar-left,
-	&__toolbar-right,
-	&__header-main,
-	&__section-header,
-	&__detail-actions {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		flex-wrap: wrap;
-	}
-
-	&__toolbar,
-	&__section-header,
-	&__header-main {
-		justify-content: space-between;
-	}
-
-	&__header,
-	&__drawer,
-	&__follow-section {
-		display: grid;
-		gap: 16px;
-	}
-
-	h2,
-	h3 {
-		margin: 0;
-	}
-
-	p {
-		margin: 4px 0 0;
-		color: var(--el-text-color-secondary);
-		font-size: 13px;
-	}
-
-	&__error {
-		margin-bottom: 16px;
-	}
-
-	&__pagination {
-		display: flex;
-		justify-content: flex-end;
-		padding-top: 16px;
-	}
-
-	&__follow-form {
-		border: 1px solid var(--el-border-color-lighter);
-		border-radius: 12px;
-		padding: 16px;
-		background: var(--el-fill-color-lighter);
-	}
+	@include teacherChannel.teacher-channel-workspace-shell(1320px);
 }
 </style>

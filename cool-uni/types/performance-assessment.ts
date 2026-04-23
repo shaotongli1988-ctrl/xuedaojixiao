@@ -1,81 +1,29 @@
 /**
- * cool-uni 评估模块类型与纯前端规则。
- * 这里只定义移动端首批评估页需要的结构、状态文案和按钮条件，不处理请求发送或服务端鉴权。
+ * cool-uni 评估模块类型与前端守卫。
+ * 这里只转发 OpenAPI 生成的评估领域模型，并补充移动端按钮条件判断。
  */
-export type AssessmentStatus = "draft" | "submitted" | "approved" | "rejected";
+import type { AssessmentRecord } from "/@/generated/performance-assessment.generated";
 
-export interface AssessmentScoreItem {
-	id?: number;
-	indicatorId?: number | null;
-	indicatorName: string;
-	score: number;
-	weight: number;
-	comment?: string;
-	weightedScore?: number;
-}
+export type {
+	AssessmentActionRequest,
+	AssessmentExportQuery,
+	AssessmentExportRow,
+	AssessmentExportRows,
+	AssessmentPageMode,
+	AssessmentPageQuery,
+	AssessmentPageResult,
+	AssessmentRecord,
+	AssessmentReviewRequest,
+	AssessmentSaveRequest,
+	AssessmentScoreItem,
+	AssessmentStatus,
+	DeleteIdsRequest,
+	PagePagination,
+} from "/@/generated/performance-assessment.generated";
 
-export interface AssessmentRecord {
-	id?: number;
-	code?: string;
-	employeeId: number | undefined;
-	employeeName?: string;
-	assessorId: number | undefined;
-	assessorName?: string;
-	departmentId: number | undefined;
-	departmentName?: string;
-	periodType: string;
-	periodValue: string;
-	targetCompletion: number;
-	totalScore?: number;
-	grade?: string;
-	selfEvaluation: string;
-	managerFeedback?: string;
-	status?: AssessmentStatus | string;
-	submitTime?: string;
-	approveTime?: string;
-	createTime?: string;
-	updateTime?: string;
-	scoreItems: AssessmentScoreItem[];
-}
-
-export interface AssessmentPageResult {
-	list: AssessmentRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
-
-export function assessmentStatusLabel(status?: string) {
-	switch (status) {
-		case "draft":
-			return "草稿";
-		case "submitted":
-			return "待审批";
-		case "approved":
-			return "已通过";
-		case "rejected":
-			return "已驳回";
-		default:
-			return "未知";
-	}
-}
-
-export function assessmentStatusTone(status?: string) {
-	switch (status) {
-		case "draft":
-			return "info";
-		case "submitted":
-			return "warning";
-		case "approved":
-			return "success";
-		case "rejected":
-			return "error";
-		default:
-			return "info";
-	}
-}
+export type AssessmentInfoQuery = import("/@/generated/performance-assessment.generated").AssessmentActionRequest;
+export type AssessmentSubmitRequest = import("/@/generated/performance-assessment.generated").AssessmentActionRequest;
+export type AssessmentUpdatePayload = import("/@/generated/performance-assessment.generated").AssessmentSaveRequest;
 
 export function canAssessmentEdit(item?: AssessmentRecord) {
 	return ["draft", "rejected"].includes(String(item?.status || ""));

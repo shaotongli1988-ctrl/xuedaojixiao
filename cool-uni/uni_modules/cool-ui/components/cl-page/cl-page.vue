@@ -203,11 +203,11 @@ export default defineComponent({
 			uni.createSelectorQuery()
 				.in(proxy)
 				.select(".cl-page")
-				.boundingClientRect((a) => {
+				.boundingClientRect((a: any) => {
 					uni.createSelectorQuery()
 						.in(proxy)
 						.select(".safe-area-bottom")
-						.boundingClientRect((b) => {
+						.boundingClientRect((b: any) => {
 							const scrollTop = top + (a?.height || 0) - (b?.bottom || 0);
 
 							uni.pageScrollTo({

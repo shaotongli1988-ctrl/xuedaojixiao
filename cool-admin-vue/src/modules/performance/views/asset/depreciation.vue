@@ -5,7 +5,7 @@
 			title="折旧"
 			description="查看月度折旧列表和汇总，按月份触发资产侧折旧重算。"
 			notice="折旧仅做资产侧汇总和重算，不生成会计凭证。"
-			page-permission="performance:assetDepreciation:page"
+			:page-permission="PERMISSIONS.performance.assetDepreciation.page"
 			:columns="columns"
 			:filters="filters"
 			:create-filters="createFilters"
@@ -30,7 +30,10 @@ import { reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import AssetCrudPage from './asset-crud-page.vue';
 import { performanceAssetDepreciationService } from '../../service/asset-depreciation';
+import type { AssetDepreciationSummary } from '../../types';
+import { resolveErrorMessage, showElementErrorFromError } from '../shared/error-message';
 import { assetStatusTagMap, formatMoney } from './shared';
+import { PERMISSIONS } from '../../../base/generated/permissions.generated';
 
 const columns = [
 	{ prop: 'assetNo', label: '资产编号', minWidth: 140 },
@@ -60,7 +63,7 @@ const toolbarActions = [
 	{
 		key: 'recalculate',
 		label: '折旧重算',
-		permission: 'performance:assetDepreciation:recalculate',
+		permission: PERMISSIONS.performance.assetDepreciation.recalculate,
 		type: 'primary',
 		handler: async () => {
 			await performanceAssetDepreciationService.recalculate({
@@ -83,12 +86,12 @@ function createFilters() {
 async function loadSummary() {
 	loading.value = true;
 	try {
-		const result = await performanceAssetDepreciationService.fetchSummary({
+		const result: AssetDepreciationSummary = await performanceAssetDepreciationService.fetchSummary({
 			depreciationMonth: createFilters().depreciationMonth
 		});
 		Object.assign(summary, result || {});
-	} catch (error: any) {
-		ElMessage.error(error?.message || '折旧汇总加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '折旧汇总加载失败');
 	} finally {
 		loading.value = false;
 	}
@@ -98,15 +101,30 @@ loadSummary();
 </script>
 
 <style lang="scss" scoped>
+@use '../../../../styles/patterns.data-panel.scss' as dataPanel;
+
 .asset-depreciation-page {
-	display: grid;
-	gap: 16px;
+	@include dataPanel.data-panel-shell;
+
+	--asset-depreciation-card-bg: var(--app-surface-card);
+	--asset-depreciation-muted-bg: var(--app-surface-muted);
+	--asset-depreciation-border: var(--app-border-strong);
+
+	:deep(.el-card) {
+		border-color: var(--asset-depreciation-border);
+		background: var(--asset-depreciation-card-bg);
+		box-shadow: var(--app-shadow-surface);
+	}
+
+	:deep(.el-table) {
+		@include dataPanel.data-panel-table;
+		--el-table-header-bg-color: var(--asset-depreciation-muted-bg);
+	}
 
 	&__summary {
 		display: flex;
-		gap: 12px;
+		gap: var(--app-space-3);
 		flex-wrap: wrap;
 	}
 }
 </style>
-

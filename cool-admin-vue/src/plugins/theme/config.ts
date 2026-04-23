@@ -1,5 +1,6 @@
 import { type ModuleConfig } from '/@/cool';
 import 'element-plus/theme-chalk/dark/css-vars.css';
+import '../../styles/index.scss';
 import './static/css/index.scss';
 import { t } from '/#/i18n';
 import { useTheme } from './hooks';

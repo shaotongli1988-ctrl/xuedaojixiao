@@ -1,8 +1,12 @@
 import { orderBy } from "lodash-es";
 
 function resolvePlatform() {
-	if (typeof uni !== "undefined" && typeof uni.getSystemInfoSync === "function") {
-		return uni.getSystemInfoSync().platform;
+	const runtimeUni = (globalThis as typeof globalThis & {
+		uni?: { getSystemInfoSync?: () => { platform?: string } };
+	}).uni;
+
+	if (runtimeUni && typeof runtimeUni.getSystemInfoSync === "function") {
+		return runtimeUni.getSystemInfoSync().platform;
 	}
 
 	return "h5";

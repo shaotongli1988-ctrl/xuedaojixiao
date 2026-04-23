@@ -4,75 +4,79 @@
  * 不负责自动发证、课程结业判断或证书附件下载。
  */
 import { BaseService } from '/@/cool';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeCertificateLedgerPageResult,
+	decodeCertificatePageResult,
+	decodeCertificateRecord
+} from './certificate-contract';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import type {
+	CertificateIssueRequest,
 	CertificateLedgerPageResult,
+	CertificateInfoQuery,
+	CertificatePageQuery,
+	CertificatePageResult,
 	CertificateRecord,
-	CertificatePageResult
+	CertificateRecordPageQuery
 } from '../types';
 
 export default class PerformanceCertificateService extends BaseService {
 	permission = {
-		page: 'performance:certificate:page',
-		info: 'performance:certificate:info',
-		add: 'performance:certificate:add',
-		update: 'performance:certificate:update',
-		issue: 'performance:certificate:issue',
-		recordPage: 'performance:certificate:recordPage'
+		page: PERMISSIONS.performance.certificate.page,
+		info: PERMISSIONS.performance.certificate.info,
+		add: PERMISSIONS.performance.certificate.add,
+		update: PERMISSIONS.performance.certificate.update,
+		issue: PERMISSIONS.performance.certificate.issue,
+		recordPage: PERMISSIONS.performance.certificate.recordPage
 	};
 
 	constructor() {
 		super('admin/performance/certificate');
 	}
 
-	fetchPage(data: {
-		page: number;
-		size: number;
-		keyword?: string;
-		category?: string;
-		status?: string;
-	}) {
-		return super.page(data) as unknown as Promise<CertificatePageResult>;
+	fetchPage(data: CertificatePageQuery) {
+		return asPerformanceServicePromise<CertificatePageResult>(
+			super.page(data),
+			decodeCertificatePageResult
+		);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<CertificateRecord>;
+	fetchInfo(params: CertificateInfoQuery) {
+		return asPerformanceServicePromise<CertificateRecord>(
+			super.info(params),
+			decodeCertificateRecord
+		);
 	}
 
-	createCertificate(data: Partial<CertificateRecord>) {
-		return super.add(data) as unknown as Promise<CertificateRecord>;
+	createCertificate(data: CertificateRecord) {
+		return asPerformanceServicePromise<CertificateRecord>(
+			super.add(data),
+			decodeCertificateRecord
+		);
 	}
 
-	updateCertificate(data: Partial<CertificateRecord> & { id: number }) {
-		return super.update(data) as unknown as Promise<CertificateRecord>;
+	updateCertificate(data: CertificateRecord & { id: number }) {
+		return asPerformanceServicePromise<CertificateRecord>(
+			super.update(data),
+			decodeCertificateRecord
+		);
 	}
 
-	issueCertificate(data: {
-		certificateId: number;
-		employeeId: number;
-		issuedAt: string;
-		remark?: string;
-		sourceCourseId?: number | null;
-	}) {
-		return this.request({
+	issueCertificate(data: CertificateIssueRequest) {
+		return asPerformanceServicePromise<void>(this.request({
 			url: '/issue',
 			method: 'POST',
 			data
-		}) as unknown as Promise<void>;
+		}));
 	}
 
-	fetchRecordPage(data: {
-		page: number;
-		size: number;
-		certificateId?: number;
-		employeeId?: number;
-		status?: string;
-		departmentId?: number;
-	}) {
-		return this.request({
+	fetchRecordPage(data: CertificateRecordPageQuery) {
+		return asPerformanceServicePromise<CertificateLedgerPageResult>(this.request({
 			url: '/recordPage',
 			method: 'POST',
 			data
-		}) as unknown as Promise<CertificateLedgerPageResult>;
+		}), decodeCertificateLedgerPageResult);
 	}
 }
 

@@ -167,7 +167,7 @@ const rules: FormRules = {
 	endDate: [
 		{ required: true, message: '请选择结束时间', trigger: 'change' },
 		{
-			validator: (_rule: any, value: string, callback: (error?: Error) => void) => {
+			validator: (_rule: unknown, value: string, callback: (error?: Error) => void) => {
 				if (!value || !localValue.startDate) {
 					callback();
 					return;
@@ -233,15 +233,19 @@ async function handleSubmit() {
 </script>
 
 <style lang="scss" scoped>
+@use '../../../styles/patterns.overlay-responsive.scss' as overlayResponsive;
+
 .meeting-form {
 	&__alert {
-		margin-top: 12px;
+		margin-top: var(--app-space-3);
 	}
 
 	&__footer {
 		display: flex;
 		justify-content: flex-end;
-		gap: 12px;
+		gap: var(--app-space-3);
 	}
+
+	@include overlayResponsive.overlay-responsive;
 }
 </style>

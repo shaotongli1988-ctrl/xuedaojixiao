@@ -1,7 +1,13 @@
 <!-- 文件职责：承接主题19班级列表、新增、编辑、删除和详情查看主链；不负责报名转化、复杂统计或跨主题班级运营；依赖 teacherClass / teacherInfo service 与路由预置参数；维护重点是只有 partnered teacher 可建班、closed 班级前端也要禁用编辑删除。 -->
 <template>
-	<div v-if="canAccess" class="teacher-channel-class-page">
-		<el-card shadow="never">
+	<permission-overlay
+		:denied="!canAccess"
+		:permission-key="performanceTeacherClassService.permission.page"
+		title="当前账号暂未开通合作班级页权限"
+		description="页面内容已切换到保护态。请联系管理员开通班级查看权限后再处理合作班级。"
+	>
+		<div class="teacher-channel-class-page">
+		<el-card shadow="never" class="teacher-channel-class-page__toolbar-card">
 			<div class="teacher-channel-class-page__toolbar">
 				<div class="teacher-channel-class-page__toolbar-left">
 					<el-input
@@ -18,7 +24,7 @@
 						style="width: 180px"
 					>
 						<el-option
-							v-for="item in teacherClassStatusOptions"
+							v-for="item in classStatusOptions"
 							:key="item.value"
 							:label="item.label"
 							:value="item.value"
@@ -36,7 +42,7 @@
 			</div>
 		</el-card>
 
-		<el-card shadow="never">
+		<el-card shadow="never" class="teacher-channel-class-page__content-card">
 			<template #header>
 				<div class="teacher-channel-class-page__header">
 					<div>
@@ -71,8 +77,8 @@
 				<el-table-column prop="studentCount" label="学员数" width="100" />
 				<el-table-column prop="status" label="状态" width="110">
 					<template #default="{ row }">
-						<el-tag :type="teacherClassStatusTagType(row.status)">
-							{{ teacherClassStatusLabel(row.status) }}
+						<el-tag :type="classStatusTagType(row.status)">
+							{{ classStatusLabel(row.status) }}
 						</el-tag>
 					</template>
 				</el-table-column>
@@ -123,8 +129,8 @@
 				<el-descriptions-item label="项目标签">{{ detailRecord.projectTag || '-' }}</el-descriptions-item>
 				<el-descriptions-item label="学员数">{{ detailRecord.studentCount || 0 }}</el-descriptions-item>
 				<el-descriptions-item label="状态">
-					<el-tag :type="teacherClassStatusTagType(detailRecord.status)">
-						{{ teacherClassStatusLabel(detailRecord.status) }}
+					<el-tag :type="classStatusTagType(detailRecord.status)">
+						{{ classStatusLabel(detailRecord.status) }}
 					</el-tag>
 				</el-descriptions-item>
 				<el-descriptions-item label="更新时间">{{ detailRecord.updateTime || '-' }}</el-descriptions-item>
@@ -190,11 +196,8 @@
 				<el-button type="primary" :loading="submitLoading" @click="submitForm">保存</el-button>
 			</template>
 		</el-dialog>
-	</div>
-
-	<el-card v-else shadow="never">
-		<el-empty description="当前账号没有该页面权限" />
-	</el-card>
+		</div>
+	</permission-overlay>
 </template>
 
 <script lang="ts" setup>
@@ -204,41 +207,41 @@ defineOptions({
 
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
+import { useDict } from '/$/dict';
+import PermissionOverlay from '../../components/permission-overlay.vue';
+import { useListPage } from '../../composables/use-list-page.js';
 import { performanceTeacherClassService } from '../../service/teacherClass';
 import { performanceTeacherInfoService } from '../../service/teacherInfo';
-import type { TeacherClassRecord, TeacherClassStatus, TeacherInfoRecord } from '../../types';
 import {
-	canDeleteTeacherClass,
-	canEditTeacherClass,
-	teacherClassStatusLabel,
-	teacherClassStatusOptions,
-	teacherClassStatusTagType
-} from '../../utils/teacher-channel.js';
+	confirmElementAction,
+	runTrackedElementAction
+} from '../shared/action-feedback';
+import {
+	resolveErrorMessage,
+	showElementErrorFromError,
+	showElementWarningFromError
+} from '../shared/error-message';
+import {
+	createEmptyTeacherClass,
+	type TeacherClassRecord,
+	type TeacherClassStatus,
+	type TeacherInfoRecord
+} from '../../types';
+import { canDeleteTeacherClass, canEditTeacherClass } from '../../utils/teacher-channel.js';
 import {
 	consumeRoutePreset,
 	firstQueryValue,
 	normalizeQueryNumber
 } from '../../utils/route-preset.js';
 
-function createEmptyTeacherClassRecord(): TeacherClassRecord {
-	return {
-		teacherId: undefined,
-		className: '',
-		schoolName: '',
-		grade: '',
-		projectTag: '',
-		studentCount: 0,
-		status: 'draft'
-	};
-}
+const TEACHER_CLASS_STATUS_DICT_KEY = 'performance.teacherChannel.classStatus';
 
 const route = useRoute();
 const router = useRouter();
-const rows = ref<TeacherClassRecord[]>([]);
+const { dict } = useDict();
 const teacherOptions = ref<TeacherInfoRecord[]>([]);
-const tableLoading = ref(false);
 const submitLoading = ref(false);
 const pageError = ref('');
 const formVisible = ref(false);
@@ -247,18 +250,7 @@ const editingRecord = ref<TeacherClassRecord | null>(null);
 const detailRecord = ref<TeacherClassRecord | null>(null);
 const formRef = ref<FormInstance>();
 
-const filters = reactive({
-	keyword: '',
-	status: '' as TeacherClassStatus | ''
-});
-
-const pagination = reactive({
-	page: 1,
-	size: 10,
-	total: 0
-});
-
-const form = reactive<TeacherClassRecord>(createEmptyTeacherClassRecord());
+const form = reactive<TeacherClassRecord>(createEmptyTeacherClass());
 
 const rules: FormRules = {
 	teacherId: [{ required: true, message: '请选择班主任', trigger: 'change' }],
@@ -297,11 +289,42 @@ const classStatusModel = computed<TeacherClassStatus>({
 		form.status = value;
 	}
 });
-const editableStatusOptions = computed(() =>
-	teacherClassStatusOptions.filter(item => item.value !== 'closed' || editingRecord.value?.status === 'active')
+const classStatusOptions = computed<Array<{ label: string; value: TeacherClassStatus }>>(() =>
+	dict.get(TEACHER_CLASS_STATUS_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as TeacherClassStatus
+	}))
 );
+const editableStatusOptions = computed(() =>
+	classStatusOptions.value.filter(
+		item => item.value !== 'closed' || editingRecord.value?.status === 'active'
+	)
+);
+const teacherClassList = useListPage({
+	createFilters: () => ({
+		keyword: '',
+		status: '' as TeacherClassStatus | ''
+	}),
+	canLoad: () => canAccess.value,
+	fetchPage: async params =>
+		performanceTeacherClassService.fetchPage({
+			page: params.page,
+			size: params.size,
+			keyword: params.keyword || undefined,
+			status: params.status || undefined
+		}),
+	onError: (error: unknown) => {
+		pageError.value = resolveErrorMessage(error, '班级列表加载失败');
+		ElMessage.error(pageError.value);
+	}
+});
+const rows = teacherClassList.rows;
+const tableLoading = teacherClassList.loading;
+const filters = teacherClassList.filters;
+const pagination = teacherClassList.pager;
 
 onMounted(async () => {
+	await dict.refresh([TEACHER_CLASS_STATUS_DICT_KEY]);
 	await loadTeacherOptions();
 	await refresh();
 	await consumeClassRoutePreset();
@@ -323,51 +346,27 @@ async function loadTeacherOptions() {
 			cooperationStatus: 'partnered'
 		});
 		teacherOptions.value = result.list || [];
-	} catch (error: any) {
-		ElMessage.warning(error.message || '合作班主任选项加载失败');
+	} catch (error: unknown) {
+		showElementWarningFromError(error, '合作班主任选项加载失败');
 	}
 }
 
 async function refresh() {
-	if (!canAccess.value) {
-		return;
-	}
-
-	tableLoading.value = true;
 	pageError.value = '';
-
-	try {
-		const result = await performanceTeacherClassService.fetchPage({
-			page: pagination.page,
-			size: pagination.size,
-			keyword: filters.keyword || undefined,
-			status: filters.status || undefined
-		});
-		rows.value = result.list || [];
-		pagination.total = result.pagination?.total || 0;
-	} catch (error: any) {
-		pageError.value = error.message || '班级列表加载失败';
-		ElMessage.error(pageError.value);
-	} finally {
-		tableLoading.value = false;
-	}
+	await teacherClassList.reload();
 }
 
 function handleReset() {
-	filters.keyword = '';
-	filters.status = '';
-	pagination.page = 1;
-	refresh();
+	void teacherClassList.reset();
 }
 
 function changePage(page: number) {
-	pagination.page = page;
-	refresh();
+	void teacherClassList.goToPage(page);
 }
 
 function openCreate(presetTeacherId?: number) {
 	editingRecord.value = null;
-	Object.assign(form, createEmptyTeacherClassRecord(), {
+	Object.assign(form, createEmptyTeacherClass(), {
 		teacherId: presetTeacherId || undefined
 	});
 	formVisible.value = true;
@@ -386,8 +385,8 @@ async function openDetail(row: TeacherClassRecord) {
 	try {
 		detailRecord.value = await performanceTeacherClassService.fetchInfo({ id });
 		detailVisible.value = true;
-	} catch (error: any) {
-		ElMessage.error(error.message || '班级详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '班级详情加载失败');
 	}
 }
 
@@ -401,16 +400,24 @@ async function openEdit(row: TeacherClassRecord) {
 	try {
 		const detail = await performanceTeacherClassService.fetchInfo({ id });
 		editingRecord.value = detail;
-		Object.assign(form, createEmptyTeacherClassRecord(), detail, {
+		Object.assign(form, createEmptyTeacherClass(), detail, {
 			id: detail.id || detail.classId
 		});
 		formVisible.value = true;
 		nextTick(() => {
 			formRef.value?.clearValidate();
 		});
-	} catch (error: any) {
-		ElMessage.error(error.message || '班级详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '班级详情加载失败');
 	}
+}
+
+function classStatusLabel(value?: TeacherClassStatus | '') {
+	return dict.getLabel(TEACHER_CLASS_STATUS_DICT_KEY, value) || value || '-';
+}
+
+function classStatusTagType(value?: TeacherClassStatus | '') {
+	return dict.getMeta(TEACHER_CLASS_STATUS_DICT_KEY, value)?.tone || 'info';
 }
 
 async function submitForm() {
@@ -437,8 +444,8 @@ async function submitForm() {
 		formVisible.value = false;
 		await loadTeacherOptions();
 		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '班级保存失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '班级保存失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -451,23 +458,23 @@ async function handleDelete(row: TeacherClassRecord) {
 		return;
 	}
 
-	try {
-		await ElMessageBox.confirm(`确认删除班级「${row.className}」吗？`, '删除确认', {
-			type: 'warning'
-		});
-	} catch {
+	const confirmed = await confirmElementAction(`确认删除班级「${row.className}」吗？`, '删除确认');
+
+	if (!confirmed) {
 		return;
 	}
 
-	try {
-		await performanceTeacherClassService.removeTeacherClass({
-			ids: [id]
-		});
-		ElMessage.success('班级已删除');
-		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '班级删除失败');
-	}
+	await runTrackedElementAction({
+		rowId: id,
+		actionType: 'delete',
+		request: () =>
+			performanceTeacherClassService.removeTeacherClass({
+				ids: [id]
+			}),
+		successMessage: '班级已删除',
+		errorMessage: '班级删除失败',
+		refresh
+	});
 }
 
 async function consumeClassRoutePreset() {
@@ -502,40 +509,17 @@ async function consumeClassRoutePreset() {
 </script>
 
 <style lang="scss" scoped>
-.teacher-channel-class-page {
-	display: grid;
-	gap: 16px;
+@use '../../../../styles/patterns.teacher-channel.scss' as teacherChannel;
 
-	&__toolbar,
-	&__toolbar-left,
-	&__toolbar-right,
+.teacher-channel-class-page {
+	@include teacherChannel.teacher-channel-workspace-shell(980px);
+
 	&__header {
 		display: flex;
 		align-items: center;
-		gap: 12px;
-		flex-wrap: wrap;
-	}
-
-	&__toolbar,
-	&__header {
 		justify-content: space-between;
-	}
-
-	&__pagination {
-		display: flex;
-		justify-content: flex-end;
-		padding-top: 16px;
-	}
-
-	h2,
-	p {
-		margin: 0;
-	}
-
-	p {
-		margin-top: 4px;
-		color: var(--el-text-color-secondary);
-		font-size: 13px;
+		gap: var(--app-space-3);
+		flex-wrap: wrap;
 	}
 }
 </style>

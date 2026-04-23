@@ -4,66 +4,77 @@
  * 不负责目录树、真实文件上传、权限继承或二进制内容下载。
  */
 import { BaseService } from '/@/cool';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeDocumentCenterPageResult,
+	decodeDocumentCenterRecord,
+	decodeDocumentCenterStats
+} from './document-center-contract';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import type {
+	DocumentCenterCreatePayload,
+	DocumentCenterInfoQuery,
+	DocumentCenterPageQuery,
 	DocumentCenterPageResult,
 	DocumentCenterRecord,
-	DocumentCenterStats
+	DocumentCenterRemovePayload,
+	DocumentCenterStats,
+	DocumentCenterStatsQuery,
+	DocumentCenterUpdatePayload
 } from '../types';
 
 export default class PerformanceDocumentCenterService extends BaseService {
 	permission = {
-		page: 'performance:documentCenter:page',
-		info: 'performance:documentCenter:info',
-		stats: 'performance:documentCenter:stats',
-		add: 'performance:documentCenter:add',
-		update: 'performance:documentCenter:update',
-		delete: 'performance:documentCenter:delete'
+		page: PERMISSIONS.performance.documentCenter.page,
+		info: PERMISSIONS.performance.documentCenter.info,
+		stats: PERMISSIONS.performance.documentCenter.stats,
+		add: PERMISSIONS.performance.documentCenter.add,
+		update: PERMISSIONS.performance.documentCenter.update,
+		delete: PERMISSIONS.performance.documentCenter.delete
 	};
 
 	constructor() {
 		super('admin/performance/documentCenter');
 	}
 
-	fetchPage(data: {
-		page: number;
-		size: number;
-		keyword?: string;
-		status?: string;
-		category?: string;
-		confidentiality?: string;
-		storage?: string;
-	}) {
-		return super.page(data) as unknown as Promise<DocumentCenterPageResult>;
+	fetchPage(data: DocumentCenterPageQuery) {
+		return asPerformanceServicePromise<DocumentCenterPageResult>(
+			super.page(data),
+			decodeDocumentCenterPageResult
+		);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<DocumentCenterRecord>;
+	fetchInfo(params: DocumentCenterInfoQuery) {
+		return asPerformanceServicePromise<DocumentCenterRecord>(
+			super.info(params),
+			decodeDocumentCenterRecord
+		);
 	}
 
-	fetchStats(params?: {
-		keyword?: string;
-		status?: string;
-		category?: string;
-		confidentiality?: string;
-		storage?: string;
-	}) {
-		return this.request({
+	fetchStats(params?: DocumentCenterStatsQuery) {
+		return asPerformanceServicePromise<DocumentCenterStats>(this.request({
 			url: '/stats',
 			method: 'GET',
 			params
-		}) as unknown as Promise<DocumentCenterStats>;
+		}), decodeDocumentCenterStats);
 	}
 
-	createDocument(data: Partial<DocumentCenterRecord>) {
-		return super.add(data) as unknown as Promise<DocumentCenterRecord>;
+	createDocument(data: DocumentCenterCreatePayload) {
+		return asPerformanceServicePromise<DocumentCenterRecord>(
+			super.add(data),
+			decodeDocumentCenterRecord
+		);
 	}
 
-	updateDocument(data: Partial<DocumentCenterRecord> & { id: number }) {
-		return super.update(data) as unknown as Promise<DocumentCenterRecord>;
+	updateDocument(data: DocumentCenterUpdatePayload) {
+		return asPerformanceServicePromise<DocumentCenterRecord>(
+			super.update(data),
+			decodeDocumentCenterRecord
+		);
 	}
 
-	removeDocument(data: { ids: number[] }) {
-		return super.delete(data) as unknown as Promise<void>;
+	removeDocument(data: DocumentCenterRemovePayload) {
+		return asPerformanceServicePromise<void>(super.delete(data));
 	}
 }
 

@@ -131,25 +131,31 @@ async function goToEntry(path: string) {
 
 <style lang="scss" scoped>
 .recruitment-center-page {
-	--recruitment-hero-bg: var(--el-bg-color);
-	--recruitment-hero-border: var(--el-border-color-light);
-	--recruitment-eyebrow-color: var(--el-text-color-secondary);
-	--recruitment-title-color: var(--el-text-color-primary);
-	--recruitment-description-color: var(--el-text-color-regular);
-	--recruitment-card-bg: var(--el-bg-color-overlay);
-	--recruitment-card-border-hover: var(--el-color-primary-light-7);
-	--recruitment-card-shadow: 0 10px 24px rgba(31, 35, 41, 0.08);
-	--recruitment-card-title-color: var(--el-text-color-primary);
-	--recruitment-card-topic-color: var(--el-text-color-secondary);
-	--recruitment-card-description-color: var(--el-text-color-regular);
-	--recruitment-card-foot-color: var(--el-text-color-secondary);
+	--recruitment-hero-bg: var(--app-surface-hero);
+	--recruitment-hero-border: var(--app-border-strong);
+	--recruitment-eyebrow-color: var(--app-text-tertiary);
+	--recruitment-title-color: var(--app-text-primary);
+	--recruitment-description-color: var(--app-text-secondary);
+	--recruitment-card-bg: var(--app-surface-card);
+	--recruitment-card-border-hover: var(--app-border-hover);
+	--recruitment-card-shadow: var(--app-shadow-hover);
+	--recruitment-card-title-color: var(--app-text-primary);
+	--recruitment-card-topic-color: var(--app-text-tertiary);
+	--recruitment-card-description-color: var(--app-text-secondary);
+	--recruitment-card-foot-color: var(--app-text-tertiary);
 
 	display: flex;
 	flex-direction: column;
-	gap: 16px;
+	gap: var(--app-space-4);
+
+	:deep(.el-card) {
+		border-color: var(--recruitment-hero-border);
+		background: var(--recruitment-card-bg);
+		box-shadow: var(--app-shadow-surface);
+	}
 
 	&__hero {
-		border-radius: 12px;
+		border-radius: var(--app-radius-lg);
 		border: 1px solid var(--recruitment-hero-border);
 		background: var(--recruitment-hero-bg);
 	}
@@ -158,14 +164,14 @@ async function goToEntry(path: string) {
 		display: flex;
 		align-items: flex-start;
 		justify-content: space-between;
-		gap: 16px;
-		margin-bottom: 16px;
+		gap: var(--app-space-4);
+		margin-bottom: var(--app-space-4);
 	}
 
 	&__eyebrow {
 		font-size: 13px;
 		color: var(--recruitment-eyebrow-color);
-		margin-bottom: 8px;
+		margin-bottom: var(--app-space-2);
 	}
 
 	&__title {
@@ -188,8 +194,9 @@ async function goToEntry(path: string) {
 
 	&__card {
 		height: 100%;
-		border-radius: 12px;
+		border-radius: var(--app-radius-lg);
 		background: var(--recruitment-card-bg);
+		border: 1px solid var(--app-border-strong);
 		transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 
 		&:hover {
@@ -203,8 +210,8 @@ async function goToEntry(path: string) {
 		display: flex;
 		align-items: flex-start;
 		justify-content: space-between;
-		gap: 12px;
-		margin-bottom: 12px;
+		gap: var(--app-space-3);
+		margin-bottom: var(--app-space-3);
 	}
 
 	&__card-title {
@@ -230,28 +237,11 @@ async function goToEntry(path: string) {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 12px;
-		margin-top: 20px;
+		gap: var(--app-space-3);
+		margin-top: var(--app-space-5);
 		font-size: 13px;
 		color: var(--recruitment-card-foot-color);
 	}
-}
-
-:global(html.dark .recruitment-center-page) {
-	--recruitment-hero-bg:
-		radial-gradient(circle at top right, rgba(79, 137, 255, 0.12), transparent 34%),
-		linear-gradient(135deg, rgba(24, 31, 46, 0.96) 0%, rgba(19, 24, 36, 0.98) 100%);
-	--recruitment-hero-border: rgba(103, 126, 176, 0.24);
-	--recruitment-eyebrow-color: #95a5c6;
-	--recruitment-title-color: #eef3ff;
-	--recruitment-description-color: #b5c0d4;
-	--recruitment-card-bg: linear-gradient(180deg, rgba(28, 35, 50, 0.95) 0%, rgba(20, 26, 39, 0.98) 100%);
-	--recruitment-card-border-hover: rgba(117, 160, 255, 0.5);
-	--recruitment-card-shadow: 0 12px 28px rgba(5, 8, 15, 0.36);
-	--recruitment-card-title-color: #e8eefc;
-	--recruitment-card-topic-color: #95a5c6;
-	--recruitment-card-description-color: #b9c4d8;
-	--recruitment-card-foot-color: #95a5c6;
 }
 
 @media (max-width: 767px) {

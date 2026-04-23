@@ -4,63 +4,88 @@
  * 不负责课程主链、人才资产、面试流程或任何未冻结扩展能力。
  */
 import { BaseService } from '/@/cool';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeCapabilityItemRecord,
+	decodeCapabilityModelPageResult,
+	decodeCapabilityModelRecord,
+	decodeCapabilityPortraitRecord
+} from './capability-contract';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import type {
+	CapabilityItemInfoQuery,
+	CapabilityModelInfoQuery,
+	CapabilityModelPageQuery,
 	CapabilityItemRecord,
 	CapabilityModelPageResult,
 	CapabilityModelRecord,
+	CapabilityModelSaveRequest,
+	CapabilityPortraitInfoQuery,
 	CapabilityPortraitRecord
 } from '../types';
 
 export default class PerformanceCapabilityService extends BaseService {
 	permission = {
-		page: 'performance:capabilityModel:page',
-		info: 'performance:capabilityModel:info',
-		add: 'performance:capabilityModel:add',
-		update: 'performance:capabilityModel:update',
-		itemInfo: 'performance:capabilityItem:info',
-		portraitInfo: 'performance:capabilityPortrait:info'
+		page: PERMISSIONS.performance.capabilityModel.page,
+		info: PERMISSIONS.performance.capabilityModel.info,
+		add: PERMISSIONS.performance.capabilityModel.add,
+		update: PERMISSIONS.performance.capabilityModel.update,
+		itemInfo: PERMISSIONS.performance.capabilityItem.info,
+		portraitInfo: PERMISSIONS.performance.capabilityPortrait.info
 	};
 
 	constructor() {
 		super('admin/performance/capabilityModel');
 	}
 
-	fetchPage(data: {
-		page: number;
-		size: number;
-		keyword?: string;
-		category?: string;
-		status?: string;
-	}) {
-		return super.page(data) as unknown as Promise<CapabilityModelPageResult>;
+	fetchPage(data: CapabilityModelPageQuery) {
+		return asPerformanceServicePromise<CapabilityModelPageResult>(
+			super.page(data),
+			decodeCapabilityModelPageResult
+		);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<CapabilityModelRecord>;
+	fetchInfo(params: CapabilityModelInfoQuery) {
+		return asPerformanceServicePromise<CapabilityModelRecord>(
+			super.info(params),
+			decodeCapabilityModelRecord
+		);
 	}
 
-	createModel(data: Partial<CapabilityModelRecord>) {
-		return super.add(data) as unknown as Promise<CapabilityModelRecord>;
+	createModel(data: CapabilityModelSaveRequest) {
+		return asPerformanceServicePromise<CapabilityModelRecord>(
+			super.add(data),
+			decodeCapabilityModelRecord
+		);
 	}
 
-	updateModel(data: Partial<CapabilityModelRecord> & { id: number }) {
-		return super.update(data) as unknown as Promise<CapabilityModelRecord>;
+	updateModel(data: CapabilityModelSaveRequest & { id: number }) {
+		return asPerformanceServicePromise<CapabilityModelRecord>(
+			super.update(data),
+			decodeCapabilityModelRecord
+		);
 	}
 
-	fetchItemInfo(params: { id: number }) {
-		return this.request({
-			url: '/admin/performance/capabilityItem/info',
-			method: 'GET',
-			params
-		}) as unknown as Promise<CapabilityItemRecord>;
+	fetchItemInfo(params: CapabilityItemInfoQuery) {
+		return asPerformanceServicePromise<CapabilityItemRecord>(
+			this.request({
+				url: '/admin/performance/capabilityItem/info',
+				method: 'GET',
+				params
+			}),
+			decodeCapabilityItemRecord
+		);
 	}
 
-	fetchPortraitInfo(params: { employeeId: number }) {
-		return this.request({
-			url: '/admin/performance/capabilityPortrait/info',
-			method: 'GET',
-			params
-		}) as unknown as Promise<CapabilityPortraitRecord>;
+	fetchPortraitInfo(params: CapabilityPortraitInfoQuery) {
+		return asPerformanceServicePromise<CapabilityPortraitRecord>(
+			this.request({
+				url: '/admin/performance/capabilityPortrait/info',
+				method: 'GET',
+				params
+			}),
+			decodeCapabilityPortraitRecord
+		);
 	}
 }
 

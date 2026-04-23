@@ -4,77 +4,111 @@
  * 不负责财务清理、回冲或外部审批流。
  */
 import { BaseService } from '/@/cool';
-import type { AssetDisposalPageResult, AssetDisposalRecord } from '../types';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeAssetDisposalPageResult,
+	decodeAssetDisposalRecord
+} from './asset-disposal-contract';
+import type {
+	AssetDisposalApprovePayload,
+	AssetDisposalCancelPayload,
+	AssetDisposalCreatePayload,
+	AssetDisposalExecutePayload,
+	AssetDisposalInfoQuery,
+	AssetDisposalPageQuery,
+	AssetDisposalPageResult,
+	AssetDisposalRecord,
+	AssetDisposalSubmitPayload,
+	AssetDisposalUpdatePayload
+} from '../types';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 
 export default class PerformanceAssetDisposalService extends BaseService {
 	permission = {
-		page: 'performance:assetDisposal:page',
-		info: 'performance:assetDisposal:info',
-		add: 'performance:assetDisposal:add',
-		update: 'performance:assetDisposal:update',
-		submit: 'performance:assetDisposal:submit',
-		approve: 'performance:assetDisposal:approve',
-		execute: 'performance:assetDisposal:execute',
-		cancel: 'performance:assetDisposal:cancel'
+		page: PERMISSIONS.performance.assetDisposal.page,
+		info: PERMISSIONS.performance.assetDisposal.info,
+		add: PERMISSIONS.performance.assetDisposal.add,
+		update: PERMISSIONS.performance.assetDisposal.update,
+		submit: PERMISSIONS.performance.assetDisposal.submit,
+		approve: PERMISSIONS.performance.assetDisposal.approve,
+		execute: PERMISSIONS.performance.assetDisposal.execute,
+		cancel: PERMISSIONS.performance.assetDisposal.cancel
 	};
 
 	constructor() {
 		super('admin/performance/assetDisposal');
 	}
 
-	fetchPage(data: {
-		page: number;
-		size: number;
-		keyword?: string;
-		status?: AssetDisposalRecord['status'];
-		departmentId?: number;
-		applicantId?: number;
-	}) {
-		return super.page(data) as unknown as Promise<AssetDisposalPageResult>;
+	fetchPage(data: AssetDisposalPageQuery) {
+		return asPerformanceServicePromise<AssetDisposalPageResult>(
+			super.page(data),
+			decodeAssetDisposalPageResult
+		);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<AssetDisposalRecord>;
+	fetchInfo(params: AssetDisposalInfoQuery) {
+		return asPerformanceServicePromise<AssetDisposalRecord>(
+			super.info(params),
+			decodeAssetDisposalRecord
+		);
 	}
 
-	createDisposal(data: Partial<AssetDisposalRecord>) {
-		return super.add(data) as unknown as Promise<AssetDisposalRecord>;
+	createDisposal(data: AssetDisposalCreatePayload) {
+		return asPerformanceServicePromise<AssetDisposalRecord>(
+			super.add(data),
+			decodeAssetDisposalRecord
+		);
 	}
 
-	updateDisposal(data: Partial<AssetDisposalRecord> & { id: number }) {
-		return super.update(data) as unknown as Promise<AssetDisposalRecord>;
+	updateDisposal(data: AssetDisposalUpdatePayload) {
+		return asPerformanceServicePromise<AssetDisposalRecord>(
+			super.update(data),
+			decodeAssetDisposalRecord
+		);
 	}
 
-	submitDisposal(data: { id: number }) {
-		return this.request({
-			url: '/submit',
-			method: 'POST',
-			data
-		}) as unknown as Promise<AssetDisposalRecord>;
+	submitDisposal(data: AssetDisposalSubmitPayload) {
+		return asPerformanceServicePromise<AssetDisposalRecord>(
+			this.request({
+				url: '/submit',
+				method: 'POST',
+				data
+			}),
+			decodeAssetDisposalRecord
+		);
 	}
 
-	approveDisposal(data: { id: number; remark?: string }) {
-		return this.request({
-			url: '/approve',
-			method: 'POST',
-			data
-		}) as unknown as Promise<AssetDisposalRecord>;
+	approveDisposal(data: AssetDisposalApprovePayload) {
+		return asPerformanceServicePromise<AssetDisposalRecord>(
+			this.request({
+				url: '/approve',
+				method: 'POST',
+				data
+			}),
+			decodeAssetDisposalRecord
+		);
 	}
 
-	executeDisposal(data: { id: number; executeTime?: string }) {
-		return this.request({
-			url: '/execute',
-			method: 'POST',
-			data
-		}) as unknown as Promise<AssetDisposalRecord>;
+	executeDisposal(data: AssetDisposalExecutePayload) {
+		return asPerformanceServicePromise<AssetDisposalRecord>(
+			this.request({
+				url: '/execute',
+				method: 'POST',
+				data
+			}),
+			decodeAssetDisposalRecord
+		);
 	}
 
-	cancelDisposal(data: { id: number; remark?: string }) {
-		return this.request({
-			url: '/cancel',
-			method: 'POST',
-			data
-		}) as unknown as Promise<AssetDisposalRecord>;
+	cancelDisposal(data: AssetDisposalCancelPayload) {
+		return asPerformanceServicePromise<AssetDisposalRecord>(
+			this.request({
+				url: '/cancel',
+				method: 'POST',
+				data
+			}),
+			decodeAssetDisposalRecord
+		);
 	}
 }
 

@@ -352,31 +352,40 @@
 
 <script lang="ts" setup>
 defineOptions({
-	name: 'performance-talentAsset'
+	name: 'performance-talent-asset'
 });
 
 import { computed, onMounted, reactive, ref } from 'vue';
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
+import { useDict } from '/$/dict';
 import { service } from '/@/cool';
 import { useRouter } from 'vue-router';
+import { useListPage } from '../../composables/use-list-page.js';
+import {
+	confirmElementAction,
+	runTrackedElementAction
+} from '../shared/action-feedback';
+import {
+	createElementWarningFromErrorHandler,
+	resolveErrorMessage,
+	showElementErrorFromError
+} from '../shared/error-message';
 import { loadDepartmentOptions } from '../../utils/lookup-options.js';
 import {
+	createEmptyTalentAsset,
+	type DepartmentOption,
 	type TalentAssetRecord,
-	type TalentAssetStatus,
-	createEmptyTalentAsset
+	type TalentAssetSaveRequest,
+	type TalentAssetStatus
 } from '../../types';
 import { performanceInterviewService } from '../../service/interview';
 import { performanceTalentAssetService } from '../../service/talentAsset';
 
-interface DepartmentOption {
-	id: number;
-	label: string;
-}
+const TALENT_ASSET_STATUS_DICT_KEY = 'performance.talentAsset.status';
 
-const rows = ref<TalentAssetRecord[]>([]);
+const { dict } = useDict();
 const departmentOptions = ref<DepartmentOption[]>([]);
-const tableLoading = ref(false);
 const submitLoading = ref(false);
 const formVisible = ref(false);
 const detailVisible = ref(false);
@@ -384,20 +393,6 @@ const editingTalentAsset = ref<TalentAssetRecord | null>(null);
 const detailTalentAsset = ref<TalentAssetRecord | null>(null);
 const formRef = ref<FormInstance>();
 const router = useRouter();
-
-const filters = reactive({
-	keyword: '',
-	targetDepartmentId: undefined as number | undefined,
-	source: '',
-	tag: '',
-	status: '' as TalentAssetStatus | ''
-});
-
-const pagination = reactive({
-	page: 1,
-	size: 10,
-	total: 0
-});
 
 const form = reactive<TalentAssetRecord>(createEmptyTalentAsset());
 
@@ -414,11 +409,12 @@ const rules: FormRules = {
 	status: [{ required: true, message: '请选择状态', trigger: 'change' }]
 };
 
-const statusOptions: Array<{ label: string; value: TalentAssetStatus }> = [
-	{ label: '新建', value: 'new' },
-	{ label: '跟进中', value: 'tracking' },
-	{ label: '已归档', value: 'archived' }
-];
+const statusOptions = computed<Array<{ label: string; value: TalentAssetStatus }>>(() =>
+	dict.get(TALENT_ASSET_STATUS_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as TalentAssetStatus
+	}))
+);
 
 const canAccess = computed(() => checkPerm(performanceTalentAssetService.permission.page));
 const showInfoButton = computed(() => checkPerm(performanceTalentAssetService.permission.info));
@@ -426,6 +422,44 @@ const showAddButton = computed(() => checkPerm(performanceTalentAssetService.per
 const showCreateInterviewButton = computed(() =>
 	checkPerm(performanceInterviewService.permission.add)
 );
+const talentAssetList = useListPage({
+	createFilters: () => ({
+		keyword: '',
+		targetDepartmentId: undefined as number | undefined,
+		source: '',
+		tag: '',
+		status: '' as TalentAssetStatus | ''
+	}),
+	canLoad: () => canAccess.value,
+	fetchPage: async params => {
+		const result = await performanceTalentAssetService.fetchPage({
+			page: params.page,
+			size: params.size,
+			keyword: toOptionalText(params.keyword),
+			targetDepartmentId: params.targetDepartmentId || undefined,
+			source: toOptionalText(params.source),
+			tag: toOptionalText(params.tag),
+			status: params.status || undefined
+		});
+
+		return {
+			...result,
+			list: (result.list || []).map(item => ({
+				...item,
+				targetDepartmentId: item.targetDepartmentId ?? undefined,
+				status: item.status || 'new',
+				tagList: normalizeTagList(item.tagList)
+			}))
+		};
+	},
+	onError: (error: unknown) => {
+		showElementErrorFromError(error, '人才资产列表加载失败');
+	}
+});
+const rows = talentAssetList.rows;
+const tableLoading = talentAssetList.loading;
+const filters = talentAssetList.filters;
+const pagination = talentAssetList.pager;
 const nextFollowUpDateModel = computed<string | undefined>({
 	get: () => form.nextFollowUpDate || undefined,
 	set: value => {
@@ -434,17 +468,18 @@ const nextFollowUpDateModel = computed<string | undefined>({
 });
 const editableStatusOptions = computed(() => {
 	if (!editingTalentAsset.value?.id) {
-		return statusOptions.filter(item => item.value === 'new');
+		return statusOptions.value.filter(item => item.value === 'new');
 	}
 
 	if (editingTalentAsset.value.status === 'tracking') {
-		return statusOptions.filter(item => ['tracking', 'archived'].includes(item.value));
+		return statusOptions.value.filter(item => ['tracking', 'archived'].includes(item.value));
 	}
 
-	return statusOptions;
+	return statusOptions.value;
 });
 
 onMounted(async () => {
+	await dict.refresh([TALENT_ASSET_STATUS_DICT_KEY]);
 	await loadDepartments();
 	await refresh();
 });
@@ -452,60 +487,26 @@ onMounted(async () => {
 async function loadDepartments() {
 	departmentOptions.value = await loadDepartmentOptions(
 		() => service.base.sys.department.list(),
-		(error: any) => {
-			ElMessage.warning(error.message || '部门选项加载失败');
-		}
+		createElementWarningFromErrorHandler('部门选项加载失败')
 	);
 }
 
 function handleSearch() {
-	pagination.page = 1;
-	refresh();
+	void talentAssetList.search();
 }
 
 function handleReset() {
-	filters.keyword = '';
-	filters.targetDepartmentId = undefined;
-	filters.source = '';
-	filters.tag = '';
-	filters.status = '';
-	pagination.page = 1;
-	refresh();
+	void talentAssetList.reset({
+		targetDepartmentId: undefined
+	});
 }
 
 async function refresh() {
-	if (!canAccess.value) {
-		return;
-	}
-
-	tableLoading.value = true;
-
-	try {
-		const result = await performanceTalentAssetService.fetchPage({
-			page: pagination.page,
-			size: pagination.size,
-			keyword: toOptionalText(filters.keyword),
-			targetDepartmentId: filters.targetDepartmentId || undefined,
-			source: toOptionalText(filters.source),
-			tag: toOptionalText(filters.tag),
-			status: filters.status || undefined
-		});
-
-		rows.value = (result.list || []).map(item => ({
-			...item,
-			tagList: normalizeTagList(item.tagList)
-		}));
-		pagination.total = result.pagination?.total || 0;
-	} catch (error: any) {
-		ElMessage.error(error.message || '人才资产列表加载失败');
-	} finally {
-		tableLoading.value = false;
-	}
+	await talentAssetList.reload();
 }
 
 function changePage(page: number) {
-	pagination.page = page;
-	refresh();
+	void talentAssetList.goToPage(page);
 }
 
 function openCreate() {
@@ -555,10 +556,12 @@ async function loadDetail(id: number, next: (record: TalentAssetRecord) => void)
 		const record = await performanceTalentAssetService.fetchInfo({ id });
 		next({
 			...record,
+			targetDepartmentId: record.targetDepartmentId ?? undefined,
+			status: record.status || 'new',
 			tagList: normalizeTagList(record.tagList)
 		});
-	} catch (error: any) {
-		ElMessage.error(error.message || '人才资产详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '人才资产详情加载失败');
 	}
 }
 
@@ -569,6 +572,8 @@ async function goCreateInterview(record: TalentAssetRecord) {
 		path: '/performance/interview',
 		query: {
 			openCreate: '1',
+			sourceResource: 'talentAsset',
+			talentAssetId: record.id ? String(record.id) : undefined,
 			candidateName: record.candidateName,
 			targetDepartmentId: record.targetDepartmentId
 				? String(record.targetDepartmentId)
@@ -589,10 +594,10 @@ async function submitForm() {
 	submitLoading.value = true;
 
 	try {
-		const payload: Partial<TalentAssetRecord> = {
+		const payload: TalentAssetSaveRequest = {
 			candidateName: form.candidateName.trim(),
 			code: toOptionalText(form.code),
-			targetDepartmentId: form.targetDepartmentId,
+			targetDepartmentId: Number(form.targetDepartmentId),
 			targetPosition: toOptionalText(form.targetPosition),
 			source: form.source.trim(),
 			tagList: normalizeTagList(form.tagList),
@@ -613,8 +618,8 @@ async function submitForm() {
 		ElMessage.success('保存成功');
 		formVisible.value = false;
 		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '保存失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '保存失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -626,19 +631,26 @@ async function handleDelete(row: TalentAssetRecord) {
 		return;
 	}
 
-	await ElMessageBox.confirm(`确认删除人才资产「${row.candidateName}」吗？`, '删除确认', {
-		type: 'warning'
-	});
+	const confirmed = await confirmElementAction(
+		`确认删除人才资产「${row.candidateName}」吗？`,
+		'删除确认'
+	);
 
-	try {
-		await performanceTalentAssetService.removeTalentAsset({
-			ids: [row.id!]
-		});
-		ElMessage.success('删除成功');
-		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '删除失败');
+	if (!confirmed) {
+		return;
 	}
+
+	await runTrackedElementAction({
+		rowId: Number(row.id || 0),
+		actionType: 'delete',
+		request: () =>
+			performanceTalentAssetService.removeTalentAsset({
+				ids: [row.id!]
+			}),
+		successMessage: '删除成功',
+		errorMessage: '删除失败',
+		refresh
+	});
 }
 
 function canEdit(row: TalentAssetRecord) {
@@ -650,19 +662,11 @@ function canDelete(row: TalentAssetRecord) {
 }
 
 function statusLabel(status?: TalentAssetStatus | '') {
-	const item = statusOptions.find(option => option.value === status);
-	return item?.label || status || '-';
+	return dict.getLabel(TALENT_ASSET_STATUS_DICT_KEY, status) || status || '-';
 }
 
 function statusTagType(status?: TalentAssetStatus | '') {
-	switch (status) {
-		case 'tracking':
-			return 'warning';
-		case 'archived':
-			return 'info';
-		default:
-			return 'success';
-	}
+	return dict.getMeta(TALENT_ASSET_STATUS_DICT_KEY, status)?.tone || 'success';
 }
 
 function renderTagList(tagList?: string[]) {
@@ -703,49 +707,9 @@ function normalizeTagList(tagList?: string[]) {
 </script>
 
 <style lang="scss" scoped>
+@use '../../../../styles/patterns.management-workspace.scss' as managementWorkspace;
+
 .talentAsset-page {
-	display: grid;
-	gap: 16px;
-
-	&__toolbar {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 16px;
-	}
-
-	&__toolbar-left,
-	&__toolbar-right {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 12px;
-	}
-
-	&__header {
-		display: grid;
-		gap: 12px;
-	}
-
-	&__header-main {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-
-		h2 {
-			margin: 0;
-			font-size: 18px;
-		}
-	}
-
-	&__pagination {
-		display: flex;
-		justify-content: flex-end;
-		padding-top: 16px;
-	}
-
-	&__detail {
-		display: grid;
-		gap: 16px;
-	}
+	@include managementWorkspace.management-workspace-shell(1120px);
 }
 </style>

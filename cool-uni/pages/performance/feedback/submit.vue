@@ -173,7 +173,7 @@ async function save() {
 			taskId: recordId,
 			score: Number(score.value || 0),
 			content: content.value,
-			relationType: relationType.value || "协作人",
+			relationType: relationType.value,
 		});
 		backToDetail();
 	} finally {

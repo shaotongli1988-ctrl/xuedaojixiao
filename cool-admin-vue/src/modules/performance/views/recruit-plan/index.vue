@@ -426,17 +426,28 @@ defineOptions({
 });
 
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import * as XLSX from 'xlsx';
 import chardet from 'chardet';
 import { checkPerm } from '/$/base/utils/permission';
+import { useDict } from '/$/dict';
 import { service } from '/@/cool';
 import { extname } from '/@/cool/utils';
 import { exportJsonToExcel } from '/@/plugins/excel/utils';
 import { useUpload } from '/@/plugins/upload/hooks';
 import { getType as getUploadFileType } from '/@/plugins/upload/utils';
 import { useRoute, useRouter } from 'vue-router';
+import { useListPage } from '../../composables/use-list-page.js';
+import {
+	createElementWarningFromErrorHandler,
+	showElementErrorFromError
+} from '../shared/error-message';
+import {
+	confirmElementAction,
+	runTrackedElementAction
+} from '../shared/action-feedback';
 import { performanceRecruitPlanService } from '../../service/recruit-plan';
+import type { RecruitPlanSaveRequest } from '../../types';
 import { performanceResumePoolService } from '../../service/resumePool';
 import {
 	loadDepartmentOptions,
@@ -448,19 +459,18 @@ import {
 	normalizeQueryNumber
 } from '../../utils/route-preset.js';
 import {
+	type DepartmentOption,
 	type RecruitPlanExportRow,
 	type RecruitPlanImportCellValue,
 	type RecruitPlanImportRow,
 	type RecruitPlanRecord,
 	type RecruitPlanStatus,
 	type UserOption,
-	createEmptyRecruitPlan
+	createEmptyRecruitPlan,
+	normalizeRecruitPlanDomainRecord
 } from '../../types';
 
-interface DepartmentOption {
-	id: number;
-	label: string;
-}
+const RECRUIT_PLAN_STATUS_DICT_KEY = 'performance.recruitPlan.status';
 
 type RecruitPlanActionType = 'delete' | 'submit' | 'close' | 'void' | 'reopen';
 
@@ -469,11 +479,10 @@ const importAccept =
 const importPrefixPath = 'app/performance/recruit-plan/import';
 
 const { toUpload } = useUpload();
+const { dict } = useDict();
 
-const rows = ref<RecruitPlanRecord[]>([]);
 const userOptions = ref<UserOption[]>([]);
 const departmentOptions = ref<DepartmentOption[]>([]);
-const tableLoading = ref(false);
 const submitLoading = ref(false);
 const importLoading = ref(false);
 const exportLoading = ref(false);
@@ -487,20 +496,6 @@ const formRef = ref<FormInstance>();
 const importInputRef = ref<HTMLInputElement>();
 const route = useRoute();
 const router = useRouter();
-
-const filters = reactive({
-	keyword: '',
-	targetDepartmentId: undefined as number | undefined,
-	status: '' as RecruitPlanStatus | '',
-	startDate: '',
-	endDate: ''
-});
-
-const pagination = reactive({
-	page: 1,
-	size: 10,
-	total: 0
-});
 
 const form = reactive<RecruitPlanRecord>(createEmptyRecruitPlan());
 
@@ -553,12 +548,12 @@ const rules: FormRules = {
 	]
 };
 
-const statusOptions: Array<{ label: string; value: RecruitPlanStatus }> = [
-	{ label: '草稿', value: 'draft' },
-	{ label: '生效中', value: 'active' },
-	{ label: '已作废', value: 'voided' },
-	{ label: '已关闭', value: 'closed' }
-];
+const statusOptions = computed<Array<{ label: string; value: RecruitPlanStatus }>>(() =>
+	dict.get(RECRUIT_PLAN_STATUS_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as RecruitPlanStatus
+	}))
+);
 
 const canAccess = computed(() => checkPerm(performanceRecruitPlanService.permission.page));
 const showInfoButton = computed(() => checkPerm(performanceRecruitPlanService.permission.info));
@@ -568,6 +563,39 @@ const showExportButton = computed(() => checkPerm(performanceRecruitPlanService.
 const canCreateResumeFromRecruitPlan = computed(() =>
 	checkPerm(performanceResumePoolService.permission.add)
 );
+const recruitPlanList = useListPage({
+	createFilters: () => ({
+		keyword: '',
+		targetDepartmentId: undefined as number | undefined,
+		status: '' as RecruitPlanStatus | '',
+		startDate: '',
+		endDate: ''
+	}),
+	canLoad: () => canAccess.value,
+	fetchPage: async params => {
+		const result = await performanceRecruitPlanService.fetchPage({
+			page: params.page,
+			size: params.size,
+			keyword: params.keyword || undefined,
+			targetDepartmentId: params.targetDepartmentId || undefined,
+			status: params.status || undefined,
+			startDate: params.startDate || undefined,
+			endDate: params.endDate || undefined
+		});
+
+		return {
+			...result,
+			list: (result.list || []).map(item => normalizeRecruitPlanDomainRecord(item))
+		};
+	},
+	onError: (error: unknown) => {
+		showElementErrorFromError(error, '招聘计划列表加载失败');
+	}
+});
+const rows = recruitPlanList.rows;
+const tableLoading = recruitPlanList.loading;
+const filters = recruitPlanList.filters;
+const pagination = recruitPlanList.pager;
 const filterDepartmentIdModel = computed<number | undefined>({
 	get: () => filters.targetDepartmentId ?? undefined,
 	set: value => {
@@ -594,6 +622,7 @@ const headcountModel = computed<number>({
 });
 
 onMounted(async () => {
+	await dict.refresh([RECRUIT_PLAN_STATUS_DICT_KEY]);
 	await Promise.all([loadUsers(), loadDepartments()]);
 	await refresh();
 	await consumeRouteOpenDetail();
@@ -615,66 +644,33 @@ async function loadUsers() {
 				page: 1,
 				size: 500
 			}),
-		(error: any) => {
-			ElMessage.warning(error.message || '员工选项加载失败');
-		}
+		createElementWarningFromErrorHandler('员工选项加载失败')
 	);
 }
 
 async function loadDepartments() {
 	departmentOptions.value = await loadDepartmentOptions(
 		() => service.base.sys.department.list(),
-		(error: any) => {
-			ElMessage.warning(error.message || '部门选项加载失败');
-		}
+		createElementWarningFromErrorHandler('部门选项加载失败')
 	);
 }
 
 async function refresh() {
-	if (!canAccess.value) {
-		return;
-	}
-
-	tableLoading.value = true;
-
-	try {
-		const result = await performanceRecruitPlanService.fetchPage({
-			page: pagination.page,
-			size: pagination.size,
-			keyword: filters.keyword || undefined,
-			targetDepartmentId: filters.targetDepartmentId || undefined,
-			status: filters.status || undefined,
-			startDate: filters.startDate || undefined,
-			endDate: filters.endDate || undefined
-		});
-
-		rows.value = (result.list || []).map(item => normalizeRecruitPlanRecord(item));
-		pagination.total = result.pagination?.total || 0;
-	} catch (error: any) {
-		ElMessage.error(error.message || '招聘计划列表加载失败');
-	} finally {
-		tableLoading.value = false;
-	}
+	await recruitPlanList.reload();
 }
 
 function handleSearch() {
-	pagination.page = 1;
-	refresh();
+	void recruitPlanList.search();
 }
 
 function handleReset() {
-	filters.keyword = '';
-	filters.targetDepartmentId = undefined;
-	filters.status = '';
-	filters.startDate = '';
-	filters.endDate = '';
-	pagination.page = 1;
-	refresh();
+	void recruitPlanList.reset({
+		targetDepartmentId: undefined
+	});
 }
 
 function changePage(page: number) {
-	pagination.page = page;
-	refresh();
+	void recruitPlanList.goToPage(page);
 }
 
 function openCreate() {
@@ -719,9 +715,9 @@ async function openDetail(row: RecruitPlanRecord) {
 async function loadDetail(id: number, next: (record: RecruitPlanRecord) => void) {
 	try {
 		const record = await performanceRecruitPlanService.fetchInfo({ id });
-		next(normalizeRecruitPlanRecord(record));
-	} catch (error: any) {
-		ElMessage.error(error.message || '招聘计划详情加载失败');
+		next(normalizeRecruitPlanDomainRecord(record));
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '招聘计划详情加载失败');
 	}
 }
 
@@ -741,23 +737,23 @@ async function submitForm() {
 	submitLoading.value = true;
 
 	try {
-		const payload: Partial<RecruitPlanRecord> = {
-			id: editingRecord.value?.id,
+		const payload: RecruitPlanSaveRequest = {
 			title: form.title.trim(),
-			targetDepartmentId: form.targetDepartmentId,
+			targetDepartmentId: Number(form.targetDepartmentId),
 			positionName: form.positionName.trim(),
 			headcount: Number(form.headcount),
 			startDate: form.startDate,
 			endDate: form.endDate,
-			recruiterId: form.recruiterId || undefined,
+			recruiterId: form.recruiterId || null,
 			requirementSummary: normalizeOptionalText(form.requirementSummary),
-			jobStandardId: form.jobStandardId || undefined
+			jobStandardId: form.jobStandardId || null
 		};
 
 		if (editingRecord.value?.id) {
-			await performanceRecruitPlanService.updateRecruitPlan(
-				payload as Partial<RecruitPlanRecord> & { id: number }
-			);
+			await performanceRecruitPlanService.updateRecruitPlan({
+				id: editingRecord.value.id,
+				...payload
+			});
 		} else {
 			await performanceRecruitPlanService.createRecruitPlan(payload);
 		}
@@ -765,8 +761,8 @@ async function submitForm() {
 		ElMessage.success('保存成功');
 		formVisible.value = false;
 		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '保存失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '保存失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -823,8 +819,8 @@ async function handleImport(file: File) {
 		ElMessage.success(`导入成功，已提交 ${parsedRows.length} 行`);
 		pagination.page = 1;
 		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '导入失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '导入失败');
 	} finally {
 		importLoading.value = false;
 	}
@@ -898,8 +894,8 @@ async function handleExport() {
 			autoWidth: true
 		});
 		ElMessage.success('导出成功');
-	} catch (error: any) {
-		ElMessage.error(error.message || '导出失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '导出失败');
 	} finally {
 		exportLoading.value = false;
 	}
@@ -980,28 +976,25 @@ async function confirmAndRunRowAction(options: {
 		return;
 	}
 
-	try {
-		await ElMessageBox.confirm(options.confirmMessage, options.confirmTitle, {
-			type: 'warning'
-		});
-	} catch {
+	const confirmed = await confirmElementAction(options.confirmMessage, options.confirmTitle);
+
+	if (!confirmed) {
 		return;
 	}
 
-	actionLoadingId.value = options.row.id;
-	actionLoadingType.value = options.actionType;
-
-	try {
-		await options.request();
-		options.onSuccess?.();
-		ElMessage.success(options.successMessage);
-		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || `${options.confirmTitle.replace('确认', '')}失败`);
-	} finally {
-		actionLoadingId.value = null;
-		actionLoadingType.value = null;
-	}
+	await runTrackedElementAction({
+		rowId: options.row.id,
+		actionType: options.actionType,
+		request: options.request,
+		successMessage: options.successMessage,
+		errorMessage: `${options.confirmTitle.replace('确认', '')}失败`,
+		setLoading: (rowId, actionType) => {
+			actionLoadingId.value = rowId;
+			actionLoadingType.value = actionType;
+		},
+		onSuccess: options.onSuccess,
+		refresh
+	});
 }
 
 function canEdit(row: RecruitPlanRecord) {
@@ -1032,21 +1025,11 @@ function canReopen(row: RecruitPlanRecord) {
 }
 
 function statusLabel(status?: RecruitPlanStatus | '') {
-	const item = statusOptions.find(option => option.value === status);
-	return item?.label || status || '-';
+	return dict.getLabel(RECRUIT_PLAN_STATUS_DICT_KEY, status) || status || '-';
 }
 
 function statusTagType(status?: RecruitPlanStatus | '') {
-	switch (status) {
-		case 'active':
-			return 'success';
-		case 'closed':
-			return 'warning';
-		case 'voided':
-			return 'danger';
-		default:
-			return 'info';
-	}
+	return dict.getMeta(RECRUIT_PLAN_STATUS_DICT_KEY, status)?.tone || 'info';
 }
 
 function detailReadonlyMessage(status?: RecruitPlanStatus) {
@@ -1172,32 +1155,6 @@ function openCreateWithPrefill(prefill?: {
 	});
 }
 
-function normalizeRecruitPlanRecord(record: any): RecruitPlanRecord {
-	const sourceSnapshot =
-		record?.sourceSnapshot ||
-		record?.jobStandardSummary ||
-		record?.jobStandardSnapshot ||
-		null;
-
-	return {
-		...record,
-		jobStandardId: normalizeNumberOrUndefined(record?.jobStandardId),
-		jobStandardPositionName:
-			sourceSnapshot?.jobStandardPositionName ||
-			record?.jobStandardPositionName ||
-			null,
-		jobStandardSummary: sourceSnapshot,
-		jobStandardSnapshot: sourceSnapshot,
-		sourceSnapshot:
-			sourceSnapshot && typeof sourceSnapshot === 'object'
-				? {
-						sourceResource: 'jobStandard',
-						...sourceSnapshot
-				  }
-				: null
-	};
-}
-
 function recruitPlanSourceLabel(record?: RecruitPlanRecord | null) {
 	const snapshot = record?.sourceSnapshot;
 	if (!snapshot?.jobStandardId) {
@@ -1273,11 +1230,6 @@ async function goCreateResumePool(record?: RecruitPlanRecord | null) {
 function normalizeQueryText(value: unknown) {
 	const text = String(firstQueryValue(value) || '').trim();
 	return text || undefined;
-}
-
-function normalizeNumberOrUndefined(value: unknown) {
-	const parsed = Number(value);
-	return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 function normalizeOptionalText(value: string | null | undefined) {
@@ -1437,87 +1389,33 @@ function readFileAsBinaryString(file: File) {
 	});
 }
 
-function extractExportRows(response: RecruitPlanExportRow[] | any): RecruitPlanExportRow[] {
+function extractExportRows(response: RecruitPlanExportRow[] | unknown): RecruitPlanExportRow[] {
 	if (Array.isArray(response)) {
 		return response;
 	}
 
-	if (Array.isArray(response?.list)) {
-		return response.list;
+	const payload = toRecord(response);
+	if (Array.isArray(payload?.list)) {
+		return payload.list as RecruitPlanExportRow[];
 	}
 
-	if (Array.isArray(response?.data)) {
-		return response.data;
+	if (Array.isArray(payload?.data)) {
+		return payload.data as RecruitPlanExportRow[];
 	}
 
 	return [];
 }
+
+function toRecord(value: unknown): Record<string, unknown> | undefined {
+	return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : undefined;
+}
 </script>
 
 <style lang="scss" scoped>
+@use '../../../../styles/patterns.management-workspace.scss' as managementWorkspace;
+
 .recruit-plan-page {
-	display: grid;
-	gap: 16px;
-
-	&__toolbar {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 16px;
-	}
-
-	&__toolbar-left,
-	&__toolbar-right,
-	&__actions {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 12px;
-	}
-
-	&__header {
-		display: grid;
-		gap: 12px;
-	}
-
-	&__header-main {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-
-		h2 {
-			margin: 0;
-			font-size: 18px;
-		}
-	}
-
-	&__pagination {
-		display: flex;
-		justify-content: flex-end;
-		padding-top: 16px;
-	}
-
-	&__detail {
-		display: grid;
-		gap: 16px;
-	}
-
-	&__summary {
-		white-space: pre-wrap;
-		line-height: 1.6;
-	}
-
-	&__source-summary {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		flex-wrap: wrap;
-	}
-
-	&__dialog-footer {
-		display: flex;
-		justify-content: flex-end;
-		gap: 12px;
-	}
+	@include managementWorkspace.management-workspace-shell(1240px);
 
 	&__import-input {
 		display: none;

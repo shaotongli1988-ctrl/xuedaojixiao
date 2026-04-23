@@ -336,14 +336,25 @@ defineOptions({
 });
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus';
+import { ElMessage, type FormInstance } from 'element-plus';
 import { useRoute, useRouter } from 'vue-router';
+import { useDict } from '/$/dict';
 import { exportJsonToExcel } from '/@/plugins/excel/utils';
 import { service } from '/@/cool';
 import { checkPerm } from '/$/base/utils/permission';
 import PipTrackDrawer from '../../components/pip-track-drawer.vue';
+import { useListPage } from '../../composables/use-list-page.js';
 import { performanceAssessmentService } from '../../service/assessment';
 import { performancePipService } from '../../service/pip';
+import {
+	promptElementAction,
+	runTrackedElementAction
+} from '../shared/action-feedback';
+import {
+	createElementWarningFromErrorHandler,
+	resolveErrorMessage,
+	showElementErrorFromError
+} from '../shared/error-message';
 import { loadUserOptions } from '../../utils/lookup-options.js';
 import { clearRoutePresetQuery } from '../../utils/route-preset.js';
 import {
@@ -353,12 +364,13 @@ import {
 	createEmptyPip
 } from '../../types';
 
+const PIP_STATUS_DICT_KEY = 'performance.pip.status';
+
 const route = useRoute();
 const router = useRouter();
 
-const rows = ref<PipRecord[]>([]);
 const userOptions = ref<UserOption[]>([]);
-const tableLoading = ref(false);
+const { dict } = useDict();
 const submitLoading = ref(false);
 const assessmentLoading = ref(false);
 const formVisible = ref(false);
@@ -367,19 +379,6 @@ const editingPip = ref<PipRecord | null>(null);
 const detailPip = ref<PipRecord | null>(null);
 const formRef = ref<FormInstance>();
 const assessmentIdInput = ref<number | undefined>();
-
-const filters = reactive({
-	keyword: '',
-	employeeId: undefined as number | undefined,
-	ownerId: undefined as number | undefined,
-	status: ''
-});
-
-const pagination = reactive({
-	page: 1,
-	size: 10,
-	total: 0
-});
 
 const form = reactive<PipRecord>(createEmptyPip());
 
@@ -390,7 +389,7 @@ const rules = {
 	improvementGoal: [{ required: true, message: '请输入改进目标', trigger: 'blur' }],
 	sourceReason: [
 		{
-			validator: (_rule: any, value: string, callback: (error?: Error) => void) => {
+			validator: (_rule: unknown, value: string, callback: (error?: Error) => void) => {
 				if (!form.assessmentId && !String(value || '').trim()) {
 					callback(new Error('独立创建必须填写来源原因'));
 					return;
@@ -402,12 +401,12 @@ const rules = {
 	]
 };
 
-const statusOptions = [
-	{ label: '草稿', value: 'draft' },
-	{ label: '进行中', value: 'active' },
-	{ label: '已完成', value: 'completed' },
-	{ label: '已关闭', value: 'closed' }
-];
+const statusOptions = computed<Array<{ label: string; value: string }>>(() =>
+	dict.get(PIP_STATUS_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: String(item.value)
+	}))
+);
 
 const canAccess = computed(() => checkPerm(performancePipService.permission.page));
 const showAddButton = computed(() => checkPerm(performancePipService.permission.add));
@@ -420,6 +419,32 @@ const presetSuggestionId = computed(() => {
 	const value = Number(route.query.suggestionId || 0);
 	return value || undefined;
 });
+const pipList = useListPage({
+	createFilters: () => ({
+		keyword: '',
+		employeeId: undefined as number | undefined,
+		ownerId: undefined as number | undefined,
+		status: ''
+	}),
+	canLoad: () => canAccess.value,
+	fetchPage: async params =>
+		performancePipService.fetchPage({
+			page: params.page,
+			size: params.size,
+			keyword: params.keyword || undefined,
+			employeeId: params.employeeId,
+			ownerId: params.ownerId,
+			status: params.status || undefined,
+			assessmentId: presetAssessmentId.value
+		}),
+	onError: (error: unknown) => {
+		showElementErrorFromError(error, 'PIP 列表加载失败');
+	}
+});
+const rows = pipList.rows;
+const tableLoading = pipList.loading;
+const filters = pipList.filters;
+const pagination = pipList.pager;
 const dateRange = computed({
 	get: () => {
 		return form.startDate && form.endDate ? [form.startDate, form.endDate] : [];
@@ -450,6 +475,7 @@ watch(
 );
 
 onMounted(async () => {
+	await dict.refresh([PIP_STATUS_DICT_KEY]);
 	await loadUsers();
 	await refresh();
 
@@ -468,48 +494,23 @@ async function loadUsers() {
 			page: 1,
 			size: 200
 			}),
-		(error: any) => {
-			ElMessage.warning(error.message || '用户选项加载失败');
-		}
+		createElementWarningFromErrorHandler('用户选项加载失败')
 	);
 }
 
 async function refresh() {
-	if (!canAccess.value) {
-		return;
-	}
-
-	tableLoading.value = true;
-
-	try {
-		const result = await performancePipService.fetchPage({
-			page: pagination.page,
-			size: pagination.size,
-			keyword: filters.keyword || undefined,
-			employeeId: filters.employeeId,
-			ownerId: filters.ownerId,
-			status: filters.status || undefined,
-			assessmentId: presetAssessmentId.value
-		});
-
-		rows.value = result.list || [];
-		pagination.total = result.pagination?.total || 0;
-	} catch (error: any) {
-		ElMessage.error(error.message || 'PIP 列表加载失败');
-	} finally {
-		tableLoading.value = false;
-	}
+	await pipList.reload();
 }
 
 function changePage(page: number) {
-	pagination.page = page;
-	refresh();
+	void pipList.goToPage(page);
 }
 
 function openCreate() {
 	Object.assign(form, createEmptyPip());
 	editingPip.value = null;
 	assessmentIdInput.value = presetAssessmentId.value;
+	form.suggestionId = presetSuggestionId.value;
 	formVisible.value = true;
 }
 
@@ -521,6 +522,7 @@ async function openEdit(row: PipRecord) {
 			...createEmptyPip(),
 			...record
 		});
+		form.suggestionId = undefined;
 		formVisible.value = true;
 	});
 }
@@ -540,8 +542,8 @@ async function loadDetail(id: number, next: (record: PipRecord) => void) {
 	try {
 		const record = await performancePipService.fetchInfo({ id });
 		next(record);
-	} catch (error: any) {
-		ElMessage.error(error.message || 'PIP 详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, 'PIP 详情加载失败');
 	}
 }
 
@@ -564,8 +566,8 @@ async function applyAssessmentSource() {
 		form.improvementGoal = form.improvementGoal || assessment.managerFeedback || assessment.selfEvaluation || '';
 		form.sourceReason = '';
 		ElMessage.success('评估信息已带入');
-	} catch (error: any) {
-		ElMessage.error(error.message || '评估信息带入失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '评估信息带入失败');
 	} finally {
 		assessmentLoading.value = false;
 	}
@@ -593,7 +595,10 @@ async function submitForm() {
 
 	try {
 		if (editingPip.value?.id) {
-			await performancePipService.updatePip(form);
+			await performancePipService.updatePip({
+				...form,
+				id: editingPip.value.id
+			});
 		} else {
 			await performancePipService.createPip(form);
 		}
@@ -601,8 +606,8 @@ async function submitForm() {
 		ElMessage.success('保存成功');
 		formVisible.value = false;
 		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '保存失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '保存失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -613,8 +618,8 @@ async function handleStart(row: PipRecord) {
 		await performancePipService.start({ id: row.id! });
 		ElMessage.success('PIP 已启动');
 		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || 'PIP 启动失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, 'PIP 启动失败');
 	}
 }
 
@@ -631,49 +636,47 @@ async function submitTrack(payload: {
 		ElMessage.success('跟进提交成功');
 		detailVisible.value = false;
 		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '跟进提交失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '跟进提交失败');
 	} finally {
 		submitLoading.value = false;
 	}
 }
 
 async function handleResultAction(row: PipRecord, action: 'complete' | 'close') {
-	try {
-		const result = await ElMessageBox.prompt(
-			action === 'complete' ? '可补充本次完成总结' : '可补充本次关闭说明',
-			action === 'complete' ? '完成 PIP' : '关闭 PIP',
-			{
-				confirmButtonText: '确认',
-				cancelButtonText: '取消',
-				inputPlaceholder: '结果总结可留空',
-				inputValue: row.resultSummary || '',
-				inputType: 'textarea'
-			}
-		);
-
-		if (action === 'complete') {
-			await performancePipService.complete({
-				id: row.id!,
-				resultSummary: result.value
-			});
-			ElMessage.success('PIP 已完成');
-		} else {
-			await performancePipService.close({
-				id: row.id!,
-				resultSummary: result.value
-			});
-			ElMessage.success('PIP 已关闭');
+	const result = await promptElementAction(
+		action === 'complete' ? '可补充本次完成总结' : '可补充本次关闭说明',
+		action === 'complete' ? '完成 PIP' : '关闭 PIP',
+		{
+			confirmButtonText: '确认',
+			cancelButtonText: '取消',
+			inputPlaceholder: '结果总结可留空',
+			inputValue: row.resultSummary || '',
+			inputType: 'textarea'
 		}
+	);
 
-		await refresh();
-	} catch (error: any) {
-		if (error === 'cancel' || error === 'close') {
-			return;
-		}
-
-		ElMessage.error(error.message || 'PIP 状态更新失败');
+	if (!result) {
+		return;
 	}
+
+	await runTrackedElementAction({
+		rowId: Number(row.id || 0),
+		actionType: action,
+		request: () =>
+			action === 'complete'
+				? performancePipService.complete({
+						id: row.id!,
+						resultSummary: result.value
+					})
+				: performancePipService.close({
+						id: row.id!,
+						resultSummary: result.value
+					}),
+		successMessage: action === 'complete' ? 'PIP 已完成' : 'PIP 已关闭',
+		errorMessage: 'PIP 状态更新失败',
+		refresh
+	});
 }
 
 async function handleExport() {
@@ -717,8 +720,8 @@ async function handleExport() {
 			]),
 			filename: `pip-summary-${Date.now()}`
 		});
-	} catch (error: any) {
-		ElMessage.error(error.message || '导出失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '导出失败');
 	}
 }
 
@@ -743,21 +746,11 @@ function canClose(row: PipRecord) {
 }
 
 function statusLabel(status?: string) {
-	const item = statusOptions.find(option => option.value === status);
-	return item?.label || status || '-';
+	return dict.getLabel(PIP_STATUS_DICT_KEY, status) || status || '-';
 }
 
 function statusTagType(status?: string) {
-	switch (status) {
-		case 'active':
-			return 'warning';
-		case 'completed':
-			return 'success';
-		case 'closed':
-			return 'danger';
-		default:
-			return 'info';
-	}
+	return dict.getMeta(PIP_STATUS_DICT_KEY, status)?.tone || 'info';
 }
 
 async function clearPresetQuery() {
@@ -806,57 +799,34 @@ function resolveAssessmentPagePath() {
 </script>
 
 <style lang="scss" scoped>
+@use '../../../../styles/patterns.management-workspace.scss' as managementWorkspace;
+
 .pip-page {
-	display: grid;
-	gap: 16px;
-
-	&__toolbar {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 16px;
-	}
-
-	&__toolbar-left,
-	&__toolbar-right {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 12px;
-	}
-
-	&__stat-label {
-		font-size: 12px;
-		color: var(--el-text-color-secondary);
-	}
-
-	&__stat-value {
-		margin-top: 8px;
-		font-size: 28px;
-		font-weight: 600;
-		color: var(--el-text-color-primary);
-	}
+	@include managementWorkspace.management-workspace-shell(1240px);
 
 	&__header {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 12px;
+		gap: var(--app-space-3);
+		flex-wrap: wrap;
 	}
 
 	&__header-tags {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 8px;
+		gap: var(--app-space-2);
 	}
 
 	&__header-main {
 		display: flex;
 		align-items: center;
-		gap: 12px;
+		gap: var(--app-space-3);
 
 		h2 {
 			margin: 0;
 			font-size: 18px;
+			color: var(--app-text-primary);
 		}
 	}
 
@@ -864,12 +834,7 @@ function resolveAssessmentPagePath() {
 		display: inline-block;
 		line-height: 1.6;
 		white-space: pre-wrap;
-	}
-
-	&__pagination {
-		display: flex;
-		justify-content: flex-end;
-		padding-top: 16px;
+		color: var(--app-text-secondary);
 	}
 }
 </style>

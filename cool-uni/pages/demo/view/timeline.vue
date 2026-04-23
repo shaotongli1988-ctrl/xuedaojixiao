@@ -2,7 +2,8 @@
     <cl-page :padding="20">
         <cl-card label="基础用法">
             <cl-timeline>
-                <cl-timeline-item v-for="(item, index) in list" :key="index" :timestamp="item.timestamp"
+                <cl-timeline-item
+v-for="(item, index) in list" :key="index" :timestamp="item.timestamp"
                     :show-line="item.showLine" :content="item.content" :icon="item.icon" :color="item.color">
                 </cl-timeline-item>
             </cl-timeline>
@@ -10,7 +11,8 @@
 
         <cl-card label="自定义内容">
             <cl-timeline>
-                <cl-timeline-item v-for="(item, index) in list" :key="index" :timestamp="item.timestamp"
+                <cl-timeline-item
+v-for="(item, index) in list" :key="index" :timestamp="item.timestamp"
                     :show-line="item.showLine" :content="item.content" :icon="item.icon" :color="item.color">
                     <template #content>
                         <cl-tag>{{ item.content }}</cl-tag>

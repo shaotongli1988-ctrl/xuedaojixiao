@@ -1,63 +1,91 @@
-import { BaseService } from '/@/cool';
-import type { SalaryPageResult, SalaryRecord } from '../types';
-
 /**
  * 薪资管理前端请求服务。
- * 这里只封装模块 8 所需接口，不开放导出能力。
+ * 这里只封装薪资主链接口，不负责页面金额格式化、调整记录展示或导出流程。
+ * 维护重点是服务层请求体统一引用中心类型，避免和页面表单模型漂移。
  */
+import { BaseService } from '/@/cool';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeSalaryPageResult,
+	decodeSalaryRecord
+} from './salary-contract';
+import type {
+	SalaryAddChangePayload,
+	SalaryArchivePayload,
+	SalaryConfirmPayload,
+	SalaryCreatePayload,
+	SalaryInfoQuery,
+	SalaryPageQuery,
+	SalaryPageResult,
+	SalaryRecord,
+	SalaryUpdatePayload
+} from '../types';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 export default class PerformanceSalaryService extends BaseService {
 	permission = {
-		page: 'performance:salary:page',
-		info: 'performance:salary:info',
-		add: 'performance:salary:add',
-		update: 'performance:salary:update',
-		confirm: 'performance:salary:confirm',
-		archive: 'performance:salary:archive',
-		changeAdd: 'performance:salary:changeAdd'
+		page: PERMISSIONS.performance.salary.page,
+		info: PERMISSIONS.performance.salary.info,
+		add: PERMISSIONS.performance.salary.add,
+		update: PERMISSIONS.performance.salary.update,
+		confirm: PERMISSIONS.performance.salary.confirm,
+		archive: PERMISSIONS.performance.salary.archive,
+		changeAdd: PERMISSIONS.performance.salary.changeAdd
 	};
 
 	constructor() {
 		super('admin/performance/salary');
 	}
 
-	fetchPage(data: any) {
-		return super.page(data) as unknown as Promise<SalaryPageResult>;
+	fetchPage(data: SalaryPageQuery) {
+		return asPerformanceServicePromise<SalaryPageResult>(
+			super.page(data),
+			decodeSalaryPageResult
+		);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<SalaryRecord>;
+	fetchInfo(params: SalaryInfoQuery) {
+		return asPerformanceServicePromise<SalaryRecord>(
+			super.info(params),
+			decodeSalaryRecord
+		);
 	}
 
-	createSalary(data: SalaryRecord) {
-		return super.add(data) as unknown as Promise<SalaryRecord>;
+	createSalary(data: SalaryCreatePayload) {
+		return asPerformanceServicePromise<SalaryRecord>(
+			super.add(data),
+			decodeSalaryRecord
+		);
 	}
 
-	updateSalary(data: SalaryRecord) {
-		return super.update(data) as unknown as Promise<SalaryRecord>;
+	updateSalary(data: SalaryUpdatePayload) {
+		return asPerformanceServicePromise<SalaryRecord>(
+			super.update(data),
+			decodeSalaryRecord
+		);
 	}
 
-	confirmSalary(data: { id: number }) {
-		return this.request({
+	confirmSalary(data: SalaryConfirmPayload) {
+		return asPerformanceServicePromise<SalaryRecord>(this.request({
 			url: '/confirm',
 			method: 'POST',
 			data
-		}) as unknown as Promise<SalaryRecord>;
+		}), decodeSalaryRecord);
 	}
 
-	archiveSalary(data: { id: number }) {
-		return this.request({
+	archiveSalary(data: SalaryArchivePayload) {
+		return asPerformanceServicePromise<SalaryRecord>(this.request({
 			url: '/archive',
 			method: 'POST',
 			data
-		}) as unknown as Promise<SalaryRecord>;
+		}), decodeSalaryRecord);
 	}
 
-	addChange(data: { salaryId: number; adjustAmount: number; changeReason: string }) {
-		return this.request({
+	addChange(data: SalaryAddChangePayload) {
+		return asPerformanceServicePromise<SalaryRecord>(this.request({
 			url: '/changeAdd',
 			method: 'POST',
 			data
-		}) as unknown as Promise<SalaryRecord>;
+		}), decodeSalaryRecord);
 	}
 }
 

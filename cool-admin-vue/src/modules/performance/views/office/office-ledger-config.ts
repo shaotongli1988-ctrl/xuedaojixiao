@@ -4,50 +4,121 @@
  * 维护重点：页面保留各自业务命名，但不能脱离后端契约另起一套字段或状态。
  */
 
-function splitTextList(value) {
+import type {
+	AnnualInspectionRecord,
+	DesignCollabRecord,
+	ExpressCollabRecord,
+	HonorRecord,
+	IntellectualPropertyRecord,
+	PublicityMaterialRecord,
+	VehicleRecord
+} from '../../types';
+import {
+	ANNUAL_INSPECTION_CATEGORY_OPTIONS,
+	ANNUAL_INSPECTION_STATUS_OPTIONS,
+	DESIGN_COLLAB_PRIORITY_OPTIONS,
+	DESIGN_COLLAB_STATUS_OPTIONS,
+	EXPRESS_COLLAB_SERVICE_LEVEL_OPTIONS,
+	EXPRESS_COLLAB_STATUS_OPTIONS,
+	EXPRESS_COLLAB_SYNC_STATUS_OPTIONS,
+	HONOR_LEVEL_OPTIONS,
+	HONOR_STATUS_OPTIONS,
+	HONOR_TYPE_OPTIONS,
+	INTELLECTUAL_PROPERTY_RISK_LEVEL_OPTIONS,
+	INTELLECTUAL_PROPERTY_STATUS_OPTIONS,
+	INTELLECTUAL_PROPERTY_TYPE_OPTIONS,
+	PUBLICITY_MATERIAL_CHANNEL_OPTIONS,
+	PUBLICITY_MATERIAL_STATUS_OPTIONS,
+	PUBLICITY_MATERIAL_TYPE_OPTIONS,
+	VEHICLE_STATUS_OPTIONS,
+	VEHICLE_TYPE_OPTIONS
+} from '../../office-ledger.dictionary';
+import type { OfficeLedgerBaseRecord } from '../../service/office-ledger';
+import type {
+	OfficeLedgerConfig,
+	OfficeLedgerField,
+	OfficeLedgerFieldOption,
+	OfficeLedgerFilterState,
+	OfficeLedgerFormState,
+	OfficeLedgerModuleConfigMap,
+	OfficeLedgerStatsCard
+} from './office-ledger.types';
+
+interface OfficeLedgerModuleConfigInput<TRecord extends OfficeLedgerBaseRecord>
+	extends Record<string, unknown> {
+	moduleKey: string;
+	title: string;
+	description: string;
+	entityLabel: string;
+	notice: string;
+	route: string;
+	primaryTextProp: keyof TRecord & string;
+	statusOptions: OfficeLedgerFieldOption[];
+	filters: OfficeLedgerField<TRecord>[];
+	tableColumns: OfficeLedgerField<TRecord>[];
+	detailFields: OfficeLedgerField<TRecord>[];
+	formFields: OfficeLedgerField<TRecord>[];
+	statsCards: OfficeLedgerStatsCard[];
+	phaseLabel?: string;
+	badgeLabel?: string;
+	initialPageSize?: number;
+	formWidth?: string;
+	documentReference?: { prop: string; label: string } | null;
+	createFilters?: () => OfficeLedgerFilterState;
+	normalizeFilters?: (
+		filters: Partial<OfficeLedgerFilterState> & Record<string, unknown>
+	) => Record<string, unknown>;
+	createEmptyForm?: () => OfficeLedgerFormState;
+	toFormValues?: (record: TRecord) => OfficeLedgerFormState;
+	toPayload?: (form: OfficeLedgerFormState) => Partial<TRecord> & Record<string, unknown>;
+	canEditRow?: (row: TRecord) => boolean;
+	canDeleteRow?: (row: TRecord) => boolean;
+	getDeleteMessage?: (row: TRecord) => string;
+	formatStatsValue?: (value: unknown, card: OfficeLedgerStatsCard) => unknown;
+}
+
+function splitTextList(value: unknown) {
 	return String(value || '')
 		.split(/[,\s，]+/)
 		.map(item => item.trim())
 		.filter(Boolean);
 }
 
-function createStatusOption(value, label, type = 'info') {
-	return {
-		value,
-		label,
-		type
-	};
-}
-
-function buildStatusMap(options) {
-	return options.reduce((map, option) => {
+function buildStatusMap(options: OfficeLedgerFieldOption[]) {
+	return options.reduce<Record<string, { label: string; type?: string }>>((map, option) => {
 		map[option.value] = option;
 		return map;
 	}, {});
 }
 
-function asNumber(value, fallback = 0) {
+function asNumber(value: unknown, fallback = 0) {
 	const parsed = Number(value);
 	return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function formatDate(value) {
+function formatDate(value: string | null | undefined) {
 	return value || '-';
 }
 
-function formatDocumentRef(row) {
+function formatDocumentRef(
+	row: { relatedDocumentSummary?: { fileNo?: string; fileName?: string } | null } | null | undefined
+) {
 	if (row?.relatedDocumentSummary?.fileNo) {
 		return `${row.relatedDocumentSummary.fileNo} / ${row.relatedDocumentSummary.fileName}`;
 	}
 	return '-';
 }
 
-function createBaseConfig(config) {
+function createBaseConfig<
+	TRecord extends OfficeLedgerBaseRecord,
+	TExtra extends object = {}
+>(
+	config: OfficeLedgerModuleConfigInput<TRecord> & TExtra
+): OfficeLedgerConfig<TRecord> & TExtra {
 	const statusMap = buildStatusMap(config.statusOptions);
 	return {
 		phaseLabel: '行政协同 / Theme22',
 		badgeLabel: 'Theme 22',
-		audienceLabel: 'HR 管理员',
 		initialPageSize: 10,
 		formWidth: '860px',
 		documentReference: null,
@@ -73,16 +144,19 @@ function createBaseConfig(config) {
 			...form,
 			tags: splitTextList(form.tagsText)
 		}),
-		canEditRow: row => !['archived'].includes(row?.status),
-		canDeleteRow: row => !['archived'].includes(row?.status),
-		getDeleteMessage: row => `确认删除“${row?.[config.primaryTextProp] || row?.title || row?.id || '当前记录'}”吗？此操作只移除元数据台账记录。`,
+		canEditRow: row => !['archived'].includes(String(row?.status || '')),
+		canDeleteRow: row => !['archived'].includes(String(row?.status || '')),
+		getDeleteMessage: row =>
+			`确认删除“${
+				String(row?.[config.primaryTextProp] || row?.title || row?.id || '当前记录')
+			}”吗？此操作只移除元数据台账记录。`,
 		statusMap,
 		...config
 	};
 }
 
 export const officeLedgerModules = {
-	annualInspection: createBaseConfig({
+	annualInspection: createBaseConfig<AnnualInspectionRecord>({
 		moduleKey: 'annualInspection',
 		title: '年检材料',
 		route: '/performance/office/annual-inspection',
@@ -90,14 +164,7 @@ export const officeLedgerModules = {
 		entityLabel: '年检材料',
 		primaryTextProp: 'title',
 		notice: '只维护后台元数据，不保存真实扫描件、外部系统账号或监管密码。',
-		statusOptions: [
-			createStatusOption('draft', '待整理'),
-			createStatusOption('preparing', '准备中', 'warning'),
-			createStatusOption('submitted', '已提交', 'primary'),
-			createStatusOption('approved', '已完成', 'success'),
-			createStatusOption('rejected', '需重提', 'danger'),
-			createStatusOption('expired', '已过期', 'info')
-		],
+		statusOptions: [...ANNUAL_INSPECTION_STATUS_OPTIONS],
 		filters: [
 			{ prop: 'keyword', label: '标题 / 编号', type: 'text', width: '240px', placeholder: '标题 / 材料编号' },
 			{ prop: 'status', label: '状态', type: 'select', width: '160px', optionsProp: 'status' },
@@ -106,13 +173,7 @@ export const officeLedgerModules = {
 				label: '年检分类',
 				type: 'select',
 				width: '180px',
-				options: [
-					{ label: '安全类', value: 'safety' },
-					{ label: '设备类', value: 'equipment' },
-					{ label: '证照类', value: 'license' },
-					{ label: '合规类', value: 'compliance' },
-					{ label: '其他', value: 'other' }
-				]
+				options: [...ANNUAL_INSPECTION_CATEGORY_OPTIONS]
 			}
 		],
 		createFilters: () => ({
@@ -157,13 +218,13 @@ export const officeLedgerModules = {
 		formFields: [
 			{ prop: 'materialNo', label: '材料编号', type: 'text', required: true },
 			{ prop: 'title', label: '事项标题', type: 'text', required: true },
-			{ prop: 'category', label: '年检分类', type: 'select', required: true, options: [
-				{ label: '安全类', value: 'safety' },
-				{ label: '设备类', value: 'equipment' },
-				{ label: '证照类', value: 'license' },
-				{ label: '合规类', value: 'compliance' },
-				{ label: '其他', value: 'other' }
-			] },
+			{
+				prop: 'category',
+				label: '年检分类',
+				type: 'select',
+				required: true,
+				options: [...ANNUAL_INSPECTION_CATEGORY_OPTIONS]
+			},
 			{ prop: 'department', label: '所属部门', type: 'text', required: true },
 			{ prop: 'ownerName', label: '负责人', type: 'text', required: true },
 			{ prop: 'dueDate', label: '截止日期', type: 'date', required: true },
@@ -174,7 +235,7 @@ export const officeLedgerModules = {
 			{ prop: 'notes', label: '备注', type: 'textarea', span: 2, rows: 4 }
 		]
 	}),
-	honor: createBaseConfig({
+	honor: createBaseConfig<HonorRecord>({
 		moduleKey: 'honor',
 		title: '荣誉管理',
 		route: '/performance/office/honor',
@@ -182,11 +243,7 @@ export const officeLedgerModules = {
 		entityLabel: '荣誉记录',
 		primaryTextProp: 'title',
 		notice: '只维护后台元数据，不保存证书原图、展示页或对外分享链接。',
-		statusOptions: [
-			createStatusOption('draft', '待整理'),
-			createStatusOption('published', '已发布', 'success'),
-			createStatusOption('archived', '已归档', 'info')
-		],
+		statusOptions: [...HONOR_STATUS_OPTIONS],
 		filters: [
 			{ prop: 'keyword', label: '标题 / 编号', type: 'text', width: '240px', placeholder: '荣誉标题 / 荣誉编号' },
 			{ prop: 'status', label: '状态', type: 'select', width: '160px', optionsProp: 'status' },
@@ -195,11 +252,7 @@ export const officeLedgerModules = {
 				label: '对象类型',
 				type: 'select',
 				width: '160px',
-				options: [
-					{ label: '个人', value: 'individual' },
-					{ label: '团队', value: 'team' },
-					{ label: '组织', value: 'organization' }
-				]
+				options: [...HONOR_TYPE_OPTIONS]
 			}
 		],
 		createFilters: () => ({
@@ -244,18 +297,20 @@ export const officeLedgerModules = {
 		formFields: [
 			{ prop: 'honorNo', label: '荣誉编号', type: 'text', required: true },
 			{ prop: 'title', label: '荣誉标题', type: 'text', required: true },
-			{ prop: 'honorType', label: '对象类型', type: 'select', required: true, options: [
-				{ label: '个人', value: 'individual' },
-				{ label: '团队', value: 'team' },
-				{ label: '组织', value: 'organization' }
-			] },
-			{ prop: 'level', label: '荣誉级别', type: 'select', required: true, options: [
-				{ label: '部门级', value: 'departmental' },
-				{ label: '市级', value: 'city' },
-				{ label: '省级', value: 'provincial' },
-				{ label: '国家级', value: 'national' },
-				{ label: '国际级', value: 'international' }
-			] },
+			{
+				prop: 'honorType',
+				label: '对象类型',
+				type: 'select',
+				required: true,
+				options: [...HONOR_TYPE_OPTIONS]
+			},
+			{
+				prop: 'level',
+				label: '荣誉级别',
+				type: 'select',
+				required: true,
+				options: [...HONOR_LEVEL_OPTIONS]
+			},
 			{ prop: 'winnerName', label: '获奖对象', type: 'text', required: true },
 			{ prop: 'department', label: '所属部门', type: 'text', required: true },
 			{ prop: 'issuer', label: '授予单位', type: 'text', required: true },
@@ -265,7 +320,7 @@ export const officeLedgerModules = {
 			{ prop: 'notes', label: '备注', type: 'textarea', span: 2, rows: 4 }
 		]
 	}),
-	publicityMaterial: createBaseConfig({
+	publicityMaterial: createBaseConfig<PublicityMaterialRecord>({
 		moduleKey: 'publicityMaterial',
 		title: '宣传资料',
 		route: '/performance/office/publicity-material',
@@ -277,13 +332,7 @@ export const officeLedgerModules = {
 			prop: 'documentIds',
 			label: '关联文件元数据'
 		},
-		statusOptions: [
-			createStatusOption('draft', '待整理'),
-			createStatusOption('review', '待审核', 'warning'),
-			createStatusOption('approved', '已审核', 'primary'),
-			createStatusOption('published', '已发布', 'success'),
-			createStatusOption('offline', '已下线', 'danger')
-		],
+		statusOptions: [...PUBLICITY_MATERIAL_STATUS_OPTIONS],
 		filters: [
 			{ prop: 'keyword', label: '标题 / 编号', type: 'text', width: '240px', placeholder: '宣传标题 / 资料编号' },
 			{ prop: 'status', label: '状态', type: 'select', width: '160px', optionsProp: 'status' },
@@ -292,13 +341,7 @@ export const officeLedgerModules = {
 				label: '资料类型',
 				type: 'select',
 				width: '180px',
-				options: [
-					{ label: '海报', value: 'poster' },
-					{ label: '视频', value: 'video' },
-					{ label: '文章', value: 'article' },
-					{ label: 'PPT', value: 'ppt' },
-					{ label: '画册', value: 'brochure' }
-				]
+				options: [...PUBLICITY_MATERIAL_TYPE_OPTIONS]
 			}
 		],
 		createFilters: () => ({
@@ -317,11 +360,14 @@ export const officeLedgerModules = {
 			tagsText: '',
 			notes: ''
 		}),
-		toFormValues: record => ({
-			...record,
-			documentIds: record?.relatedDocumentId ? [Number(record.relatedDocumentId)] : [],
-			tagsText: Array.isArray(record?.tags) ? record.tags.join('，') : ''
-		}),
+		toFormValues: record => {
+			const { relatedDocumentSummary: _relatedDocumentSummary, ...formRecord } = record;
+			return {
+				...formRecord,
+				documentIds: record?.relatedDocumentId ? [Number(record.relatedDocumentId)] : [],
+				tagsText: Array.isArray(record?.tags) ? record.tags.join('，') : ''
+			};
+		},
 		toPayload: form => ({
 			...form,
 			relatedDocumentId: Array.isArray(form.documentIds) && form.documentIds.length
@@ -362,20 +408,20 @@ export const officeLedgerModules = {
 		formFields: [
 			{ prop: 'materialNo', label: '资料编号', type: 'text', required: true },
 			{ prop: 'title', label: '资料标题', type: 'text', required: true },
-			{ prop: 'materialType', label: '资料类型', type: 'select', required: true, options: [
-				{ label: '海报', value: 'poster' },
-				{ label: '视频', value: 'video' },
-				{ label: '文章', value: 'article' },
-				{ label: 'PPT', value: 'ppt' },
-				{ label: '画册', value: 'brochure' }
-			] },
-			{ prop: 'channel', label: '投放渠道', type: 'select', required: true, options: [
-				{ label: '官网', value: 'website' },
-				{ label: '公众号', value: 'wechat' },
-				{ label: '微博', value: 'weibo' },
-				{ label: '线下', value: 'offline' },
-				{ label: '全渠道', value: 'all' }
-			] },
+			{
+				prop: 'materialType',
+				label: '资料类型',
+				type: 'select',
+				required: true,
+				options: [...PUBLICITY_MATERIAL_TYPE_OPTIONS]
+			},
+			{
+				prop: 'channel',
+				label: '投放渠道',
+				type: 'select',
+				required: true,
+				options: [...PUBLICITY_MATERIAL_CHANNEL_OPTIONS]
+			},
 			{ prop: 'ownerName', label: '负责人', type: 'text', required: true },
 			{ prop: 'designOwner', label: '设计负责人', type: 'text', required: true },
 			{ prop: 'publishDate', label: '发布日期', type: 'date', required: true },
@@ -386,7 +432,7 @@ export const officeLedgerModules = {
 			{ prop: 'notes', label: '备注', type: 'textarea', span: 2, rows: 4 }
 		]
 	}),
-	designCollab: createBaseConfig({
+	designCollab: createBaseConfig<DesignCollabRecord>({
 		moduleKey: 'designCollab',
 		title: '美工协同',
 		route: '/performance/office/design-collab',
@@ -394,13 +440,7 @@ export const officeLedgerModules = {
 		entityLabel: '设计协同',
 		primaryTextProp: 'title',
 		notice: '只维护协同元数据，不上传源文件、不提供评论流和审稿链接。',
-		statusOptions: [
-			createStatusOption('todo', '待受理'),
-			createStatusOption('in_progress', '处理中', 'warning'),
-			createStatusOption('review', '待复核', 'primary'),
-			createStatusOption('done', '已完成', 'success'),
-			createStatusOption('cancelled', '已取消', 'info')
-		],
+		statusOptions: [...DESIGN_COLLAB_STATUS_OPTIONS],
 		filters: [
 			{ prop: 'keyword', label: '标题 / 编号', type: 'text', width: '240px', placeholder: '任务标题 / 任务编号' },
 			{ prop: 'status', label: '状态', type: 'select', width: '160px', optionsProp: 'status' },
@@ -409,12 +449,7 @@ export const officeLedgerModules = {
 				label: '优先级',
 				type: 'select',
 				width: '160px',
-				options: [
-					{ label: '低', value: 'low', type: 'info' },
-					{ label: '中', value: 'medium', type: 'warning' },
-					{ label: '高', value: 'high', type: 'danger' },
-					{ label: '紧急', value: 'urgent', type: 'danger' }
-				]
+				options: [...DESIGN_COLLAB_PRIORITY_OPTIONS]
 			}
 		],
 		createFilters: () => ({
@@ -461,12 +496,13 @@ export const officeLedgerModules = {
 			{ prop: 'title', label: '任务标题', type: 'text', required: true },
 			{ prop: 'requesterName', label: '需求方', type: 'text', required: true },
 			{ prop: 'assigneeName', label: '执行人', type: 'text', required: true },
-			{ prop: 'priority', label: '优先级', type: 'select', required: true, options: [
-				{ label: '低', value: 'low', type: 'info' },
-				{ label: '中', value: 'medium', type: 'warning' },
-				{ label: '高', value: 'high', type: 'danger' },
-				{ label: '紧急', value: 'urgent', type: 'danger' }
-			] },
+			{
+				prop: 'priority',
+				label: '优先级',
+				type: 'select',
+				required: true,
+				options: [...DESIGN_COLLAB_PRIORITY_OPTIONS]
+			},
 			{ prop: 'dueDate', label: '截止日期', type: 'date', required: true },
 			{ prop: 'progress', label: '任务进度', type: 'number', min: 0, precision: 0 },
 			{ prop: 'workload', label: '工作量', type: 'number', min: 1, precision: 0 },
@@ -475,7 +511,7 @@ export const officeLedgerModules = {
 			{ prop: 'notes', label: '备注', type: 'textarea', span: 2, rows: 4 }
 		]
 	}),
-	expressCollab: createBaseConfig({
+	expressCollab: createBaseConfig<ExpressCollabRecord>({
 		moduleKey: 'expressCollab',
 		title: '快递协同',
 		route: '/performance/office/express-collab',
@@ -483,13 +519,7 @@ export const officeLedgerModules = {
 		entityLabel: '快递协同',
 		primaryTextProp: 'trackingNo',
 		notice: '只维护寄递元数据，不接第三方物流轨迹、面单打印和结算流程。',
-		statusOptions: [
-			createStatusOption('created', '已创建'),
-			createStatusOption('in_transit', '运输中', 'warning'),
-			createStatusOption('delivered', '已送达', 'success'),
-			createStatusOption('exception', '异常件', 'danger'),
-			createStatusOption('returned', '已退回', 'info')
-		],
+		statusOptions: [...EXPRESS_COLLAB_STATUS_OPTIONS],
 		filters: [
 			{ prop: 'keyword', label: '单号 / 订单', type: 'text', width: '260px', placeholder: '运单号 / 订单号 / 标题' },
 			{ prop: 'status', label: '状态', type: 'select', width: '160px', optionsProp: 'status' },
@@ -498,11 +528,7 @@ export const officeLedgerModules = {
 				label: '服务等级',
 				type: 'select',
 				width: '160px',
-				options: [
-					{ label: '标准', value: 'standard' },
-					{ label: '加急', value: 'express' },
-					{ label: '当日达', value: 'same_day' }
-				]
+				options: [...EXPRESS_COLLAB_SERVICE_LEVEL_OPTIONS]
 			}
 		],
 		createFilters: () => ({
@@ -550,21 +576,25 @@ export const officeLedgerModules = {
 			{ prop: 'orderNo', label: '订单号', type: 'text', required: true },
 			{ prop: 'title', label: '标题', type: 'text', required: true },
 			{ prop: 'courierCompany', label: '快递公司', type: 'text', required: true },
-			{ prop: 'serviceLevel', label: '服务等级', type: 'select', required: true, options: [
-				{ label: '标准', value: 'standard' },
-				{ label: '加急', value: 'express' },
-				{ label: '当日达', value: 'same_day' }
-			] },
+			{
+				prop: 'serviceLevel',
+				label: '服务等级',
+				type: 'select',
+				required: true,
+				options: [...EXPRESS_COLLAB_SERVICE_LEVEL_OPTIONS]
+			},
 			{ prop: 'origin', label: '寄出地', type: 'text' },
 			{ prop: 'destination', label: '目的地', type: 'text' },
 			{ prop: 'senderName', label: '寄件人', type: 'text', required: true },
 			{ prop: 'receiverName', label: '收件人', type: 'text', required: true },
 			{ prop: 'sourceSystem', label: '来源系统', type: 'text' },
-			{ prop: 'syncStatus', label: '同步状态', type: 'select', required: true, options: [
-				{ label: '已同步', value: 'synced', type: 'success' },
-				{ label: '待同步', value: 'pending', type: 'warning' },
-				{ label: '同步失败', value: 'failed', type: 'danger' }
-			] },
+			{
+				prop: 'syncStatus',
+				label: '同步状态',
+				type: 'select',
+				required: true,
+				options: [...EXPRESS_COLLAB_SYNC_STATUS_OPTIONS]
+			},
 			{ prop: 'lastEvent', label: '最近事件', type: 'text' },
 			{ prop: 'lastUpdate', label: '最近更新时间', type: 'date', required: true },
 			{ prop: 'etaDate', label: '预计送达', type: 'date', required: true },
@@ -572,7 +602,7 @@ export const officeLedgerModules = {
 			{ prop: 'notes', label: '备注', type: 'textarea', span: 2, rows: 4 }
 		]
 	}),
-	vehicle: createBaseConfig({
+	vehicle: createBaseConfig<VehicleRecord>({
 		moduleKey: 'vehicle',
 		title: '车辆管理',
 		route: '/performance/office/vehicle',
@@ -582,21 +612,8 @@ export const officeLedgerModules = {
 		entityLabel: '车辆',
 		primaryTextProp: 'plateNo',
 		notice: '只维护后台台账元数据，不处理用车申请、调度回车、维保工单或费用结算。',
-		statusOptions: [
-			createStatusOption('idle', '闲置'),
-			createStatusOption('in_use', '使用中', 'primary'),
-			createStatusOption('maintenance', '维修中', 'warning'),
-			createStatusOption('inspection_due', '待年检', 'danger'),
-			createStatusOption('retired', '已停用', 'info')
-		],
-		vehicleType: [
-			{ label: '轿车', value: 'sedan' },
-			{ label: 'SUV', value: 'suv' },
-			{ label: 'MPV', value: 'mpv' },
-			{ label: '客车', value: 'bus' },
-			{ label: '货车', value: 'truck' },
-			{ label: '其他', value: 'other' }
-		],
+		statusOptions: [...VEHICLE_STATUS_OPTIONS],
+		vehicleType: [...VEHICLE_TYPE_OPTIONS],
 		filters: [
 			{ prop: 'keyword', label: '车辆编号 / 车牌', type: 'text', width: '240px', placeholder: '车辆编号 / 车牌 / 品牌 / 型号' },
 			{ prop: 'status', label: '状态', type: 'select', width: '160px', optionsProp: 'status' },
@@ -605,14 +622,7 @@ export const officeLedgerModules = {
 				label: '车辆类型',
 				type: 'select',
 				width: '160px',
-				options: [
-					{ label: '轿车', value: 'sedan' },
-					{ label: 'SUV', value: 'suv' },
-					{ label: 'MPV', value: 'mpv' },
-					{ label: '客车', value: 'bus' },
-					{ label: '货车', value: 'truck' },
-					{ label: '其他', value: 'other' }
-				]
+				options: [...VEHICLE_TYPE_OPTIONS]
 			}
 		],
 		createFilters: () => ({
@@ -668,14 +678,13 @@ export const officeLedgerModules = {
 			{ prop: 'plateNo', label: '车牌号', type: 'text', required: true },
 			{ prop: 'brand', label: '品牌', type: 'text', required: true },
 			{ prop: 'model', label: '型号', type: 'text', required: true },
-			{ prop: 'vehicleType', label: '车辆类型', type: 'select', required: true, options: [
-				{ label: '轿车', value: 'sedan' },
-				{ label: 'SUV', value: 'suv' },
-				{ label: 'MPV', value: 'mpv' },
-				{ label: '客车', value: 'bus' },
-				{ label: '货车', value: 'truck' },
-				{ label: '其他', value: 'other' }
-			] },
+			{
+				prop: 'vehicleType',
+				label: '车辆类型',
+				type: 'select',
+				required: true,
+				options: [...VEHICLE_TYPE_OPTIONS]
+			},
 			{ prop: 'ownerDepartment', label: '归属部门', type: 'text', required: true },
 			{ prop: 'managerName', label: '管理员', type: 'text', required: true },
 			{ prop: 'seats', label: '座位数', type: 'number', min: 1, precision: 0 },
@@ -687,7 +696,7 @@ export const officeLedgerModules = {
 			{ prop: 'notes', label: '备注', type: 'textarea', span: 2, rows: 4 }
 		]
 	}),
-	intellectualProperty: createBaseConfig({
+	intellectualProperty: createBaseConfig<IntellectualPropertyRecord>({
 		moduleKey: 'intellectualProperty',
 		title: '知识产权管理',
 		route: '/performance/office/intellectual-property',
@@ -697,19 +706,8 @@ export const officeLedgerModules = {
 		entityLabel: '知识产权',
 		primaryTextProp: 'title',
 		notice: '只维护后台台账元数据，不处理证书附件、续费审批、维权流程或侵权处置。',
-		statusOptions: [
-			createStatusOption('drafting', '起草中'),
-			createStatusOption('applying', '申请中', 'warning'),
-			createStatusOption('registered', '已登记', 'success'),
-			createStatusOption('expired', '已到期', 'danger'),
-			createStatusOption('invalidated', '已失效', 'info')
-		],
-		ipType: [
-			{ label: '专利', value: 'patent' },
-			{ label: '商标', value: 'trademark' },
-			{ label: '著作权', value: 'copyright' },
-			{ label: '软件著作权', value: 'softwareCopyright' }
-		],
+		statusOptions: [...INTELLECTUAL_PROPERTY_STATUS_OPTIONS],
+		ipType: [...INTELLECTUAL_PROPERTY_TYPE_OPTIONS],
 		filters: [
 			{ prop: 'keyword', label: '编号 / 标题', type: 'text', width: '240px', placeholder: '编号 / 标题 / 归属人 / 登记号' },
 			{ prop: 'status', label: '状态', type: 'select', width: '160px', optionsProp: 'status' },
@@ -718,12 +716,7 @@ export const officeLedgerModules = {
 				label: '类型',
 				type: 'select',
 				width: '180px',
-				options: [
-					{ label: '专利', value: 'patent' },
-					{ label: '商标', value: 'trademark' },
-					{ label: '著作权', value: 'copyright' },
-					{ label: '软件著作权', value: 'softwareCopyright' }
-				]
+				options: [...INTELLECTUAL_PROPERTY_TYPE_OPTIONS]
 			}
 		],
 		createFilters: () => ({
@@ -776,12 +769,13 @@ export const officeLedgerModules = {
 		formFields: [
 			{ prop: 'ipNo', label: '产权编号', type: 'text', required: true },
 			{ prop: 'title', label: '标题', type: 'text', required: true },
-			{ prop: 'ipType', label: '类型', type: 'select', required: true, options: [
-				{ label: '专利', value: 'patent' },
-				{ label: '商标', value: 'trademark' },
-				{ label: '著作权', value: 'copyright' },
-				{ label: '软件著作权', value: 'softwareCopyright' }
-			] },
+			{
+				prop: 'ipType',
+				label: '类型',
+				type: 'select',
+				required: true,
+				options: [...INTELLECTUAL_PROPERTY_TYPE_OPTIONS]
+			},
 			{ prop: 'ownerDepartment', label: '归属部门', type: 'text', required: true },
 			{ prop: 'ownerName', label: '归属人', type: 'text', required: true },
 			{ prop: 'applicantName', label: '申请人', type: 'text', required: true },
@@ -789,19 +783,16 @@ export const officeLedgerModules = {
 			{ prop: 'grantDate', label: '授权日期', type: 'date' },
 			{ prop: 'expiryDate', label: '到期日期', type: 'date' },
 			{ prop: 'registryNo', label: '登记号', type: 'text' },
-			{ prop: 'riskLevel', label: '风险等级', type: 'select', options: [
-				{ label: '低', value: 'low', type: 'success' },
-				{ label: '中', value: 'medium', type: 'warning' },
-				{ label: '高', value: 'high', type: 'danger' }
-			] },
+			{
+				prop: 'riskLevel',
+				label: '风险等级',
+				type: 'select',
+				options: [...INTELLECTUAL_PROPERTY_RISK_LEVEL_OPTIONS]
+			},
 			{ prop: 'status', label: '状态', type: 'select', required: true, optionsProp: 'status' },
 			{ prop: 'usageScope', label: '使用范围', type: 'textarea', span: 2, rows: 3 },
 			{ prop: 'notes', label: '备注', type: 'textarea', span: 2, rows: 4 }
 		],
-		riskLevel: [
-			{ label: '低', value: 'low', type: 'success' },
-			{ label: '中', value: 'medium', type: 'warning' },
-			{ label: '高', value: 'high', type: 'danger' }
-		]
+		riskLevel: [...INTELLECTUAL_PROPERTY_RISK_LEVEL_OPTIONS]
 	})
-};
+} satisfies OfficeLedgerModuleConfigMap;

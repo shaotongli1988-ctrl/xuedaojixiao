@@ -5,6 +5,14 @@
  */
 
 import { BaseService } from '/@/cool/service/base';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeOfficeLedgerBaseRecord,
+	decodeOfficeLedgerPageResult,
+	decodeOfficeLedgerStats,
+	type OfficeLedgerRecordDecoder,
+	type OfficeLedgerStatsDecoder
+} from './office-ledger-contract';
 import { buildOfficeLedgerEndpoint, buildOfficeLedgerPermissions } from './office-ledger-shared.js';
 
 export interface OfficeLedgerServicePermission {
@@ -22,7 +30,34 @@ export interface OfficeLedgerPageParams {
 	[key: string]: unknown;
 }
 
-export interface OfficeLedgerPageResult<TRecord = Record<string, unknown>> {
+export interface OfficeLedgerStatsParams {
+	[key: string]: unknown;
+}
+
+export interface OfficeLedgerBaseRecord {
+	id?: number;
+	[key: string]: unknown;
+}
+
+export interface OfficeLedgerStats {
+	[key: string]: unknown;
+}
+
+export interface OfficeLedgerInfoQuery {
+	id: number;
+}
+
+export interface OfficeLedgerRemovePayload {
+	ids: number[];
+}
+
+export type OfficeLedgerCreatePayload<TRecord extends OfficeLedgerBaseRecord> = Partial<TRecord>;
+
+export type OfficeLedgerUpdatePayload<TRecord extends OfficeLedgerBaseRecord> = Partial<TRecord> & {
+	id: number;
+};
+
+export interface OfficeLedgerPageResult<TRecord extends OfficeLedgerBaseRecord = OfficeLedgerBaseRecord> {
 	list: TRecord[];
 	pagination?: {
 		page?: number;
@@ -31,43 +66,72 @@ export interface OfficeLedgerPageResult<TRecord = Record<string, unknown>> {
 	} | null;
 }
 
-export class PerformanceOfficeLedgerService<TRecord = Record<string, unknown>> extends BaseService {
-	permission: OfficeLedgerServicePermission;
+export interface OfficeLedgerServiceDecoders<
+	TRecord extends OfficeLedgerBaseRecord = OfficeLedgerBaseRecord,
+	TStats extends OfficeLedgerStats = OfficeLedgerStats
+> {
+	decodeRecord?: OfficeLedgerRecordDecoder<TRecord>;
+	decodeStats?: OfficeLedgerStatsDecoder<TStats>;
+}
 
-	constructor(readonly moduleKey: string) {
+export class PerformanceOfficeLedgerService<
+	TRecord extends OfficeLedgerBaseRecord = OfficeLedgerBaseRecord,
+	TStats extends OfficeLedgerStats = OfficeLedgerStats
+> extends BaseService {
+	permission: OfficeLedgerServicePermission;
+	private readonly decodeRecord: OfficeLedgerRecordDecoder<TRecord>;
+	private readonly decodeStats: OfficeLedgerStatsDecoder<TStats>;
+
+	constructor(
+		readonly moduleKey: string,
+		decoders?: OfficeLedgerServiceDecoders<TRecord, TStats>
+	) {
 		super(buildOfficeLedgerEndpoint(moduleKey));
 		this.permission = buildOfficeLedgerPermissions(moduleKey) as OfficeLedgerServicePermission;
+		this.decodeRecord =
+			decoders?.decodeRecord ?? (decodeOfficeLedgerBaseRecord as OfficeLedgerRecordDecoder<TRecord>);
+		this.decodeStats =
+			decoders?.decodeStats ?? (decodeOfficeLedgerStats as OfficeLedgerStatsDecoder<TStats>);
 	}
 
 	fetchPage(data: OfficeLedgerPageParams) {
-		return super.page(data) as unknown as Promise<OfficeLedgerPageResult<TRecord>>;
+		return asPerformanceServicePromise<OfficeLedgerPageResult<TRecord>>(
+			super.page(data),
+			value => decodeOfficeLedgerPageResult(value, 'officeLedgerPageResult', this.decodeRecord)
+		);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<TRecord>;
+	fetchInfo(params: OfficeLedgerInfoQuery) {
+		return asPerformanceServicePromise<TRecord>(super.info(params), this.decodeRecord);
 	}
 
-	fetchStats(params?: Record<string, unknown>) {
-		return this.request({
-			url: '/stats',
-			method: 'GET',
-			params
-		}) as unknown as Promise<Record<string, unknown>>;
+	fetchStats(params?: OfficeLedgerStatsParams) {
+		return asPerformanceServicePromise<TStats>(
+			this.request({
+				url: '/stats',
+				method: 'GET',
+				params
+			}),
+			this.decodeStats
+		);
 	}
 
-	createItem(data: Partial<TRecord>) {
-		return super.add(data) as unknown as Promise<TRecord>;
+	createItem(data: OfficeLedgerCreatePayload<TRecord>) {
+		return asPerformanceServicePromise<TRecord>(super.add(data), this.decodeRecord);
 	}
 
-	updateItem(data: Partial<TRecord> & { id: number }) {
-		return super.update(data) as unknown as Promise<TRecord>;
+	updateItem(data: OfficeLedgerUpdatePayload<TRecord>) {
+		return asPerformanceServicePromise<TRecord>(super.update(data), this.decodeRecord);
 	}
 
-	removeItem(data: { ids: number[] }) {
-		return super.delete(data) as unknown as Promise<void>;
+	removeItem(data: OfficeLedgerRemovePayload) {
+		return asPerformanceServicePromise<void>(super.delete(data));
 	}
 }
 
-export function createPerformanceOfficeLedgerService<TRecord = Record<string, unknown>>(moduleKey: string) {
-	return new PerformanceOfficeLedgerService<TRecord>(moduleKey);
+export function createPerformanceOfficeLedgerService<
+	TRecord extends OfficeLedgerBaseRecord = OfficeLedgerBaseRecord,
+	TStats extends OfficeLedgerStats = OfficeLedgerStats
+>(moduleKey: string, decoders?: OfficeLedgerServiceDecoders<TRecord, TStats>) {
+	return new PerformanceOfficeLedgerService<TRecord, TStats>(moduleKey, decoders);
 }

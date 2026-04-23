@@ -261,12 +261,23 @@ defineOptions({
 
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus';
+import { ElMessage, type FormInstance } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
+import { useDict } from '/$/dict';
 import { service } from '/@/cool';
 import { useBase } from '/$/base';
 import PromotionReviewDrawer from '../../components/promotion-review-drawer.vue';
+import { useListPage } from '../../composables/use-list-page.js';
 import { performanceAssessmentService } from '../../service/assessment';
+import {
+	confirmElementAction,
+	runTrackedElementAction
+} from '../shared/action-feedback';
+import {
+	createElementWarningFromErrorHandler,
+	resolveErrorMessage,
+	showElementErrorFromError
+} from '../shared/error-message';
 import {
 	type PromotionRecord,
 	type UserOption,
@@ -276,13 +287,14 @@ import { performancePromotionService } from '../../service/promotion';
 import { loadUserOptions } from '../../utils/lookup-options.js';
 import { clearRoutePresetQuery } from '../../utils/route-preset.js';
 
+const PROMOTION_STATUS_DICT_KEY = 'performance.promotion.status';
+
 const route = useRoute();
 const router = useRouter();
+const { dict } = useDict();
 const { user } = useBase();
 
-const rows = ref<PromotionRecord[]>([]);
 const userOptions = ref<UserOption[]>([]);
-const tableLoading = ref(false);
 const submitLoading = ref(false);
 const formVisible = ref(false);
 const detailVisible = ref(false);
@@ -291,18 +303,31 @@ const detailPromotion = ref<PromotionRecord | null>(null);
 const formRef = ref<FormInstance>();
 const assessmentIdInput = ref('');
 
-const filters = reactive({
-	employeeId: undefined as number | undefined,
-	assessmentId: '',
-	status: '',
-	toPosition: ''
+const promotionList = useListPage({
+	createFilters: () => ({
+		employeeId: undefined,
+		assessmentId: '',
+		status: '',
+		toPosition: ''
+	}),
+	canLoad: () => canAccess.value,
+	fetchPage: params =>
+		performancePromotionService.fetchPage({
+			page: params.page,
+			size: params.size,
+			employeeId: params.employeeId,
+			assessmentId: Number(params.assessmentId || 0) || undefined,
+			status: params.status || undefined,
+			toPosition: params.toPosition || undefined
+		}),
+	onError: (error: unknown) => {
+		showElementErrorFromError(error, '晋升列表加载失败');
+	}
 });
-
-const pagination = reactive({
-	page: 1,
-	size: 10,
-	total: 0
-});
+const rows = promotionList.rows;
+const tableLoading = promotionList.loading;
+const filters = promotionList.filters;
+const pagination = promotionList.pager;
 
 const form = reactive<PromotionRecord>(createEmptyPromotion(Number(user.info?.id || 0)));
 
@@ -312,7 +337,7 @@ const rules = {
 	toPosition: [{ required: true, message: '请输入目标岗位', trigger: 'blur' }],
 	sourceReason: [
 		{
-			validator: (_rule: any, value: string, callback: (error?: Error) => void) => {
+			validator: (_rule: unknown, value: string, callback: (error?: Error) => void) => {
 				if (!assessmentIdInput.value && !String(value || '').trim()) {
 					callback(new Error('独立创建时必须填写原因说明'));
 					return;
@@ -324,12 +349,12 @@ const rules = {
 	]
 };
 
-const statusOptions = [
-	{ label: '草稿', value: 'draft' },
-	{ label: '评审中', value: 'reviewing' },
-	{ label: '已通过', value: 'approved' },
-	{ label: '已驳回', value: 'rejected' }
-];
+const statusOptions = computed(() =>
+	dict.get(PROMOTION_STATUS_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: String(item.value)
+	}))
+);
 
 const canAccess = computed(() => checkPerm(performancePromotionService.permission.page));
 const showAddButton = computed(() => checkPerm(performancePromotionService.permission.add));
@@ -346,6 +371,7 @@ const detailCanReview = computed(() => {
 });
 
 onMounted(async () => {
+	await dict.refresh([PROMOTION_STATUS_DICT_KEY]);
 	await loadUsers();
 	await refresh();
 	await applyRoutePreset();
@@ -355,60 +381,37 @@ async function loadUsers() {
 	userOptions.value = await loadUserOptions(
 		() =>
 			service.base.sys.user.page({
-			page: 1,
-			size: 200
+				page: 1,
+				size: 200
 			}),
-		(error: any) => {
-			ElMessage.warning(error.message || '用户选项加载失败');
-		}
+		createElementWarningFromErrorHandler('用户选项加载失败')
 	);
 }
 
 async function applyRoutePreset() {
 	const assessmentId = Number(route.query.assessmentId || 0);
 	const employeeId = Number(route.query.employeeId || 0);
+	const suggestionId = presetSuggestionId.value;
 
-	if (!assessmentId && !employeeId) {
+	if (!assessmentId && !employeeId && !suggestionId) {
 		return;
 	}
 
 	openCreate({
 		assessmentId: assessmentId || undefined,
-		employeeId: employeeId || undefined
+		employeeId: employeeId || undefined,
+		suggestionId
 	});
 
 	await clearPresetQuery();
 }
 
 async function refresh() {
-	if (!canAccess.value) {
-		return;
-	}
-
-	tableLoading.value = true;
-
-	try {
-		const result = await performancePromotionService.fetchPage({
-			page: pagination.page,
-			size: pagination.size,
-			employeeId: filters.employeeId,
-			assessmentId: Number(filters.assessmentId || 0) || undefined,
-			status: filters.status || undefined,
-			toPosition: filters.toPosition || undefined
-		});
-
-		rows.value = result.list || [];
-		pagination.total = result.pagination?.total || 0;
-	} catch (error: any) {
-		ElMessage.error(error.message || '晋升列表加载失败');
-	} finally {
-		tableLoading.value = false;
-	}
+	await promotionList.reload();
 }
 
 function changePage(page: number) {
-	pagination.page = page;
-	refresh();
+	void promotionList.goToPage(page);
 }
 
 function openCreate(preset?: Partial<PromotionRecord>) {
@@ -442,8 +445,8 @@ async function loadDetail(id: number, next: (record: PromotionRecord) => void) {
 	try {
 		const record = await performancePromotionService.fetchInfo({ id });
 		next(record);
-	} catch (error: any) {
-		ElMessage.error(error.message || '晋升详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '晋升详情加载失败');
 	}
 }
 
@@ -462,7 +465,10 @@ async function submitForm() {
 
 	try {
 		if (editingPromotion.value?.id) {
-			await performancePromotionService.updatePromotion(form);
+			await performancePromotionService.updatePromotion({
+				...form,
+				id: editingPromotion.value.id
+			});
 		} else {
 			await performancePromotionService.createPromotion(form);
 		}
@@ -470,31 +476,34 @@ async function submitForm() {
 		ElMessage.success('保存成功');
 		formVisible.value = false;
 		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '保存失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '保存失败');
 	} finally {
 		submitLoading.value = false;
 	}
 }
 
 async function handleSubmit(row: PromotionRecord) {
-	await ElMessageBox.confirm(
+	const confirmed = await confirmElementAction(
 		`确认提交晋升单「${row.employeeName || row.employeeId} / ${row.toPosition}」进入评审吗？`,
-		'提交确认',
-		{
-			type: 'warning'
-		}
+		'提交确认'
 	);
 
-	try {
-		await performancePromotionService.submit({
-			id: row.id!
-		});
-		ElMessage.success('提交成功');
-		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '提交失败');
+	if (!confirmed) {
+		return;
 	}
+
+	await runTrackedElementAction({
+		rowId: Number(row.id || 0),
+		actionType: 'submit',
+		request: () =>
+			performancePromotionService.submit({
+				id: row.id!
+			}),
+		successMessage: '提交成功',
+		errorMessage: '提交失败',
+		refresh
+	});
 }
 
 async function submitReview(payload: {
@@ -509,8 +518,8 @@ async function submitReview(payload: {
 		ElMessage.success('评审成功');
 		detailVisible.value = false;
 		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '评审失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '评审失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -537,21 +546,11 @@ function canReview(row: PromotionRecord) {
 }
 
 function statusLabel(status?: string) {
-	const item = statusOptions.find(option => option.value === status);
-	return item?.label || status || '-';
+	return dict.getLabel(PROMOTION_STATUS_DICT_KEY, status) || status || '-';
 }
 
 function statusTagType(status?: string) {
-	switch (status) {
-		case 'reviewing':
-			return 'warning';
-		case 'approved':
-			return 'success';
-		case 'rejected':
-			return 'danger';
-		default:
-			return 'info';
-	}
+	return dict.getMeta(PROMOTION_STATUS_DICT_KEY, status)?.tone || 'info';
 }
 
 async function clearPresetQuery() {
@@ -600,58 +599,74 @@ function resolveAssessmentPagePath() {
 </script>
 
 <style lang="scss" scoped>
+@use '../../../../styles/patterns.data-panel.scss' as dataPanel;
+
 .promotion-page {
-	display: grid;
-	gap: 16px;
+	@include dataPanel.data-panel-shell;
+
+	--promotion-page-card-bg: var(--app-surface-card);
+	--promotion-page-muted-bg: var(--app-surface-muted);
+	--promotion-page-border: var(--app-border-strong);
+	--promotion-page-text: var(--app-text-primary);
+
+	:deep(.el-card) {
+		border-color: var(--promotion-page-border);
+		background: var(--promotion-page-card-bg);
+		box-shadow: var(--app-shadow-surface);
+	}
+
+	:deep(.el-table) {
+		@include dataPanel.data-panel-table;
+		--el-table-header-bg-color: var(--promotion-page-muted-bg);
+		--el-fill-color-light: var(--promotion-page-muted-bg);
+	}
 
 	&__toolbar {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 16px;
+		@include dataPanel.data-panel-toolbar;
 	}
 
 	&__toolbar-left,
 	&__toolbar-right {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 12px;
+		gap: var(--app-space-3);
 	}
 
 	&__stat-label {
-		font-size: 12px;
-		color: var(--el-text-color-secondary);
+		font-size: var(--app-font-size-caption);
+		color: var(--app-text-tertiary);
 	}
 
 	&__stat-value {
 		margin-top: 8px;
 		font-size: 28px;
 		font-weight: 600;
-		color: var(--el-text-color-primary);
+		color: var(--promotion-page-text);
 	}
 
 	&__header {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 12px;
+		gap: var(--app-space-3);
 	}
 
 	&__header-main {
 		display: flex;
 		align-items: center;
-		gap: 12px;
+		gap: var(--app-space-3);
 
 		h2 {
 			margin: 0;
 			font-size: 18px;
+			color: var(--promotion-page-text);
 		}
 	}
 
 	&__pagination {
 		display: flex;
 		justify-content: flex-end;
-		padding-top: 16px;
+		padding-top: var(--app-space-4);
 	}
 }
 </style>

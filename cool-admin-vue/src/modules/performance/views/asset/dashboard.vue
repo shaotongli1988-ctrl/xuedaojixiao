@@ -91,14 +91,26 @@ import { computed, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
 import { performanceAssetDashboardService } from '../../service/asset-dashboard';
+import type {
+	AssetDashboardActionSummaryItem,
+	AssetDashboardActivityItem,
+	AssetDashboardSummary
+} from '../../types';
+import { resolveErrorMessage, showElementErrorFromError } from '../shared/error-message';
 import { assetStatusTagMap, formatMoney } from './shared';
 
 const canAccess = computed(() => checkPerm(performanceAssetDashboardService.permission.summary));
 const loading = ref(false);
-const summary = ref<any>(null);
+const summary = ref<AssetDashboardSummary | null>(null);
 const filters = reactive({
 	category: ''
 });
+
+const emptyActionSummary: AssetDashboardActionSummaryItem = {
+	actionCount: 0,
+	assetCount: 0,
+	documentCount: 0
+};
 
 const metricCards = computed(() => [
 	{ label: '资产总量', value: summary.value?.totalAssetCount || 0 },
@@ -111,20 +123,20 @@ const metricCards = computed(() => [
 const actionOverviewCards = computed(() => [
 	{
 		label: '本日动作',
-		value: summary.value?.actionOverview?.today || { actionCount: 0, assetCount: 0, documentCount: 0 }
+		value: summary.value?.actionOverview?.today || emptyActionSummary
 	},
 	{
 		label: '本周动作',
-		value:
-			summary.value?.actionOverview?.thisWeek || { actionCount: 0, assetCount: 0, documentCount: 0 }
+		value: summary.value?.actionOverview?.thisWeek || emptyActionSummary
 	},
 	{
 		label: '本月动作',
-		value:
-			summary.value?.actionOverview?.thisMonth || { actionCount: 0, assetCount: 0, documentCount: 0 }
+		value: summary.value?.actionOverview?.thisMonth || emptyActionSummary
 	}
 ]);
-const activityTimeline = computed(() => summary.value?.actionTimeline || summary.value?.recentActivities || []);
+const activityTimeline = computed<AssetDashboardActivityItem[]>(() =>
+	summary.value?.actionTimeline || summary.value?.recentActivities || []
+);
 const statusLabelMap: Record<string, string> = {
 	draft: '草稿',
 	submitted: '已提交',
@@ -157,8 +169,8 @@ async function loadSummary() {
 		summary.value = await performanceAssetDashboardService.fetchSummary({
 			category: filters.category || undefined
 		});
-	} catch (error: any) {
-		ElMessage.error(error?.message || '资产首页加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '资产首页加载失败');
 	} finally {
 		loading.value = false;
 	}
@@ -170,21 +182,44 @@ if (canAccess.value) {
 </script>
 
 <style lang="scss" scoped>
+@use '../../../../styles/patterns.data-panel.scss' as dataPanel;
+
 .asset-dashboard {
-	display: grid;
-	gap: 16px;
+	@include dataPanel.data-panel-shell;
+
+	--asset-dashboard-card-bg: var(--app-surface-card);
+	--asset-dashboard-hero-bg: var(--app-surface-hero);
+	--asset-dashboard-muted-bg: var(--app-surface-muted);
+	--asset-dashboard-border: var(--app-border-strong);
+	--asset-dashboard-text: var(--app-text-primary);
+	--asset-dashboard-text-secondary: var(--app-text-secondary);
+	--asset-dashboard-eyebrow: var(--app-text-tertiary);
+
+	:deep(.el-card) {
+		border-color: var(--asset-dashboard-border);
+		background: var(--asset-dashboard-card-bg);
+		box-shadow: var(--app-shadow-surface);
+	}
+
+	:deep(.el-table) {
+		@include dataPanel.data-panel-table;
+		--el-table-header-bg-color: var(--asset-dashboard-muted-bg);
+	}
 
 	&__header {
 		display: flex;
 		justify-content: space-between;
-		gap: 16px;
+		gap: var(--app-space-4);
 		flex-wrap: wrap;
+		padding: 4px;
+		border-radius: var(--app-radius-lg);
+		background: var(--asset-dashboard-hero-bg);
 	}
 
 	&__eyebrow {
-		font-size: 12px;
-		color: var(--el-text-color-secondary);
-		margin-bottom: 8px;
+		font-size: var(--app-font-size-caption);
+		color: var(--asset-dashboard-eyebrow);
+		margin-bottom: var(--app-space-2);
 	}
 
 	&__filters,
@@ -192,28 +227,43 @@ if (canAccess.value) {
 	&__action-cards,
 	&__tag-grid {
 		display: flex;
-		gap: 12px;
+		gap: var(--app-space-3);
 		flex-wrap: wrap;
 	}
 
 	&__action-meta {
-		margin-top: 8px;
+		margin-top: var(--app-space-2);
 		display: flex;
-		gap: 16px;
+		gap: var(--app-space-4);
 		flex-wrap: wrap;
-		color: var(--el-text-color-secondary);
+		color: var(--asset-dashboard-text-secondary);
 		font-size: 13px;
 	}
 
 	&__card-label {
-		font-size: 12px;
-		color: var(--el-text-color-secondary);
+		font-size: var(--app-font-size-caption);
+		color: var(--asset-dashboard-text-secondary);
 	}
 
 	&__card-value {
-		margin-top: 8px;
+		margin-top: var(--app-space-2);
 		font-size: 28px;
 		font-weight: 600;
+		color: var(--asset-dashboard-text);
+	}
+
+	@media (max-width: 768px) {
+		&__header,
+		&__filters {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		&__filters {
+			:deep(.el-input) {
+				width: 100% !important;
+			}
+		}
 	}
 }
 </style>

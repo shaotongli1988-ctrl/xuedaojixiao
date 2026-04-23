@@ -4,24 +4,25 @@
  * 不负责图表渲染、导出、付款分析或库存总账联动。
  */
 import { BaseService } from '/@/cool';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodePurchaseReportSummary,
+	decodePurchaseReportSupplierStats,
+	decodePurchaseReportTrendPoints
+} from './purchase-report-contract';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import type {
+	PurchaseReportQuery,
 	PurchaseReportSummary,
 	PurchaseReportSupplierStat,
 	PurchaseReportTrendPoint
 } from '../types';
 
-export interface PurchaseReportQuery {
-	departmentId?: number;
-	supplierId?: number;
-	startDate?: string;
-	endDate?: string;
-}
-
 export default class PerformancePurchaseReportService extends BaseService {
 	permission = {
-		summary: 'performance:purchaseReport:summary',
-		trend: 'performance:purchaseReport:trend',
-		supplierStats: 'performance:purchaseReport:supplierStats'
+		summary: PERMISSIONS.performance.purchaseReport.summary,
+		trend: PERMISSIONS.performance.purchaseReport.trend,
+		supplierStats: PERMISSIONS.performance.purchaseReport.supplierStats
 	};
 
 	constructor() {
@@ -29,27 +30,27 @@ export default class PerformancePurchaseReportService extends BaseService {
 	}
 
 	fetchSummary(params?: PurchaseReportQuery) {
-		return this.request({
+		return asPerformanceServicePromise<PurchaseReportSummary>(this.request({
 			url: '/summary',
 			method: 'GET',
 			params
-		}) as unknown as Promise<PurchaseReportSummary>;
+		}), decodePurchaseReportSummary);
 	}
 
 	fetchTrend(params?: PurchaseReportQuery) {
-		return this.request({
+		return asPerformanceServicePromise<PurchaseReportTrendPoint[]>(this.request({
 			url: '/trend',
 			method: 'GET',
 			params
-		}) as unknown as Promise<PurchaseReportTrendPoint[]>;
+		}), decodePurchaseReportTrendPoints);
 	}
 
 	fetchSupplierStats(params?: PurchaseReportQuery) {
-		return this.request({
+		return asPerformanceServicePromise<PurchaseReportSupplierStat[]>(this.request({
 			url: '/supplierStats',
 			method: 'GET',
 			params
-		}) as unknown as Promise<PurchaseReportSupplierStat[]>;
+		}), decodePurchaseReportSupplierStats);
 	}
 }
 

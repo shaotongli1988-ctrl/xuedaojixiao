@@ -120,15 +120,19 @@ async function submit() {
 </script>
 
 <style lang="scss" scoped>
+@use '../../../styles/patterns.overlay-responsive.scss' as overlayResponsive;
+
 .salary-change-drawer {
 	&__summary {
-		margin: 16px 0 20px;
+		margin: var(--app-space-4) 0 var(--app-space-5);
 	}
 
 	&__footer {
 		display: flex;
 		justify-content: flex-end;
-		gap: 12px;
+		gap: var(--app-space-3);
 	}
+
+	@include overlayResponsive.overlay-responsive;
 }
 </style>

@@ -66,7 +66,7 @@
 					<div class="knowledge-base-page__header-main">
 						<h2>知识库</h2>
 						<el-tag effect="plain">主题 21</el-tag>
-						<el-tag effect="plain" type="info">HR 管理员</el-tag>
+						<el-tag effect="plain" type="info">{{ roleFact.roleLabel }}</el-tag>
 					</div>
 					<el-alert
 						title="首批只承接知识条目元数据、关联文件、图谱、搜索和百问百答元数据，不展示正文全文、AI 答案、向量索引或模型配置。"
@@ -556,46 +556,46 @@ defineOptions({
 });
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus';
+import { ElMessage, type FormInstance } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
+import { useDict } from '/$/dict';
 import { useListPage } from '../../composables/use-list-page.js';
+import { performanceAccessContextService } from '../../service/access-context';
 import { performanceDocumentCenterService } from '../../service/documentCenter';
 import { performanceKnowledgeBaseService } from '../../service/knowledgeBase';
+import { resolvePerformanceRoleFact } from '../../service/role-fact';
+import {
+	confirmElementAction,
+	runTrackedElementAction
+} from '../shared/action-feedback';
+import {
+	resolveErrorMessage,
+	showElementErrorFromError,
+	showElementWarningFromError
+} from '../shared/error-message';
 import {
 	type DocumentCenterRecord,
 	type DocumentCenterStatus,
+	type KnowledgeBaseFormModel,
 	type KnowledgeBaseRecord,
 	type KnowledgeBaseStats,
 	type KnowledgeBaseStatus,
 	type KnowledgeGraphNode,
 	type KnowledgeGraphSummary,
+	type KnowledgeQaFormModel,
 	type KnowledgeQaRecord,
 	type KnowledgeSearchResult,
-	createEmptyKnowledgeBase,
-	createEmptyKnowledgeQa
+	type PerformanceAccessContext,
+	createEmptyKnowledgeBaseForm,
+	createEmptyKnowledgeBaseStats,
+	createEmptyKnowledgeQaForm,
+	createEmptyKnowledgeSearchResult
 } from '../../types';
 
 type ElementTagType = 'primary' | 'success' | 'warning' | 'info' | 'danger' | undefined;
 
-interface KnowledgeBaseFormModel {
-	kbNo: string;
-	title: string;
-	category: string;
-	summary: string;
-	ownerName: string;
-	status: KnowledgeBaseStatus;
-	importance: number;
-	tagsText: string;
-	relatedTopicsText: string;
-	relatedFileIds: number[];
-}
-
-interface QaFormModel {
-	question: string;
-	answer: string;
-	relatedKnowledgeIds: number[];
-	relatedFileIds: number[];
-}
+const KNOWLEDGE_BASE_STATUS_DICT_KEY = 'performance.knowledgeBase.status';
+const DOCUMENT_CENTER_STATUS_DICT_KEY = 'performance.documentCenter.status';
 
 const activeTab = ref('knowledge');
 const formVisible = ref(false);
@@ -607,22 +607,24 @@ const qaDialogVisible = ref(false);
 const qaSubmitting = ref(false);
 const qaFormRef = ref<FormInstance>();
 
-const stats = ref<KnowledgeBaseStats>(createEmptyStats());
+const stats = ref<KnowledgeBaseStats>(createEmptyKnowledgeBaseStats());
 const graphLoading = ref(false);
 const graphSummary = ref<KnowledgeGraphSummary>({ nodes: [], links: [], categories: [] });
 const searchLoading = ref(false);
 const searchKeyword = ref('');
-const searchResult = ref<KnowledgeSearchResult>(createEmptySearchResult());
+const searchResult = ref<KnowledgeSearchResult>(createEmptyKnowledgeSearchResult());
 const qaLoading = ref(false);
 const qaKeyword = ref('');
 const qaRows = ref<KnowledgeQaRecord[]>([]);
 const relatedFileOptions = ref<Array<{ id: number; label: string }>>([]);
-
-const statusOptions: Array<{ label: string; value: KnowledgeBaseStatus }> = [
-	{ label: '草稿', value: 'draft' },
-	{ label: '已发布', value: 'published' },
-	{ label: '已归档', value: 'archived' }
-];
+const accessContext = ref<PerformanceAccessContext | null>(null);
+const { dict } = useDict();
+const statusOptions = computed<Array<{ label: string; value: KnowledgeBaseStatus }>>(() =>
+	dict.get(KNOWLEDGE_BASE_STATUS_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as KnowledgeBaseStatus
+	}))
+);
 
 const rules = {
 	kbNo: [{ required: true, message: '请输入知识编号', trigger: 'blur' }],
@@ -638,10 +640,16 @@ const qaRules = {
 	answer: [{ required: true, message: '请输入答案', trigger: 'blur' }]
 };
 
-const form = reactive<KnowledgeBaseFormModel>(createEmptyForm());
-const qaForm = reactive<QaFormModel>(createEmptyQaForm());
+const form = reactive<KnowledgeBaseFormModel>(createEmptyKnowledgeBaseForm());
+const qaForm = reactive<KnowledgeQaFormModel>(createEmptyKnowledgeQaForm());
 
 const canAccess = computed(() => checkPerm(performanceKnowledgeBaseService.permission.page));
+const roleFact = computed(() =>
+	resolvePerformanceRoleFact({
+		personaKey: accessContext.value?.activePersonaKey || null,
+		roleKind: accessContext.value?.roleKind || null
+	})
+);
 const showStatsSection = computed(() => checkPerm(performanceKnowledgeBaseService.permission.stats));
 const showAddButton = computed(() => checkPerm(performanceKnowledgeBaseService.permission.add));
 const showEditButton = computed(() => checkPerm(performanceKnowledgeBaseService.permission.update));
@@ -669,8 +677,8 @@ const knowledgeList = useListPage({
 			tag: normalizeOptionalText(params.tag),
 			status: params.status || undefined
 		}),
-	onError: (error: any) => {
-		ElMessage.error(error?.message || '知识条目加载失败');
+	onError: (error: unknown) => {
+		showElementErrorFromError(error, '知识条目加载失败');
 	}
 });
 
@@ -690,21 +698,14 @@ const metricCards = computed(() => [
 
 const formStatusOptions = computed(() => {
 	if (!editingRecord.value?.id) {
-		return [{ label: '草稿', value: 'draft' as KnowledgeBaseStatus }];
+		return buildKnowledgeBaseStatusOptions(['draft']);
 	}
 
 	if (editingRecord.value.status === 'published') {
-		return [
-			{ label: '保持已发布', value: 'published' as KnowledgeBaseStatus },
-			{ label: '归档', value: 'archived' as KnowledgeBaseStatus }
-		];
+		return buildKnowledgeBaseStatusOptions(['published', 'archived']);
 	}
 
-	return [
-		{ label: '草稿', value: 'draft' as KnowledgeBaseStatus },
-		{ label: '发布', value: 'published' as KnowledgeBaseStatus },
-		{ label: '归档', value: 'archived' as KnowledgeBaseStatus }
-	];
+	return buildKnowledgeBaseStatusOptions(['draft', 'published', 'archived']);
 });
 
 const graphMetricCards = computed(() => [
@@ -752,11 +753,24 @@ watch(activeTab, tab => {
 	}
 });
 
-onMounted(() => {
+onMounted(async () => {
+	await Promise.all([
+		dict.refresh([KNOWLEDGE_BASE_STATUS_DICT_KEY, DOCUMENT_CENTER_STATUS_DICT_KEY]),
+		loadAccessContext()
+	]);
 	if (canAccess.value) {
-		void initializePage();
+		await initializePage();
 	}
 });
+
+async function loadAccessContext() {
+	try {
+		accessContext.value = await performanceAccessContextService.fetchContext();
+	} catch (error: unknown) {
+		accessContext.value = null;
+		showElementWarningFromError(error, '角色上下文加载失败，已使用兼容展示视角');
+	}
+}
 
 async function initializePage() {
 	await Promise.all([knowledgeList.reload(), loadStats(), loadRelatedFileOptions()]);
@@ -772,7 +786,7 @@ async function initializePage() {
 
 async function loadStats() {
 	if (!showStatsSection.value) {
-		stats.value = createEmptyStats();
+		stats.value = createEmptyKnowledgeBaseStats();
 		return;
 	}
 
@@ -783,8 +797,8 @@ async function loadStats() {
 			tag: normalizeOptionalText(filters.tag),
 			status: filters.status || undefined
 		});
-	} catch (error: any) {
-		ElMessage.error(error?.message || '知识统计加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '知识统计加载失败');
 	}
 }
 
@@ -819,12 +833,12 @@ function resetListFilters() {
 
 function openCreate() {
 	editingRecord.value = null;
-	Object.assign(form, createEmptyForm());
+	Object.assign(form, createEmptyKnowledgeBaseForm());
 	formVisible.value = true;
 }
 
 function openQaCreate() {
-	Object.assign(qaForm, createEmptyQaForm());
+	Object.assign(qaForm, createEmptyKnowledgeQaForm());
 	qaDialogVisible.value = true;
 }
 
@@ -869,8 +883,8 @@ async function submitForm() {
 
 		formVisible.value = false;
 		await Promise.all([knowledgeList.reload(), loadStats()]);
-	} catch (error: any) {
-		ElMessage.error(error?.message || '知识条目保存失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '知识条目保存失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -895,8 +909,8 @@ async function submitQaForm() {
 		ElMessage.success('问答元数据已创建');
 		qaDialogVisible.value = false;
 		await refreshQaList();
-	} catch (error: any) {
-		ElMessage.error(error?.message || '问答元数据保存失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '问答元数据保存失败');
 	} finally {
 		qaSubmitting.value = false;
 	}
@@ -907,20 +921,26 @@ async function handleDelete(row: KnowledgeBaseRecord) {
 		return;
 	}
 
-	try {
-		await ElMessageBox.confirm(
-			`确认删除知识条目“${row.title || row.kbNo}”吗？此操作只移除元数据记录。`,
-			'删除确认',
-			{ type: 'warning' }
-		);
-		await performanceKnowledgeBaseService.removeKnowledge({ ids: [row.id] });
-		ElMessage.success('知识条目已删除');
-		await Promise.all([knowledgeList.reload(), loadStats(), refreshQaList()]);
-	} catch (error: any) {
-		if (error !== 'cancel') {
-			ElMessage.error(error?.message || '知识条目删除失败');
-		}
+	const rowId = row.id;
+	const confirmed = await confirmElementAction(
+		`确认删除知识条目“${row.title || row.kbNo}”吗？此操作只移除元数据记录。`,
+		'删除确认'
+	);
+
+	if (!confirmed) {
+		return;
 	}
+
+	await runTrackedElementAction({
+		rowId,
+		actionType: 'delete',
+		request: () => performanceKnowledgeBaseService.removeKnowledge({ ids: [rowId] }),
+		successMessage: '知识条目已删除',
+		errorMessage: '知识条目删除失败',
+		refresh: async () => {
+			await Promise.all([knowledgeList.reload(), loadStats(), refreshQaList()]);
+		}
+	});
 }
 
 async function refreshGraph() {
@@ -932,8 +952,8 @@ async function refreshGraph() {
 
 	try {
 		graphSummary.value = await performanceKnowledgeBaseService.fetchGraph();
-	} catch (error: any) {
-		ElMessage.error(error?.message || '知识图谱加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '知识图谱加载失败');
 	} finally {
 		graphLoading.value = false;
 	}
@@ -951,8 +971,8 @@ async function runSearch() {
 			keyword: searchKeyword.value.trim()
 		});
 		searchResult.value = normalizeSearchResult(result);
-	} catch (error: any) {
-		ElMessage.error(error?.message || '知识搜索失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '知识搜索失败');
 	} finally {
 		searchLoading.value = false;
 	}
@@ -970,8 +990,8 @@ async function refreshQaList() {
 			keyword: normalizeOptionalText(qaKeyword.value)
 		});
 		qaRows.value = Array.isArray(result) ? result : result?.list || [];
-	} catch (error: any) {
-		ElMessage.error(error?.message || '百问百答列表加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '百问百答列表加载失败');
 	} finally {
 		qaLoading.value = false;
 	}
@@ -1000,32 +1020,6 @@ function buildPayload(): Partial<KnowledgeBaseRecord> {
 	};
 }
 
-function createEmptyForm(): KnowledgeBaseFormModel {
-	const record = createEmptyKnowledgeBase();
-	return {
-		kbNo: record.kbNo,
-		title: record.title,
-		category: record.category,
-		summary: record.summary,
-		ownerName: record.ownerName,
-		status: record.status || 'draft',
-		importance: Number(record.importance || 0),
-		tagsText: '',
-		relatedTopicsText: '',
-		relatedFileIds: []
-	};
-}
-
-function createEmptyQaForm(): QaFormModel {
-	const record = createEmptyKnowledgeQa();
-	return {
-		question: record.question,
-		answer: record.answer,
-		relatedKnowledgeIds: record.relatedKnowledgeIds || [],
-		relatedFileIds: record.relatedFileIds || []
-	};
-}
-
 function mapRecordToForm(record: KnowledgeBaseRecord): KnowledgeBaseFormModel {
 	return {
 		kbNo: record.kbNo || '',
@@ -1041,24 +1035,8 @@ function mapRecordToForm(record: KnowledgeBaseRecord): KnowledgeBaseFormModel {
 	};
 }
 
-function createEmptyStats(): KnowledgeBaseStats {
-	return {
-		total: 0,
-		publishedCount: 0,
-		draftCount: 0,
-		fileLinkedCount: 0,
-		avgImportance: 0,
-		topicCount: 0
-	};
-}
-
-function createEmptySearchResult(): KnowledgeSearchResult {
-	return {
-		total: 0,
-		knowledge: [],
-		files: [],
-		qas: []
-	};
+function buildKnowledgeBaseStatusOptions(values: KnowledgeBaseStatus[]) {
+	return statusOptions.value.filter(item => values.includes(item.value));
 }
 
 function normalizeSearchResult(result?: Partial<KnowledgeSearchResult> | null): KnowledgeSearchResult {
@@ -1092,51 +1070,19 @@ function splitCommaText(value?: string | null) {
 }
 
 function statusLabel(value?: KnowledgeBaseStatus) {
-	return statusOptions.find(item => item.value === value)?.label || value || '-';
+	return dict.getLabel(KNOWLEDGE_BASE_STATUS_DICT_KEY, value) || value || '-';
 }
 
 function statusTagType(value?: KnowledgeBaseStatus): ElementTagType {
-	if (value === 'published') {
-		return 'success';
-	}
-
-	if (value === 'archived') {
-		return 'info';
-	}
-
-	return undefined;
+	return (dict.getMeta(KNOWLEDGE_BASE_STATUS_DICT_KEY, value)?.tone as ElementTagType) || 'info';
 }
 
 function fileStatusLabel(value?: DocumentCenterStatus) {
-	if (value === 'review') {
-		return '待审核';
-	}
-
-	if (value === 'published') {
-		return '已发布';
-	}
-
-	if (value === 'archived') {
-		return '已归档';
-	}
-
-	return '草稿';
+	return dict.getLabel(DOCUMENT_CENTER_STATUS_DICT_KEY, value) || value || '-';
 }
 
 function fileStatusTagType(value?: DocumentCenterStatus): ElementTagType {
-	if (value === 'published') {
-		return 'success';
-	}
-
-	if (value === 'review') {
-		return 'warning';
-	}
-
-	if (value === 'archived') {
-		return 'info';
-	}
-
-	return undefined;
+	return (dict.getMeta(DOCUMENT_CENTER_STATUS_DICT_KEY, value)?.tone as ElementTagType) || 'info';
 }
 
 function graphNodesByCategory(category: string) {
@@ -1183,63 +1129,22 @@ function formatDecimal(value?: number | null) {
 </script>
 
 <style lang="scss" scoped>
+@use '../../../../styles/patterns.metadata-workspace.scss' as metadataWorkspace;
+
 .knowledge-base-page {
-	display: grid;
-	gap: 16px;
-
-	&__toolbar,
-	&__toolbar-left,
-	&__toolbar-right,
-	&__header-main,
-	&__panel-header,
-	&__inline-actions,
-	&__search-summary,
-	&__tag-list {
-		display: flex;
-		gap: 12px;
-		flex-wrap: wrap;
-		align-items: center;
-	}
-
-	&__toolbar,
-	&__panel-header {
-		justify-content: space-between;
-	}
-
-	&__header {
-		display: grid;
-		gap: 12px;
-	}
-
-	&__metric-label,
-	&__metric-helper {
-		font-size: 12px;
-		color: var(--el-text-color-secondary);
-	}
-
-	&__metric-value {
-		margin-top: 8px;
-		font-size: 28px;
-		font-weight: 600;
-	}
-
-	&__pagination {
-		display: flex;
-		justify-content: flex-end;
-		margin-top: 16px;
-	}
+	@include metadataWorkspace.metadata-workspace-shell(1120px);
 
 	&__graph,
 	&__panel-grid {
 		display: grid;
-		gap: 16px;
+		gap: var(--app-space-4);
 	}
 
 	&__graph-metrics {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-		gap: 12px;
-		margin-bottom: 16px;
+		gap: var(--app-space-3);
+		margin-bottom: var(--app-space-4);
 	}
 }
 </style>

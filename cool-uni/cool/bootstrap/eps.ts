@@ -14,9 +14,14 @@ const services: any[] = [];
 
 // 取值
 for (const i in files) {
+	const constructor = (files[i] as { default?: unknown })?.default;
+
+	if (typeof constructor !== "function") {
+		continue;
+	}
+
 	try {
-		// @ts-ignore
-		services.push(new files[i].default());
+		services.push(new (constructor as new () => any)());
 	} catch (e) {
 		console.error(`[service] ${i} error: `, e);
 	}

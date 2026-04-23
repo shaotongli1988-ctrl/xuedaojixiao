@@ -1,4 +1,4 @@
-<!-- 文件职责：承接主题13证书台账的列表、详情、维护、发放和记录查询；不负责自动发证、课程学习过程、证书附件下载或移动端入口；依赖 certificate service、基础用户/部门接口与 Element Plus 组件；维护重点是经理只读、员工无入口，且页面只消费冻结允许的摘要字段。 -->
+<!-- 文件职责：承接主题13证书台账的列表、详情、维护、发放和记录查询；不负责自动发证、课程学习过程、证书附件下载或移动端入口；依赖 certificate service、基础用户/部门接口与 Element Plus 组件；维护重点是角色展示统一消费 access-context 事实源，页面只消费冻结允许的摘要字段。 -->
 <template>
 	<div v-if="canAccess" class="certificate-page">
 		<el-card shadow="never">
@@ -25,7 +25,7 @@
 						style="width: 160px"
 					>
 						<el-option
-							v-for="item in filterStatusOptions"
+							v-for="item in certificateStatusOptions"
 							:key="item.value"
 							:label="item.label"
 							:value="item.value"
@@ -50,7 +50,7 @@
 						<h2>证书管理</h2>
 						<el-tag effect="plain">主题 13</el-tag>
 					</div>
-					<el-tag effect="plain" type="info">{{ isReadOnlyRole ? '经理只读' : 'HR 管理' }}</el-tag>
+					<el-tag effect="plain" type="info">{{ roleFact.roleLabel }}</el-tag>
 				</div>
 			</template>
 
@@ -409,7 +409,7 @@
 					style="width: 160px"
 				>
 					<el-option
-						v-for="item in recordStatusOptions"
+						v-for="item in certificateRecordStatusOptions"
 						:key="item.value"
 						:label="item.label"
 						:value="item.value"
@@ -504,12 +504,21 @@ defineOptions({
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
+import { useDict } from '/$/dict';
 import { service } from '/@/cool';
 import { useRoute, useRouter } from 'vue-router';
 import { useListPage } from '../../composables/use-list-page.js';
+import { performanceAccessContextService } from '../../service/access-context';
 import { performanceCapabilityService } from '../../service/capability';
 import { performanceCourseService } from '../../service/course';
 import { performanceCertificateService } from '../../service/certificate';
+import { resolvePerformanceRoleFact } from '../../service/role-fact';
+import {
+	createElementWarningFromErrorHandler,
+	resolveErrorMessage,
+	showElementErrorFromError,
+	showElementWarningFromError
+} from '../shared/error-message';
 import {
 	loadDepartmentOptions,
 	loadUserOptions
@@ -520,19 +529,20 @@ import {
 	normalizeQueryNumber
 } from '../../utils/route-preset.js';
 import type {
+	DepartmentOption,
 	CertificateLedgerRecord,
 	CertificateRecord,
 	CertificateRecordStatus,
 	CertificateStatus,
+	PerformanceAccessContext,
 	UserOption
 } from '../../types';
 import { createEmptyCertificate } from '../../types';
 
-interface DepartmentOption {
-	id: number;
-	label: string;
-}
+const CERTIFICATE_STATUS_DICT_KEY = 'performance.certificate.status';
+const CERTIFICATE_RECORD_STATUS_DICT_KEY = 'performance.certificate.recordStatus';
 
+const { dict } = useDict();
 const recordRows = ref<CertificateLedgerRecord[]>([]);
 const userOptions = ref<UserOption[]>([]);
 const departmentOptions = ref<DepartmentOption[]>([]);
@@ -549,6 +559,7 @@ const formRef = ref<FormInstance>();
 const issueFormRef = ref<FormInstance>();
 const route = useRoute();
 const router = useRouter();
+const accessContext = ref<PerformanceAccessContext | null>(null);
 
 const recordFilters = reactive({
 	certificateId: undefined as number | undefined,
@@ -584,16 +595,22 @@ const issueRules: FormRules = {
 	issuedAt: [{ required: true, message: '请选择发放时间', trigger: 'change' }]
 };
 
-const filterStatusOptions: Array<{ label: string; value: CertificateStatus }> = [
-	{ label: '草稿', value: 'draft' },
-	{ label: '已启用', value: 'active' },
-	{ label: '已停用', value: 'retired' }
-];
+const certificateStatusOptions = computed<Array<{ label: string; value: CertificateStatus }>>(
+	() =>
+		dict.get(CERTIFICATE_STATUS_DICT_KEY).value.map(item => ({
+			label: item.label,
+			value: item.value as CertificateStatus
+		}))
+);
 
-const recordStatusOptions: Array<{ label: string; value: CertificateRecordStatus }> = [
-	{ label: '已发放', value: 'issued' },
-	{ label: '已撤销', value: 'revoked' }
-];
+const certificateRecordStatusOptions = computed<
+	Array<{ label: string; value: CertificateRecordStatus }>
+>(() =>
+	dict.get(CERTIFICATE_RECORD_STATUS_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as CertificateRecordStatus
+	}))
+);
 
 const canAccess = computed(() => checkPerm(performanceCertificateService.permission.page));
 const showInfoButton = computed(() => checkPerm(performanceCertificateService.permission.info));
@@ -609,6 +626,12 @@ const showCapabilityPortraitButton = computed(
 		checkPerm(performanceCapabilityService.permission.portraitInfo)
 );
 const showRecordButton = computed(() => checkPerm(performanceCertificateService.permission.recordPage));
+const roleFact = computed(() =>
+	resolvePerformanceRoleFact({
+		personaKey: accessContext.value?.activePersonaKey || null,
+		roleKind: accessContext.value?.roleKind || null
+	})
+);
 const isReadOnlyRole = computed(
 	() =>
 		!showAddButton.value &&
@@ -617,20 +640,18 @@ const isReadOnlyRole = computed(
 );
 const formStatusOptions = computed<Array<{ label: string; value: CertificateStatus }>>(() => {
 	if (!editingCertificate.value?.id) {
-		return [{ label: '草稿', value: 'draft' }];
+		return certificateStatusOptions.value.filter(item => item.value === 'draft');
 	}
 
 	if (editingCertificate.value.status === 'active') {
-		return [
-			{ label: '已启用', value: 'active' },
-			{ label: '已停用', value: 'retired' }
-		];
+		return certificateStatusOptions.value.filter(item =>
+			['active', 'retired'].includes(item.value)
+		);
 	}
 
-	return [
-		{ label: '草稿', value: 'draft' },
-		{ label: '已启用', value: 'active' }
-	];
+	return certificateStatusOptions.value.filter(item =>
+		['draft', 'active'].includes(item.value)
+	);
 });
 const validityMonthsModel = computed<number | undefined>({
 	get: () => form.validityMonths ?? undefined,
@@ -663,10 +684,10 @@ const certificateList = useListPage({
 			size: params.size,
 			keyword: params.keyword ? String(params.keyword) : undefined,
 			category: params.category ? String(params.category) : undefined,
-			status: params.status ? String(params.status) : undefined
+			status: params.status || undefined
 		}),
-	onError: (error: any) => {
-		ElMessage.error(error.message || '证书列表加载失败');
+	onError: (error: unknown) => {
+		showElementErrorFromError(error, '证书列表加载失败');
 	}
 });
 const rows = certificateList.rows;
@@ -675,6 +696,10 @@ const filters = certificateList.filters;
 const pager = certificateList.pager;
 
 onMounted(async () => {
+	await Promise.all([
+		dict.refresh([CERTIFICATE_STATUS_DICT_KEY, CERTIFICATE_RECORD_STATUS_DICT_KEY]),
+		loadAccessContext()
+	]);
 	await Promise.all([loadUsers(), loadDepartments()]);
 	await syncList();
 	await consumeCreatePresetQuery();
@@ -689,6 +714,15 @@ watch(
 	}
 );
 
+async function loadAccessContext() {
+	try {
+		accessContext.value = await performanceAccessContextService.fetchContext();
+	} catch (error: unknown) {
+		accessContext.value = null;
+		showElementWarningFromError(error, '角色上下文加载失败，已使用兼容展示视角');
+	}
+}
+
 async function loadUsers() {
 	userOptions.value = await loadUserOptions(
 		() =>
@@ -696,18 +730,14 @@ async function loadUsers() {
 				page: 1,
 				size: 200
 			}),
-		(error: any) => {
-			ElMessage.warning(error.message || '员工选项加载失败');
-		}
+		createElementWarningFromErrorHandler('员工选项加载失败')
 	);
 }
 
 async function loadDepartments() {
 	departmentOptions.value = await loadDepartmentOptions(
 		() => service.base.sys.department.list(),
-		(error: any) => {
-			ElMessage.warning(error.message || '部门选项加载失败');
-		}
+		createElementWarningFromErrorHandler('部门选项加载失败')
 	);
 }
 
@@ -734,8 +764,8 @@ async function refreshRecords() {
 
 		recordRows.value = result.list || [];
 		recordPagination.total = result.pagination?.total || 0;
-	} catch (error: any) {
-		ElMessage.error(error.message || '证书记录加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '证书记录加载失败');
 	} finally {
 		recordLoading.value = false;
 	}
@@ -820,8 +850,8 @@ async function openDetail(row: CertificateRecord) {
 	try {
 		detailCertificate.value = await performanceCertificateService.fetchInfo({ id: row.id });
 		detailVisible.value = true;
-	} catch (error: any) {
-		ElMessage.error(error.message || '证书详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '证书详情加载失败');
 	}
 }
 
@@ -861,8 +891,8 @@ async function openEdit(row: CertificateRecord) {
 		editingCertificate.value = detail;
 		Object.assign(form, createEmptyCertificate(), detail);
 		formVisible.value = true;
-	} catch (error: any) {
-		ElMessage.error(error.message || '证书详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '证书详情加载失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -896,7 +926,7 @@ async function submitForm() {
 	submitLoading.value = true;
 
 	try {
-		const payload = {
+		const payload: CertificateRecord = {
 			name: form.name.trim(),
 			code: normalizeOptionalText(form.code),
 			category: normalizeOptionalText(form.category),
@@ -922,8 +952,8 @@ async function submitForm() {
 
 		formVisible.value = false;
 		await syncList();
-	} catch (error: any) {
-		ElMessage.error(error.message || '证书保存失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '证书保存失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -949,8 +979,8 @@ async function submitIssue() {
 		ElMessage.success('证书已发放');
 		issueVisible.value = false;
 		await Promise.all([syncList(), recordVisible.value ? refreshRecords() : Promise.resolve()]);
-	} catch (error: any) {
-		ElMessage.error(error.message || '证书发放失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '证书发放失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -979,47 +1009,19 @@ function canIssue(row: CertificateRecord) {
 }
 
 function statusLabel(status?: CertificateStatus) {
-	switch (status) {
-		case 'active':
-			return '已启用';
-		case 'retired':
-			return '已停用';
-		case 'draft':
-		default:
-			return '草稿';
-	}
+	return dict.getLabel(CERTIFICATE_STATUS_DICT_KEY, status) || status || '-';
 }
 
 function statusTagType(status?: CertificateStatus) {
-	switch (status) {
-		case 'active':
-			return 'success';
-		case 'retired':
-			return 'info';
-		case 'draft':
-		default:
-			return 'warning';
-	}
+	return dict.getMeta(CERTIFICATE_STATUS_DICT_KEY, status)?.tone || 'warning';
 }
 
 function recordStatusLabel(status?: CertificateRecordStatus) {
-	switch (status) {
-		case 'revoked':
-			return '已撤销';
-		case 'issued':
-		default:
-			return '已发放';
-	}
+	return dict.getLabel(CERTIFICATE_RECORD_STATUS_DICT_KEY, status) || status || '-';
 }
 
 function recordStatusTagType(status?: CertificateRecordStatus) {
-	switch (status) {
-		case 'revoked':
-			return 'danger';
-		case 'issued':
-		default:
-			return 'success';
-	}
+	return dict.getMeta(CERTIFICATE_RECORD_STATUS_DICT_KEY, status)?.tone || 'success';
 }
 
 function employeeLabel(id?: number) {
@@ -1062,37 +1064,24 @@ function normalizeOptionalNumber(value?: number | null) {
 </script>
 
 <style lang="scss" scoped>
-.certificate-page {
-	display: grid;
-	gap: 16px;
+@use '../../../../styles/patterns.management-workspace.scss' as managementWorkspace;
 
-	&__toolbar,
-	&__header,
+.certificate-page {
+	@include managementWorkspace.management-workspace-shell(1180px);
+
 	&__record-toolbar {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 12px;
+		gap: var(--app-space-3);
 		flex-wrap: wrap;
 	}
 
-	&__toolbar-left,
-	&__toolbar-right,
-	&__header-main {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		flex-wrap: wrap;
-	}
-
-	&__header-main h2 {
-		margin: 0;
-	}
-
-	&__pagination {
-		display: flex;
-		justify-content: flex-end;
-		margin-top: 16px;
+	@media (max-width: 768px) {
+		&__record-toolbar {
+			flex-direction: column;
+			align-items: stretch;
+		}
 	}
 }
 </style>

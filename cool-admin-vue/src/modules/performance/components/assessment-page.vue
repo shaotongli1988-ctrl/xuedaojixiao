@@ -175,8 +175,9 @@
 
 <script lang="ts" setup>
 import { computed, onMounted, reactive, ref } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
+import { useDict } from '/$/dict';
 import { service } from '/@/cool';
 import { useBase } from '/$/base';
 import { exportJsonToExcel } from '/@/plugins/excel/utils';
@@ -185,8 +186,19 @@ import AssessmentForm from './assessment-form.vue';
 import AssessmentDetail from './assessment-detail.vue';
 import ApprovalDrawer from './approval-drawer.vue';
 import {
+	confirmElementAction,
+	runTrackedElementAction
+} from '../views/shared/action-feedback';
+import {
+	createElementWarningFromErrorHandler,
+	showElementErrorFromError
+} from '../views/shared/error-message';
+import {
 	type AssessmentMode,
+	type AssessmentExportRow,
 	type AssessmentRecord,
+	type AssessmentSaveRequest,
+	type AssessmentStatus,
 	type UserOption,
 	createEmptyAssessment
 } from '../types';
@@ -206,7 +218,10 @@ const props = defineProps<{
 	mode: AssessmentMode;
 }>();
 
+const ASSESSMENT_STATUS_DICT_KEY = 'performance.assessment.status';
+
 const { user } = useBase();
+const { dict } = useDict();
 const route = useRoute();
 const router = useRouter();
 
@@ -222,7 +237,7 @@ const userOptions = ref<UserOption[]>([]);
 
 const filters = reactive({
 	periodValue: '',
-	status: ''
+	status: '' as AssessmentStatus | ''
 });
 
 const pagination = reactive({
@@ -231,12 +246,12 @@ const pagination = reactive({
 	total: 0
 });
 
-const statusOptions = [
-	{ label: '草稿', value: 'draft' },
-	{ label: '已提交', value: 'submitted' },
-	{ label: '已通过', value: 'approved' },
-	{ label: '已驳回', value: 'rejected' }
-];
+const statusOptions = computed<Array<{ label: string; value: AssessmentStatus }>>(() =>
+	dict.get(ASSESSMENT_STATUS_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: String(item.value) as AssessmentStatus
+	}))
+);
 
 const canAccess = computed(() => {
 	if (props.mode === 'my') {
@@ -283,6 +298,8 @@ const modeLabel = computed(() => {
 });
 
 onMounted(async () => {
+	await dict.refresh([ASSESSMENT_STATUS_DICT_KEY]);
+
 	if (props.mode === 'initiated') {
 		await loadUsers();
 	}
@@ -298,9 +315,7 @@ async function loadUsers() {
 			page: 1,
 			size: 200
 			}),
-		(error: any) => {
-			ElMessage.warning(error.message || '用户选项加载失败');
-		}
+		createElementWarningFromErrorHandler('用户选项加载失败')
 	);
 }
 
@@ -322,8 +337,8 @@ async function refresh() {
 
 		rows.value = result.list || [];
 		pagination.total = result.pagination?.total || 0;
-	} catch (error: any) {
-		ElMessage.error(error.message || '评估单列表加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '评估单列表加载失败');
 	} finally {
 		tableLoading.value = false;
 	}
@@ -427,8 +442,8 @@ async function goCreatePromotion(assessmentId: number, employeeId: number) {
 async function fetchDetail(id: number) {
 	try {
 		return await performanceAssessmentService.fetchInfo({ id });
-	} catch (error: any) {
-		ElMessage.error(error.message || '评估单详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '评估单详情加载失败');
 		return null;
 	}
 }
@@ -441,54 +456,65 @@ async function loadDetail(id: number, next: (record: AssessmentRecord) => void) 
 	}
 }
 
-async function submitForm(record: AssessmentRecord) {
+async function submitForm(record: AssessmentSaveRequest & { id?: number }) {
 	submitLoading.value = true;
 
 	try {
-		if (record.id) {
-			await performanceAssessmentService.updateAssessment(record);
+		if (record.id != null) {
+			await performanceAssessmentService.updateAssessment({
+				...record,
+				id: record.id
+			});
 		} else {
-			await performanceAssessmentService.createAssessment(record);
+			const { id: _id, ...createPayload } = record;
+			await performanceAssessmentService.createAssessment(createPayload);
 		}
 
 		ElMessage.success('保存成功');
 		formVisible.value = false;
 		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '保存失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '保存失败');
 	} finally {
 		submitLoading.value = false;
 	}
 }
 
 async function handleDelete(row: AssessmentRecord) {
-	await ElMessageBox.confirm(`确认删除评估单 ${row.code} 吗？`, '删除确认', {
-		type: 'warning'
-	});
+	const confirmed = await confirmElementAction(`确认删除评估单 ${row.code} 吗？`, '删除确认');
 
-	try {
-		await performanceAssessmentService.removeAssessment({
-			ids: [row.id!]
-		});
-		ElMessage.success('删除成功');
-		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '删除失败');
+	if (!confirmed) {
+		return;
 	}
+
+	await runTrackedElementAction({
+		rowId: Number(row.id || 0),
+		actionType: 'delete',
+		request: () =>
+			performanceAssessmentService.removeAssessment({
+				ids: [row.id!]
+			}),
+		successMessage: '删除成功',
+		errorMessage: '删除失败',
+		refresh
+	});
 }
 
 async function handleSubmit(row: AssessmentRecord) {
-	await ElMessageBox.confirm(`确认提交评估单 ${row.code} 吗？`, '提交确认', {
-		type: 'warning'
-	});
+	const confirmed = await confirmElementAction(`确认提交评估单 ${row.code} 吗？`, '提交确认');
 
-	try {
-		await performanceAssessmentService.submit({ id: row.id! });
-		ElMessage.success('提交成功');
-		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '提交失败');
+	if (!confirmed) {
+		return;
 	}
+
+	await runTrackedElementAction({
+		rowId: Number(row.id || 0),
+		actionType: 'submit',
+		request: () => performanceAssessmentService.submit({ id: row.id! }),
+		successMessage: '提交成功',
+		errorMessage: '提交失败',
+		refresh
+	});
 }
 
 async function handleApprove(comment: string) {
@@ -518,8 +544,8 @@ async function handleReview(action: 'approve' | 'reject', comment: string) {
 		ElMessage.success(action === 'approve' ? '审批通过成功' : '审批驳回成功');
 		approvalVisible.value = false;
 		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '审批失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '审批失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -547,7 +573,7 @@ async function handleExport() {
 				'提交时间',
 				'审批时间'
 			],
-			data: (rows || []).map((item: any) => [
+			data: (rows || []).map((item: AssessmentExportRow) => [
 				item.code,
 				item.employeeName,
 				item.departmentName,
@@ -563,8 +589,8 @@ async function handleExport() {
 			]),
 			filename: `assessment-${Date.now()}`
 		});
-	} catch (error: any) {
-		ElMessage.error(error.message || '导出失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '导出失败');
 	}
 }
 
@@ -608,53 +634,33 @@ function canReview(row: AssessmentRecord) {
 }
 
 function statusLabel(status?: string) {
-	const item = statusOptions.find(option => option.value === status);
-	return item?.label || status || '-';
+	return dict.getLabel(ASSESSMENT_STATUS_DICT_KEY, status) || status || '-';
 }
 
 function statusTagType(status?: string) {
-	switch (status) {
-		case 'submitted':
-			return 'warning';
-		case 'approved':
-			return 'success';
-		case 'rejected':
-			return 'danger';
-		default:
-			return 'info';
-	}
+	return dict.getMeta(ASSESSMENT_STATUS_DICT_KEY, status)?.tone || 'info';
 }
 
 </script>
 
 <style lang="scss" scoped>
-.assessment-page {
-	display: grid;
-	gap: 16px;
+@use '../../../styles/patterns.management-workspace.scss' as managementWorkspace;
 
-	&__toolbar,
-	&__header,
-	&__pagination {
+.assessment-page {
+	@include managementWorkspace.management-workspace-shell(1120px);
+
+	&__header {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 12px;
-	}
-
-	&__toolbar-left,
-	&__toolbar-right {
-		display: flex;
+		gap: var(--app-space-3);
 		flex-wrap: wrap;
-		gap: 12px;
 	}
 
 	&__header h2 {
 		margin: 0;
 		font-size: 18px;
-	}
-
-	&__pagination {
-		padding-top: 16px;
+		color: var(--app-text-primary);
 	}
 }
 </style>

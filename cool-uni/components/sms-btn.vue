@@ -144,8 +144,8 @@ async function send() {
 				emit("success");
 			})
 
-			.catch((err) => {
-				ui.showToast(err.message);
+			.catch((err: { message?: string }) => {
+				ui.showToast(err.message || t("短信发送失败"));
 				getCaptcha();
 			});
 
@@ -162,12 +162,12 @@ async function getCaptcha() {
 
 	await service.user.login
 		.captcha({ color: "#2c3142", phone: props.phone })
-		.then((res) => {
+		.then((res: { captchaId: string; data: string }) => {
 			form.captchaId = res.captchaId;
 			captcha.img = res.data;
 		})
-		.catch((err) => {
-			ui.showToast(err.message);
+		.catch((err: { message?: string }) => {
+			ui.showToast(err.message || t("验证码加载失败"));
 		});
 
 	captcha.loading = false;

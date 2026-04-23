@@ -4,7 +4,15 @@
  * 维护重点是只使用冻结的 page/info/submit 三个接口与对应权限键。
  */
 import { BaseService } from '/@/cool';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeCourseLearningPageResult,
+	decodeCourseLearningTaskRecord
+} from './course-learning-contract';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import type {
+	CourseLearningInfoQuery,
+	CourseLearningPageQuery,
 	CourseLearningPageResult,
 	CourseLearningSubmitPayload,
 	CourseLearningTaskRecord,
@@ -13,34 +21,38 @@ import type {
 
 export default class PerformanceCourseReciteService extends BaseService {
 	permission = {
-		page: 'performance:courseRecite:page',
-		info: 'performance:courseRecite:info',
-		submit: 'performance:courseRecite:submit'
+		page: PERMISSIONS.performance.courseRecite.page,
+		info: PERMISSIONS.performance.courseRecite.info,
+		submit: PERMISSIONS.performance.courseRecite.submit
 	};
 
 	constructor() {
 		super('admin/performance/courseRecite');
 	}
 
-	fetchPage(data: {
-		page: number;
-		size: number;
-		courseId: number;
-		status?: CourseLearningTaskStatus;
-	}) {
-		return super.page(data) as unknown as Promise<CourseLearningPageResult>;
+	fetchPage(data: CourseLearningPageQuery) {
+		return asPerformanceServicePromise<CourseLearningPageResult>(
+			super.page(data),
+			decodeCourseLearningPageResult
+		);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<CourseLearningTaskRecord>;
+	fetchInfo(params: CourseLearningInfoQuery) {
+		return asPerformanceServicePromise<CourseLearningTaskRecord>(
+			super.info(params),
+			decodeCourseLearningTaskRecord
+		);
 	}
 
 	submitTask(data: CourseLearningSubmitPayload) {
-		return this.request({
-			url: '/submit',
-			method: 'POST',
-			data
-		}) as unknown as Promise<CourseLearningTaskRecord>;
+		return asPerformanceServicePromise<CourseLearningTaskRecord>(
+			this.request({
+				url: '/submit',
+				method: 'POST',
+				data
+			}),
+			decodeCourseLearningTaskRecord
+		);
 	}
 }
 

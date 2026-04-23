@@ -3,58 +3,68 @@
  * 这里只封装主题 7 的 course 主链和报名摘要只读查询，不负责培训全域扩展能力。
  */
 import { BaseService } from '/@/cool';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeCourseEnrollmentPageResult,
+	decodeCoursePageResult,
+	decodeCourseRecord
+} from './course-contract';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import type {
+	CourseCreatePayload,
+	CourseEnrollmentPageQuery,
 	CourseEnrollmentPageResult,
+	CourseInfoQuery,
+	CoursePageQuery,
 	CoursePageResult,
-	CourseRecord
+	CourseRecord,
+	CourseRemovePayload,
+	CourseUpdatePayload
 } from '../types';
 
 export default class PerformanceCourseService extends BaseService {
 	permission = {
-		page: 'performance:course:page',
-		info: 'performance:course:info',
-		add: 'performance:course:add',
-		update: 'performance:course:update',
-		delete: 'performance:course:delete',
-		enrollmentPage: 'performance:course:enrollmentPage'
+		page: PERMISSIONS.performance.course.page,
+		info: PERMISSIONS.performance.course.info,
+		add: PERMISSIONS.performance.course.add,
+		update: PERMISSIONS.performance.course.update,
+		delete: PERMISSIONS.performance.course.delete,
+		enrollmentPage: PERMISSIONS.performance.course.enrollmentPage
 	};
 
 	constructor() {
 		super('admin/performance/course');
 	}
 
-	fetchPage(data: any) {
-		return super.page(data) as unknown as Promise<CoursePageResult>;
+	fetchPage(data: CoursePageQuery) {
+		return asPerformanceServicePromise<CoursePageResult>(super.page(data), decodeCoursePageResult);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<CourseRecord>;
+	fetchInfo(params: CourseInfoQuery) {
+		return asPerformanceServicePromise<CourseRecord>(super.info(params), decodeCourseRecord);
 	}
 
-	createCourse(data: Partial<CourseRecord>) {
-		return super.add(data) as unknown as Promise<CourseRecord>;
+	createCourse(data: CourseCreatePayload) {
+		return asPerformanceServicePromise<CourseRecord>(super.add(data), decodeCourseRecord);
 	}
 
-	updateCourse(data: Partial<CourseRecord> & { id: number }) {
-		return super.update(data) as unknown as Promise<CourseRecord>;
+	updateCourse(data: CourseUpdatePayload) {
+		return asPerformanceServicePromise<CourseRecord>(super.update(data), decodeCourseRecord);
 	}
 
-	removeCourse(data: { ids: number[] }) {
-		return super.delete(data) as unknown as Promise<void>;
+	removeCourse(data: CourseRemovePayload) {
+		return asPerformanceServicePromise<void>(super.delete(data));
 	}
 
-	fetchEnrollmentPage(data: {
-		page: number;
-		size: number;
-		courseId: number;
-		keyword?: string;
-		status?: string;
-	}) {
-		return this.request({
-			url: '/enrollmentPage',
-			method: 'POST',
-			data
-		}) as unknown as Promise<CourseEnrollmentPageResult>;
+	fetchEnrollmentPage(data: CourseEnrollmentPageQuery) {
+		return asPerformanceServicePromise<CourseEnrollmentPageResult>(
+			this.request({
+				url: '/enrollmentPage',
+				method: 'POST',
+				data
+			}),
+			decodeCourseEnrollmentPageResult
+		);
 	}
 }
 

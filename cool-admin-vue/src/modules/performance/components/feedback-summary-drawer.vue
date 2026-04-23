@@ -87,8 +87,8 @@
 					<el-table-column prop="score" label="评分" width="100" />
 					<el-table-column prop="status" label="状态" width="120">
 						<template #default="{ row }">
-							<el-tag :type="row.status === 'submitted' ? 'success' : 'info'">
-								{{ row.status || '-' }}
+							<el-tag :type="recordStatusTagType(row.status)">
+								{{ recordStatusLabel(row.status) }}
 							</el-tag>
 						</template>
 					</el-table-column>
@@ -126,8 +126,12 @@
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { checkPerm } from '/$/base/utils/permission';
+import { useDict } from '/$/dict';
 import type { FeedbackSummary, FeedbackTaskRecord } from '../types';
 import { performanceAssessmentService } from '../service/assessment';
+
+const FEEDBACK_RECORD_STATUS_DICT_KEY = 'performance.feedback.recordStatus';
+const FEEDBACK_RELATION_TYPE_DICT_KEY = 'performance.feedback.relationType';
 
 const props = defineProps<{
 	modelValue: boolean;
@@ -142,6 +146,7 @@ const emit = defineEmits<{
 }>();
 
 const router = useRouter();
+const { dict } = useDict();
 
 const showSourceAssessmentButton = computed(() => {
 	return (
@@ -151,18 +156,15 @@ const showSourceAssessmentButton = computed(() => {
 });
 
 function relationTypeLabel(value?: string) {
-	switch (value) {
-		case '上级':
-			return '上级';
-		case '同级':
-			return '同级';
-		case '下级':
-			return '下级';
-		case '协作人':
-			return '协作人';
-		default:
-			return value || '-';
-	}
+	return dict.getLabel(FEEDBACK_RELATION_TYPE_DICT_KEY, value) || value || '-';
+}
+
+function recordStatusLabel(value?: string) {
+	return dict.getLabel(FEEDBACK_RECORD_STATUS_DICT_KEY, value) || value || '-';
+}
+
+function recordStatusTagType(value?: string) {
+	return dict.getMeta(FEEDBACK_RECORD_STATUS_DICT_KEY, value)?.tone || 'info';
 }
 
 async function goSourceAssessment(assessmentId: number) {
@@ -201,32 +203,36 @@ function resolveAssessmentPagePath() {
 </script>
 
 <style lang="scss" scoped>
+@use '../../../styles/patterns.overlay-responsive.scss' as overlayResponsive;
+
 .feedback-summary-drawer {
 	display: grid;
-	gap: 16px;
+	gap: var(--app-space-4);
 
 	&__metric-label {
-		font-size: 12px;
-		color: var(--el-text-color-secondary);
+		font-size: var(--app-font-size-caption);
+		color: var(--app-text-tertiary);
 	}
 
 	&__metric-value {
-		margin-top: 8px;
+		margin-top: var(--app-space-2);
 		font-size: 28px;
 		font-weight: 600;
-		color: var(--el-text-color-primary);
+		color: var(--app-text-primary);
 	}
 
 	&__content {
 		white-space: pre-wrap;
 		line-height: 1.7;
-		color: var(--el-text-color-regular);
+		color: var(--app-text-secondary);
 	}
 
 	&__footer {
 		display: flex;
 		justify-content: flex-end;
-		gap: 12px;
+		gap: var(--app-space-3);
 	}
+
+	@include overlayResponsive.overlay-responsive;
 }
 </style>

@@ -4,88 +4,127 @@
  * 维护重点是接口前缀与权限键必须固定为 resumePool，且下载类动作保持独立权限控制。
  */
 import { BaseService } from '/@/cool';
-import type { ResumePoolPageResult, ResumePoolRecord } from '../types';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeResumePoolAttachmentDownloadResult,
+	decodeResumePoolCreateInterviewResult,
+	decodeResumePoolExportRows,
+	decodeResumePoolImportResult,
+	decodeResumePoolPageResult,
+	decodeResumePoolRecord,
+	decodeResumePoolTalentAssetConvertResult
+} from './resume-pool-contract';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import type {
+	ResumePoolActionRequest,
+	ResumePoolAttachmentDownloadResult,
+	ResumePoolCreateInterviewResult,
+	ResumePoolDownloadAttachmentRequest,
+	ResumePoolExportQuery,
+	ResumePoolExportRow,
+	ResumePoolInfoQuery,
+	ResumePoolImportRequest,
+	ResumePoolImportResult,
+	ResumePoolPageQuery,
+	ResumePoolPageResult,
+	ResumePoolRecord,
+	ResumePoolSaveRequest,
+	ResumePoolTalentAssetConvertResult,
+	ResumePoolUploadAttachmentRequest
+} from '../types';
 
 export default class PerformanceResumePoolService extends BaseService {
 	permission = {
-		page: 'performance:resumePool:page',
-		info: 'performance:resumePool:info',
-		add: 'performance:resumePool:add',
-		update: 'performance:resumePool:update',
-		import: 'performance:resumePool:import',
-		export: 'performance:resumePool:export',
-		uploadAttachment: 'performance:resumePool:uploadAttachment',
-		downloadAttachment: 'performance:resumePool:downloadAttachment',
-		convertToTalentAsset: 'performance:resumePool:convertToTalentAsset',
-		createInterview: 'performance:resumePool:createInterview'
+		page: PERMISSIONS.performance.resumePool.page,
+		info: PERMISSIONS.performance.resumePool.info,
+		add: PERMISSIONS.performance.resumePool.add,
+		update: PERMISSIONS.performance.resumePool.update,
+		import: PERMISSIONS.performance.resumePool.import,
+		export: PERMISSIONS.performance.resumePool.export,
+		uploadAttachment: PERMISSIONS.performance.resumePool.uploadAttachment,
+		downloadAttachment: PERMISSIONS.performance.resumePool.downloadAttachment,
+		convertToTalentAsset: PERMISSIONS.performance.resumePool.convertToTalentAsset,
+		createInterview: PERMISSIONS.performance.resumePool.createInterview
 	};
 
 	constructor() {
 		super('admin/performance/resumePool');
 	}
 
-	fetchPage(data: any) {
-		return super.page(data) as unknown as Promise<ResumePoolPageResult>;
+	fetchPage(data: ResumePoolPageQuery) {
+		return asPerformanceServicePromise<ResumePoolPageResult>(
+			super.page(data),
+			decodeResumePoolPageResult
+		);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<ResumePoolRecord>;
+	fetchInfo(params: ResumePoolInfoQuery) {
+		return asPerformanceServicePromise<ResumePoolRecord>(
+			super.info(params),
+			decodeResumePoolRecord
+		);
 	}
 
-	createResume(data: Partial<ResumePoolRecord>) {
-		return super.add(data) as unknown as Promise<ResumePoolRecord>;
+	createResume(data: ResumePoolSaveRequest) {
+		return asPerformanceServicePromise<ResumePoolRecord>(
+			super.add(data),
+			decodeResumePoolRecord
+		);
 	}
 
-	updateResume(data: Partial<ResumePoolRecord> & { id: number }) {
-		return super.update(data) as unknown as Promise<ResumePoolRecord>;
+	updateResume(data: ResumePoolSaveRequest & { id: number }) {
+		return asPerformanceServicePromise<ResumePoolRecord>(
+			super.update(data),
+			decodeResumePoolRecord
+		);
 	}
 
-	importResume(data: { fileId: number }) {
-		return this.request({
+	importResume(data: ResumePoolImportRequest) {
+		return asPerformanceServicePromise<ResumePoolImportResult>(this.request({
 			url: '/import',
 			method: 'POST',
 			data
-		}) as Promise<any>;
+		}), decodeResumePoolImportResult);
 	}
 
-	exportResume(data: any) {
-		return this.request({
+	exportResume(data: ResumePoolExportQuery) {
+		return asPerformanceServicePromise<ResumePoolExportRow[]>(this.request({
 			url: '/export',
 			method: 'POST',
 			data
-		}) as Promise<any>;
+		}), decodeResumePoolExportRows);
 	}
 
-	uploadAttachment(data: { id: number; fileId: number }) {
-		return this.request({
+	uploadAttachment(data: ResumePoolUploadAttachmentRequest) {
+		return asPerformanceServicePromise<ResumePoolRecord>(this.request({
 			url: '/uploadAttachment',
 			method: 'POST',
 			data
-		}) as Promise<any>;
+		}), decodeResumePoolRecord);
 	}
 
-	downloadAttachment(data: { id: number; attachmentId: number }) {
-		return this.request({
+	downloadAttachment(data: ResumePoolDownloadAttachmentRequest) {
+		return asPerformanceServicePromise<ResumePoolAttachmentDownloadResult>(this.request({
 			url: '/downloadAttachment',
 			method: 'POST',
 			data
-		}) as Promise<any>;
+		}), decodeResumePoolAttachmentDownloadResult);
 	}
 
-	convertToTalentAsset(data: { id: number }) {
-		return this.request({
+	convertToTalentAsset(data: ResumePoolActionRequest) {
+		return asPerformanceServicePromise<ResumePoolTalentAssetConvertResult>(this.request({
 			url: '/convertToTalentAsset',
 			method: 'POST',
 			data
-		}) as Promise<any>;
+		}), decodeResumePoolTalentAssetConvertResult);
 	}
 
-	createInterview(data: { id: number }) {
-		return this.request({
+	createInterview(data: ResumePoolActionRequest) {
+		return asPerformanceServicePromise<ResumePoolCreateInterviewResult>(this.request({
 			url: '/createInterview',
 			method: 'POST',
 			data
-		}) as Promise<any>;
+		}), decodeResumePoolCreateInterviewResult);
 	}
 }
 

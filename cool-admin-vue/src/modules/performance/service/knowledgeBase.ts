@@ -4,97 +4,114 @@
  * 不负责正文编辑器、AI 问答、向量检索或员工自助知识门户。
  */
 import { BaseService } from '/@/cool';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeKnowledgeBasePageResult,
+	decodeKnowledgeBaseRecord,
+	decodeKnowledgeBaseStats,
+	decodeKnowledgeGraphSummary,
+	decodeKnowledgeQaListResult,
+	decodeKnowledgeQaRecord,
+	decodeKnowledgeSearchResult
+} from './knowledge-base-contract';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import type {
+	KnowledgeBaseCreatePayload,
+	KnowledgeBasePageQuery,
 	KnowledgeBasePageResult,
 	KnowledgeBaseRecord,
+	KnowledgeBaseRemovePayload,
 	KnowledgeBaseStats,
+	KnowledgeBaseStatsQuery,
+	KnowledgeBaseUpdatePayload,
 	KnowledgeGraphSummary,
+	KnowledgeQaCreatePayload,
+	KnowledgeQaListQuery,
+	KnowledgeQaListResult,
 	KnowledgeQaRecord,
+	KnowledgeSearchQuery,
 	KnowledgeSearchResult
 } from '../types';
 
 export default class PerformanceKnowledgeBaseService extends BaseService {
 	permission = {
-		page: 'performance:knowledgeBase:page',
-		stats: 'performance:knowledgeBase:stats',
-		add: 'performance:knowledgeBase:add',
-		update: 'performance:knowledgeBase:update',
-		delete: 'performance:knowledgeBase:delete',
-		graph: 'performance:knowledgeBase:graph',
-		search: 'performance:knowledgeBase:search',
-		qaList: 'performance:knowledgeBase:qaList',
-		qaAdd: 'performance:knowledgeBase:qaAdd'
+		page: PERMISSIONS.performance.knowledgeBase.page,
+		stats: PERMISSIONS.performance.knowledgeBase.stats,
+		add: PERMISSIONS.performance.knowledgeBase.add,
+		update: PERMISSIONS.performance.knowledgeBase.update,
+		delete: PERMISSIONS.performance.knowledgeBase.delete,
+		graph: PERMISSIONS.performance.knowledgeBase.graph,
+		search: PERMISSIONS.performance.knowledgeBase.search,
+		qaList: PERMISSIONS.performance.knowledgeBase.qaList,
+		qaAdd: PERMISSIONS.performance.knowledgeBase.qaAdd
 	};
 
 	constructor() {
 		super('admin/performance/knowledgeBase');
 	}
 
-	fetchPage(data: {
-		page: number;
-		size: number;
-		keyword?: string;
-		status?: string;
-		category?: string;
-		tag?: string;
-	}) {
-		return super.page(data) as unknown as Promise<KnowledgeBasePageResult>;
+	fetchPage(data: KnowledgeBasePageQuery) {
+		return asPerformanceServicePromise<KnowledgeBasePageResult>(
+			super.page(data),
+			decodeKnowledgeBasePageResult
+		);
 	}
 
-	fetchStats(params?: {
-		keyword?: string;
-		status?: string;
-		category?: string;
-		tag?: string;
-	}) {
-		return this.request({
+	fetchStats(params?: KnowledgeBaseStatsQuery) {
+		return asPerformanceServicePromise<KnowledgeBaseStats>(this.request({
 			url: '/stats',
 			method: 'GET',
 			params
-		}) as unknown as Promise<KnowledgeBaseStats>;
+		}), decodeKnowledgeBaseStats);
 	}
 
-	createKnowledge(data: Partial<KnowledgeBaseRecord>) {
-		return super.add(data) as unknown as Promise<KnowledgeBaseRecord>;
+	createKnowledge(data: KnowledgeBaseCreatePayload) {
+		return asPerformanceServicePromise<KnowledgeBaseRecord>(
+			super.add(data),
+			decodeKnowledgeBaseRecord
+		);
 	}
 
-	updateKnowledge(data: Partial<KnowledgeBaseRecord> & { id: number }) {
-		return super.update(data) as unknown as Promise<KnowledgeBaseRecord>;
+	updateKnowledge(data: KnowledgeBaseUpdatePayload) {
+		return asPerformanceServicePromise<KnowledgeBaseRecord>(
+			super.update(data),
+			decodeKnowledgeBaseRecord
+		);
 	}
 
-	removeKnowledge(data: { ids: number[] }) {
-		return super.delete(data) as unknown as Promise<void>;
+	removeKnowledge(data: KnowledgeBaseRemovePayload) {
+		return asPerformanceServicePromise<void>(super.delete(data));
 	}
 
 	fetchGraph() {
-		return this.request({
+		return asPerformanceServicePromise<KnowledgeGraphSummary>(this.request({
 			url: '/graph',
 			method: 'GET'
-		}) as unknown as Promise<KnowledgeGraphSummary>;
+		}), decodeKnowledgeGraphSummary);
 	}
 
-	fetchSearch(params: { keyword: string }) {
-		return this.request({
+	fetchSearch(params: KnowledgeSearchQuery) {
+		return asPerformanceServicePromise<KnowledgeSearchResult>(this.request({
 			url: '/search',
 			method: 'GET',
 			params
-		}) as unknown as Promise<KnowledgeSearchResult>;
+		}), decodeKnowledgeSearchResult);
 	}
 
-	fetchQaList(params?: { keyword?: string }) {
-		return this.request({
+	fetchQaList(params?: KnowledgeQaListQuery) {
+		return asPerformanceServicePromise<KnowledgeQaListResult>(this.request({
 			url: '/qaList',
 			method: 'GET',
 			params
-		}) as unknown as Promise<KnowledgeQaRecord[] | { list?: KnowledgeQaRecord[] }>;
+		}), decodeKnowledgeQaListResult);
 	}
 
-	createQa(data: Partial<KnowledgeQaRecord>) {
-		return this.request({
+	createQa(data: KnowledgeQaCreatePayload) {
+		return asPerformanceServicePromise<KnowledgeQaRecord>(this.request({
 			url: '/qaAdd',
 			method: 'POST',
 			data
-		}) as unknown as Promise<KnowledgeQaRecord>;
+		}), decodeKnowledgeQaRecord);
 	}
 }
 
