@@ -897,7 +897,7 @@ export const PERFORMANCE_CAPABILITY_SCOPE_RULE_GROUPS = {
     },
     {
       capabilityKey: 'assessment.manage.read',
-      legacyPermissionAliases: ['assessmentPage', 'assessmentInfo'],
+      legacyPermissionAliases: ['assessmentPage'],
       scopePreset: 'manage_scopes',
     },
     {
@@ -922,7 +922,7 @@ export const PERFORMANCE_CAPABILITY_SCOPE_RULE_GROUPS = {
     },
     {
       capabilityKey: 'assessment.review.read',
-      legacyPermissionAliases: ['assessmentPendingPage', 'assessmentInfo'],
+      legacyPermissionAliases: ['assessmentPendingPage'],
       scopePreset: 'manager_scopes',
     },
     {

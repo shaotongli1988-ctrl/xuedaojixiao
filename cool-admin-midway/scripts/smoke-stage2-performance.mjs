@@ -3593,6 +3593,7 @@ async function verifyTheme20AssetAssignmentRequestFlow(
   }
 
   const hrSession = await ensureSpecialSession(reporter, options, sessionStore, 'hr_admin');
+  const adminSession = await ensureSpecialSession(reporter, options, sessionStore, 'admin');
   const managerSession = await ensureSpecialSession(
     reporter,
     options,
@@ -3605,7 +3606,7 @@ async function verifyTheme20AssetAssignmentRequestFlow(
     sessionStore,
     'asset_admin'
   );
-  const fallbackApproverSessions = [hrSession, managerSession, assetAdminSession].filter(
+  const fallbackApproverSessions = [adminSession, hrSession, managerSession, assetAdminSession].filter(
     item => Boolean(item?.token)
   );
 

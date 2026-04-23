@@ -350,6 +350,36 @@ describe('performance access context service', () => {
     expect(context.workbenchPages).toContain('course-learning');
   });
 
+  test('should not derive initiated or pending assessment access from assessment info alone', async () => {
+    const service = createService(
+      {
+        userId: 3001,
+        username: 'employee_learning',
+        roleIds: [3],
+        passwordVersion: 1,
+        isRefresh: false,
+      },
+      [
+        'performance:assessment:myPage',
+        'performance:assessment:info',
+        'performance:assessment:update',
+        'performance:assessment:submit',
+      ],
+      []
+    );
+
+    const context = await service.resolveAccessContext();
+
+    expect(
+      service.capabilityScopes(context, 'assessment.manage.read')
+    ).toEqual([]);
+    expect(
+      service.capabilityScopes(context, 'assessment.review.read')
+    ).toEqual([]);
+    expect(context.surfaceAccess.assessmentInitiated).toBe(false);
+    expect(context.surfaceAccess.assessmentPending).toBe(false);
+  });
+
   test('should keep allowEmptyRoleIds compatibility by resolving empty access context', async () => {
     const service = new PerformanceAccessContextService() as any;
 
