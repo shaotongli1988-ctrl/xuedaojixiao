@@ -4,11 +4,6 @@
  * 维护重点是 HR-only 权限、固定类型/状态枚举和车牌/编号唯一性必须由服务端单点收敛。
  */
 import {
-  App,
-  ASYNC_CONTEXT_KEY,
-  ASYNC_CONTEXT_MANAGER_KEY,
-  AsyncContextManager,
-  IMidwayApplication,
   Inject,
   Provide,
   Scope,
@@ -17,9 +12,16 @@ import {
 import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { In, Repository } from 'typeorm';
-import { BaseSysMenuService } from '../../base/service/sys/menu';
 import { PerformanceVehicleEntity } from '../entity/vehicle';
-import * as jwt from 'jsonwebtoken';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
 
 const VEHICLE_TYPES = ['sedan', 'suv', 'mpv', 'bus', 'truck', 'other'];
 const VEHICLE_STATUS = [
@@ -29,14 +31,10 @@ const VEHICLE_STATUS = [
   'inspection_due',
   'retired',
 ];
-let vehicleTableReadyPromise: Promise<void> | null = null;
-
-const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
-  return require('../../base/config').default({
-    app,
-    env: app?.getEnv?.(),
-  }).jwt;
-};
+const PERFORMANCE_ID_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.idRequired
+  );
 
 function normalizePageNumber(value: any, fallback: number) {
   const parsed = Number(value);
@@ -126,58 +124,15 @@ export class PerformanceVehicleService extends BaseService {
   performanceVehicleEntity: Repository<PerformanceVehicleEntity>;
 
   @Inject()
-  baseSysMenuService: BaseSysMenuService;
+  performanceAccessContextService: PerformanceAccessContextService;
 
-  @Inject()
-  ctx;
-
-  @App()
-  app: IMidwayApplication;
-
-  private readonly perms = {
-    page: 'performance:vehicle:page',
-    info: 'performance:vehicle:info',
-    stats: 'performance:vehicle:stats',
-    add: 'performance:vehicle:add',
-    update: 'performance:vehicle:update',
-    delete: 'performance:vehicle:delete',
+  private readonly accessContextOptions = {
+    allowEmptyRoleIds: true,
+    missingAuthMessage: '登录状态已失效',
   };
 
-  private get currentCtx() {
-    if (this.ctx?.admin) {
-      return this.ctx;
-    }
-    try {
-      const contextManager: AsyncContextManager = this.app
-        .getApplicationContext()
-        .get(ASYNC_CONTEXT_MANAGER_KEY);
-      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as any;
-    } catch (error) {
-      return this.ctx;
-    }
-  }
-
-  private get currentAdmin() {
-    if (this.currentCtx?.admin) {
-      return this.currentCtx.admin;
-    }
-    const token =
-      this.currentCtx?.get?.('Authorization') ||
-      this.currentCtx?.headers?.authorization;
-    if (!token) {
-      return undefined;
-    }
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
-  }
-
   async page(query: any) {
-    await this.ensureTableReady();
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.page, '无权限查看车辆列表');
+    await this.requireAccess('vehicle.read', '无权限查看车辆列表');
 
     const page = normalizePageNumber(query?.page, 1);
     const size = normalizePageNumber(query?.size, 20);
@@ -194,17 +149,13 @@ export class PerformanceVehicleService extends BaseService {
   }
 
   async info(id: number) {
-    await this.ensureTableReady();
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.info, '无权限查看车辆详情');
+    await this.requireAccess('vehicle.read', '无权限查看车辆详情');
     const record = await this.requireRecord(Number(id));
     return this.normalizeRecord(record);
   }
 
   async stats(query: any) {
-    await this.ensureTableReady();
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.stats, '无权限查看车辆统计');
+    await this.requireAccess('vehicle.stats', '无权限查看车辆统计');
 
     const list = await this.listByQuery(query);
 
@@ -217,9 +168,7 @@ export class PerformanceVehicleService extends BaseService {
   }
 
   async add(payload: any) {
-    await this.ensureTableReady();
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.add, '无权限新增车辆台账');
+    await this.requireAccess('vehicle.create', '无权限新增车辆台账');
 
     const normalized = await this.normalizePayload(payload, 'add');
     const saved = await this.performanceVehicleEntity.save(
@@ -229,13 +178,11 @@ export class PerformanceVehicleService extends BaseService {
   }
 
   async updateVehicle(payload: any) {
-    await this.ensureTableReady();
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.update, '无权限更新车辆台账');
+    await this.requireAccess('vehicle.update', '无权限更新车辆台账');
 
     const id = Number(payload?.id);
     if (!Number.isInteger(id) || id <= 0) {
-      throw new CoolCommException('ID不能为空');
+      throw new CoolCommException(PERFORMANCE_ID_REQUIRED_MESSAGE);
     }
 
     const current = await this.requireRecord(id);
@@ -252,9 +199,7 @@ export class PerformanceVehicleService extends BaseService {
   }
 
   async delete(ids: number[]) {
-    await this.ensureTableReady();
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.delete, '无权限删除车辆台账');
+    await this.requireAccess('vehicle.delete', '无权限删除车辆台账');
 
     const validIds = normalizeIds(ids);
     if (validIds.length === 0) {
@@ -272,7 +217,6 @@ export class PerformanceVehicleService extends BaseService {
   }
 
   private async listByQuery(query: any) {
-    await this.ensureTableReady();
     const rows = await this.performanceVehicleEntity.find();
     const keyword = normalizeText(query?.keyword, 100).toLowerCase();
     const status = normalizeText(query?.status, 32);
@@ -405,7 +349,6 @@ export class PerformanceVehicleService extends BaseService {
   }
 
   private async requireRecord(id: number) {
-    await this.ensureTableReady();
     if (!Number.isInteger(id) || id <= 0) {
       throw new CoolCommException('车辆记录 ID 不合法');
     }
@@ -417,7 +360,6 @@ export class PerformanceVehicleService extends BaseService {
   }
 
   private async assertVehicleNoUnique(vehicleNo: string, currentId?: number) {
-    await this.ensureTableReady();
     const existing = await this.performanceVehicleEntity.findOneBy({ vehicleNo });
     if (existing && Number(existing.id) !== Number(currentId || 0)) {
       throw new CoolCommException('车辆编号已存在');
@@ -425,7 +367,6 @@ export class PerformanceVehicleService extends BaseService {
   }
 
   private async assertPlateNoUnique(plateNo: string, currentId?: number) {
-    await this.ensureTableReady();
     const existing = await this.performanceVehicleEntity.findOneBy({ plateNo });
     if (existing && Number(existing.id) !== Number(currentId || 0)) {
       throw new CoolCommException('车牌号已存在');
@@ -438,63 +379,17 @@ export class PerformanceVehicleService extends BaseService {
     }
   }
 
-  private async currentPerms() {
-    const roleIds = this.currentAdmin?.roleIds || [];
-    if (!Array.isArray(roleIds) || roleIds.length === 0) {
-      return [];
-    }
-    return this.baseSysMenuService.getPerms(roleIds);
-  }
-
-  private assertHasPerm(perms: string[], perm: string, message: string) {
-    if (!Array.isArray(perms) || !perms.includes(perm)) {
+  private async requireAccess(
+    capabilityKey: PerformanceCapabilityKey,
+    message: string
+  ): Promise<PerformanceResolvedAccessContext> {
+    const access = await this.performanceAccessContextService.resolveAccessContext(
+      undefined,
+      this.accessContextOptions
+    );
+    if (!this.performanceAccessContextService.hasCapability(access, capabilityKey)) {
       throw new CoolCommException(message);
     }
-  }
-
-  /**
-   * current latest 关闭了 TypeORM auto-sync，新增台账表需要在首次访问时兜底建表，
-   * 否则运行态只会在页面首屏阶段暴露“table does not exist”。
-   */
-  private async ensureTableReady() {
-    if (!vehicleTableReadyPromise) {
-      vehicleTableReadyPromise = this.performanceVehicleEntity
-        .query(`
-          CREATE TABLE IF NOT EXISTS performance_vehicle (
-            id int NOT NULL AUTO_INCREMENT,
-            vehicleNo varchar(64) NOT NULL,
-            plateNo varchar(32) NOT NULL,
-            brand varchar(100) NOT NULL,
-            model varchar(100) NOT NULL,
-            vehicleType varchar(32) NOT NULL,
-            ownerDepartment varchar(100) NOT NULL,
-            managerName varchar(100) NOT NULL,
-            seats int NOT NULL DEFAULT 5,
-            registerDate varchar(10) NOT NULL,
-            inspectionDueDate varchar(10) DEFAULT NULL,
-            insuranceDueDate varchar(10) DEFAULT NULL,
-            status varchar(32) NOT NULL DEFAULT 'idle',
-            usageScope text DEFAULT NULL,
-            notes text DEFAULT NULL,
-            createTime varchar(19) NOT NULL,
-            updateTime varchar(19) NOT NULL,
-            tenantId int DEFAULT NULL,
-            PRIMARY KEY (id),
-            UNIQUE KEY uk_performance_vehicle_no (vehicleNo),
-            UNIQUE KEY uk_performance_vehicle_plate (plateNo),
-            KEY idx_performance_vehicle_type (vehicleType),
-            KEY idx_performance_vehicle_status (status),
-            KEY idx_performance_vehicle_create_time (createTime),
-            KEY idx_performance_vehicle_update_time (updateTime),
-            KEY idx_performance_vehicle_tenant (tenantId)
-          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        `)
-        .then(() => undefined)
-        .catch(error => {
-          vehicleTableReadyPromise = null;
-          throw error;
-        });
-    }
-    await vehicleTableReadyPromise;
+    return access;
   }
 }

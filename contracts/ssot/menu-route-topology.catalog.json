@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "owner": "repo-governance",
+  "scope": "performance menu-route-view topology",
+  "notes": [
+    "This catalog is the repository-level SSOT for menu, route, and view-path topology in the performance area.",
+    "The writable primary source remains cool-admin-midway/src/modules/base/menu.json; this catalog only freezes the surrounding topology and supporting docs/consumers.",
+    "Permission semantics are still governed by permissionBits and RBAC catalogs; this file only binds topology sources and consumers."
+  ],
+  "primarySource": "cool-admin-midway/src/modules/base/menu.json",
+  "supportingSources": [
+    "cool-admin-vue/src/modules/base/store/menu.ts",
+    "performance-management-system/docs/10-路由与菜单映射.md",
+    "performance-management-system/docs/06-权限矩阵.md"
+  ],
+  "viewRoots": [
+    "cool-admin-vue/src/modules/performance/views"
+  ],
+  "permissionSources": [
+    "cool-admin-midway/src/modules/base/domain/permissions/source.json",
+    "cool-admin-midway/src/modules/base/domain/permissions/source.mjs"
+  ]
+}

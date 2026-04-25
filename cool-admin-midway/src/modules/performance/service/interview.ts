@@ -4,11 +4,6 @@
  * 维护重点是部门经理范围按 departmentId 判定、completed/cancelled 终态不可编辑、删除仅 HR 可执行。
  */
 import {
-  App,
-  ASYNC_CONTEXT_KEY,
-  ASYNC_CONTEXT_MANAGER_KEY,
-  AsyncContextManager,
-  IMidwayApplication,
   Inject,
   Provide,
   Scope,
@@ -19,22 +14,63 @@ import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Brackets, In, Repository } from 'typeorm';
 import { BaseSysDepartmentEntity } from '../../base/entity/sys/department';
 import { BaseSysMenuService } from '../../base/service/sys/menu';
-import { BaseSysPermsService } from '../../base/service/sys/perms';
 import { BaseSysUserEntity } from '../../base/entity/sys/user';
 import { PerformanceInterviewEntity } from '../entity/interview';
 import { PerformanceResumePoolEntity } from '../entity/resumePool';
 import { PerformanceRecruitPlanEntity } from '../entity/recruit-plan';
-import * as jwt from 'jsonwebtoken';
+import { PerformanceTalentAssetEntity } from '../entity/talentAsset';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import {
+  INTERVIEW_STATUS_VALUES,
+  INTERVIEW_TYPE_VALUES,
+} from './interview-dict';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
 
-const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
-  return require('../../base/config').default({
-    app,
-    env: app?.getEnv?.(),
-  }).jwt;
-};
-
-const INTERVIEW_STATUS = ['scheduled', 'completed', 'cancelled'];
-const INTERVIEW_TYPES = ['technical', 'behavioral', 'manager', 'hr'];
+const INTERVIEW_STATUS = [...INTERVIEW_STATUS_VALUES];
+const INTERVIEW_TYPES = [...INTERVIEW_TYPE_VALUES];
+const PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resourceNotFound
+  );
+const PERFORMANCE_RESUME_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resumeNotFound
+  );
+const PERFORMANCE_RECRUIT_PLAN_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.recruitPlanNotFound
+  );
+const PERFORMANCE_TALENT_ASSET_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.talentAssetNotFound
+  );
+const PERFORMANCE_SOURCE_TYPE_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.sourceTypeInvalid
+  );
+const PERFORMANCE_STATE_EDIT_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateEditNotAllowed
+  );
+const PERFORMANCE_STATE_DELETE_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateDeleteNotAllowed
+  );
+const SOURCE_RESOURCES = [
+  'jobStandard',
+  'recruitPlan',
+  'resumePool',
+  'interview',
+  'talentAsset',
+];
 
 function normalizeOptionalPositiveInt(value: any, message: string) {
   if (value === undefined || value === null || value === '') {
@@ -83,67 +119,38 @@ export class PerformanceInterviewService extends BaseService {
   @InjectEntityModel(PerformanceRecruitPlanEntity)
   performanceRecruitPlanEntity: Repository<PerformanceRecruitPlanEntity>;
 
+  @InjectEntityModel(PerformanceTalentAssetEntity)
+  performanceTalentAssetEntity: Repository<PerformanceTalentAssetEntity>;
+
   @Inject()
   baseSysMenuService: BaseSysMenuService;
 
   @Inject()
-  baseSysPermsService: BaseSysPermsService;
-
-  @Inject()
-  ctx;
-
-  @App()
-  app: IMidwayApplication;
+  performanceAccessContextService: PerformanceAccessContextService;
 
   private readonly perms = {
-    page: 'performance:interview:page',
-    info: 'performance:interview:info',
-    add: 'performance:interview:add',
-    update: 'performance:interview:update',
-    delete: 'performance:interview:delete',
+    page: PERMISSIONS.performance.interview.page,
+    info: PERMISSIONS.performance.interview.info,
+    add: PERMISSIONS.performance.interview.add,
+    update: PERMISSIONS.performance.interview.update,
+    delete: PERMISSIONS.performance.interview.delete,
   };
 
-  private get currentCtx() {
-    if (this.ctx?.admin) {
-      return this.ctx;
-    }
-    try {
-      const contextManager: AsyncContextManager = this.app
-        .getApplicationContext()
-        .get(ASYNC_CONTEXT_MANAGER_KEY);
-      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as any;
-    } catch (error) {
-      return this.ctx;
-    }
-  }
-
-  private get currentAdmin() {
-    if (this.currentCtx?.admin) {
-      return this.currentCtx.admin;
-    }
-    const token =
-      this.currentCtx?.get?.('Authorization') ||
-      this.currentCtx?.headers?.authorization;
-    if (!token) {
-      return undefined;
-    }
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
-  }
+  private readonly capabilityByPerm: Record<string, PerformanceCapabilityKey> = {
+    [PERMISSIONS.performance.interview.page]: 'interview.read',
+    [PERMISSIONS.performance.interview.info]: 'interview.read',
+    [PERMISSIONS.performance.interview.add]: 'interview.create',
+    [PERMISSIONS.performance.interview.update]: 'interview.update',
+    [PERMISSIONS.performance.interview.delete]: 'interview.delete',
+  };
 
   async page(query: any) {
-    const perms = await this.currentPerms();
-
-    if (!this.hasPerm(perms, this.perms.page)) {
-      throw new CoolCommException('无权限查看面试列表');
-    }
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.page, '无权限查看面试列表');
 
     const page = Number(query.page || 1);
     const size = Number(query.size || 20);
-    const departmentIds = await this.departmentScopeIds(perms);
+    const departmentIds = await this.departmentScopeIds(access, 'interview.read');
     const qb = this.performanceInterviewEntity
       .createQueryBuilder('interview')
       .leftJoin(BaseSysUserEntity, 'interviewer', 'interviewer.id = interview.interviewerId')
@@ -159,6 +166,7 @@ export class PerformanceInterviewService extends BaseService {
         'interview.score as score',
         'interview.resumePoolId as resumePoolId',
         'interview.recruitPlanId as recruitPlanId',
+        'interview.sourceSnapshot as sourceSnapshot',
         'interview.resumePoolSnapshot as resumePoolSnapshot',
         'interview.recruitPlanSnapshot as recruitPlanSnapshot',
         'interview.status as status',
@@ -222,25 +230,24 @@ export class PerformanceInterviewService extends BaseService {
   }
 
   async info(id: number) {
-    const perms = await this.currentPerms();
-
-    if (!this.hasPerm(perms, this.perms.info)) {
-      throw new CoolCommException('无权限查看面试详情');
-    }
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.info, '无权限查看面试详情');
 
     const interview = await this.requireInterview(id);
-    await this.assertInterviewInScope(interview, perms);
+    await this.assertInterviewInScope(interview, access, 'interview.read');
     return this.buildInterviewDetail(interview);
   }
 
   async add(payload: any) {
-    const perms = await this.currentPerms();
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.add, '无权限新增面试');
 
-    if (!this.hasPerm(perms, this.perms.add)) {
-      throw new CoolCommException('无权限新增面试');
-    }
-
-    const normalized = await this.normalizePayload(payload, perms, 'add');
+    const normalized = await this.normalizePayload(
+      payload,
+      access,
+      'add',
+      'interview.create'
+    );
     const saved = await this.performanceInterviewEntity.save(
       this.performanceInterviewEntity.create(normalized)
     );
@@ -249,17 +256,14 @@ export class PerformanceInterviewService extends BaseService {
   }
 
   async updateInterview(payload: any) {
-    const perms = await this.currentPerms();
-
-    if (!this.hasPerm(perms, this.perms.update)) {
-      throw new CoolCommException('无权限修改面试');
-    }
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.update, '无权限修改面试');
 
     const interview = await this.requireInterview(Number(payload.id));
-    await this.assertInterviewInScope(interview, perms);
+    await this.assertInterviewInScope(interview, access, 'interview.update');
 
     if (this.isTerminal(interview.status)) {
-      throw new CoolCommException('当前状态不允许编辑');
+      throw new CoolCommException(PERFORMANCE_STATE_EDIT_NOT_ALLOWED_MESSAGE);
     }
 
     const normalized = await this.normalizePayload(
@@ -268,8 +272,9 @@ export class PerformanceInterviewService extends BaseService {
         ...payload,
         id: interview.id,
       },
-      perms,
-      'update'
+      access,
+      'update',
+      'interview.update'
     );
 
     await this.performanceInterviewEntity.update(
@@ -280,11 +285,8 @@ export class PerformanceInterviewService extends BaseService {
   }
 
   async delete(ids: number[]) {
-    const perms = await this.currentPerms();
-
-    if (!this.hasPerm(perms, this.perms.delete)) {
-      throw new CoolCommException('无权限删除面试');
-    }
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.delete, '无权限删除面试');
 
     const validIds = (ids || [])
       .map(item => Number(item))
@@ -299,49 +301,70 @@ export class PerformanceInterviewService extends BaseService {
     });
 
     if (interviews.length !== validIds.length) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
-    interviews.forEach(item => {
+    for (const item of interviews) {
+      await this.assertInterviewInScope(item, access, 'interview.delete');
       if (item.status !== 'scheduled') {
-        throw new CoolCommException('当前状态不允许删除');
+        throw new CoolCommException(PERFORMANCE_STATE_DELETE_NOT_ALLOWED_MESSAGE);
       }
-    });
+    }
 
     await this.performanceInterviewEntity.delete(validIds);
   }
 
   private async currentPerms() {
-    const admin = this.currentAdmin;
+    return this.performanceAccessContextService.resolveAccessContext(undefined, {
+      allowEmptyRoleIds: false,
+      missingAuthMessage: '登录状态已失效',
+    });
+  }
 
-    if (!admin?.roleIds) {
-      throw new CoolCommException('登录状态已失效');
+  private resolveCapabilityKey(perm: string): PerformanceCapabilityKey {
+    const capabilityKey = this.capabilityByPerm[perm];
+    if (!capabilityKey) {
+      throw new CoolCommException(`未映射的面试权限: ${perm}`);
     }
-
-    return this.baseSysMenuService.getPerms(admin.roleIds);
+    return capabilityKey;
   }
 
-  private hasPerm(perms: string[], perm: string) {
-    return perms.includes(perm);
+  private assertPerm(
+    access: PerformanceResolvedAccessContext,
+    perm: string,
+    message: string
+  ) {
+    if (
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        this.resolveCapabilityKey(perm)
+      )
+    ) {
+      throw new CoolCommException(message);
+    }
   }
 
-  private hasGlobalScope(perms: string[]) {
-    return this.currentAdmin?.username === 'admin' || this.hasPerm(perms, this.perms.delete);
-  }
-
-  private async departmentScopeIds(perms: string[]) {
-    if (this.hasGlobalScope(perms)) {
+  private async departmentScopeIds(
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
+  ) {
+    if (
+      this.performanceAccessContextService.hasCapabilityInScopes(
+        access,
+        capabilityKey,
+        ['company']
+      )
+    ) {
       return null;
     }
 
-    const userId = Number(this.currentAdmin?.userId || 0);
-
-    if (!userId) {
-      throw new CoolCommException('登录上下文缺失');
-    }
-
-    const ids = await this.baseSysPermsService.departmentIds(userId);
-    return Array.isArray(ids) ? ids.map(item => Number(item)) : [];
+    return Array.from(
+      new Set(
+        (Array.isArray(access.departmentIds) ? access.departmentIds : [])
+          .map(item => Number(item))
+          .filter(item => Number.isInteger(item) && item > 0)
+      )
+    );
   }
 
   private applyScope(qb: any, departmentIds: number[] | null) {
@@ -359,40 +382,67 @@ export class PerformanceInterviewService extends BaseService {
 
   private async assertInterviewInScope(
     interview: PerformanceInterviewEntity,
-    perms: string[]
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
   ) {
-    if (this.hasGlobalScope(perms)) {
-      return;
+    const departmentId = this.normalizeNullableNumber(interview.departmentId);
+    const scopes = this.performanceAccessContextService.capabilityScopes(
+      access,
+      capabilityKey
+    );
+
+    if (!departmentId) {
+      if (scopes.includes('company')) {
+        return;
+      }
+      throw new CoolCommException('无权访问该面试');
     }
 
-    const departmentIds = await this.departmentScopeIds(perms);
-    const departmentId = this.normalizeNullableNumber(interview.departmentId);
-
-    if (!departmentId || !departmentIds?.includes(departmentId)) {
+    if (
+      !this.performanceAccessContextService.matchesScope(access, scopes, {
+        departmentId,
+      })
+    ) {
       throw new CoolCommException('无权访问该面试');
     }
   }
 
   private async assertCanManageDepartment(
     departmentId: number | null,
-    perms: string[]
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
   ) {
-    if (this.hasGlobalScope(perms)) {
-      return;
-    }
+    const scopes = this.performanceAccessContextService.capabilityScopes(
+      access,
+      capabilityKey
+    );
 
     if (!departmentId) {
+      if (scopes.includes('company')) {
+        return;
+      }
       throw new CoolCommException('部门经理必须选择归属部门');
     }
 
-    const departmentIds = await this.departmentScopeIds(perms);
-
-    if (!departmentIds?.includes(departmentId)) {
+    if (
+      !this.performanceAccessContextService.matchesScope(
+        access,
+        scopes,
+        {
+          departmentId,
+        }
+      )
+    ) {
       throw new CoolCommException('无权操作该面试');
     }
   }
 
-  private async normalizePayload(payload: any, perms: string[], mode: 'add' | 'update') {
+  private async normalizePayload(
+    payload: any,
+    access: PerformanceResolvedAccessContext,
+    mode: 'add' | 'update',
+    capabilityKey: PerformanceCapabilityKey
+  ) {
     const candidateName = String(payload.candidateName || '').trim();
     const position = String(payload.position || '').trim();
     const interviewerId = Number(payload.interviewerId || 0);
@@ -437,11 +487,11 @@ export class PerformanceInterviewService extends BaseService {
     }
 
     if (resumePoolId && !resumeRecord) {
-      throw new CoolCommException('简历不存在');
+      throw new CoolCommException(PERFORMANCE_RESUME_NOT_FOUND_MESSAGE);
     }
 
     if (derivedRecruitPlanId && !recruitPlanRecord) {
-      throw new CoolCommException('招聘计划不存在');
+      throw new CoolCommException(PERFORMANCE_RECRUIT_PLAN_NOT_FOUND_MESSAGE);
     }
 
     if (
@@ -473,10 +523,16 @@ export class PerformanceInterviewService extends BaseService {
       mode === 'add' ? payload.status || 'scheduled' : payload.status
     );
     const score = this.normalizeScore(payload.score);
+    const sourceSnapshot = await this.normalizeSourceSnapshotInput(
+      payload.sourceSnapshot,
+      departmentId,
+      resumeRecord,
+      recruitPlanRecord
+    );
     const resumePoolSnapshot = await this.buildResumePoolSnapshot(resumeRecord);
     const recruitPlanSnapshot = await this.buildRecruitPlanSnapshot(recruitPlanRecord);
 
-    await this.assertCanManageDepartment(departmentId, perms);
+    await this.assertCanManageDepartment(departmentId, access, capabilityKey);
 
     return {
       candidateName,
@@ -488,6 +544,7 @@ export class PerformanceInterviewService extends BaseService {
       score,
       resumePoolId,
       recruitPlanId: derivedRecruitPlanId,
+      sourceSnapshot,
       resumePoolSnapshot,
       recruitPlanSnapshot,
       status,
@@ -498,7 +555,7 @@ export class PerformanceInterviewService extends BaseService {
     const interview = await this.performanceInterviewEntity.findOneBy({ id });
 
     if (!interview) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     return interview;
@@ -516,6 +573,7 @@ export class PerformanceInterviewService extends BaseService {
   }
 
   private normalizeInterview(item: any) {
+    const sourceSnapshot = this.normalizeSourceSnapshot(item.sourceSnapshot);
     const resumePoolSnapshot = this.normalizeResumePoolSnapshot(item.resumePoolSnapshot);
     const recruitPlanSnapshot = this.normalizeRecruitPlanSnapshot(
       item.recruitPlanSnapshot
@@ -533,6 +591,7 @@ export class PerformanceInterviewService extends BaseService {
       score: this.normalizeScore(item.score),
       resumePoolId: this.normalizeNullableNumber(item.resumePoolId),
       recruitPlanId: this.normalizeNullableNumber(item.recruitPlanId),
+      sourceSnapshot,
       resumePoolSummary: resumePoolSnapshot,
       resumePoolSnapshot,
       recruitPlanSummary: recruitPlanSnapshot,
@@ -564,8 +623,6 @@ export class PerformanceInterviewService extends BaseService {
       targetDepartmentId: this.normalizeNullableNumber(snapshot.targetDepartmentId),
       targetDepartmentName: snapshot.targetDepartmentName || null,
       targetPosition: snapshot.targetPosition || null,
-      phone: snapshot.phone || '',
-      email: snapshot.email || null,
       status: snapshot.status || null,
       recruitPlanId: this.normalizeNullableNumber(snapshot.recruitPlanId),
       jobStandardId: this.normalizeNullableNumber(snapshot.jobStandardId),
@@ -592,6 +649,100 @@ export class PerformanceInterviewService extends BaseService {
     };
   }
 
+  private normalizeSourceSnapshot(value: any) {
+    const snapshot = normalizeJsonObject(value);
+    if (!snapshot) {
+      return null;
+    }
+
+    const sourceResource = String(snapshot.sourceResource || '').trim();
+    if (sourceResource && !SOURCE_RESOURCES.includes(sourceResource)) {
+      throw new CoolCommException(PERFORMANCE_SOURCE_TYPE_INVALID_MESSAGE);
+    }
+
+    return {
+      sourceResource: sourceResource || null,
+      talentAssetId: this.normalizeNullableNumber(snapshot.talentAssetId),
+      jobStandardId: this.normalizeNullableNumber(snapshot.jobStandardId),
+      jobStandardPositionName: snapshot.jobStandardPositionName || null,
+      jobStandardRequirementSummary: snapshot.jobStandardRequirementSummary || null,
+      recruitPlanId: this.normalizeNullableNumber(snapshot.recruitPlanId),
+      recruitPlanTitle: snapshot.recruitPlanTitle || null,
+      recruitPlanStatus: snapshot.recruitPlanStatus || null,
+      resumePoolId: this.normalizeNullableNumber(snapshot.resumePoolId),
+      interviewId: this.normalizeNullableNumber(snapshot.interviewId),
+      candidateName: snapshot.candidateName || null,
+      targetDepartmentId: this.normalizeNullableNumber(snapshot.targetDepartmentId),
+      targetDepartmentName: snapshot.targetDepartmentName || null,
+      targetPosition: snapshot.targetPosition || null,
+      interviewStatus: snapshot.interviewStatus || null,
+      sourceStatusSnapshot: snapshot.sourceStatusSnapshot || null,
+    };
+  }
+
+  private async normalizeSourceSnapshotInput(
+    payloadSourceSnapshot: any,
+    departmentId: number | null,
+    resumeRecord: PerformanceResumePoolEntity | null,
+    recruitPlanRecord: PerformanceRecruitPlanEntity | null
+  ) {
+    const sourceSnapshot = this.normalizeSourceSnapshot(payloadSourceSnapshot);
+
+    if (sourceSnapshot?.sourceResource === 'talentAsset' || sourceSnapshot?.talentAssetId) {
+      const talentAssetId = this.normalizeNullableNumber(sourceSnapshot.talentAssetId);
+      if (!talentAssetId) {
+        throw new CoolCommException('talentAssetId 不合法');
+      }
+
+      const talentAsset = await this.performanceTalentAssetEntity.findOneBy({
+        id: talentAssetId,
+      });
+      if (!talentAsset) {
+        throw new CoolCommException(PERFORMANCE_TALENT_ASSET_NOT_FOUND_MESSAGE);
+      }
+
+      if (
+        departmentId &&
+        Number(departmentId) !== Number(talentAsset.targetDepartmentId)
+      ) {
+        throw new CoolCommException('面试来源人才资产与目标部门不一致');
+      }
+
+      return this.buildTalentAssetSourceSnapshot(talentAsset);
+    }
+
+    if (resumeRecord) {
+      return this.buildResumeSourceSnapshot(resumeRecord, recruitPlanRecord);
+    }
+
+    return sourceSnapshot;
+  }
+
+  private buildResumeSourceSnapshot(
+    resumeRecord: PerformanceResumePoolEntity,
+    recruitPlanRecord: PerformanceRecruitPlanEntity | null
+  ) {
+    return {
+      sourceResource: 'resumePool',
+      resumePoolId: Number(resumeRecord.id),
+      recruitPlanId: this.normalizeNullableNumber(recruitPlanRecord?.id ?? resumeRecord.recruitPlanId),
+      recruitPlanTitle: recruitPlanRecord?.title || null,
+      candidateName: resumeRecord.candidateName || null,
+      targetDepartmentId: this.normalizeNullableNumber(resumeRecord.targetDepartmentId),
+      targetPosition: resumeRecord.targetPosition || null,
+    };
+  }
+
+  private buildTalentAssetSourceSnapshot(talentAsset: PerformanceTalentAssetEntity) {
+    return {
+      sourceResource: 'talentAsset',
+      talentAssetId: Number(talentAsset.id),
+      candidateName: talentAsset.candidateName || null,
+      targetDepartmentId: this.normalizeNullableNumber(talentAsset.targetDepartmentId),
+      targetPosition: talentAsset.targetPosition || null,
+    };
+  }
+
   private async buildResumePoolSnapshot(resume: PerformanceResumePoolEntity | null) {
     if (!resume) {
       return null;
@@ -607,8 +758,6 @@ export class PerformanceInterviewService extends BaseService {
       targetDepartmentId: Number(resume.targetDepartmentId || 0),
       targetDepartmentName: department?.name || null,
       targetPosition: resume.targetPosition || null,
-      phone: resume.phone || '',
-      email: resume.email || null,
       status: resume.status || 'new',
       recruitPlanId: this.normalizeNullableNumber(resume.recruitPlanId),
       jobStandardId: this.normalizeNullableNumber(resume.jobStandardId),
@@ -659,7 +808,7 @@ export class PerformanceInterviewService extends BaseService {
 
     const interviewType = String(value).trim();
 
-    if (!INTERVIEW_TYPES.includes(interviewType)) {
+    if (!INTERVIEW_TYPES.some(item => item === interviewType)) {
       throw new CoolCommException('面试类型不合法');
     }
 
@@ -669,7 +818,7 @@ export class PerformanceInterviewService extends BaseService {
   private normalizeStatus(value: any) {
     const status = String(value || 'scheduled').trim();
 
-    if (!INTERVIEW_STATUS.includes(status)) {
+    if (!INTERVIEW_STATUS.some(item => item === status)) {
       throw new CoolCommException('面试状态不合法');
     }
 

@@ -13,6 +13,7 @@ export const STAGE2_RUNTIME_META_PARAM_KEY = 'stage2.performance.seedMeta';
 export const STAGE2_RUNTIME_META_VERSION = '2026-04-18.stage2.runtime-v1';
 export const STAGE2_RUNTIME_META_SCOPES = Object.freeze([
   'stage2-performance-core',
+  'goal-plan-operations',
   'theme10-contract',
   'theme11-procurement-supplier',
   'theme12-talentAsset',
@@ -25,6 +26,7 @@ export const STAGE2_RUNTIME_META_SCOPES = Object.freeze([
   'theme19-teacher-channel',
   'theme20-asset-management',
   'theme21-office-knowledge',
+  'theme22-office-collab',
 ]);
 
 export function buildStage2SeedMeta(updatedAt = new Date().toISOString()) {

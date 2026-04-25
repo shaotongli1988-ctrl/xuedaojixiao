@@ -1,8 +1,8 @@
 /**
- * Theme-11 stage-2 smoke readiness for procurement and supplier management.
- * This file verifies login, permission registration, permmenu role scope, and the minimum live API path for purchaseOrder/supplier.
- * It does not seed theme-11 fixtures, mutate shared config, or replace A/B window verification.
- * Maintenance pitfall: permission keys, sample IDs, and masking expectations must stay aligned with docs 04/05/06/12/24 and the runtime returned by A/B.
+ * Theme-11 stage-2 smoke readiness for procurement enhancement and supplier management.
+ * This file verifies static menu/permission registration, runtime permmenu scope, and the minimum live API path for purchaseOrder/supplier.
+ * It also probes inquiry/approval/receipt/report enhancement endpoints when the runtime has already implemented them.
+ * Maintenance pitfall: menu routes, permission keys, sample IDs, and masking expectations must stay aligned with menu.json, seed-stage2-performance.mjs, menu.ts, and the Theme11 frozen docs.
  */
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -22,41 +22,81 @@ const projectRoot = path.resolve(__dirname, '..');
 const defaultPassword = '123456';
 const successCode = 1000;
 const theme11RequiredScopes = ['theme11-procurement-supplier'];
+const theme11Routes = [
+  '/performance/purchase-order',
+  '/performance/purchase-inquiry',
+  '/performance/purchase-approval',
+  '/performance/purchase-execution',
+  '/performance/purchase-receipt',
+  '/performance/purchase-report',
+  '/performance/supplier',
+];
+const theme11RouteViewPaths = {
+  '/performance/purchase-order': 'modules/performance/views/purchase-order/index.vue',
+  '/performance/purchase-inquiry': 'modules/performance/views/purchase-inquiry/index.vue',
+  '/performance/purchase-approval': 'modules/performance/views/purchase-approval/index.vue',
+  '/performance/purchase-execution': 'modules/performance/views/purchase-execution/index.vue',
+  '/performance/purchase-receipt': 'modules/performance/views/purchase-receipt/index.vue',
+  '/performance/purchase-report': 'modules/performance/views/purchase-report/index.vue',
+  '/performance/supplier': 'modules/performance/views/supplier/index.vue',
+};
 const theme11PermissionKeys = [
   'performance:purchaseOrder:page',
   'performance:purchaseOrder:info',
   'performance:purchaseOrder:add',
   'performance:purchaseOrder:update',
   'performance:purchaseOrder:delete',
+  'performance:purchaseOrder:submitInquiry',
+  'performance:purchaseOrder:submitApproval',
+  'performance:purchaseOrder:approve',
+  'performance:purchaseOrder:reject',
+  'performance:purchaseOrder:receive',
+  'performance:purchaseOrder:close',
   'performance:supplier:page',
   'performance:supplier:info',
   'performance:supplier:add',
   'performance:supplier:update',
   'performance:supplier:delete',
+  'performance:purchaseReport:summary',
+  'performance:purchaseReport:trend',
+  'performance:purchaseReport:supplierStats',
 ];
 
 const users = [
   {
     username: 'hr_admin',
-    permissions: {
-      present: theme11PermissionKeys,
-      absent: [],
+    menu: {
+      routesPresent: theme11Routes,
+      routesAbsent: [],
+      permsPresent: theme11PermissionKeys,
+      permsAbsent: [],
     },
     purchaseOrderPage: 'allow',
     supplierPage: 'allow',
   },
   {
     username: 'manager_rd',
-    permissions: {
-      present: [
+    menu: {
+      routesPresent: theme11Routes,
+      routesAbsent: [],
+      permsPresent: [
         'performance:purchaseOrder:page',
         'performance:purchaseOrder:info',
         'performance:purchaseOrder:add',
         'performance:purchaseOrder:update',
+        'performance:purchaseOrder:submitInquiry',
+        'performance:purchaseOrder:submitApproval',
+        'performance:purchaseOrder:approve',
+        'performance:purchaseOrder:reject',
+        'performance:purchaseOrder:receive',
+        'performance:purchaseOrder:close',
         'performance:supplier:page',
         'performance:supplier:info',
+        'performance:purchaseReport:summary',
+        'performance:purchaseReport:trend',
+        'performance:purchaseReport:supplierStats',
       ],
-      absent: [
+      permsAbsent: [
         'performance:purchaseOrder:delete',
         'performance:supplier:add',
         'performance:supplier:update',
@@ -68,9 +108,11 @@ const users = [
   },
   {
     username: 'employee_platform',
-    permissions: {
-      present: [],
-      absent: theme11PermissionKeys,
+    menu: {
+      routesPresent: [],
+      routesAbsent: theme11Routes,
+      permsPresent: [],
+      permsAbsent: theme11PermissionKeys,
     },
     purchaseOrderPage: 'deny',
     supplierPage: 'deny',
@@ -137,15 +179,38 @@ function parseOptionalIntegerEnv(name) {
   return parsed;
 }
 
+function firstDefinedIntegerEnv(names) {
+  for (const name of names) {
+    const value = parseOptionalIntegerEnv(name);
+    if (value) {
+      return value;
+    }
+  }
+  return null;
+}
+
 function buildOptions(argv = []) {
   const options = {
     baseUrl: process.env.THEME11_SMOKE_BASE_URL || '',
     password: process.env.THEME11_SMOKE_PASSWORD || defaultPassword,
     cacheDir: process.env.THEME11_SMOKE_CACHE_DIR || resolveDefaultCacheDir(),
-    supplierInfoId: parseOptionalIntegerEnv('THEME11_SUPPLIER_INFO_ID'),
-    purchaseOrderInfoId: parseOptionalIntegerEnv('THEME11_PURCHASE_ORDER_INFO_ID'),
-    activeOrderDeleteId: parseOptionalIntegerEnv('THEME11_ACTIVE_ORDER_DELETE_ID'),
-    referencedSupplierDeleteId: parseOptionalIntegerEnv('THEME11_REFERENCED_SUPPLIER_DELETE_ID'),
+    supplierInfoId: firstDefinedIntegerEnv(['THEME11_SUPPLIER_INFO_ID']),
+    purchaseOrderInfoId: firstDefinedIntegerEnv(['THEME11_PURCHASE_ORDER_INFO_ID']),
+    protectedOrderDeleteId: firstDefinedIntegerEnv([
+      'THEME11_PROTECTED_ORDER_DELETE_ID',
+      'THEME11_ACTIVE_ORDER_DELETE_ID',
+    ]),
+    referencedSupplierDeleteId: firstDefinedIntegerEnv([
+      'THEME11_REFERENCED_SUPPLIER_DELETE_ID',
+    ]),
+    inquiryOrderId: firstDefinedIntegerEnv(['THEME11_INQUIRY_ORDER_ID']),
+    pendingApprovalOrderId: firstDefinedIntegerEnv(['THEME11_PENDING_APPROVAL_ORDER_ID']),
+    approvedOrderId: firstDefinedIntegerEnv(['THEME11_APPROVED_ORDER_ID']),
+    receivedOrderId: firstDefinedIntegerEnv(['THEME11_RECEIVED_ORDER_ID']),
+    closedOrderId: firstDefinedIntegerEnv(['THEME11_CLOSED_ORDER_ID']),
+    procurementSampleDepartmentId: firstDefinedIntegerEnv([
+      'THEME11_PROCUREMENT_SAMPLE_DEPARTMENT_ID',
+    ]),
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -254,12 +319,184 @@ async function requestJson(url, init = {}) {
   }
 }
 
+function flattenMenuNodes(menus = [], output = []) {
+  for (const menu of menus) {
+    if (!menu || typeof menu !== 'object') {
+      continue;
+    }
+    output.push(menu);
+    flattenMenuNodes(menu.childMenus || [], output);
+  }
+  return output;
+}
+
+function flattenMenuRouters(menus = [], output = new Set()) {
+  for (const menu of menus) {
+    if (menu?.router) {
+      output.add(menu.router);
+    }
+    flattenMenuRouters(menu?.childMenus || [], output);
+  }
+  return output;
+}
+
+function collectMenuPerms(menus = []) {
+  const perms = new Set();
+  for (const node of flattenMenuNodes(menus)) {
+    const values = String(node?.perms || '')
+      .split(',')
+      .map(item => item.trim())
+      .filter(Boolean);
+    for (const value of values) {
+      perms.add(value);
+    }
+  }
+  return perms;
+}
+
+function decodeTokenPayload(token) {
+  const encoded = String(token || '').split('.')[1];
+  if (!encoded) {
+    return {};
+  }
+  return JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
+}
+
+function isMissingRouteResponse(response) {
+  const message =
+    typeof response.body === 'string'
+      ? response.body
+      : String(response.body?.message || response.body?.msg || '');
+  return (
+    response.status === 404 ||
+    response.status === 405 ||
+    /Cannot (GET|POST|PUT|DELETE)/.test(message) ||
+    /Not Found/i.test(message)
+  );
+}
+
+function validateExpectedOutcome(response, expectation) {
+  if (expectation === 'allow') {
+    if (response.body?.code !== successCode) {
+      return `expected success, got status=${response.status} body=${formatResponse(response.body)}`;
+    }
+    return null;
+  }
+
+  if (response.body?.code === successCode) {
+    return 'expected denial but request succeeded';
+  }
+
+  return null;
+}
+
+function readMenuArtifacts() {
+  const menuJsonPath = path.join(projectRoot, 'src/modules/base/menu.json');
+  const vueMenuStorePath = path.resolve(
+    projectRoot,
+    '../cool-admin-vue/src/modules/base/store/menu.ts'
+  );
+  const vueMenuGroupingPath = path.resolve(
+    projectRoot,
+    '../cool-admin-vue/src/modules/base/store/menu-grouping.js'
+  );
+  return {
+    menuJsonPath,
+    vueMenuStorePath,
+    vueMenuGroupingPath,
+    menuTree: JSON.parse(fs.readFileSync(menuJsonPath, 'utf8')),
+    vueMenuStoreContent: fs.readFileSync(vueMenuStorePath, 'utf8'),
+    vueMenuGroupingContent: fs.readFileSync(vueMenuGroupingPath, 'utf8'),
+  };
+}
+
+function assertStaticMenuRegistration(reporter) {
+  const { menuJsonPath, menuTree } = readMenuArtifacts();
+  const nodes = flattenMenuNodes(menuTree);
+  const nodeByRoute = new Map(
+    nodes.filter(node => node?.router).map(node => [node.router, node])
+  );
+  const perms = collectMenuPerms(menuTree);
+  const problems = [];
+
+  for (const route of theme11Routes) {
+    const node = nodeByRoute.get(route);
+    if (!node) {
+      problems.push(`missing route ${route}`);
+      continue;
+    }
+    const expectedViewPath = theme11RouteViewPaths[route];
+    if (expectedViewPath && node.viewPath !== expectedViewPath) {
+      problems.push(
+        `route ${route} expected viewPath ${expectedViewPath} got ${node.viewPath || 'empty'}`
+      );
+    }
+  }
+
+  for (const perm of theme11PermissionKeys) {
+    if (!perms.has(perm)) {
+      problems.push(`missing perm ${perm}`);
+    }
+  }
+
+  if (problems.length) {
+    reporter.fail('menu.json registration', `${menuJsonPath} ${problems.join('; ')}`);
+    return;
+  }
+
+  reporter.pass(
+    'menu.json registration',
+    `${menuJsonPath} contains Theme11 enhancement routes and permission keys`
+  );
+}
+
+function assertProcurementGroupPathsRegistration(reporter) {
+  const {
+    vueMenuStorePath,
+    vueMenuStoreContent,
+    vueMenuGroupingPath,
+    vueMenuGroupingContent,
+  } = readMenuArtifacts();
+  const groupingMissing = theme11Routes.filter(
+    route => !vueMenuGroupingContent.includes(route)
+  );
+
+  if (groupingMissing.length) {
+    reporter.fail(
+      'menu-grouping procurement paths',
+      `${vueMenuGroupingPath} missing ${groupingMissing.join(', ')}`
+    );
+    return;
+  }
+
+  if (!vueMenuStoreContent.includes("buildMenuGroups") || !vueMenuStoreContent.includes('./menu-grouping.js')) {
+    reporter.fail(
+      'menu.ts grouping bridge',
+      `${vueMenuStorePath} is not delegating navigation grouping to menu-grouping.js`
+    );
+    return;
+  }
+
+  const missing = theme11Routes.filter(route => !vueMenuGroupingContent.includes(route));
+  if (missing.length) {
+    reporter.fail(
+      'menu-grouping procurement paths',
+      `${vueMenuGroupingPath} missing ${missing.join(', ')}`
+    );
+    return;
+  }
+  reporter.pass(
+    'menu navigation procurement paths',
+    `${vueMenuGroupingPath} contains Theme11 procurement group paths and ${vueMenuStorePath} delegates to grouping`
+  );
+}
+
 async function verifyRuntimePreflight(reporter, options) {
   const response = await requestJson(`${options.baseUrl}/admin/base/open/runtimeMeta`);
 
   if (response.body?.code !== successCode) {
     reporter.fail('runtimeMeta', formatResponse(response.body));
-    return false;
+    return null;
   }
 
   const runtimeMeta = response.body?.data;
@@ -272,14 +509,30 @@ async function verifyRuntimePreflight(reporter, options) {
 
   if (problems.length) {
     reporter.fail('runtimeMeta', problems.join('; '));
-    return false;
+    return null;
   }
 
   reporter.pass(
     'runtimeMeta',
     `git=${runtimeMeta.gitHash} port=${runtimeMeta.port} seed=${runtimeMeta.seedMeta.version}`
   );
-  return true;
+  return runtimeMeta;
+}
+
+function applyRuntimeSeedDefaults(options, runtimeMeta) {
+  const seedMeta = runtimeMeta?.seedMeta || {};
+  options.supplierInfoId ||= Number(seedMeta.theme11SupplierInfoId || 0) || null;
+  options.purchaseOrderInfoId ||= Number(seedMeta.theme11PurchaseOrderInfoId || 0) || null;
+  options.protectedOrderDeleteId ||= Number(seedMeta.theme11ProtectedOrderDeleteId || 0) || null;
+  options.referencedSupplierDeleteId ||=
+    Number(seedMeta.theme11ReferencedSupplierDeleteId || 0) || null;
+  options.inquiryOrderId ||= Number(seedMeta.theme11InquiryOrderId || 0) || null;
+  options.pendingApprovalOrderId ||= Number(seedMeta.theme11PendingApprovalOrderId || 0) || null;
+  options.approvedOrderId ||= Number(seedMeta.theme11ApprovedOrderId || 0) || null;
+  options.receivedOrderId ||= Number(seedMeta.theme11ReceivedOrderId || 0) || null;
+  options.closedOrderId ||= Number(seedMeta.theme11ClosedOrderId || 0) || null;
+  options.procurementSampleDepartmentId ||=
+    Number(seedMeta.theme11ProcurementSampleDepartmentId || 0) || null;
 }
 
 async function readCaptchaValue(cacheDir, captchaId) {
@@ -318,82 +571,95 @@ async function fetchCaptchaAndLogin(reporter, options, username) {
         verifyCode,
       }),
     });
-    if (loginResponse.body?.code !== successCode || !loginResponse.body?.data?.token) {
+
+    if (loginResponse.body?.code !== successCode) {
       reporter.fail(`${username} login`, formatResponse(loginResponse.body));
       return null;
     }
-    reporter.pass(`${username} login`, 'token acquired');
-    return loginResponse.body.data.token;
+
+    const token = loginResponse.body?.data?.token;
+    if (!token) {
+      reporter.fail(`${username} login`, 'login succeeded without token');
+      return null;
+    }
+
+    const personResponse = await requestJson(`${options.baseUrl}/admin/base/comm/person`, {
+      headers: { Authorization: token },
+    });
+    if (personResponse.body?.code !== successCode) {
+      reporter.fail(`${username} person`, formatResponse(personResponse.body));
+      return null;
+    }
+
+    reporter.pass(
+      `${username} login`,
+      `token acquired departmentId=${personResponse.body?.data?.departmentId ?? 'unknown'}`
+    );
+
+    return {
+      token,
+      payload: decodeTokenPayload(token),
+      person: personResponse.body?.data || {},
+    };
   } catch (error) {
-    reporter.fail(`${username} captcha-cache`, error.message);
+    reporter.fail(`${username} login`, error.message);
     return null;
   }
 }
 
-function readPermissionKeysFromMenu() {
-  const menuPath = path.join(projectRoot, 'src/modules/base/menu.json');
-  const content = fs.readFileSync(menuPath, 'utf8');
-  return {
-    menuPath,
-    content,
-  };
-}
-
-function assertPermissionRegistration(reporter) {
-  const { menuPath, content } = readPermissionKeysFromMenu();
-  const missing = theme11PermissionKeys.filter(key => !content.includes(key));
-  if (missing.length) {
-    reporter.fail('permission registration', `${menuPath} missing ${missing.join(', ')}`);
-    return;
-  }
-  reporter.pass('permission registration', `${menuPath} contains theme-11 permission keys`);
-}
-
-async function verifyPermMenu(reporter, options, user, token) {
+async function verifyPermMenu(reporter, options, user, session) {
+  const scope = `${user.username} permmenu`;
   const response = await requestJson(`${options.baseUrl}/admin/base/comm/permmenu`, {
-    headers: { Authorization: token },
+    headers: { Authorization: session.token },
   });
+
   if (response.body?.code !== successCode) {
-    reporter.fail(`${user.username} permmenu`, formatResponse(response.body));
-    return;
+    reporter.fail(scope, formatResponse(response.body));
+    return false;
   }
+
+  const routers = flattenMenuRouters(response.body?.data?.menus || []);
   const perms = new Set(response.body?.data?.perms || []);
   const problems = [];
-  for (const perm of user.permissions.present) {
+
+  for (const route of user.menu.routesPresent) {
+    if (!routers.has(route)) {
+      problems.push(`missing route ${route}`);
+    }
+  }
+
+  for (const route of user.menu.routesAbsent) {
+    if (routers.has(route)) {
+      problems.push(`unexpected route ${route}`);
+    }
+  }
+
+  for (const perm of user.menu.permsPresent) {
     if (!perms.has(perm)) {
       problems.push(`missing perm ${perm}`);
     }
   }
-  for (const perm of user.permissions.absent) {
+
+  for (const perm of user.menu.permsAbsent) {
     if (perms.has(perm)) {
       problems.push(`unexpected perm ${perm}`);
     }
   }
+
   if (problems.length) {
-    reporter.fail(`${user.username} permmenu`, problems.join('; '));
-    return;
+    reporter.fail(scope, problems.join('; '));
+    return false;
   }
-  reporter.pass(`${user.username} permmenu`, `theme11 perms aligned, total perms=${perms.size}`);
+
+  reporter.pass(scope, `routes=${routers.size} perms=${perms.size}`);
+  return true;
 }
 
-function validateExpectedOutcome(response, expectation) {
-  if (expectation === 'allow') {
-    if (response.body?.code !== successCode) {
-      return `expected success, got status=${response.status} body=${formatResponse(response.body)}`;
-    }
-    return null;
-  }
-  if (response.body?.code === successCode) {
-    return 'expected denial but request succeeded';
-  }
-  return null;
-}
-
-async function verifyPageEndpoint(reporter, scope, url, token, expectation, body) {
+async function verifyPageEndpoint(reporter, scope, url, session, expectation, body) {
   const response = await requestJson(url, {
     method: 'POST',
     headers: {
-      Authorization: token,
+      Authorization: session.token,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),
@@ -412,9 +678,9 @@ async function verifyPageEndpoint(reporter, scope, url, token, expectation, body
   return response.body?.data || null;
 }
 
-async function verifyInfoEndpoint(reporter, scope, url, token) {
+async function verifyInfoEndpoint(reporter, scope, url, session) {
   const response = await requestJson(url, {
-    headers: { Authorization: token },
+    headers: { Authorization: session.token },
   });
   if (response.body?.code !== successCode || !response.body?.data) {
     reporter.fail(scope, formatResponse(response.body));
@@ -432,7 +698,11 @@ function assertMaskedTaxNo(value, fullValue) {
   if (typeof value !== 'string' || typeof fullValue !== 'string' || fullValue.length < 4) {
     return false;
   }
-  return value.startsWith(fullValue.slice(0, 2)) && value.endsWith(fullValue.slice(-2)) && value.includes('*');
+  return (
+    value.startsWith(fullValue.slice(0, 2)) &&
+    value.endsWith(fullValue.slice(-2)) &&
+    value.includes('*')
+  );
 }
 
 function assertMaskedContactName(value, fullValue) {
@@ -449,7 +719,11 @@ function assertMaskedPhone(value, fullValue) {
   if (typeof value !== 'string' || typeof fullValue !== 'string' || fullValue.length < 7) {
     return false;
   }
-  return value.startsWith(fullValue.slice(0, 3)) && value.endsWith(fullValue.slice(-4)) && value.includes('*');
+  return (
+    value.startsWith(fullValue.slice(0, 3)) &&
+    value.endsWith(fullValue.slice(-4)) &&
+    value.includes('*')
+  );
 }
 
 function assertMaskedEmail(value, fullValue) {
@@ -461,7 +735,11 @@ function assertMaskedEmail(value, fullValue) {
   if (!fullName || !fullDomain || !maskedName || !maskedDomain) {
     return false;
   }
-  return maskedName.startsWith(fullName[0]) && maskedName.includes('*') && maskedDomain === fullDomain;
+  return (
+    maskedName.startsWith(fullName[0]) &&
+    maskedName.includes('*') &&
+    maskedDomain === fullDomain
+  );
 }
 
 function verifyManagerSupplierMasking(reporter, hrData, managerData) {
@@ -488,30 +766,30 @@ function verifyManagerSupplierMasking(reporter, hrData, managerData) {
   reporter.pass('manager_rd supplier masking', 'masked supplier fields aligned with docs/12');
 }
 
-async function verifyOptionalInfoChecks(reporter, options, tokens) {
+async function verifyOptionalInfoChecks(reporter, options, sessions) {
   if (!options.purchaseOrderInfoId) {
     reporter.skip(
       'purchaseOrder info',
-      'set THEME11_PURCHASE_ORDER_INFO_ID to verify department-scope purchase order info'
+      'runtimeMeta.seedMeta.theme11PurchaseOrderInfoId missing and no THEME11_PURCHASE_ORDER_INFO_ID provided'
     );
-  } else if (tokens.hr_admin) {
+  } else if (sessions.hr_admin) {
     await verifyInfoEndpoint(
       reporter,
       'hr_admin purchaseOrder:info',
       `${options.baseUrl}/admin/performance/purchaseOrder/info?id=${options.purchaseOrderInfoId}`,
-      tokens.hr_admin
+      sessions.hr_admin
     );
   }
 
   if (!options.supplierInfoId) {
     reporter.skip(
       'supplier info masking',
-      'set THEME11_SUPPLIER_INFO_ID to compare hr_admin and manager_rd masking'
+      'runtimeMeta.seedMeta.theme11SupplierInfoId missing and no THEME11_SUPPLIER_INFO_ID provided'
     );
     return;
   }
 
-  if (!tokens.hr_admin || !tokens.manager_rd) {
+  if (!sessions.hr_admin || !sessions.manager_rd) {
     reporter.skip('supplier info masking', 'skipped because hr_admin or manager_rd login failed');
     return;
   }
@@ -520,13 +798,13 @@ async function verifyOptionalInfoChecks(reporter, options, tokens) {
     reporter,
     'hr_admin supplier:info',
     `${options.baseUrl}/admin/performance/supplier/info?id=${options.supplierInfoId}`,
-    tokens.hr_admin
+    sessions.hr_admin
   );
   const managerData = await verifyInfoEndpoint(
     reporter,
     'manager_rd supplier:info',
     `${options.baseUrl}/admin/performance/supplier/info?id=${options.supplierInfoId}`,
-    tokens.manager_rd
+    sessions.manager_rd
   );
 
   if (hrData && managerData) {
@@ -534,27 +812,28 @@ async function verifyOptionalInfoChecks(reporter, options, tokens) {
   }
 }
 
-async function verifyOptionalDeleteGuards(reporter, options, tokens) {
-  if (options.activeOrderDeleteId) {
-    if (!tokens.hr_admin) {
-      reporter.skip('hr_admin purchaseOrder:delete active', 'skipped because hr_admin login failed');
+async function verifyOptionalDeleteGuards(reporter, options, sessions) {
+  if (options.protectedOrderDeleteId) {
+    if (!sessions.hr_admin) {
+      reporter.skip('hr_admin purchaseOrder:delete protected', 'skipped because hr_admin login failed');
     } else {
       const response = await requestJson(`${options.baseUrl}/admin/performance/purchaseOrder/delete`, {
         method: 'POST',
         headers: {
-          Authorization: tokens.hr_admin,
+          Authorization: sessions.hr_admin.token,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ ids: [options.activeOrderDeleteId] }),
+        body: JSON.stringify({ ids: [options.protectedOrderDeleteId] }),
       });
+
       if (response.body?.code === successCode) {
         reporter.fail(
-          'hr_admin purchaseOrder:delete active',
+          'hr_admin purchaseOrder:delete protected',
           'expected draft-only delete guard but request succeeded'
         );
       } else {
         reporter.pass(
-          'hr_admin purchaseOrder:delete active',
+          'hr_admin purchaseOrder:delete protected',
           `guarded as expected: status=${response.status}`
         );
       }
@@ -562,22 +841,23 @@ async function verifyOptionalDeleteGuards(reporter, options, tokens) {
   } else {
     reporter.skip(
       'purchaseOrder delete guard',
-      'set THEME11_ACTIVE_ORDER_DELETE_ID to verify active order delete restriction'
+      'runtimeMeta.seedMeta.theme11ProtectedOrderDeleteId missing and no delete-guard env provided'
     );
   }
 
   if (options.referencedSupplierDeleteId) {
-    if (!tokens.hr_admin) {
+    if (!sessions.hr_admin) {
       reporter.skip('hr_admin supplier:delete referenced', 'skipped because hr_admin login failed');
     } else {
       const response = await requestJson(`${options.baseUrl}/admin/performance/supplier/delete`, {
         method: 'POST',
         headers: {
-          Authorization: tokens.hr_admin,
+          Authorization: sessions.hr_admin.token,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ ids: [options.referencedSupplierDeleteId] }),
       });
+
       if (response.body?.code === successCode) {
         reporter.fail(
           'hr_admin supplier:delete referenced',
@@ -593,48 +873,354 @@ async function verifyOptionalDeleteGuards(reporter, options, tokens) {
   } else {
     reporter.skip(
       'supplier delete guard',
-      'set THEME11_REFERENCED_SUPPLIER_DELETE_ID to verify referenced supplier delete restriction'
+      'runtimeMeta.seedMeta.theme11ReferencedSupplierDeleteId missing and no delete-guard env provided'
     );
+  }
+}
+
+function buildTemporaryOrderPayload(session, options) {
+  const requesterId = Number(session?.payload?.userId || session?.person?.userId || 0);
+  const departmentId = Number(session?.person?.departmentId || session?.payload?.departmentId || 0);
+  return {
+    title: `Theme11 smoke temp ${Date.now()}`,
+    supplierId: options.supplierInfoId,
+    departmentId,
+    requesterId,
+    orderDate: '2026-05-20',
+    expectedDeliveryDate: '2026-05-31',
+    totalAmount: 999.99,
+    currency: 'CNY',
+    remark: 'Theme11 smoke temp order',
+  };
+}
+
+async function createTemporaryOrder(reporter, options, session) {
+  const payload = buildTemporaryOrderPayload(session, options);
+  if (!payload.supplierId || !payload.departmentId || !payload.requesterId) {
+    reporter.skip(
+      'manager_rd purchaseOrder:add chain seed',
+      `missing seed context supplierId=${payload.supplierId || 0} departmentId=${payload.departmentId || 0} requesterId=${payload.requesterId || 0}`
+    );
+    return null;
+  }
+
+  const response = await requestJson(`${options.baseUrl}/admin/performance/purchaseOrder/add`, {
+    method: 'POST',
+    headers: {
+      Authorization: session.token,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (response.body?.code !== successCode || !response.body?.data?.id) {
+    reporter.fail('manager_rd purchaseOrder:add chain seed', formatResponse(response.body));
+    return null;
+  }
+
+  reporter.pass(
+    'manager_rd purchaseOrder:add chain seed',
+    `id=${response.body.data.id} status=${response.body.data.status || 'unknown'}`
+  );
+  return response.body.data;
+}
+
+async function deleteOrderIfStillDraft(reporter, options, session, id) {
+  if (!session || !id) {
+    return;
+  }
+
+  const infoResponse = await requestJson(
+    `${options.baseUrl}/admin/performance/purchaseOrder/info?id=${id}`,
+    {
+      headers: { Authorization: session.token },
+    }
+  );
+
+  if (infoResponse.body?.code !== successCode || infoResponse.body?.data?.status !== 'draft') {
+    return;
+  }
+
+  await requestJson(`${options.baseUrl}/admin/performance/purchaseOrder/delete`, {
+    method: 'POST',
+    headers: {
+      Authorization: session.token,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ ids: [id] }),
+  });
+  reporter.pass('purchaseOrder chain cleanup', `deleted draft temp order ${id}`);
+}
+
+async function invokeOptionalPurchaseOrderAction(
+  reporter,
+  options,
+  scope,
+  session,
+  pathName,
+  payload,
+  expectedStatus
+) {
+  const response = await requestJson(`${options.baseUrl}/admin/performance/purchaseOrder/${pathName}`, {
+    method: 'POST',
+    headers: {
+      Authorization: session.token,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (isMissingRouteResponse(response)) {
+    reporter.skip(scope, `endpoint not available: /admin/performance/purchaseOrder/${pathName}`);
+    return 'missing';
+  }
+
+  if (response.body?.code !== successCode) {
+    reporter.fail(scope, formatResponse(response.body));
+    return 'failed';
+  }
+
+  let actualStatus = response.body?.data?.status || null;
+  if (!actualStatus && payload.id) {
+    const infoResponse = await requestJson(
+      `${options.baseUrl}/admin/performance/purchaseOrder/info?id=${payload.id}`,
+      {
+        headers: { Authorization: session.token },
+      }
+    );
+    if (infoResponse.body?.code === successCode) {
+      actualStatus = infoResponse.body?.data?.status || null;
+    }
+  }
+
+  if (expectedStatus && actualStatus && actualStatus !== expectedStatus) {
+    reporter.fail(scope, `expected status ${expectedStatus}, got ${actualStatus}`);
+    return 'failed';
+  }
+
+  reporter.pass(scope, expectedStatus ? `status=${actualStatus || expectedStatus}` : 'ok');
+  return 'passed';
+}
+
+async function verifyEnhancedLifecycleChain(reporter, options, sessions) {
+  if (!sessions.manager_rd || !sessions.hr_admin) {
+    reporter.skip('theme11 enhanced chain', 'skipped because manager_rd or hr_admin login failed');
+    return;
+  }
+
+  if (!options.supplierInfoId) {
+    reporter.skip(
+      'theme11 enhanced chain',
+      'runtimeMeta.seedMeta.theme11SupplierInfoId missing and no THEME11_SUPPLIER_INFO_ID provided'
+    );
+    return;
+  }
+
+  const tempOrder = await createTemporaryOrder(reporter, options, sessions.manager_rd);
+  if (!tempOrder?.id) {
+    return;
+  }
+
+  const steps = [
+    {
+      scope: 'manager_rd purchaseOrder:submitInquiry',
+      session: sessions.manager_rd,
+      pathName: 'submitInquiry',
+      payload: {
+        id: tempOrder.id,
+        inquiryRemark: 'Theme11 smoke submit inquiry',
+        remark: 'Theme11 smoke submit inquiry',
+      },
+      expectedStatus: 'inquiring',
+    },
+    {
+      scope: 'manager_rd purchaseOrder:submitApproval',
+      session: sessions.manager_rd,
+      pathName: 'submitApproval',
+      payload: {
+        id: tempOrder.id,
+        approvalRemark: 'Theme11 smoke submit approval',
+        remark: 'Theme11 smoke submit approval',
+      },
+      expectedStatus: 'pendingApproval',
+    },
+    {
+      scope: 'hr_admin purchaseOrder:approve',
+      session: sessions.hr_admin,
+      pathName: 'approve',
+      payload: {
+        id: tempOrder.id,
+        approvalRemark: 'Theme11 smoke approve',
+        remark: 'Theme11 smoke approve',
+      },
+      expectedStatus: 'approved',
+    },
+    {
+      scope: 'manager_rd purchaseOrder:receive',
+      session: sessions.manager_rd,
+      pathName: 'receive',
+      payload: {
+        id: tempOrder.id,
+        receivedQuantity: 1,
+        receivedAt: '2026-05-21 10:00:00',
+        receiveDate: '2026-05-21 10:00:00',
+        remark: 'Theme11 smoke receive',
+      },
+      expectedStatus: 'received',
+    },
+    {
+      scope: 'manager_rd purchaseOrder:close',
+      session: sessions.manager_rd,
+      pathName: 'close',
+      payload: {
+        id: tempOrder.id,
+        closedReason: 'Theme11 smoke close',
+        remark: 'Theme11 smoke close',
+      },
+      expectedStatus: 'closed',
+    },
+  ];
+
+  for (const step of steps) {
+    const result = await invokeOptionalPurchaseOrderAction(
+      reporter,
+      options,
+      step.scope,
+      step.session,
+      step.pathName,
+      step.payload,
+      step.expectedStatus
+    );
+
+    if (result === 'missing') {
+      break;
+    }
+
+    if (result === 'failed') {
+      break;
+    }
+  }
+
+  await deleteOrderIfStillDraft(reporter, options, sessions.hr_admin, tempOrder.id);
+}
+
+function toQueryString(query) {
+  const pairs = Object.entries(query)
+    .filter(([, value]) => value !== undefined && value !== null && value !== '')
+    .map(([key, value]) => [key, String(value)]);
+  return new URLSearchParams(pairs).toString();
+}
+
+async function requestReportEndpoint(url, token, query) {
+  const queryString = toQueryString(query);
+  const getUrl = queryString ? `${url}?${queryString}` : url;
+  const getResponse = await requestJson(getUrl, {
+    headers: { Authorization: token },
+  });
+
+  if (getResponse.body?.code === successCode) {
+    return { response: getResponse, method: 'GET' };
+  }
+
+  if (!isMissingRouteResponse(getResponse)) {
+    return { response: getResponse, method: 'GET' };
+  }
+
+  const postResponse = await requestJson(url, {
+    method: 'POST',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(query),
+  });
+
+  return { response: postResponse, method: 'POST' };
+}
+
+async function verifyPurchaseReportEndpoints(reporter, options, sessions) {
+  if (!sessions.manager_rd) {
+    reporter.skip('theme11 purchaseReport', 'skipped because manager_rd login failed');
+    return;
+  }
+
+  const query = {
+    departmentId: options.procurementSampleDepartmentId || sessions.manager_rd.person?.departmentId,
+    startDate: '2026-05-01',
+    endDate: '2026-05-31',
+  };
+
+  const endpoints = [
+    { pathName: 'summary', scope: 'manager_rd purchaseReport:summary' },
+    { pathName: 'trend', scope: 'manager_rd purchaseReport:trend' },
+    { pathName: 'supplierStats', scope: 'manager_rd purchaseReport:supplierStats' },
+  ];
+
+  for (const endpoint of endpoints) {
+    const { response, method } = await requestReportEndpoint(
+      `${options.baseUrl}/admin/performance/purchaseReport/${endpoint.pathName}`,
+      sessions.manager_rd.token,
+      query
+    );
+
+    if (isMissingRouteResponse(response)) {
+      reporter.skip(
+        endpoint.scope,
+        `endpoint not available: /admin/performance/purchaseReport/${endpoint.pathName}`
+      );
+      continue;
+    }
+
+    if (response.body?.code !== successCode) {
+      reporter.fail(endpoint.scope, formatResponse(response.body));
+      continue;
+    }
+
+    reporter.pass(endpoint.scope, `${method} success`);
   }
 }
 
 async function run() {
   const reporter = new Reporter();
   const options = buildOptions(process.argv.slice(2));
-  const tokens = {};
+  const sessions = {};
 
-  console.log('Theme 11 procurement/supplier smoke');
+  console.log('Theme 11 procurement enhancement smoke');
   console.log(`Base URL: ${options.baseUrl}`);
   console.log(`Cache Dir: ${options.cacheDir}`);
 
-  const runtimeReady = await verifyRuntimePreflight(reporter, options);
-  if (!runtimeReady) {
+  const runtimeMeta = await verifyRuntimePreflight(reporter, options);
+  if (!runtimeMeta) {
     printSummary(reporter);
     process.exitCode = 1;
     return;
   }
 
+  applyRuntimeSeedDefaults(options, runtimeMeta);
+
   if (!fs.existsSync(options.cacheDir)) {
     reporter.fail('bootstrap', `cache directory does not exist: ${options.cacheDir}`);
   }
 
-  assertPermissionRegistration(reporter);
+  assertStaticMenuRegistration(reporter);
+  assertProcurementGroupPathsRegistration(reporter);
 
   for (const user of users) {
-    tokens[user.username] = await fetchCaptchaAndLogin(reporter, options, user.username);
-    if (!tokens[user.username]) {
+    sessions[user.username] = await fetchCaptchaAndLogin(reporter, options, user.username);
+
+    if (!sessions[user.username]) {
       reporter.skip(`${user.username} permmenu`, 'skipped because login failed');
       reporter.skip(`${user.username} purchaseOrder:page`, 'skipped because login failed');
       reporter.skip(`${user.username} supplier:page`, 'skipped because login failed');
       continue;
     }
 
-    await verifyPermMenu(reporter, options, user, tokens[user.username]);
+    await verifyPermMenu(reporter, options, user, sessions[user.username]);
     await verifyPageEndpoint(
       reporter,
       `${user.username} purchaseOrder:page`,
       `${options.baseUrl}/admin/performance/purchaseOrder/page`,
-      tokens[user.username],
+      sessions[user.username],
       user.purchaseOrderPage,
       {
         page: 1,
@@ -645,7 +1231,7 @@ async function run() {
       reporter,
       `${user.username} supplier:page`,
       `${options.baseUrl}/admin/performance/supplier/page`,
-      tokens[user.username],
+      sessions[user.username],
       user.supplierPage,
       {
         page: 1,
@@ -654,8 +1240,10 @@ async function run() {
     );
   }
 
-  await verifyOptionalInfoChecks(reporter, options, tokens);
-  await verifyOptionalDeleteGuards(reporter, options, tokens);
+  await verifyOptionalInfoChecks(reporter, options, sessions);
+  await verifyOptionalDeleteGuards(reporter, options, sessions);
+  await verifyEnhancedLifecycleChain(reporter, options, sessions);
+  await verifyPurchaseReportEndpoints(reporter, options, sessions);
 
   printSummary(reporter);
   process.exitCode = reporter.hasFailures() ? 1 : 0;

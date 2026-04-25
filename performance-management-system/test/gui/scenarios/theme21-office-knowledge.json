@@ -1,0 +1,219 @@
+{
+  "meta": {
+    "name": "theme21-office-knowledge-gui",
+    "description": "Theme21 文件管理与知识库最小 GUI 点测"
+  },
+  "defaults": {
+    "uiBaseUrl": "http://127.0.0.1:9007",
+    "apiBaseUrl": "http://127.0.0.1:8006",
+    "chromeDebugUrl": "http://127.0.0.1:9222",
+    "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/theme21-office-knowledge-gui",
+    "password": "123456",
+    "viewport": {
+      "width": 1440,
+      "height": 1100,
+      "deviceScaleFactor": 1,
+      "mobile": false
+    }
+  },
+  "scenarios": [
+    {
+      "name": "hr-document-center-mainline",
+      "username": "hr_admin",
+      "route": "/performance/office/document-center",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "screenshot",
+          "file": "theme21-document-center-hr-diagnose.png"
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "文件管理",
+            "联调-主题21-入职制度清单",
+            "联调-主题21-报销模板"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "文件管理",
+            "新增文件元数据",
+            "详情",
+            "编辑",
+            "删除"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme21-document-center-hr-list.png"
+        },
+        {
+          "type": "clickText",
+          "text": "详情",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "文件元数据详情",
+            "联调-主题21-入职制度清单",
+            "主题21-HR管理员"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "screenshot",
+          "file": "theme21-document-center-hr-detail.png"
+        }
+      ]
+    },
+    {
+      "name": "hr-knowledge-base-mainline",
+      "username": "hr_admin",
+      "route": "/performance/office/knowledge-base",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "screenshot",
+          "file": "theme21-knowledge-base-hr-diagnose.png"
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "知识库",
+            "联调-主题21-入职资料归档规范",
+            "联调-主题21-费用报销知识卡片"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "知识库",
+            "新增知识条目",
+            "知识图谱",
+            "搜索与百问百答"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme21-knowledge-base-hr-list.png"
+        },
+        {
+          "type": "clickSelector",
+          "selector": ".el-tabs__item",
+          "index": 1,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "图谱摘要",
+            "分类节点",
+            "标签节点"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "screenshot",
+          "file": "theme21-knowledge-base-hr-graph.png"
+        },
+        {
+          "type": "clickSelector",
+          "selector": ".el-tabs__item",
+          "index": 2,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "知识搜索",
+            "百问百答元数据",
+            "新增问答"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "clickText",
+          "text": "搜索",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "总命中",
+            "联调-主题21-入职资料需要归档到哪里？"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "screenshot",
+          "file": "theme21-knowledge-base-hr-search-qa.png"
+        }
+      ]
+    },
+    {
+      "name": "manager-office-no-entry",
+      "username": "manager_rd",
+      "route": "/performance/my-assessment",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "我的考核"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": [
+            "文件管理",
+            "知识库"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme21-office-manager-no-entry.png"
+        }
+      ]
+    },
+    {
+      "name": "employee-office-no-entry",
+      "username": "employee_platform",
+      "route": "/performance/my-assessment",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "我的考核"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": [
+            "文件管理",
+            "知识库"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme21-office-employee-no-entry.png"
+        }
+      ]
+    }
+  ]
+}

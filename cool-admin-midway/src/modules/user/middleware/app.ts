@@ -1,10 +1,10 @@
 import { ALL, Config, Middleware } from '@midwayjs/core';
 import { NextFunction, Context } from '@midwayjs/koa';
 import { IMiddleware, Init, Inject } from '@midwayjs/core';
-import * as jwt from 'jsonwebtoken';
 import * as _ from 'lodash';
 import { CoolCommException, CoolUrlTagData, TagTypes } from '@cool-midway/core';
 import { Utils } from '../../../comm/utils';
+import { isUserAppRefreshToken, verifyUserAppToken } from '../domain';
 
 /**
  * 用户
@@ -40,9 +40,9 @@ export class UserMiddleware implements IMiddleware<Context, NextFunction> {
       if (_.startsWith(url, '/app/')) {
         const token = ctx.get('Authorization');
         try {
-          ctx.user = jwt.verify(token, this.jwtConfig.secret);
+          ctx.user = verifyUserAppToken(token, this.jwtConfig.secret);
 
-          if (ctx.user.isRefresh) {
+          if (!ctx.user || isUserAppRefreshToken(ctx.user)) {
             throw new CoolCommException('登录失效~');
           }
         } catch (error) {}

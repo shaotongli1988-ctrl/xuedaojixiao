@@ -1,4 +1,5 @@
 import { type ModuleConfig } from '/@/cool';
+import { uploadTypeColorTokens } from '/@/styles/runtime-design';
 
 export default (): ModuleConfig => {
 	return {
@@ -20,37 +21,37 @@ export default (): ModuleConfig => {
 				{
 					name: '图片',
 					type: 'image',
-					color: '#67C23A',
+					color: uploadTypeColorTokens.image,
 					exts: ['bmp', 'jpg', 'jpeg', 'png', 'tif', 'gif', 'svg', 'webp']
 				},
 				{
 					name: '视频',
 					type: 'video',
-					color: '#826aec',
+					color: uploadTypeColorTokens.video,
 					exts: ['avi', 'wmv', 'mpg', 'mpeg', 'mov', 'rm', 'ram', 'swf', 'flv', 'mp4']
 				},
 				{
 					name: '音频',
 					type: 'audio',
-					color: '#826aec',
+					color: uploadTypeColorTokens.audio,
 					exts: ['mp3', 'wav', 'wma', 'mp2', 'flac', 'midi', 'ra', 'ape', 'aac', 'cda']
 				},
 				{
 					name: '文档',
 					type: 'word',
-					color: '#53B7F4',
+					color: uploadTypeColorTokens.word,
 					exts: ['doc', 'docx', 'docm', 'dot', 'dotx', 'dotm']
 				},
 				{
 					name: '表格',
 					type: 'excel',
-					color: '#53D39C',
+					color: uploadTypeColorTokens.excel,
 					exts: ['xls', 'xlsx', 'xlsm', 'xlt', 'xltx', 'xltm']
 				},
 				{
 					name: '演示',
 					type: 'ppt',
-					color: '#F56C6C',
+					color: uploadTypeColorTokens.ppt,
 					exts: [
 						'ppt',
 						'pptx',
@@ -68,18 +69,18 @@ export default (): ModuleConfig => {
 					name: 'PDF',
 					type: 'pdf',
 					exts: ['pdf'],
-					color: '#8f3500'
+					color: uploadTypeColorTokens.pdf
 				},
 				{
 					name: '压缩文件夹',
 					type: 'rar',
-					color: '#FFC757',
+					color: uploadTypeColorTokens.rar,
 					exts: ['rar', 'zip']
 				},
 				{
 					name: '文件',
 					type: 'file',
-					color: '#909399',
+					color: uploadTypeColorTokens.file,
 					exts: []
 				}
 			]

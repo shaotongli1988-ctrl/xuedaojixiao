@@ -17,6 +17,9 @@ export class BaseSysRoleEntity extends BaseEntity {
   @Column({ comment: '角色标签', nullable: true, length: 50 })
   label: string;
 
+  @Column({ comment: '是否系统超管角色', default: false })
+  isSuperAdmin: boolean;
+
   @Column({ comment: '备注', nullable: true })
   remark: string;
 

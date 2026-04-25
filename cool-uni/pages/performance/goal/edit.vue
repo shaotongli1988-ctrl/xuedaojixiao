@@ -12,7 +12,11 @@
 			<view v-else-if="form" class="edit-page__body">
 				<view class="form-card">
 					<text class="form-card__label">目标标题</text>
-					<input v-model.trim="form.title" class="form-card__input" placeholder="请输入目标标题" />
+					<input
+						v-model.trim="form.title"
+						class="form-card__input"
+						placeholder="请输入目标标题"
+					/>
 
 					<text class="form-card__label">目标说明</text>
 					<textarea
@@ -30,7 +34,11 @@
 					/>
 
 					<text class="form-card__label">单位</text>
-					<input v-model.trim="form.unit" class="form-card__input" placeholder="请输入单位" />
+					<input
+						v-model.trim="form.unit"
+						class="form-card__input"
+						placeholder="请输入单位"
+					/>
 
 					<text class="form-card__label">权重</text>
 					<input
@@ -41,10 +49,18 @@
 					/>
 
 					<text class="form-card__label">开始日期</text>
-					<input v-model.trim="form.startDate" class="form-card__input" placeholder="YYYY-MM-DD" />
+					<input
+						v-model.trim="form.startDate"
+						class="form-card__input"
+						placeholder="YYYY-MM-DD"
+					/>
 
 					<text class="form-card__label">结束日期</text>
-					<input v-model.trim="form.endDate" class="form-card__input" placeholder="YYYY-MM-DD" />
+					<input
+						v-model.trim="form.endDate"
+						class="form-card__input"
+						placeholder="YYYY-MM-DD"
+					/>
 				</view>
 
 				<view class="edit-actions">
@@ -67,6 +83,7 @@ import {
 	type GoalUpdatePayload,
 } from "/@/types/performance-goal";
 import GoalState from "./components/goal-state.vue";
+import { PERMISSIONS } from "/@/generated/permissions.generated";
 
 const { service, router } = useCool();
 const { user } = useStore();
@@ -107,7 +124,11 @@ const stateTips = computed(() => {
 });
 
 const stateAction = computed(() => {
-		return state.value.mode === "error" ? "重试" : state.value.mode === "denied" ? "返回详情" : "返回工作台";
+	return state.value.mode === "error"
+		? "重试"
+		: state.value.mode === "denied"
+			? "返回详情"
+			: "返回工作台";
 });
 
 async function load() {
@@ -116,7 +137,7 @@ async function load() {
 		return;
 	}
 
-	if (!user.hasPerm("performance:goal:update")) {
+	if (!user.hasPerm(PERMISSIONS.performance.goal.update)) {
 		state.value = { mode: "denied", error: "" };
 		return;
 	}

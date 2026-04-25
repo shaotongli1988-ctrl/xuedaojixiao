@@ -14,7 +14,7 @@ export const config = {
 		// 菜单
 		menu: {
 			// 是否分组显示
-			isGroup: false,
+			isGroup: true,
 			// 自定义菜单列表
 			list: []
 		},

@@ -1,0 +1,338 @@
+/* 文件职责：把基础 token 组织为仓库级语义 token，供系统基座和业务模块统一消费；不负责 Element Plus 变量映射；维护重点是语义命名稳定，避免重新回到模块前缀化主题。 */
+
+:root {
+	--app-surface-page: var(--foundation-gradient-page);
+	--app-surface-hero: var(--foundation-gradient-surface-hero);
+	--app-surface-card: var(--foundation-gradient-surface-card);
+	--app-surface-muted: var(--foundation-color-surface-muted);
+	--app-surface-soft: var(--foundation-color-surface-soft);
+	--app-surface-spotlight: var(--foundation-gradient-surface-spotlight);
+	--app-surface-warm-muted: linear-gradient(
+		180deg,
+		color-mix(
+				in srgb,
+				var(--foundation-color-warning-soft) 88%,
+				var(--foundation-color-neutral-0)
+			)
+			0%,
+		var(--foundation-color-neutral-0) 100%
+	);
+	--app-surface-neutral-muted: linear-gradient(
+		180deg,
+		color-mix(
+				in srgb,
+				var(--foundation-color-neutral-50) 90%,
+				var(--foundation-color-neutral-0)
+			)
+			0%,
+		var(--foundation-color-neutral-0) 100%
+	);
+	--app-surface-primary: linear-gradient(
+		135deg,
+		color-mix(in srgb, var(--foundation-color-brand-200) 92%, var(--foundation-color-neutral-0))
+			0%,
+		color-mix(in srgb, var(--foundation-color-brand-300) 78%, var(--foundation-color-neutral-0))
+			100%
+	);
+	--app-surface-brand-emphasis: color-mix(
+		in srgb,
+		var(--app-accent-brand-soft) 56%,
+		var(--app-surface-card)
+	);
+	--app-surface-warm-emphasis: color-mix(
+		in srgb,
+		var(--app-accent-warm-soft) 58%,
+		var(--app-surface-card)
+	);
+
+	--app-border-strong: var(--foundation-color-neutral-200);
+	--app-border-soft: color-mix(in srgb, var(--foundation-color-neutral-300) 70%, transparent);
+	--app-border-hover: var(--foundation-color-brand-300);
+	--app-divider: color-mix(in srgb, var(--foundation-color-neutral-200) 86%, transparent);
+
+	--app-text-primary: var(--foundation-color-neutral-900);
+	--app-text-secondary: var(--foundation-color-neutral-700);
+	--app-text-tertiary: var(--foundation-color-neutral-500);
+	--app-text-emphasis: color-mix(
+		in srgb,
+		var(--foundation-color-neutral-900) 92%,
+		var(--foundation-color-brand-900)
+	);
+	--app-text-on-primary: #173150;
+	--app-text-on-primary-muted: rgba(23, 49, 80, 0.72);
+
+	--app-accent-brand: var(--foundation-color-brand-500);
+	--app-accent-brand-soft: var(--foundation-color-brand-soft);
+	--app-accent-success: var(--foundation-color-success-500);
+	--app-accent-success-soft: var(--foundation-color-success-soft);
+	--app-accent-warning: var(--foundation-color-warning-500);
+	--app-accent-warning-soft: var(--foundation-color-warning-soft);
+	--app-accent-danger: var(--foundation-color-danger-500);
+	--app-accent-danger-soft: var(--foundation-color-danger-soft);
+	--app-accent-warm: var(--foundation-color-warning-500);
+	--app-accent-warm-soft: var(--foundation-color-warning-soft);
+	--app-accent-warm-text: color-mix(
+		in srgb,
+		var(--foundation-color-neutral-900) 58%,
+		var(--foundation-color-warning-500)
+	);
+	--app-upload-color-image: var(--app-accent-success);
+	--app-upload-color-video: var(--foundation-color-upload-media-500);
+	--app-upload-color-audio: var(--foundation-color-upload-media-500);
+	--app-upload-color-word: var(--foundation-color-upload-doc-500);
+	--app-upload-color-excel: var(--foundation-color-upload-sheet-500);
+	--app-upload-color-ppt: var(--app-accent-danger);
+	--app-upload-color-pdf: var(--foundation-color-upload-pdf-500);
+	--app-upload-color-archive: var(--foundation-color-upload-archive-500);
+	--app-upload-color-file: var(--app-text-tertiary);
+
+	--app-chart-label: var(--app-text-tertiary);
+	--app-chart-grid: color-mix(in srgb, var(--foundation-color-neutral-200) 88%, transparent);
+	--app-chart-series-brand: var(--app-accent-brand);
+	--app-chart-series-success: var(--app-accent-success);
+	--app-chart-series-warning: var(--app-accent-warning);
+	--app-chart-series-danger: var(--app-accent-danger);
+	--app-atmosphere-brand: radial-gradient(
+		circle,
+		var(--app-accent-brand-soft) 0%,
+		transparent 72%
+	);
+	--app-atmosphere-neutral: radial-gradient(
+		circle,
+		color-mix(in srgb, var(--foundation-color-neutral-300) 72%, transparent) 0%,
+		transparent 72%
+	);
+	--app-atmosphere-warning: radial-gradient(
+		circle,
+		var(--app-accent-warning-soft) 0%,
+		transparent 72%
+	);
+	--app-text-shine: linear-gradient(
+		90deg,
+		color-mix(in srgb, var(--foundation-color-neutral-500) 88%, transparent) 0%,
+		var(--foundation-color-neutral-0) 12%,
+		color-mix(in srgb, var(--foundation-color-neutral-700) 92%, transparent) 24%
+	);
+	--app-overlay-mask-soft: color-mix(in srgb, var(--foundation-color-neutral-900) 12%, transparent);
+	--app-overlay-mask-medium: color-mix(
+		in srgb,
+		var(--foundation-color-neutral-900) 24%,
+		transparent
+	);
+	--app-overlay-mask-strong: color-mix(
+		in srgb,
+		var(--foundation-color-neutral-900) 40%,
+		transparent
+	);
+
+	--app-shadow-surface: var(--foundation-shadow-surface-md);
+	--app-shadow-hover: var(--foundation-shadow-hover-md);
+	--app-shadow-inset: var(--foundation-shadow-inset-soft);
+	--app-permission-overlay-mask-bg:
+		linear-gradient(
+			135deg,
+			color-mix(in srgb, var(--app-surface-card) 78%, transparent),
+			color-mix(in srgb, var(--app-surface-muted) 92%, transparent)
+		),
+		radial-gradient(
+			circle at top right,
+			color-mix(in srgb, var(--app-accent-brand-soft) 56%, transparent),
+			transparent 52%
+		);
+	--app-permission-overlay-panel-border: color-mix(
+		in srgb,
+		var(--app-accent-brand-soft) 48%,
+		var(--app-border-strong)
+	);
+	--app-permission-overlay-panel-bg: color-mix(
+		in srgb,
+		var(--app-surface-card) 88%,
+		transparent
+	);
+	--app-permission-overlay-panel-text: var(--app-text-secondary);
+	--app-permission-overlay-icon-bg: color-mix(
+		in srgb,
+		var(--app-accent-brand-soft) 86%,
+		var(--app-surface-card)
+	);
+	--app-permission-overlay-icon-color: var(--app-accent-brand);
+
+	--app-radius-sm: var(--foundation-radius-sm);
+	--app-radius-md: var(--foundation-radius-md);
+	--app-radius-lg: var(--foundation-radius-lg);
+	--app-radius-xl: var(--foundation-radius-xl);
+
+	--app-space-2: var(--foundation-space-2);
+	--app-space-3: var(--foundation-space-3);
+	--app-space-4: var(--foundation-space-4);
+	--app-space-5: var(--foundation-space-5);
+	--app-space-6: var(--foundation-space-6);
+
+	--app-font-sans: var(--foundation-font-sans);
+	--app-font-mono: var(--foundation-font-mono);
+	--app-font-size-caption: var(--foundation-font-size-caption);
+	--app-font-size-body: var(--foundation-font-size-body);
+	--app-font-size-title: var(--foundation-font-size-title);
+	--app-font-size-heading: var(--foundation-font-size-heading);
+	--app-font-size-kpi: var(--foundation-font-size-kpi);
+
+	--app-nav-surface: var(--foundation-nav-surface);
+	--app-nav-text: var(--foundation-nav-text);
+	--app-nav-title: var(--foundation-nav-title);
+	--app-nav-section-bg: var(--foundation-nav-section-bg);
+	--app-nav-section-border: var(--foundation-nav-section-border);
+	--app-nav-section-tip: color-mix(in srgb, var(--foundation-nav-text) 68%, transparent);
+	--app-nav-search-bg: var(--foundation-nav-search-bg);
+	--app-nav-badge-bg: var(--foundation-nav-badge-bg);
+	--app-nav-badge-text: var(--foundation-nav-badge-text);
+	--app-nav-hover-bg: var(--foundation-nav-hover-bg);
+	--app-nav-hover-text: var(--foundation-nav-hover-text);
+
+	--app-shell-topbar-bg: color-mix(
+		in srgb,
+		var(--foundation-color-neutral-0) 94%,
+		var(--foundation-color-brand-soft)
+	);
+	--app-shell-process-bg: color-mix(
+		in srgb,
+		var(--foundation-color-neutral-0) 97%,
+		var(--foundation-color-brand-soft)
+	);
+	--app-shell-border: color-mix(in srgb, var(--foundation-color-neutral-200) 76%, transparent);
+	--app-control-hover-bg: color-mix(
+		in srgb,
+		var(--foundation-color-neutral-100) 88%,
+		transparent
+	);
+	--app-scrollbar-thumb: rgba(0, 0, 0, 0.2);
+	--app-scrollbar-thumb-hover: rgba(0, 0, 0, 0.3);
+	--app-auth-page-bg: linear-gradient(
+		135deg,
+		color-mix(in srgb, var(--foundation-color-neutral-0) 97%, var(--foundation-color-brand-soft)) 0%,
+		color-mix(in srgb, var(--foundation-color-neutral-50) 95%, var(--foundation-color-brand-soft))
+			100%
+	);
+	--app-auth-illustration-fill: var(--foundation-color-neutral-700);
+	--app-auth-text-primary: color-mix(
+		in srgb,
+		var(--foundation-color-neutral-900) 90%,
+		var(--foundation-color-brand-900)
+	);
+	--app-auth-input-bg: color-mix(
+		in srgb,
+		var(--foundation-color-neutral-50) 92%,
+		var(--foundation-color-neutral-0)
+	);
+	--app-auth-input-text: color-mix(
+		in srgb,
+		var(--foundation-color-neutral-900) 92%,
+		var(--foundation-color-neutral-700)
+	);
+	--app-auth-error-text: color-mix(
+		in srgb,
+		var(--foundation-color-neutral-500) 86%,
+		var(--foundation-color-neutral-700)
+	);
+}
+
+html.dark {
+	--app-border-strong: color-mix(in srgb, var(--foundation-color-neutral-300) 56%, transparent);
+	--app-border-soft: color-mix(in srgb, var(--foundation-color-neutral-300) 36%, transparent);
+	--app-border-hover: color-mix(in srgb, var(--foundation-color-brand-500) 58%, transparent);
+	--app-divider: color-mix(in srgb, var(--foundation-color-neutral-300) 48%, transparent);
+	--app-text-on-primary: #f4f8ff;
+	--app-text-on-primary-muted: rgba(244, 248, 255, 0.82);
+	--app-chart-grid: var(--foundation-color-neutral-200);
+	--app-surface-warm-muted: linear-gradient(
+		180deg,
+		color-mix(
+				in srgb,
+				var(--foundation-color-warning-soft) 88%,
+				var(--foundation-color-neutral-50)
+			)
+			0%,
+		color-mix(
+				in srgb,
+				var(--foundation-color-warning-soft) 52%,
+				var(--foundation-color-neutral-50)
+			)
+			100%
+	);
+	--app-surface-neutral-muted: linear-gradient(
+		180deg,
+		color-mix(
+				in srgb,
+				var(--foundation-color-neutral-100) 92%,
+				var(--foundation-color-neutral-50)
+			)
+			0%,
+		var(--foundation-color-neutral-50) 100%
+	);
+	--app-surface-primary: linear-gradient(
+		135deg,
+		color-mix(
+				in srgb,
+				var(--foundation-color-brand-300) 82%,
+				var(--foundation-color-neutral-50)
+			)
+			0%,
+		color-mix(
+				in srgb,
+				var(--foundation-color-brand-500) 68%,
+				var(--foundation-color-neutral-50)
+			)
+			100%
+	);
+	--app-accent-warm-text: color-mix(
+		in srgb,
+		var(--foundation-color-warning-500) 58%,
+		var(--foundation-color-neutral-900)
+	);
+	--app-atmosphere-neutral: radial-gradient(
+		circle,
+		color-mix(in srgb, var(--foundation-color-neutral-300) 46%, transparent) 0%,
+		transparent 72%
+	);
+	--app-text-shine: linear-gradient(
+		90deg,
+		color-mix(in srgb, var(--foundation-color-neutral-500) 82%, transparent) 0%,
+		var(--foundation-color-neutral-900) 12%,
+		color-mix(in srgb, var(--foundation-color-neutral-700) 88%, transparent) 24%
+	);
+	--app-overlay-mask-soft: color-mix(in srgb, var(--foundation-color-neutral-900) 16%, transparent);
+	--app-overlay-mask-medium: color-mix(
+		in srgb,
+		var(--foundation-color-neutral-900) 30%,
+		transparent
+	);
+	--app-overlay-mask-strong: color-mix(
+		in srgb,
+		var(--foundation-color-neutral-900) 52%,
+		transparent
+	);
+	--app-shell-topbar-bg: color-mix(in srgb, var(--foundation-color-neutral-50) 92%, transparent);
+	--app-shell-process-bg: color-mix(in srgb, var(--foundation-color-neutral-50) 96%, transparent);
+	--app-shell-border: color-mix(in srgb, var(--foundation-color-neutral-300) 36%, transparent);
+	--app-control-hover-bg: color-mix(in srgb, var(--foundation-color-neutral-900) 8%, transparent);
+	--app-scrollbar-thumb: rgba(255, 255, 255, 0.2);
+	--app-scrollbar-thumb-hover: rgba(255, 255, 255, 0.34);
+	--app-auth-page-bg: linear-gradient(
+		135deg,
+		color-mix(in srgb, var(--foundation-color-neutral-50) 96%, transparent) 0%,
+		color-mix(in srgb, var(--foundation-color-neutral-100) 84%, var(--foundation-color-brand-soft))
+			100%
+	);
+	--app-auth-illustration-fill: var(--foundation-color-neutral-300);
+	--app-auth-text-primary: var(--foundation-color-neutral-900);
+	--app-auth-input-bg: color-mix(
+		in srgb,
+		var(--foundation-color-neutral-100) 82%,
+		var(--foundation-color-neutral-50)
+	);
+	--app-auth-input-text: var(--foundation-color-neutral-900);
+	--app-auth-error-text: color-mix(
+		in srgb,
+		var(--foundation-color-neutral-700) 86%,
+		var(--foundation-color-neutral-500)
+	);
+}

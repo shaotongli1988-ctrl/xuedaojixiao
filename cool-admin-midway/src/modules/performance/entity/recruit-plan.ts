@@ -16,6 +16,7 @@ export class PerformanceRecruitPlanEntity extends BaseEntity {
   @Column({ comment: '目标部门 ID' })
   targetDepartmentId: number;
 
+  @Index()
   @Column({ comment: '目标岗位名称', length: 100 })
   positionName: string;
 
@@ -37,7 +38,6 @@ export class PerformanceRecruitPlanEntity extends BaseEntity {
   @Column({ comment: '需求摘要', type: 'text', nullable: true })
   requirementSummary: string | null;
 
-  @Index()
   @Column({ comment: '职位标准 ID', nullable: true })
   jobStandardId: number | null;
 

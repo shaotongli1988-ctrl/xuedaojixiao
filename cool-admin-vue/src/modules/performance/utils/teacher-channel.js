@@ -1,80 +1,9 @@
 /**
- * 班主任化主题前端状态与动作工具。
- * 这里只维护主题19冻结的状态标签、前端动作门禁和基础值归一化，
- * 不负责接口请求、权限来源或页面渲染细节。
- * 维护重点是不要扩展冻结外的状态值，也不要放宽只读和终态门禁。
+ * 班主任化主题前端动作与基础归一化工具。
+ * 这里只维护主题19页面共享的动作门禁与输入归一化，
+ * 不负责业务状态标签、选项字典或页面渲染细节。
+ * 维护重点是不要重新引入本地业务字典，所有状态展示统一走 dict store。
  */
-
-export const teacherCooperationStatusOptions = [
-	{ label: '未建联', value: 'uncontacted' },
-	{ label: '已跟进', value: 'contacted' },
-	{ label: '洽谈中', value: 'negotiating' },
-	{ label: '已合作', value: 'partnered' },
-	{ label: '已终止', value: 'terminated' }
-];
-
-export const teacherClassStatusOptions = [
-	{ label: '草稿', value: 'draft' },
-	{ label: '已启用', value: 'active' },
-	{ label: '已关闭', value: 'closed' }
-];
-
-export const teacherTodoBucketOptions = [
-	{ label: '今日待跟进', value: 'today' },
-	{ label: '已逾期待跟进', value: 'overdue' }
-];
-
-export function isTeacherCooperationStatus(value) {
-	return teacherCooperationStatusOptions.some(item => item.value === value);
-}
-
-export function isTeacherClassStatus(value) {
-	return teacherClassStatusOptions.some(item => item.value === value);
-}
-
-export function isTeacherTodoBucket(value) {
-	return teacherTodoBucketOptions.some(item => item.value === value);
-}
-
-export function teacherCooperationStatusLabel(value) {
-	return (
-		teacherCooperationStatusOptions.find(item => item.value === value)?.label || value || '-'
-	);
-}
-
-export function teacherClassStatusLabel(value) {
-	return teacherClassStatusOptions.find(item => item.value === value)?.label || value || '-';
-}
-
-export function teacherTodoBucketLabel(value) {
-	return teacherTodoBucketOptions.find(item => item.value === value)?.label || value || '-';
-}
-
-export function teacherCooperationStatusTagType(value) {
-	switch (value) {
-		case 'partnered':
-			return 'success';
-		case 'terminated':
-			return 'danger';
-		case 'negotiating':
-			return 'warning';
-		case 'contacted':
-			return 'primary';
-		default:
-			return 'info';
-	}
-}
-
-export function teacherClassStatusTagType(value) {
-	switch (value) {
-		case 'active':
-			return 'success';
-		case 'closed':
-			return 'info';
-		default:
-			return 'warning';
-	}
-}
 
 export function normalizeOptionalText(value) {
 	const text = String(value || '').trim();

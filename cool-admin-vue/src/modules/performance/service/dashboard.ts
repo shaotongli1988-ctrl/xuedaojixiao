@@ -4,44 +4,15 @@
  * 不负责页面展示逻辑或其他绩效子模块请求。
  */
 import { BaseService } from '/@/cool';
-import type { DashboardCrossSummary, DashboardCrossSummaryQuery } from '../types';
-
-export interface DashboardSummaryQuery {
-	periodType?: string;
-	periodValue?: string;
-	departmentId?: number;
-}
-
-export interface DashboardStageProgressItem {
-	stageKey: string;
-	stageLabel: string;
-	completedCount: number;
-	totalCount: number;
-	completionRate: number;
-	sort: number;
-}
-
-export interface DashboardDepartmentDistributionItem {
-	departmentId: number;
-	departmentName: string;
-	averageScore: number;
-	assessmentCount: number;
-}
-
-export interface DashboardGradeDistributionItem {
-	grade: 'S' | 'A' | 'B' | 'C';
-	count: number;
-	ratio: number;
-}
-
-export interface DashboardSummary {
-	averageScore: number;
-	pendingApprovalCount: number;
-	goalCompletionRate: number;
-	stageProgress: DashboardStageProgressItem[];
-	departmentDistribution: DashboardDepartmentDistributionItem[];
-	gradeDistribution: DashboardGradeDistributionItem[];
-}
+import { asPerformanceServicePromise } from './service-contract';
+import { decodeDashboardCrossSummary, decodeDashboardSummary } from './dashboard-contract';
+import type {
+	DashboardCrossSummary,
+	DashboardCrossSummaryQuery,
+	DashboardSummary,
+	DashboardSummaryQuery
+} from '../types';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 
 /**
  * 驾驶舱前端请求服务。
@@ -49,8 +20,8 @@ export interface DashboardSummary {
  */
 export default class PerformanceDashboardService extends BaseService {
 	permission = {
-		summary: 'performance:dashboard:summary',
-		crossSummary: 'performance:dashboard:crossSummary'
+		summary: PERMISSIONS.performance.dashboard.summary,
+		crossSummary: PERMISSIONS.performance.dashboard.crossSummary
 	};
 
 	constructor() {
@@ -58,19 +29,25 @@ export default class PerformanceDashboardService extends BaseService {
 	}
 
 	fetchSummary(params: DashboardSummaryQuery) {
-		return this.request({
-			url: '/summary',
-			method: 'GET',
-			params
-		}) as unknown as Promise<DashboardSummary>;
+		return asPerformanceServicePromise<DashboardSummary>(
+			this.request({
+				url: '/summary',
+				method: 'GET',
+				params
+			}),
+			decodeDashboardSummary
+		);
 	}
 
 	fetchCrossSummary(params: DashboardCrossSummaryQuery) {
-		return this.request({
-			url: '/crossSummary',
-			method: 'GET',
-			params
-		}) as unknown as Promise<DashboardCrossSummary>;
+		return asPerformanceServicePromise<DashboardCrossSummary>(
+			this.request({
+				url: '/crossSummary',
+				method: 'GET',
+				params
+			}),
+			decodeDashboardCrossSummary
+		);
 	}
 }
 

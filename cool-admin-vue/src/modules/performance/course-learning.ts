@@ -1,39 +1,22 @@
 /**
- * 课程学习与考试增强前端类型。
- * 这里只描述主题14页面消费的最小任务/考试摘要结构，不承接课程管理、题库平台或共享基础类型扩展。
+ * 课程学习增强模块的兼容类型出口。
+ * 这里只复用 course-learning.types 中的 SSOT 类型，不再维护第二份并行领域模型。
+ * 维护重点是保留既有命名兼容，同时确保真实结构继续来自 generated 契约。
  */
-export type CourseLearningTaskStatus = 'pending' | 'submitted' | 'evaluated';
 
-export interface CourseLearningTaskRecord {
-	id: number;
-	courseId: number;
-	courseTitle: string;
-	title: string;
-	taskType: 'recite' | 'practice';
-	promptText?: string;
-	status: CourseLearningTaskStatus;
-	latestScore: number | null;
-	feedbackSummary: string | null;
-	submissionText?: string | null;
-	submittedAt: string | null;
-	evaluatedAt: string | null;
-}
+export type {
+	CourseExamResultStatus,
+	CourseExamSummaryQuery,
+	CourseLearningInfoQuery,
+	CourseLearningPageQuery,
+	CourseLearningPageResult,
+	CourseLearningSubmitPayload,
+	CourseLearningTaskRecord,
+	CourseLearningTaskStatus,
+	CourseLearningTaskType
+} from './course-learning.types';
 
-export interface CourseLearningTaskPageResult {
-	list: CourseLearningTaskRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
-
-export interface CourseExamSummaryRecord {
-	courseId: number;
-	courseTitle: string;
-	resultStatus: 'locked' | 'pending' | 'passed' | 'failed';
-	latestScore: number | null;
-	passThreshold: number | null;
-	summaryText: string | null;
-	updatedAt: string | null;
-}
+export type {
+	CourseExamSummary as CourseExamSummaryRecord,
+	CourseLearningPageResult as CourseLearningTaskPageResult
+} from './course-learning.types';

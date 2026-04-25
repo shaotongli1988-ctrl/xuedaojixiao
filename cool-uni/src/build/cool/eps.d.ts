@@ -1,61 +1,6 @@
 declare namespace Eps {
 	interface DemoGoodsEntity {
 		/**
-		 * ID
-		 */
-		id?: number;
-
-		/**
-		 * 标题
-		 */
-		title?: string;
-
-		/**
-		 * 价格
-		 */
-		price?: number;
-
-		/**
-		 * 描述
-		 */
-		description?: string;
-
-		/**
-		 * 主图
-		 */
-		mainImage?: string;
-
-		/**
-		 * 分类
-		 */
-		type?: number;
-
-		/**
-		 * 状态
-		 */
-		status?: number;
-
-		/**
-		 * 示例图
-		 */
-		exampleImages?: json;
-
-		/**
-		 * 库存
-		 */
-		stock?: number;
-
-		/**
-		 * 创建时间
-		 */
-		createTime?: string;
-
-		/**
-		 * 更新时间
-		 */
-		updateTime?: string;
-
-		/**
 		 * 任意键值
 		 */
 		[key: string]: any;
@@ -63,127 +8,12 @@ declare namespace Eps {
 
 	interface UserAddressEntity {
 		/**
-		 * ID
-		 */
-		id?: number;
-
-		/**
-		 * 用户ID
-		 */
-		userId?: number;
-
-		/**
-		 * 联系人
-		 */
-		contact?: string;
-
-		/**
-		 * 手机号
-		 */
-		phone?: string;
-
-		/**
-		 * 省
-		 */
-		province?: string;
-
-		/**
-		 * 市
-		 */
-		city?: string;
-
-		/**
-		 * 区
-		 */
-		district?: string;
-
-		/**
-		 * 地址
-		 */
-		address?: string;
-
-		/**
-		 * 是否默认
-		 */
-		isDefault?: boolean;
-
-		/**
-		 * 创建时间
-		 */
-		createTime?: string;
-
-		/**
-		 * 更新时间
-		 */
-		updateTime?: string;
-
-		/**
 		 * 任意键值
 		 */
 		[key: string]: any;
 	}
 
 	interface UserInfoEntity {
-		/**
-		 * ID
-		 */
-		id?: number;
-
-		/**
-		 * 登录唯一ID
-		 */
-		unionid?: string;
-
-		/**
-		 * 头像
-		 */
-		avatarUrl?: string;
-
-		/**
-		 * 昵称
-		 */
-		nickName?: string;
-
-		/**
-		 * 手机号
-		 */
-		phone?: string;
-
-		/**
-		 * 性别
-		 */
-		gender?: number;
-
-		/**
-		 * 状态
-		 */
-		status?: number;
-
-		/**
-		 * 登录方式
-		 */
-		loginType?: number;
-
-		/**
-		 * 密码
-		 */
-		password?: string;
-
-		/**
-		 * 介绍
-		 */
-		description?: string;
-
-		/**
-		 * 创建时间
-		 */
-		createTime?: string;
-
-		/**
-		 * 更新时间
-		 */
-		updateTime?: string;
-
 		/**
 		 * 任意键值
 		 */
@@ -194,22 +24,22 @@ declare namespace Eps {
 
 	interface BaseComm {
 		/**
-		 * 文件上传模式
+		 * uploadMode
 		 */
 		uploadMode(data?: any): Promise<any>;
 
 		/**
-		 * 文件上传
+		 * upload
 		 */
 		upload(data?: any): Promise<any>;
 
 		/**
-		 * 参数配置
+		 * param
 		 */
 		param(data?: any): Promise<any>;
 
 		/**
-		 * 实体信息与路径
+		 * eps
 		 */
 		eps(data?: any): Promise<any>;
 
@@ -228,12 +58,12 @@ declare namespace Eps {
 
 	interface OpenDemoCache {
 		/**
-		 * 设置缓存
+		 * set
 		 */
 		set(data?: any): Promise<any>;
 
 		/**
-		 * 获得缓存
+		 * get
 		 */
 		get(data?: any): Promise<any>;
 
@@ -252,12 +82,12 @@ declare namespace Eps {
 
 	interface OpenDemoEvent {
 		/**
-		 * 全局事件，多进程都有效
+		 * global
 		 */
 		global(data?: any): Promise<any>;
 
 		/**
-		 * 普通事件，本进程生效
+		 * comm
 		 */
 		comm(data?: any): Promise<any>;
 
@@ -276,37 +106,37 @@ declare namespace Eps {
 
 	interface OpenDemoGoods {
 		/**
-		 * entity分页查询
+		 * entityPage
 		 */
 		entityPage(data?: any): Promise<any>;
 
 		/**
-		 * sql分页查询
+		 * sqlPage
 		 */
 		sqlPage(data?: any): Promise<any>;
 
 		/**
-		 * 删除
+		 * delete
 		 */
 		delete(data?: any): Promise<any>;
 
 		/**
-		 * 修改
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 单个信息
+		 * info
 		 */
 		info(data?: any): Promise<DemoGoodsEntity>;
 
 		/**
-		 * 列表查询
+		 * list
 		 */
 		list(data?: any): Promise<DemoGoodsEntity[]>;
 
 		/**
-		 * 分页查询
+		 * page
 		 */
 		page(data?: any): Promise<{
 			pagination: { size: number; page: number; total: number; [key: string]: any };
@@ -315,7 +145,7 @@ declare namespace Eps {
 		}>;
 
 		/**
-		 * 新增
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -352,12 +182,12 @@ declare namespace Eps {
 
 	interface OpenDemoI18n {
 		/**
-		 * 翻译成英文
+		 * en
 		 */
 		en(data?: any): Promise<any>;
 
 		/**
-		 * 翻译成繁体
+		 * tw
 		 */
 		tw(data?: any): Promise<any>;
 
@@ -376,7 +206,7 @@ declare namespace Eps {
 
 	interface OpenDemoPlugin {
 		/**
-		 * 调用插件
+		 * invoke
 		 */
 		invoke(data?: any): Promise<any>;
 
@@ -405,7 +235,7 @@ declare namespace Eps {
 		getter(data?: any): Promise<any>;
 
 		/**
-		 * 发送队列数据
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -424,17 +254,17 @@ declare namespace Eps {
 
 	interface OpenDemoRpc {
 		/**
-		 * 分布式事务
+		 * transaction
 		 */
 		transaction(data?: any): Promise<any>;
 
 		/**
-		 * 集群事件
+		 * event
 		 */
 		event(data?: any): Promise<any>;
 
 		/**
-		 * 远程调用
+		 * call
 		 */
 		call(data?: any): Promise<any>;
 
@@ -453,7 +283,7 @@ declare namespace Eps {
 
 	interface OpenDemoSse {
 		/**
-		 * 事件流 服务端主动推送
+		 * call
 		 */
 		call(data?: any): Promise<any>;
 
@@ -486,27 +316,27 @@ declare namespace Eps {
 
 	interface OpenDemoTransaction {
 		/**
-		 * 删除
+		 * delete
 		 */
 		delete(data?: any): Promise<any>;
 
 		/**
-		 * 修改
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 单个信息
+		 * info
 		 */
 		info(data?: any): Promise<DemoGoodsEntity>;
 
 		/**
-		 * 列表查询
+		 * list
 		 */
 		list(data?: any): Promise<DemoGoodsEntity[]>;
 
 		/**
-		 * 分页查询
+		 * page
 		 */
 		page(data?: any): Promise<{
 			pagination: { size: number; page: number; total: number; [key: string]: any };
@@ -515,7 +345,7 @@ declare namespace Eps {
 		}>;
 
 		/**
-		 * 新增
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -548,12 +378,12 @@ declare namespace Eps {
 
 	interface DictInfo {
 		/**
-		 * 获得所有字典类型
+		 * types
 		 */
 		types(data?: any): Promise<any>;
 
 		/**
-		 * 获得字典数据
+		 * data
 		 */
 		data(data?: any): Promise<any>;
 
@@ -572,7 +402,7 @@ declare namespace Eps {
 
 	interface Swagger {
 		/**
-		 * 获得Swagger JSON数据
+		 * json
 		 */
 		json(data?: any): Promise<any>;
 
@@ -591,32 +421,32 @@ declare namespace Eps {
 
 	interface UserAddress {
 		/**
-		 * 默认地址
+		 * default
 		 */
 		default(data?: any): Promise<any>;
 
 		/**
-		 * 删除
+		 * delete
 		 */
 		delete(data?: any): Promise<any>;
 
 		/**
-		 * 修改
+		 * update
 		 */
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 单个信息
+		 * info
 		 */
 		info(data?: any): Promise<UserAddressEntity>;
 
 		/**
-		 * 列表查询
+		 * list
 		 */
 		list(data?: any): Promise<UserAddressEntity[]>;
 
 		/**
-		 * 分页查询
+		 * page
 		 */
 		page(data?: any): Promise<{
 			pagination: { size: number; page: number; total: number; [key: string]: any };
@@ -625,7 +455,7 @@ declare namespace Eps {
 		}>;
 
 		/**
-		 * 新增
+		 * add
 		 */
 		add(data?: any): Promise<any>;
 
@@ -660,7 +490,7 @@ declare namespace Eps {
 
 	interface UserComm {
 		/**
-		 * 获取微信公众号配置
+		 * wxMpConfig
 		 */
 		wxMpConfig(data?: any): Promise<any>;
 
@@ -679,32 +509,32 @@ declare namespace Eps {
 
 	interface UserInfo {
 		/**
-		 * 更新用户密码
+		 * updatePassword
 		 */
 		updatePassword(data?: any): Promise<any>;
 
 		/**
-		 * 更新用户信息
+		 * updatePerson
 		 */
 		updatePerson(data?: any): Promise<any>;
 
 		/**
-		 * 绑定手机号
+		 * bindPhone
 		 */
 		bindPhone(data?: any): Promise<any>;
 
 		/**
-		 * 绑定小程序手机号
+		 * miniPhone
 		 */
 		miniPhone(data?: any): Promise<any>;
 
 		/**
-		 * 获取用户信息
+		 * person
 		 */
 		person(data?: any): Promise<any>;
 
 		/**
-		 * 注销
+		 * logoff
 		 */
 		logoff(data?: any): Promise<any>;
 
@@ -737,52 +567,52 @@ declare namespace Eps {
 
 	interface UserLogin {
 		/**
-		 * 刷新token
+		 * refreshToken
 		 */
 		refreshToken(data?: any): Promise<any>;
 
 		/**
-		 * 绑定小程序手机号
+		 * miniPhone
 		 */
 		miniPhone(data?: any): Promise<any>;
 
 		/**
-		 * 一键手机号登录
+		 * uniPhone
 		 */
 		uniPhone(data?: any): Promise<any>;
 
 		/**
-		 * 密码登录
+		 * password
 		 */
 		password(data?: any): Promise<any>;
 
 		/**
-		 * 图片验证码
+		 * captcha
 		 */
 		captcha(data?: any): Promise<any>;
 
 		/**
-		 * 验证码
+		 * smsCode
 		 */
 		smsCode(data?: any): Promise<any>;
 
 		/**
-		 * 微信APP授权登录
+		 * wxApp
 		 */
 		wxApp(data?: any): Promise<any>;
 
 		/**
-		 * 手机号登录
+		 * phone
 		 */
 		phone(data?: any): Promise<any>;
 
 		/**
-		 * 小程序登录
+		 * mini
 		 */
 		mini(data?: any): Promise<any>;
 
 		/**
-		 * 公众号登录
+		 * mp
 		 */
 		mp(data?: any): Promise<any>;
 
@@ -859,5 +689,5 @@ declare namespace Eps {
 		user: { address: UserAddress; comm: UserComm; info: UserInfo; login: UserLogin };
 	};
 
-	type DictKey = string;
+	type DictKey = "brand" | "occupation";
 }

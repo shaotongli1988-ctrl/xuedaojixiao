@@ -4,68 +4,98 @@
  * 不负责资产盘点、报废或跨主题物流能力。
  */
 import { BaseService } from '/@/cool';
-import type { AssetTransferPageResult, AssetTransferRecord } from '../types';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeAssetTransferPageResult,
+	decodeAssetTransferRecord
+} from './asset-transfer-contract';
+import type {
+	AssetTransferCancelPayload,
+	AssetTransferCompletePayload,
+	AssetTransferCreatePayload,
+	AssetTransferInfoQuery,
+	AssetTransferPageQuery,
+	AssetTransferPageResult,
+	AssetTransferRecord,
+	AssetTransferSubmitPayload,
+	AssetTransferUpdatePayload
+} from '../types';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 
 export default class PerformanceAssetTransferService extends BaseService {
 	permission = {
-		page: 'performance:assetTransfer:page',
-		info: 'performance:assetTransfer:info',
-		add: 'performance:assetTransfer:add',
-		update: 'performance:assetTransfer:update',
-		submit: 'performance:assetTransfer:submit',
-		complete: 'performance:assetTransfer:complete',
-		cancel: 'performance:assetTransfer:cancel'
+		page: PERMISSIONS.performance.assetTransfer.page,
+		info: PERMISSIONS.performance.assetTransfer.info,
+		add: PERMISSIONS.performance.assetTransfer.add,
+		update: PERMISSIONS.performance.assetTransfer.update,
+		submit: PERMISSIONS.performance.assetTransfer.submit,
+		complete: PERMISSIONS.performance.assetTransfer.complete,
+		cancel: PERMISSIONS.performance.assetTransfer.cancel
 	};
 
 	constructor() {
 		super('admin/performance/assetTransfer');
 	}
 
-	fetchPage(data: {
-		page: number;
-		size: number;
-		keyword?: string;
-		status?: AssetTransferRecord['status'];
-		fromDepartmentId?: number;
-		toDepartmentId?: number;
-	}) {
-		return super.page(data) as unknown as Promise<AssetTransferPageResult>;
+	fetchPage(data: AssetTransferPageQuery) {
+		return asPerformanceServicePromise<AssetTransferPageResult>(
+			super.page(data),
+			decodeAssetTransferPageResult
+		);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<AssetTransferRecord>;
+	fetchInfo(params: AssetTransferInfoQuery) {
+		return asPerformanceServicePromise<AssetTransferRecord>(
+			super.info(params),
+			decodeAssetTransferRecord
+		);
 	}
 
-	createTransfer(data: Partial<AssetTransferRecord>) {
-		return super.add(data) as unknown as Promise<AssetTransferRecord>;
+	createTransfer(data: AssetTransferCreatePayload) {
+		return asPerformanceServicePromise<AssetTransferRecord>(
+			super.add(data),
+			decodeAssetTransferRecord
+		);
 	}
 
-	updateTransfer(data: Partial<AssetTransferRecord> & { id: number }) {
-		return super.update(data) as unknown as Promise<AssetTransferRecord>;
+	updateTransfer(data: AssetTransferUpdatePayload) {
+		return asPerformanceServicePromise<AssetTransferRecord>(
+			super.update(data),
+			decodeAssetTransferRecord
+		);
 	}
 
-	submitTransfer(data: { id: number }) {
-		return this.request({
-			url: '/submit',
-			method: 'POST',
-			data
-		}) as unknown as Promise<AssetTransferRecord>;
+	submitTransfer(data: AssetTransferSubmitPayload) {
+		return asPerformanceServicePromise<AssetTransferRecord>(
+			this.request({
+				url: '/submit',
+				method: 'POST',
+				data
+			}),
+			decodeAssetTransferRecord
+		);
 	}
 
-	completeTransfer(data: { id: number; completeTime?: string }) {
-		return this.request({
-			url: '/complete',
-			method: 'POST',
-			data
-		}) as unknown as Promise<AssetTransferRecord>;
+	completeTransfer(data: AssetTransferCompletePayload) {
+		return asPerformanceServicePromise<AssetTransferRecord>(
+			this.request({
+				url: '/complete',
+				method: 'POST',
+				data
+			}),
+			decodeAssetTransferRecord
+		);
 	}
 
-	cancelTransfer(data: { id: number; remark?: string }) {
-		return this.request({
-			url: '/cancel',
-			method: 'POST',
-			data
-		}) as unknown as Promise<AssetTransferRecord>;
+	cancelTransfer(data: AssetTransferCancelPayload) {
+		return asPerformanceServicePromise<AssetTransferRecord>(
+			this.request({
+				url: '/cancel',
+				method: 'POST',
+				data
+			}),
+			decodeAssetTransferRecord
+		);
 	}
 }
 

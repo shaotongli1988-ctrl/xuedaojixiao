@@ -1,0 +1,41 @@
+{
+  "version": "1.0",
+  "owner": "repo-governance",
+  "scope": "repository rbac registry",
+  "notes": [
+    "This catalog is the repository-level SSOT binding for RBAC governance.",
+    "The writable business sources remain the menu topology source, base permission source, and performance role catalog; this file only freezes their ownership and closure chain.",
+    "Runtime authorization still consumes generated permission artifacts and access-context services, but repo-level governance must now enter from this registry first."
+  ],
+  "menuTopologySource": "contracts/ssot/menu-route-topology.catalog.json",
+  "permissionBitsSourceFiles": [
+    "cool-admin-midway/src/modules/base/domain/permissions/source.json",
+    "cool-admin-midway/src/modules/base/domain/permissions/source.mjs"
+  ],
+  "roleCatalogSourceFiles": [
+    "cool-admin-midway/src/modules/performance/domain/roles/catalog.ts"
+  ],
+  "writablePrimarySources": [
+    "cool-admin-midway/src/modules/base/menu.json",
+    "cool-admin-midway/src/modules/base/domain/permissions/source.json",
+    "cool-admin-midway/src/modules/base/domain/permissions/source.mjs",
+    "cool-admin-midway/src/modules/performance/domain/roles/catalog.ts"
+  ],
+  "supportingGuards": [
+    "scripts/check-menu-route-viewpath-drift.mjs",
+    "scripts/check-base-permission-domain-ssot.mjs",
+    "scripts/check-performance-role-ssot.mjs",
+    "scripts/check-rbac-alignment.mjs"
+  ],
+  "generatedConsumers": [
+    "cool-admin-midway/src/modules/base/generated",
+    "cool-admin-midway/src/modules/base/domain/permissions/catalog.ts",
+    "cool-admin-vue/src/modules/base/generated",
+    "cool-admin-vue/src/modules/performance/service/role-fact.ts",
+    "cool-admin-vue/src/modules/performance/workbench",
+    "cool-uni/generated",
+    "cool-uni/cool/utils/performance-role-fact.ts",
+    "cool-uni/types/performance-mobile.ts",
+    "scripts/run-repo-consistency-guards.mjs"
+  ]
+}

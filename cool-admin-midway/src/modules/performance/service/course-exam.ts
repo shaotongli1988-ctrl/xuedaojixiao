@@ -4,11 +4,6 @@
  * 维护重点是结果状态只能按 locked/pending/passed/failed 计算，并且只依赖本人课程上下文与任务摘要。
  */
 import {
-  App,
-  ASYNC_CONTEXT_KEY,
-  ASYNC_CONTEXT_MANAGER_KEY,
-  AsyncContextManager,
-  IMidwayApplication,
   Inject,
   Provide,
   Scope,
@@ -16,7 +11,6 @@ import {
 } from '@midwayjs/core';
 import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
-import * as jwt from 'jsonwebtoken';
 import { Repository } from 'typeorm';
 import { BaseSysMenuService } from '../../base/service/sys/menu';
 import { PerformanceCourseEntity } from '../entity/course';
@@ -24,6 +18,7 @@ import { PerformanceCourseEnrollmentEntity } from '../entity/course-enrollment';
 import { PerformanceCourseExamResultEntity } from '../entity/course-exam-result';
 import { PerformanceCoursePracticeEntity } from '../entity/course-practice';
 import { PerformanceCourseReciteEntity } from '../entity/course-recite';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import {
   buildCourseExamSummaryText,
   DEFAULT_COURSE_EXAM_PASS_THRESHOLD,
@@ -32,13 +27,19 @@ import {
   pickLatestTime,
   resolveCourseExamResultStatus,
 } from './course-learning-helper';
-
-const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
-  return require('../../base/config').default({
-    app,
-    env: app?.getEnv?.(),
-  }).jwt;
-};
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
+const PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resourceNotFound
+  );
 
 @Provide()
 @Scope(ScopeEnum.Request, { allowDowngrade: true })
@@ -62,52 +63,20 @@ export class PerformanceCourseExamService extends BaseService {
   baseSysMenuService: BaseSysMenuService;
 
   @Inject()
-  ctx;
-
-  @App()
-  app: IMidwayApplication;
+  performanceAccessContextService: PerformanceAccessContextService;
 
   private readonly perms = {
-    summary: 'performance:courseExam:summary',
+    summary: PERMISSIONS.performance.courseExam.summary,
   };
 
-  private get currentCtx() {
-    if (this.ctx?.admin) {
-      return this.ctx;
-    }
-    try {
-      const contextManager: AsyncContextManager = this.app
-        .getApplicationContext()
-        .get(ASYNC_CONTEXT_MANAGER_KEY);
-      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as any;
-    } catch (error) {
-      return this.ctx;
-    }
-  }
-
-  private get currentAdmin() {
-    if (this.currentCtx?.admin) {
-      return this.currentCtx.admin;
-    }
-    const token =
-      this.currentCtx?.get?.('Authorization') ||
-      this.currentCtx?.headers?.authorization;
-    if (!token) {
-      return undefined;
-    }
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
-  }
-
   async summary(courseId: number) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.summary, '无权限查看考试结果摘要');
+    const access = await this.requireAccess(
+      'course.exam.summary',
+      '无权限查看考试结果摘要'
+    );
 
     const normalizedCourseId = normalizePositiveInteger(courseId, '课程 ID');
-    const userId = this.currentUserId();
+    const userId = access.userId;
     const { course, enrollment } = await this.requireLearningContext(
       normalizedCourseId,
       userId
@@ -178,26 +147,15 @@ export class PerformanceCourseExamService extends BaseService {
     };
   }
 
-  private async currentPerms() {
-    const admin = this.currentAdmin;
-    if (!admin?.roleIds) {
-      throw new CoolCommException('登录状态已失效');
-    }
-    return this.baseSysMenuService.getPerms(admin.roleIds);
-  }
-
-  private currentUserId() {
-    const userId = Number(this.currentAdmin?.userId);
-    if (!Number.isInteger(userId) || userId <= 0) {
-      throw new CoolCommException('登录状态已失效');
-    }
-    return userId;
-  }
-
-  private assertPerm(perms: string[], perm: string, message: string) {
-    if (!perms.includes(perm)) {
+  private async requireAccess(
+    capabilityKey: PerformanceCapabilityKey,
+    message: string
+  ): Promise<PerformanceResolvedAccessContext> {
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    if (!this.performanceAccessContextService.hasCapability(access, capabilityKey)) {
       throw new CoolCommException(message);
     }
+    return access;
   }
 
   private async requireLearningContext(courseId: number, userId: number) {
@@ -207,7 +165,7 @@ export class PerformanceCourseExamService extends BaseService {
     ]);
 
     if (!course) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     if (!enrollment || !['published', 'closed'].includes(String(course.status || ''))) {

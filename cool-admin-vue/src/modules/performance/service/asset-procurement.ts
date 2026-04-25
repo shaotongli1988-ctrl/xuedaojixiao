@@ -4,68 +4,98 @@
  * 不负责主题11采购订单审批链或供应商主数据中心。
  */
 import { BaseService } from '/@/cool';
-import type { AssetProcurementPageResult, AssetProcurementRecord } from '../types';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeAssetProcurementPageResult,
+	decodeAssetProcurementRecord
+} from './asset-procurement-contract';
+import type {
+	AssetProcurementCancelPayload,
+	AssetProcurementCreatePayload,
+	AssetProcurementInfoQuery,
+	AssetProcurementPageQuery,
+	AssetProcurementPageResult,
+	AssetProcurementReceivePayload,
+	AssetProcurementRecord,
+	AssetProcurementSubmitPayload,
+	AssetProcurementUpdatePayload
+} from '../types';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 
 export default class PerformanceAssetProcurementService extends BaseService {
 	permission = {
-		page: 'performance:assetProcurement:page',
-		info: 'performance:assetProcurement:info',
-		add: 'performance:assetProcurement:add',
-		update: 'performance:assetProcurement:update',
-		submit: 'performance:assetProcurement:submit',
-		receive: 'performance:assetProcurement:receive',
-		cancel: 'performance:assetProcurement:cancel'
+		page: PERMISSIONS.performance.assetProcurement.page,
+		info: PERMISSIONS.performance.assetProcurement.info,
+		add: PERMISSIONS.performance.assetProcurement.add,
+		update: PERMISSIONS.performance.assetProcurement.update,
+		submit: PERMISSIONS.performance.assetProcurement.submit,
+		receive: PERMISSIONS.performance.assetProcurement.receive,
+		cancel: PERMISSIONS.performance.assetProcurement.cancel
 	};
 
 	constructor() {
 		super('admin/performance/assetProcurement');
 	}
 
-	fetchPage(data: {
-		page: number;
-		size: number;
-		keyword?: string;
-		status?: AssetProcurementRecord['status'];
-		departmentId?: number;
-		requesterId?: number;
-	}) {
-		return super.page(data) as unknown as Promise<AssetProcurementPageResult>;
+	fetchPage(data: AssetProcurementPageQuery) {
+		return asPerformanceServicePromise<AssetProcurementPageResult>(
+			super.page(data),
+			decodeAssetProcurementPageResult
+		);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<AssetProcurementRecord>;
+	fetchInfo(params: AssetProcurementInfoQuery) {
+		return asPerformanceServicePromise<AssetProcurementRecord>(
+			super.info(params),
+			decodeAssetProcurementRecord
+		);
 	}
 
-	createProcurement(data: Partial<AssetProcurementRecord>) {
-		return super.add(data) as unknown as Promise<AssetProcurementRecord>;
+	createProcurement(data: AssetProcurementCreatePayload) {
+		return asPerformanceServicePromise<AssetProcurementRecord>(
+			super.add(data),
+			decodeAssetProcurementRecord
+		);
 	}
 
-	updateProcurement(data: Partial<AssetProcurementRecord> & { id: number }) {
-		return super.update(data) as unknown as Promise<AssetProcurementRecord>;
+	updateProcurement(data: AssetProcurementUpdatePayload) {
+		return asPerformanceServicePromise<AssetProcurementRecord>(
+			super.update(data),
+			decodeAssetProcurementRecord
+		);
 	}
 
-	submitProcurement(data: { id: number }) {
-		return this.request({
-			url: '/submit',
-			method: 'POST',
-			data
-		}) as unknown as Promise<AssetProcurementRecord>;
+	submitProcurement(data: AssetProcurementSubmitPayload) {
+		return asPerformanceServicePromise<AssetProcurementRecord>(
+			this.request({
+				url: '/submit',
+				method: 'POST',
+				data
+			}),
+			decodeAssetProcurementRecord
+		);
 	}
 
-	receiveProcurement(data: { id: number; receiveDate?: string }) {
-		return this.request({
-			url: '/receive',
-			method: 'POST',
-			data
-		}) as unknown as Promise<AssetProcurementRecord>;
+	receiveProcurement(data: AssetProcurementReceivePayload) {
+		return asPerformanceServicePromise<AssetProcurementRecord>(
+			this.request({
+				url: '/receive',
+				method: 'POST',
+				data
+			}),
+			decodeAssetProcurementRecord
+		);
 	}
 
-	cancelProcurement(data: { id: number; remark?: string }) {
-		return this.request({
-			url: '/cancel',
-			method: 'POST',
-			data
-		}) as unknown as Promise<AssetProcurementRecord>;
+	cancelProcurement(data: AssetProcurementCancelPayload) {
+		return asPerformanceServicePromise<AssetProcurementRecord>(
+			this.request({
+				url: '/cancel',
+				method: 'POST',
+				data
+			}),
+			decodeAssetProcurementRecord
+		);
 	}
 }
 

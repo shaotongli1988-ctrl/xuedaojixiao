@@ -4,11 +4,6 @@
  * 维护重点是首批只允许 HR 访问，状态流只保留台账主链，且非 draft 不可删除。
  */
 import {
-  App,
-  ASYNC_CONTEXT_KEY,
-  ASYNC_CONTEXT_MANAGER_KEY,
-  AsyncContextManager,
-  IMidwayApplication,
   Inject,
   Provide,
   Scope,
@@ -21,17 +16,70 @@ import { BaseSysMenuService } from '../../base/service/sys/menu';
 import { BaseSysDepartmentEntity } from '../../base/entity/sys/department';
 import { BaseSysUserEntity } from '../../base/entity/sys/user';
 import { PerformanceContractEntity } from '../entity/contract';
-import * as jwt from 'jsonwebtoken';
+import {
+  CONTRACT_STATUS_VALUES,
+  CONTRACT_TYPE_VALUES,
+} from './contract-dict';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
 
-const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
-  return require('../../base/config').default({
-    app,
-    env: app?.getEnv?.(),
-  }).jwt;
-};
-
-const CONTRACT_TYPES = ['full-time', 'part-time', 'internship', 'other'];
-const CONTRACT_STATUS = ['draft', 'active', 'expired', 'terminated'];
+const CONTRACT_TYPES = [...CONTRACT_TYPE_VALUES];
+const CONTRACT_STATUS = [...CONTRACT_STATUS_VALUES];
+const PERFORMANCE_EMPLOYEE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.employeeNotFound
+  );
+const PERFORMANCE_DEPARTMENT_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.departmentNotFound
+  );
+const PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resourceNotFound
+  );
+const PERFORMANCE_STATE_ACTION_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateActionNotAllowed
+  );
+const PERFORMANCE_STATE_EDIT_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateEditNotAllowed
+  );
+const PERFORMANCE_STATE_DELETE_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateDeleteNotAllowed
+  );
+const PERFORMANCE_CONTRACT_CREATE_DRAFT_ONLY_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.contractCreateDraftOnly
+  );
+const PERFORMANCE_CONTRACT_TYPE_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.contractTypeInvalid
+  );
+const PERFORMANCE_CONTRACT_STATUS_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.contractStatusInvalid
+  );
+const PERFORMANCE_CONTRACT_PROBATION_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.contractProbationInvalid
+  );
+const PERFORMANCE_CONTRACT_SALARY_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.contractSalaryInvalid
+  );
+const PERFORMANCE_CONTRACT_DATE_RANGE_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.contractDateRangeInvalid
+  );
 
 @Provide()
 @Scope(ScopeEnum.Request, { allowDowngrade: true })
@@ -49,53 +97,10 @@ export class PerformanceContractService extends BaseService {
   baseSysMenuService: BaseSysMenuService;
 
   @Inject()
-  ctx;
-
-  @App()
-  app: IMidwayApplication;
-
-  private readonly perms = {
-    page: 'performance:contract:page',
-    info: 'performance:contract:info',
-    add: 'performance:contract:add',
-    update: 'performance:contract:update',
-    delete: 'performance:contract:delete',
-  };
-
-  private get currentCtx() {
-    if (this.ctx?.admin) {
-      return this.ctx;
-    }
-    try {
-      const contextManager: AsyncContextManager = this.app
-        .getApplicationContext()
-        .get(ASYNC_CONTEXT_MANAGER_KEY);
-      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as any;
-    } catch (error) {
-      return this.ctx;
-    }
-  }
-
-  private get currentAdmin() {
-    if (this.currentCtx?.admin) {
-      return this.currentCtx.admin;
-    }
-    const token =
-      this.currentCtx?.get?.('Authorization') ||
-      this.currentCtx?.headers?.authorization;
-    if (!token) {
-      return undefined;
-    }
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
-  }
+  performanceAccessContextService: PerformanceAccessContextService;
 
   async page(query: any) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.page, '无权限查看合同列表');
+    await this.requireAccess('contract.read', '无权限查看合同列表');
 
     const page = this.normalizePageNumber(query.page, 1);
     const size = this.normalizePageNumber(query.size, 20);
@@ -174,16 +179,14 @@ export class PerformanceContractService extends BaseService {
   }
 
   async info(id: number) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.info, '无权限查看合同详情');
+    await this.requireAccess('contract.read', '无权限查看合同详情');
 
     const contract = await this.requireContract(id);
     return this.buildContractDetail(contract);
   }
 
   async add(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.add, '无权限新增合同');
+    await this.requireAccess('contract.create', '无权限新增合同');
 
     const normalized = await this.normalizePayload(payload, 'add');
     const saved = await this.performanceContractEntity.save(
@@ -194,8 +197,7 @@ export class PerformanceContractService extends BaseService {
   }
 
   async updateContract(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.update, '无权限修改合同');
+    await this.requireAccess('contract.update', '无权限修改合同');
 
     const contract = await this.requireContract(Number(payload.id));
     this.assertEditable(contract.status);
@@ -213,8 +215,7 @@ export class PerformanceContractService extends BaseService {
   }
 
   async delete(ids: number[]) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.delete, '无权限删除合同');
+    await this.requireAccess('contract.delete', '无权限删除合同');
 
     const validIds = (ids || [])
       .map(item => Number(item))
@@ -229,37 +230,32 @@ export class PerformanceContractService extends BaseService {
     });
 
     if (contracts.length !== validIds.length) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     contracts.forEach(item => {
       if (item.status !== 'draft') {
-        throw new CoolCommException('当前状态不允许删除');
+        throw new CoolCommException(PERFORMANCE_STATE_DELETE_NOT_ALLOWED_MESSAGE);
       }
     });
 
     await this.performanceContractEntity.delete(validIds);
   }
 
-  private async currentPerms() {
-    const admin = this.currentAdmin;
-
-    if (!admin?.roleIds) {
-      throw new CoolCommException('登录状态已失效');
-    }
-
-    return this.baseSysMenuService.getPerms(admin.roleIds);
-  }
-
-  private assertHasPerm(perms: string[], perm: string, message: string) {
-    if (!perms.includes(perm)) {
+  private async requireAccess(
+    capabilityKey: PerformanceCapabilityKey,
+    message: string
+  ): Promise<PerformanceResolvedAccessContext> {
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    if (!this.performanceAccessContextService.hasCapability(access, capabilityKey)) {
       throw new CoolCommException(message);
     }
+    return access;
   }
 
   private assertEditable(status?: string) {
     if (status === 'expired' || status === 'terminated') {
-      throw new CoolCommException('当前状态不允许编辑');
+      throw new CoolCommException(PERFORMANCE_STATE_EDIT_NOT_ALLOWED_MESSAGE);
     }
   }
 
@@ -272,7 +268,7 @@ export class PerformanceContractService extends BaseService {
     const employee = await this.baseSysUserEntity.findOneBy({ id: employeeId });
 
     if (!employeeId || !employee) {
-      throw new CoolCommException('员工不存在');
+      throw new CoolCommException(PERFORMANCE_EMPLOYEE_NOT_FOUND_MESSAGE);
     }
 
     const startDate = this.normalizeDate(payload.startDate, '开始日期不能为空');
@@ -312,7 +308,7 @@ export class PerformanceContractService extends BaseService {
 
     if (mode === 'add') {
       if (nextStatus !== 'draft') {
-        throw new CoolCommException('新增合同状态只能为 draft');
+        throw new CoolCommException(PERFORMANCE_CONTRACT_CREATE_DRAFT_ONLY_MESSAGE);
       }
       return nextStatus;
     }
@@ -331,14 +327,14 @@ export class PerformanceContractService extends BaseService {
       return nextStatus;
     }
 
-    throw new CoolCommException('当前状态不允许执行该操作');
+    throw new CoolCommException(PERFORMANCE_STATE_ACTION_NOT_ALLOWED_MESSAGE);
   }
 
   private normalizeType(value: any) {
     const type = String(value || '').trim();
 
-    if (!CONTRACT_TYPES.includes(type)) {
-      throw new CoolCommException('合同类型不合法');
+    if (!CONTRACT_TYPES.some(item => item === type)) {
+      throw new CoolCommException(PERFORMANCE_CONTRACT_TYPE_INVALID_MESSAGE);
     }
 
     return type;
@@ -347,8 +343,8 @@ export class PerformanceContractService extends BaseService {
   private normalizeStatus(value: any) {
     const status = String(value || 'draft').trim();
 
-    if (!CONTRACT_STATUS.includes(status)) {
-      throw new CoolCommException('合同状态不合法');
+    if (!CONTRACT_STATUS.some(item => item === status)) {
+      throw new CoolCommException(PERFORMANCE_CONTRACT_STATUS_INVALID_MESSAGE);
     }
 
     return status;
@@ -382,7 +378,7 @@ export class PerformanceContractService extends BaseService {
     const probationPeriod = Number(value);
 
     if (!Number.isInteger(probationPeriod) || probationPeriod < 0) {
-      throw new CoolCommException('试用期不合法');
+      throw new CoolCommException(PERFORMANCE_CONTRACT_PROBATION_INVALID_MESSAGE);
     }
 
     return probationPeriod;
@@ -396,7 +392,7 @@ export class PerformanceContractService extends BaseService {
     const salary = Number(value);
 
     if (!Number.isFinite(salary)) {
-      throw new CoolCommException('薪资金额不合法');
+      throw new CoolCommException(PERFORMANCE_CONTRACT_SALARY_INVALID_MESSAGE);
     }
 
     return Math.round(salary * 100) / 100;
@@ -409,7 +405,7 @@ export class PerformanceContractService extends BaseService {
       value !== '' &&
       this.normalizeNullableNumber(value) === null
     ) {
-      throw new CoolCommException('部门不存在');
+      throw new CoolCommException(PERFORMANCE_DEPARTMENT_NOT_FOUND_MESSAGE);
     }
 
     const departmentId = this.normalizeNullableNumber(value);
@@ -421,7 +417,7 @@ export class PerformanceContractService extends BaseService {
     const department = await this.baseSysDepartmentEntity.findOneBy({ id: departmentId });
 
     if (!department) {
-      throw new CoolCommException('部门不存在');
+      throw new CoolCommException(PERFORMANCE_DEPARTMENT_NOT_FOUND_MESSAGE);
     }
 
     return departmentId;
@@ -440,7 +436,7 @@ export class PerformanceContractService extends BaseService {
     const contract = await this.performanceContractEntity.findOneBy({ id });
 
     if (!contract) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     return contract;
@@ -494,7 +490,7 @@ export class PerformanceContractService extends BaseService {
 
   async validateDateRange(startDate: string, endDate: string) {
     if (endDate <= startDate) {
-      throw new CoolCommException('结束日期必须晚于开始日期');
+      throw new CoolCommException(PERFORMANCE_CONTRACT_DATE_RANGE_INVALID_MESSAGE);
     }
   }
 }

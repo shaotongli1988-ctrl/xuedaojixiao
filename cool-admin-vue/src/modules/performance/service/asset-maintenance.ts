@@ -4,58 +4,82 @@
  * 不负责资产折旧、报废或财务扩展能力。
  */
 import { BaseService } from '/@/cool';
-import type { AssetMaintenancePageResult, AssetMaintenanceRecord } from '../types';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeAssetMaintenancePageResult,
+	decodeAssetMaintenanceRecord
+} from './asset-maintenance-contract';
+import type {
+	AssetMaintenanceCancelPayload,
+	AssetMaintenanceCompletePayload,
+	AssetMaintenanceCreatePayload,
+	AssetMaintenancePageQuery,
+	AssetMaintenancePageResult,
+	AssetMaintenanceRecord,
+	AssetMaintenanceRemovePayload,
+	AssetMaintenanceUpdatePayload
+} from '../types';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 
 export default class PerformanceAssetMaintenanceService extends BaseService {
 	permission = {
-		page: 'performance:assetMaintenance:page',
-		add: 'performance:assetMaintenance:add',
-		update: 'performance:assetMaintenance:update',
-		complete: 'performance:assetMaintenance:complete',
-		cancel: 'performance:assetMaintenance:cancel',
-		delete: 'performance:assetMaintenance:delete'
+		page: PERMISSIONS.performance.assetMaintenance.page,
+		add: PERMISSIONS.performance.assetMaintenance.add,
+		update: PERMISSIONS.performance.assetMaintenance.update,
+		complete: PERMISSIONS.performance.assetMaintenance.complete,
+		cancel: PERMISSIONS.performance.assetMaintenance.cancel,
+		delete: PERMISSIONS.performance.assetMaintenance.delete
 	};
 
 	constructor() {
 		super('admin/performance/assetMaintenance');
 	}
 
-	fetchPage(data: {
-		page: number;
-		size: number;
-		keyword?: string;
-		status?: AssetMaintenanceRecord['status'];
-		assetId?: number;
-	}) {
-		return super.page(data) as unknown as Promise<AssetMaintenancePageResult>;
+	fetchPage(data: AssetMaintenancePageQuery) {
+		return asPerformanceServicePromise<AssetMaintenancePageResult>(
+			super.page(data),
+			decodeAssetMaintenancePageResult
+		);
 	}
 
-	createMaintenance(data: Partial<AssetMaintenanceRecord>) {
-		return super.add(data) as unknown as Promise<AssetMaintenanceRecord>;
+	createMaintenance(data: AssetMaintenanceCreatePayload) {
+		return asPerformanceServicePromise<AssetMaintenanceRecord>(
+			super.add(data),
+			decodeAssetMaintenanceRecord
+		);
 	}
 
-	updateMaintenance(data: Partial<AssetMaintenanceRecord> & { id: number }) {
-		return super.update(data) as unknown as Promise<AssetMaintenanceRecord>;
+	updateMaintenance(data: AssetMaintenanceUpdatePayload) {
+		return asPerformanceServicePromise<AssetMaintenanceRecord>(
+			super.update(data),
+			decodeAssetMaintenanceRecord
+		);
 	}
 
-	completeMaintenance(data: { id: number; completeDate?: string; resultSummary?: string }) {
-		return this.request({
-			url: '/complete',
-			method: 'POST',
-			data
-		}) as unknown as Promise<AssetMaintenanceRecord>;
+	completeMaintenance(data: AssetMaintenanceCompletePayload) {
+		return asPerformanceServicePromise<AssetMaintenanceRecord>(
+			this.request({
+				url: '/complete',
+				method: 'POST',
+				data
+			}),
+			decodeAssetMaintenanceRecord
+		);
 	}
 
-	cancelMaintenance(data: { id: number; resultSummary?: string }) {
-		return this.request({
-			url: '/cancel',
-			method: 'POST',
-			data
-		}) as unknown as Promise<AssetMaintenanceRecord>;
+	cancelMaintenance(data: AssetMaintenanceCancelPayload) {
+		return asPerformanceServicePromise<AssetMaintenanceRecord>(
+			this.request({
+				url: '/cancel',
+				method: 'POST',
+				data
+			}),
+			decodeAssetMaintenanceRecord
+		);
 	}
 
-	removeMaintenance(data: { ids: number[] }) {
-		return super.delete(data) as unknown as Promise<void>;
+	removeMaintenance(data: AssetMaintenanceRemovePayload) {
+		return asPerformanceServicePromise<void>(super.delete(data));
 	}
 }
 

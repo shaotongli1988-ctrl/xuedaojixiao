@@ -3,6 +3,7 @@
  * 职位标准服务最小测试。
  * 这里只验证主题17冻结的状态流、角色权限、部门树只读范围和字段边界，不覆盖真实数据库或控制器联调。
  */
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
 import { PerformanceJobStandardService } from '../../src/modules/performance/service/job-standard';
 
 const HR_PERMS = [
@@ -46,6 +47,19 @@ function createPageQueryBuilder(rows: any[]) {
     getCount: jest.fn().mockResolvedValue(rows.length),
     getRawMany: jest.fn().mockResolvedValue(rows),
   };
+}
+
+function attachAccessContext(service: any) {
+  const accessService = new PerformanceAccessContextService() as any;
+  accessService.ctx = service.ctx;
+  accessService.baseSysMenuService =
+    service.baseSysMenuService || { getPerms: jest.fn().mockResolvedValue([]) };
+  accessService.baseSysPermsService =
+    service.baseSysPermsService || {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+  service.performanceAccessContextService = accessService;
+  return service;
 }
 
 function createHrService() {
@@ -108,6 +122,8 @@ function createHrService() {
       });
     }),
   };
+
+  attachAccessContext(service);
 
   return { service, qb, records };
 }
@@ -241,6 +257,7 @@ describe('performance job standard service', () => {
       save: jest.fn(),
       update: jest.fn(),
     };
+    attachAccessContext(service);
 
     const pageResult = await service.page({ page: 1, size: 10 });
     const infoResult = await service.info(1);
@@ -287,6 +304,7 @@ describe('performance job standard service', () => {
     service.baseSysMenuService = {
       getPerms: jest.fn().mockResolvedValue([]),
     };
+    attachAccessContext(service);
 
     await expect(service.page({})).rejects.toThrow('无权限查看职位标准列表');
 
@@ -297,5 +315,62 @@ describe('performance job standard service', () => {
         status: 'inactive',
       })
     ).rejects.toThrow('当前状态不允许切换到目标状态');
+  });
+
+  test('should reject invalid status and add-update payload semantics', async () => {
+    const { service } = createHrService();
+
+    await expect(
+      service.page({
+        status: 'paused',
+      })
+    ).rejects.toThrow('职位标准状态不合法');
+    await expect(
+      service.add({
+        positionName: '',
+        targetDepartmentId: 11,
+      })
+    ).rejects.toThrow('岗位名称不能为空');
+    await expect(
+      service.add({
+        positionName: '非法新增状态',
+        targetDepartmentId: 11,
+        status: 'active',
+      })
+    ).rejects.toThrow('新增职位标准默认保存为草稿');
+    await expect(
+      service.updateJobStandard({
+        id: 1,
+        positionName: '草稿直接改状态',
+        targetDepartmentId: 11,
+        status: 'active',
+      })
+    ).rejects.toThrow('请使用启停用动作更新状态');
+  });
+
+  test('should reject inactive edits and invalid status updates', async () => {
+    const { service, records } = createHrService();
+
+    records.set(1, createRecord(1, { status: 'inactive' }));
+    await expect(
+      service.updateJobStandard({
+        id: 1,
+        positionName: '停用后修改',
+        targetDepartmentId: 11,
+      })
+    ).rejects.toThrow('停用中的职位标准不可直接编辑');
+
+    await expect(
+      service.setStatus({
+        id: 0,
+        status: 'active',
+      })
+    ).rejects.toThrow('职位标准 ID 不合法');
+    await expect(
+      service.setStatus({
+        id: 1,
+        status: 'paused',
+      })
+    ).rejects.toThrow('职位标准状态不合法');
   });
 });

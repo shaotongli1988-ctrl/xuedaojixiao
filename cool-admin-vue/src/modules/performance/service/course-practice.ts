@@ -4,7 +4,15 @@
  * 维护重点是首批只允许文本提交，并保持接口与权限键完全对齐冻结口径。
  */
 import { BaseService } from '/@/cool';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeCourseLearningPageResult,
+	decodeCourseLearningTaskRecord
+} from './course-learning-contract';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import type {
+	CourseLearningInfoQuery,
+	CourseLearningPageQuery,
 	CourseLearningPageResult,
 	CourseLearningSubmitPayload,
 	CourseLearningTaskRecord,
@@ -13,34 +21,38 @@ import type {
 
 export default class PerformanceCoursePracticeService extends BaseService {
 	permission = {
-		page: 'performance:coursePractice:page',
-		info: 'performance:coursePractice:info',
-		submit: 'performance:coursePractice:submit'
+		page: PERMISSIONS.performance.coursePractice.page,
+		info: PERMISSIONS.performance.coursePractice.info,
+		submit: PERMISSIONS.performance.coursePractice.submit
 	};
 
 	constructor() {
 		super('admin/performance/coursePractice');
 	}
 
-	fetchPage(data: {
-		page: number;
-		size: number;
-		courseId: number;
-		status?: CourseLearningTaskStatus;
-	}) {
-		return super.page(data) as unknown as Promise<CourseLearningPageResult>;
+	fetchPage(data: CourseLearningPageQuery) {
+		return asPerformanceServicePromise<CourseLearningPageResult>(
+			super.page(data),
+			decodeCourseLearningPageResult
+		);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<CourseLearningTaskRecord>;
+	fetchInfo(params: CourseLearningInfoQuery) {
+		return asPerformanceServicePromise<CourseLearningTaskRecord>(
+			super.info(params),
+			decodeCourseLearningTaskRecord
+		);
 	}
 
 	submitTask(data: CourseLearningSubmitPayload) {
-		return this.request({
-			url: '/submit',
-			method: 'POST',
-			data
-		}) as unknown as Promise<CourseLearningTaskRecord>;
+		return asPerformanceServicePromise<CourseLearningTaskRecord>(
+			this.request({
+				url: '/submit',
+				method: 'POST',
+				data
+			}),
+			decodeCourseLearningTaskRecord
+		);
 	}
 }
 

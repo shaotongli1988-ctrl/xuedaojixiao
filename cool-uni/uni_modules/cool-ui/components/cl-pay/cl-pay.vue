@@ -81,6 +81,7 @@ export default defineComponent({
 		return {
 			visible,
 			methods,
+			t,
 			open,
 			close,
 			choose,

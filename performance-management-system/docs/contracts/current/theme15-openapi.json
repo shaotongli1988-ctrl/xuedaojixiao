@@ -1,0 +1,532 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "theme15 resumePool contract snapshot",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/admin/performance/resumePool/page": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResumePoolPageQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "简历分页结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumePoolPageResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/resumePool/info": {
+      "get": {
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "简历详情结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumePoolRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/resumePool/add": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResumePoolSaveRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/resumePool/update": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResumePoolSaveRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/resumePool/import": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResumePoolImportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "导入简历结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumePoolImportResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/resumePool/export": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResumePoolExportQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "导出简历结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumePoolExportRows"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/resumePool/uploadAttachment": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResumePoolUploadAttachmentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "上传附件后的简历结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumePoolRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/resumePool/downloadAttachment": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResumePoolDownloadAttachmentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "下载附件结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumePoolAttachmentDownloadResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/resumePool/convertToTalentAsset": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResumePoolActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "转人才资产结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumePoolTalentAssetConvertResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/resumePool/createInterview": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResumePoolActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "发起面试结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumePoolCreateInterviewResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PagePagination": {
+        "type": "object",
+        "required": ["page", "size", "total"],
+        "properties": {
+          "page": { "type": "integer" },
+          "size": { "type": "integer" },
+          "total": { "type": "integer" }
+        }
+      },
+      "ResumePoolStatus": {
+        "type": "string",
+        "enum": ["new", "screening", "interviewing", "archived"]
+      },
+      "ResumePoolSourceType": {
+        "type": "string",
+        "enum": ["manual", "attachment", "external", "referral"]
+      },
+      "ResumePoolAttachmentSummary": {
+        "type": "object",
+        "required": ["id", "name", "size", "uploadTime"],
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "size": { "type": "integer" },
+          "uploadTime": { "type": "string" }
+        }
+      },
+      "ResumePoolRecruitPlanSnapshot": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "nullable": true },
+          "title": { "type": "string" },
+          "positionName": { "type": "string", "nullable": true },
+          "targetDepartmentId": { "type": "integer", "nullable": true },
+          "targetDepartmentName": { "type": "string", "nullable": true },
+          "headcount": { "type": "integer", "nullable": true },
+          "startDate": { "type": "string", "nullable": true },
+          "endDate": { "type": "string", "nullable": true },
+          "status": { "type": "string", "nullable": true },
+          "jobStandardId": { "type": "integer", "nullable": true }
+        }
+      },
+      "ResumePoolJobStandardSnapshot": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "nullable": true },
+          "positionName": { "type": "string" },
+          "jobLevel": { "type": "string", "nullable": true },
+          "targetDepartmentId": { "type": "integer", "nullable": true },
+          "targetDepartmentName": { "type": "string", "nullable": true },
+          "status": { "type": "string", "nullable": true },
+          "requirementSummary": { "type": "string", "nullable": true }
+        }
+      },
+      "ResumePoolReferenceSnapshot": {
+        "type": "object",
+        "required": ["candidateName", "targetDepartmentId", "phone", "status"],
+        "properties": {
+          "id": { "type": "integer" },
+          "candidateName": { "type": "string" },
+          "targetDepartmentId": { "type": "integer" },
+          "targetDepartmentName": { "type": "string", "nullable": true },
+          "targetPosition": { "type": "string", "nullable": true },
+          "phone": { "type": "string" },
+          "email": { "type": "string", "nullable": true },
+          "status": { "$ref": "#/components/schemas/ResumePoolStatus" },
+          "recruitPlanId": { "type": "integer", "nullable": true },
+          "jobStandardId": { "type": "integer", "nullable": true }
+        }
+      },
+      "ResumePoolInterviewSourceSnapshot": {
+        "type": "object",
+        "required": ["sourceResource", "resumePoolId", "targetDepartmentId"],
+        "properties": {
+          "sourceResource": {
+            "type": "string",
+            "enum": ["resumePool"]
+          },
+          "resumePoolId": { "type": "integer" },
+          "recruitPlanId": { "type": "integer", "nullable": true },
+          "recruitPlanTitle": { "type": "string", "nullable": true },
+          "candidateName": { "type": "string", "nullable": true },
+          "targetDepartmentId": { "type": "integer" },
+          "targetPosition": { "type": "string", "nullable": true }
+        }
+      },
+      "ResumePoolPageQuery": {
+        "type": "object",
+        "required": ["page", "size"],
+        "properties": {
+          "page": { "type": "integer" },
+          "size": { "type": "integer" },
+          "keyword": { "type": "string" },
+          "targetDepartmentId": { "type": "integer" },
+          "status": { "$ref": "#/components/schemas/ResumePoolStatus" },
+          "sourceType": { "$ref": "#/components/schemas/ResumePoolSourceType" }
+        }
+      },
+      "ResumePoolRecord": {
+        "type": "object",
+        "required": ["candidateName", "targetDepartmentId", "phone", "sourceType", "status"],
+        "properties": {
+          "id": { "type": "integer" },
+          "candidateName": { "type": "string" },
+          "targetDepartmentId": { "type": "integer" },
+          "targetDepartmentName": { "type": "string" },
+          "targetPosition": { "type": "string", "nullable": true },
+          "phone": { "type": "string" },
+          "email": { "type": "string", "nullable": true },
+          "resumeText": { "type": "string" },
+          "sourceType": { "$ref": "#/components/schemas/ResumePoolSourceType" },
+          "sourceRemark": { "type": "string", "nullable": true },
+          "externalLink": { "type": "string", "nullable": true },
+          "attachmentSummaryList": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ResumePoolAttachmentSummary" }
+          },
+          "status": { "$ref": "#/components/schemas/ResumePoolStatus" },
+          "linkedTalentAssetId": { "type": "integer", "nullable": true },
+          "latestInterviewId": { "type": "integer", "nullable": true },
+          "recruitPlanId": { "type": "integer", "nullable": true },
+          "jobStandardId": { "type": "integer", "nullable": true },
+          "recruitPlanSummary": {
+            "$ref": "#/components/schemas/ResumePoolRecruitPlanSnapshot",
+            "nullable": true
+          },
+          "recruitPlanSnapshot": {
+            "$ref": "#/components/schemas/ResumePoolRecruitPlanSnapshot",
+            "nullable": true
+          },
+          "jobStandardSummary": {
+            "$ref": "#/components/schemas/ResumePoolJobStandardSnapshot",
+            "nullable": true
+          },
+          "jobStandardSnapshot": {
+            "$ref": "#/components/schemas/ResumePoolJobStandardSnapshot",
+            "nullable": true
+          },
+          "createTime": { "type": "string" },
+          "updateTime": { "type": "string" }
+        }
+      },
+      "ResumePoolSaveRequest": {
+        "type": "object",
+        "required": ["candidateName", "targetDepartmentId", "phone", "resumeText", "sourceType"],
+        "properties": {
+          "id": { "type": "integer" },
+          "candidateName": { "type": "string" },
+          "targetDepartmentId": { "type": "integer" },
+          "targetPosition": { "type": "string", "nullable": true },
+          "phone": { "type": "string" },
+          "email": { "type": "string", "nullable": true },
+          "resumeText": { "type": "string" },
+          "sourceType": { "$ref": "#/components/schemas/ResumePoolSourceType" },
+          "sourceRemark": { "type": "string", "nullable": true },
+          "externalLink": { "type": "string", "nullable": true },
+          "recruitPlanId": { "type": "integer", "nullable": true },
+          "jobStandardId": { "type": "integer", "nullable": true },
+          "status": { "$ref": "#/components/schemas/ResumePoolStatus" }
+        }
+      },
+      "ResumePoolImportRequest": {
+        "type": "object",
+        "required": ["fileId"],
+        "properties": {
+          "fileId": { "type": "integer" },
+          "rows": { "type": "array", "items": { "type": "object" } },
+          "overwriteRows": { "type": "array", "items": { "type": "object" } }
+        }
+      },
+      "ResumePoolImportResult": {
+        "type": "object",
+        "required": ["fileId", "importedCount", "overwrittenCount", "skippedCount"],
+        "properties": {
+          "fileId": { "type": "integer" },
+          "importedCount": { "type": "integer" },
+          "overwrittenCount": { "type": "integer" },
+          "skippedCount": { "type": "integer" }
+        }
+      },
+      "ResumePoolExportQuery": {
+        "type": "object",
+        "properties": {
+          "keyword": { "type": "string" },
+          "targetDepartmentId": { "type": "integer" },
+          "status": { "$ref": "#/components/schemas/ResumePoolStatus" },
+          "sourceType": { "$ref": "#/components/schemas/ResumePoolSourceType" }
+        }
+      },
+      "ResumePoolExportRow": {
+        "type": "object",
+        "required": ["candidateName", "targetDepartmentId", "phone", "resumeText", "sourceType", "status"],
+        "properties": {
+          "candidateName": { "type": "string" },
+          "targetDepartmentId": { "type": "integer" },
+          "phone": { "type": "string" },
+          "resumeText": { "type": "string" },
+          "sourceType": { "$ref": "#/components/schemas/ResumePoolSourceType" },
+          "status": { "$ref": "#/components/schemas/ResumePoolStatus" }
+        }
+      },
+      "ResumePoolExportRows": {
+        "type": "array",
+        "items": { "$ref": "#/components/schemas/ResumePoolExportRow" }
+      },
+      "ResumePoolUploadAttachmentRequest": {
+        "type": "object",
+        "required": ["id", "fileId"],
+        "properties": {
+          "id": { "type": "integer" },
+          "fileId": { "type": "integer" }
+        }
+      },
+      "ResumePoolDownloadAttachmentRequest": {
+        "type": "object",
+        "required": ["id", "attachmentId"],
+        "properties": {
+          "id": { "type": "integer" },
+          "attachmentId": { "type": "integer" }
+        }
+      },
+      "ResumePoolAttachmentDownloadResult": {
+        "type": "object",
+        "required": ["id", "name", "size", "uploadTime", "url", "downloadUrl", "fileId"],
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "size": { "type": "integer" },
+          "uploadTime": { "type": "string" },
+          "url": { "type": "string" },
+          "downloadUrl": { "type": "string" },
+          "fileId": { "type": "string" }
+        }
+      },
+      "ResumePoolActionRequest": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": { "type": "integer" }
+        }
+      },
+      "ResumePoolTalentAssetConvertResult": {
+        "type": "object",
+        "required": ["talentAssetId", "created"],
+        "properties": {
+          "talentAssetId": { "type": "integer" },
+          "created": { "type": "boolean" }
+        }
+      },
+      "ResumePoolCreateInterviewResult": {
+        "type": "object",
+        "required": ["interviewId", "status", "resumePoolId"],
+        "properties": {
+          "interviewId": { "type": "integer" },
+          "status": { "$ref": "#/components/schemas/ResumePoolStatus" },
+          "resumePoolId": { "type": "integer" },
+          "recruitPlanId": { "type": "integer", "nullable": true },
+          "jobStandardId": { "type": "integer", "nullable": true },
+          "sourceSnapshot": { "$ref": "#/components/schemas/ResumePoolInterviewSourceSnapshot" },
+          "snapshot": { "$ref": "#/components/schemas/ResumePoolReferenceSnapshot" },
+          "resumePoolSummary": { "$ref": "#/components/schemas/ResumePoolReferenceSnapshot" },
+          "resumePoolSnapshot": { "$ref": "#/components/schemas/ResumePoolReferenceSnapshot" },
+          "recruitPlanSummary": {
+            "$ref": "#/components/schemas/ResumePoolRecruitPlanSnapshot",
+            "nullable": true
+          },
+          "jobStandardSummary": {
+            "$ref": "#/components/schemas/ResumePoolJobStandardSnapshot",
+            "nullable": true
+          }
+        }
+      },
+      "ResumePoolPageResult": {
+        "type": "object",
+        "required": ["list", "pagination"],
+        "properties": {
+          "list": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ResumePoolRecord" }
+          },
+          "pagination": { "$ref": "#/components/schemas/PagePagination" }
+        }
+      }
+    }
+  }
+}

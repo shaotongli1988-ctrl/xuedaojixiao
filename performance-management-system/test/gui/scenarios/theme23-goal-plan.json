@@ -1,0 +1,225 @@
+{
+  "meta": {
+    "name": "theme23-goal-plan-gui",
+    "description": "Theme23 目标&计划总览最小 GUI 点测"
+  },
+  "defaults": {
+    "uiBaseUrl": "http://127.0.0.1:9007",
+    "apiBaseUrl": "http://127.0.0.1:8006",
+    "chromeDebugUrl": "http://127.0.0.1:9222",
+    "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/theme23-goal-plan-gui",
+    "password": "123456",
+    "viewport": {
+      "width": 1440,
+      "height": 1100,
+      "deviceScaleFactor": 1,
+      "mobile": false
+    }
+  },
+  "scenarios": [
+    {
+      "name": "manager-goal-plan-overview-mainline",
+      "username": "manager_rd",
+      "route": "/performance/goals",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "目标&计划总览",
+            "今日运营区",
+            "目标对比区",
+            "目标配置区",
+            "日报汇报区"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "目标&计划总览",
+            "今日运营区",
+            "目标对比区",
+            "目标配置区",
+            "日报汇报区",
+            "下发公共目标",
+            "生成日报"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme23-goal-plan-manager-overview.png"
+        },
+        {
+          "type": "clickText",
+          "text": "下发公共目标",
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "新增目标计划",
+            "目标来源",
+            "周期类型",
+            "目标标题"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "screenshot",
+          "file": "theme23-goal-plan-manager-assign-dialog.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/goals",
+          "waitAfterMs": 1600
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "目标&计划总览",
+            "生成日报"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "clickText",
+          "text": "生成日报",
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "日报汇报区",
+            "日报摘要",
+            "完成率榜 Top5",
+            "异常与补零人员"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "screenshot",
+          "file": "theme23-goal-plan-manager-daily-report.png"
+        }
+      ]
+    },
+    {
+      "name": "employee-goal-plan-reporting-mainline",
+      "username": "employee_platform",
+      "route": "/performance/goals",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "目标&计划总览",
+            "今日运营区",
+            "我的待回填目标",
+            "提交我的结果"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "目标&计划总览",
+            "我的待回填目标",
+            "提交我的结果",
+            "新增个人补充目标"
+          ],
+          "excludes": [
+            "下发公共目标",
+            "生成日报"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme23-goal-plan-employee-overview.png"
+        },
+        {
+          "type": "clickText",
+          "text": "新增个人补充目标",
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "新增目标计划",
+            "目标来源",
+            "个人补充目标",
+            "目标标题"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "screenshot",
+          "file": "theme23-goal-plan-employee-report-dialog.png"
+        }
+      ]
+    },
+    {
+      "name": "manager-goal-plan-contribution-dimensions",
+      "username": "manager_rd",
+      "route": "/performance/goals",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "目标对比区",
+            "公共目标贡献",
+            "个人补充目标贡献"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "目标对比区",
+            "公共目标贡献",
+            "个人补充目标贡献",
+            "完成率榜",
+            "绝对产出榜"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme23-goal-plan-manager-contribution-split.png"
+        }
+      ]
+    },
+    {
+      "name": "employee-goal-plan-no-manager-entry",
+      "username": "employee_platform",
+      "route": "/performance/goals",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "目标&计划总览",
+            "我的待回填目标"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "目标&计划总览",
+            "我的待回填目标"
+          ],
+          "excludes": [
+            "下发公共目标",
+            "保存部门配置",
+            "执行未填补零",
+            "生成日报"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme23-goal-plan-employee-no-manager-entry.png"
+        }
+      ]
+    }
+  ]
+}

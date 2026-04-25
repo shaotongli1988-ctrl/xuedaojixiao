@@ -1,5 +1,15 @@
 import { BaseService } from '/@/cool';
-import type { InterviewPageResult, InterviewRecord } from '../types';
+import { asPerformanceServicePromise } from './service-contract';
+import { decodeInterviewPageResult, decodeInterviewRecord } from './interview-contract';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import type {
+	DeleteIdsRequest,
+	InterviewInfoQuery,
+	InterviewPageQuery,
+	InterviewPageResult,
+	InterviewRecord,
+	InterviewSaveRequest
+} from '../types';
 
 /**
  * 招聘面试前端请求服务。
@@ -8,35 +18,44 @@ import type { InterviewPageResult, InterviewRecord } from '../types';
  */
 export default class PerformanceInterviewService extends BaseService {
 	permission = {
-		page: 'performance:interview:page',
-		info: 'performance:interview:info',
-		add: 'performance:interview:add',
-		update: 'performance:interview:update',
-		delete: 'performance:interview:delete'
+		page: PERMISSIONS.performance.interview.page,
+		info: PERMISSIONS.performance.interview.info,
+		add: PERMISSIONS.performance.interview.add,
+		update: PERMISSIONS.performance.interview.update,
+		delete: PERMISSIONS.performance.interview.delete
 	};
 
 	constructor() {
 		super('admin/performance/interview');
 	}
 
-	fetchPage(data: any) {
-		return super.page(data) as unknown as Promise<InterviewPageResult>;
+	fetchPage(data: InterviewPageQuery) {
+		return asPerformanceServicePromise<InterviewPageResult>(
+			super.page(data),
+			decodeInterviewPageResult
+		);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<InterviewRecord>;
+	fetchInfo(params: InterviewInfoQuery) {
+		return asPerformanceServicePromise<InterviewRecord>(
+			super.info(params),
+			decodeInterviewRecord
+		);
 	}
 
-	createInterview(data: InterviewRecord) {
-		return super.add(data) as unknown as Promise<InterviewRecord>;
+	createInterview(data: InterviewSaveRequest) {
+		return asPerformanceServicePromise<InterviewRecord>(super.add(data), decodeInterviewRecord);
 	}
 
-	updateInterview(data: InterviewRecord) {
-		return super.update(data) as unknown as Promise<InterviewRecord>;
+	updateInterview(data: InterviewSaveRequest & { id: number }) {
+		return asPerformanceServicePromise<InterviewRecord>(
+			super.update(data),
+			decodeInterviewRecord
+		);
 	}
 
-	removeInterview(data: { ids: number[] }) {
-		return super.delete(data) as unknown as Promise<void>;
+	removeInterview(data: DeleteIdsRequest) {
+		return asPerformanceServicePromise<void>(super.delete(data));
 	}
 }
 

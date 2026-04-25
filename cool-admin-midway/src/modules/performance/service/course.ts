@@ -4,11 +4,6 @@
  * 维护重点是 `published` 编辑白名单、`code` 可空唯一和报名摘要字段裁剪必须始终与冻结文档一致。
  */
 import {
-  App,
-  ASYNC_CONTEXT_KEY,
-  ASYNC_CONTEXT_MANAGER_KEY,
-  AsyncContextManager,
-  IMidwayApplication,
   Inject,
   Provide,
   Scope,
@@ -17,29 +12,35 @@ import {
 import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Brackets, In, Repository } from 'typeorm';
-import * as jwt from 'jsonwebtoken';
 import { BaseSysMenuService } from '../../base/service/sys/menu';
 import { BaseSysUserEntity } from '../../base/entity/sys/user';
 import { PerformanceCourseEntity } from '../entity/course';
 import { PerformanceCourseEnrollmentEntity } from '../entity/course-enrollment';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import {
   assertCourseDeletable,
   buildCourseUpdatePatch,
   normalizeCourseAddPayload,
   type CourseSnapshot,
 } from './course-helper';
-
-const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
-  return require('../../base/config').default({
-    app,
-    env: app?.getEnv?.(),
-  }).jwt;
-};
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
 
 const normalizePagination = (value: any, fallback: number) => {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 };
+const PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resourceNotFound
+  );
 
 @Provide()
 @Scope(ScopeEnum.Request, { allowDowngrade: true })
@@ -54,50 +55,25 @@ export class PerformanceCourseService extends BaseService {
   baseSysMenuService: BaseSysMenuService;
 
   @Inject()
-  ctx;
-
-  @App()
-  app: IMidwayApplication;
+  performanceAccessContextService: PerformanceAccessContextService;
 
   private readonly perms = {
-    page: 'performance:course:page',
-    info: 'performance:course:info',
-    add: 'performance:course:add',
-    update: 'performance:course:update',
-    delete: 'performance:course:delete',
-    enrollmentPage: 'performance:course:enrollmentPage',
+    page: PERMISSIONS.performance.course.page,
+    info: PERMISSIONS.performance.course.info,
+    add: PERMISSIONS.performance.course.add,
+    update: PERMISSIONS.performance.course.update,
+    delete: PERMISSIONS.performance.course.delete,
+    enrollmentPage: PERMISSIONS.performance.course.enrollmentPage,
   };
 
-  private get currentCtx() {
-    if (this.ctx?.admin) {
-      return this.ctx;
-    }
-    try {
-      const contextManager: AsyncContextManager = this.app
-        .getApplicationContext()
-        .get(ASYNC_CONTEXT_MANAGER_KEY);
-      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as any;
-    } catch (error) {
-      return this.ctx;
-    }
-  }
-
-  private get currentAdmin() {
-    if (this.currentCtx?.admin) {
-      return this.currentCtx.admin;
-    }
-    const token =
-      this.currentCtx?.get?.('Authorization') ||
-      this.currentCtx?.headers?.authorization;
-    if (!token) {
-      return undefined;
-    }
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
-  }
+  private readonly capabilityByPerm: Record<string, PerformanceCapabilityKey> = {
+    [PERMISSIONS.performance.course.page]: 'course.read',
+    [PERMISSIONS.performance.course.info]: 'course.read',
+    [PERMISSIONS.performance.course.add]: 'course.create',
+    [PERMISSIONS.performance.course.update]: 'course.update',
+    [PERMISSIONS.performance.course.delete]: 'course.delete',
+    [PERMISSIONS.performance.course.enrollmentPage]: 'course.enrollment.read',
+  };
 
   async page(query: any) {
     const perms = await this.currentPerms();
@@ -308,17 +284,31 @@ export class PerformanceCourseService extends BaseService {
   }
 
   private async currentPerms() {
-    const admin = this.currentAdmin;
-
-    if (!admin?.roleIds) {
-      throw new CoolCommException('登录状态已失效');
-    }
-
-    return this.baseSysMenuService.getPerms(admin.roleIds);
+    return this.performanceAccessContextService.resolveAccessContext(undefined, {
+      allowEmptyRoleIds: false,
+      missingAuthMessage: '登录状态已失效',
+    });
   }
 
-  private assertPerm(perms: string[], perm: string, message: string) {
-    if (!perms.includes(perm)) {
+  private resolveCapabilityKey(perm: string): PerformanceCapabilityKey {
+    const capabilityKey = this.capabilityByPerm[perm];
+    if (!capabilityKey) {
+      throw new CoolCommException(`未映射的课程权限: ${perm}`);
+    }
+    return capabilityKey;
+  }
+
+  private assertPerm(
+    access: PerformanceResolvedAccessContext,
+    perm: string,
+    message: string
+  ) {
+    if (
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        this.resolveCapabilityKey(perm)
+      )
+    ) {
       throw new CoolCommException(message);
     }
   }
@@ -327,7 +317,7 @@ export class PerformanceCourseService extends BaseService {
     const course = await this.performanceCourseEntity.findOneBy({ id });
 
     if (!course) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     return course;

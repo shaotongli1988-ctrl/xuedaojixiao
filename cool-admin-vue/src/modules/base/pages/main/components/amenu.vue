@@ -38,6 +38,14 @@ const list = computed(() => {
 	return menu.group.filter(e => e.isShow);
 });
 
+function matchesRoute(menuPath?: string) {
+	if (!menuPath) {
+		return false;
+	}
+
+	return route.path === menuPath || route.path.startsWith(`${menuPath}/`);
+}
+
 // 选择导航
 function select(index: number) {
 	if (index == active.value) {
@@ -76,7 +84,7 @@ function refresh() {
 
 				break;
 			case 1:
-				if (route.path.includes(e.path)) {
+				if (matchesRoute(e.path)) {
 					index = i;
 				}
 				break;
@@ -112,7 +120,15 @@ watch(
 	display: flex;
 	align-items: center;
 	flex: 1;
+	min-width: 0;
+	overflow-x: auto;
+	overflow-y: hidden;
 	user-select: none;
+	scrollbar-width: none;
+
+	&::-webkit-scrollbar {
+		display: none;
+	}
 
 	&__item {
 		display: flex;
@@ -128,6 +144,7 @@ watch(
 		border: 1px solid transparent;
 		margin-right: 6px;
 		transition: all 0.3s;
+		flex-shrink: 0;
 
 		&.is-active {
 			border-color: var(--el-color-primary-light-8);

@@ -31,7 +31,8 @@
 						<view>
 							<text class="detail-card__title">{{ detail.title }}</text>
 							<text class="detail-card__meta">
-								{{ detail.employeeName || "-" }} · {{ detail.departmentName || "-" }}
+								{{ detail.employeeName || "-" }} ·
+								{{ detail.departmentName || "-" }}
 							</text>
 						</view>
 						<goal-status-tag :status="detail.status" />
@@ -71,21 +72,28 @@
 							{{ item.operatorName || "-" }} · {{ item.createTime || "-" }} ·
 							{{ item.progressRate }}%
 						</text>
-						<text v-if="item.remark" class="progress-row__remark">{{ item.remark }}</text>
+						<text v-if="item.remark" class="progress-row__remark">{{
+							item.remark
+						}}</text>
 					</view>
 				</view>
 
 				<view class="detail-actions">
 					<cl-button plain @tap="backToList">返回</cl-button>
 					<cl-button
-						v-if="canGoalEdit(detail) && user.hasPerm('performance:goal:update')"
+						v-if="
+							canGoalEdit(detail) && user.hasPerm(PERMISSIONS.performance.goal.update)
+						"
 						plain
 						@tap="openEdit"
 					>
 						编辑目标
 					</cl-button>
 					<cl-button
-						v-if="canGoalProgressUpdate(detail) && user.hasPerm('performance:goal:progressUpdate')"
+						v-if="
+							canGoalProgressUpdate(detail) &&
+							user.hasPerm(PERMISSIONS.performance.goal.progressUpdate)
+						"
 						type="primary"
 						@tap="openProgress"
 					>
@@ -101,16 +109,15 @@
 import { ref } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { useCool, useStore } from "/@/cool";
-import {
-	canGoalEdit,
-	canGoalProgressUpdate,
-	type GoalRecord,
-} from "/@/types/performance-goal";
+import { canGoalEdit, canGoalProgressUpdate, type GoalRecord } from "/@/types/performance-goal";
 import GoalState from "./components/goal-state.vue";
 import GoalStatusTag from "./components/goal-status-tag.vue";
+import { PERMISSIONS } from "/@/generated/permissions.generated";
 
 const { service, router } = useCool();
-const { user } = useStore();
+const { user, dict } = useStore();
+
+const GOAL_STATUS_DICT_KEY = "performance.goal.status";
 
 const detail = ref<GoalRecord | null>(null);
 const state = ref({
@@ -139,6 +146,7 @@ async function load() {
 	}
 
 	try {
+		await dict.refresh([GOAL_STATUS_DICT_KEY]);
 		detail.value = await (service as any).performance.goal.fetchInfo({ id: recordId });
 		state.value = { mode: "ready", error: "" };
 	} catch (error: any) {

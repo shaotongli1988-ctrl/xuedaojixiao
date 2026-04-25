@@ -6,11 +6,24 @@
 </template>
 
 <script lang="ts" setup>
-import { goalStatusLabel, goalStatusTone } from "/@/types/performance-goal";
+import { useStore } from "/@/cool/store";
+
+const GOAL_STATUS_DICT_KEY = "performance.goal.status";
+
+const { dict } = useStore();
 
 defineProps<{
 	status?: string;
 }>();
+
+function goalStatusLabel(value?: string | null) {
+	return dict.getLabel(GOAL_STATUS_DICT_KEY, value) || value || "未知";
+}
+
+function goalStatusTone(value?: string | null): "info" | "warning" | "success" | "error" {
+	const tone = dict.getMeta(GOAL_STATUS_DICT_KEY, value)?.tone;
+	return tone === "success" || tone === "warning" ? tone : tone === "danger" ? "error" : "info";
+}
 </script>
 
 <style lang="scss" scoped>
@@ -45,4 +58,3 @@ defineProps<{
 	}
 }
 </style>
-

@@ -51,69 +51,87 @@ withDefaults(defineProps<Props>(), {
 </script>
 
 <style lang="scss" scoped>
+@use '../../../styles/patterns.page-shell.scss' as pageShell;
+
 .performance-page-shell {
 	display: grid;
-	gap: 16px;
+	gap: var(--app-space-4);
+
+	--page-shell-card-bg: var(--app-surface-card);
+	--page-shell-summary-bg: var(--app-surface-hero);
+	--page-shell-border: var(--app-border-strong);
+	--page-shell-divider: var(--app-divider);
+	--page-shell-title: var(--app-text-primary);
+	--page-shell-text: var(--app-text-secondary);
+	--page-shell-eyebrow: var(--app-text-tertiary);
+	--page-shell-code-bg: var(--app-surface-muted);
+	--page-shell-code-text: var(--app-text-emphasis);
+
+	:deep(.el-card) {
+		border-color: var(--page-shell-border);
+		background: var(--page-shell-card-bg);
+		box-shadow: var(--app-shadow-surface);
+	}
 
 	&__summary {
-		border: 1px solid var(--el-border-color-light);
+		@include pageShell.page-hero;
 	}
 
 	&__header {
 		display: flex;
 		align-items: flex-start;
 		justify-content: space-between;
-		gap: 12px;
-		margin-bottom: 12px;
+		gap: var(--app-space-3);
+		margin-bottom: var(--app-space-3);
 	}
 
 	&__phase {
-		margin-bottom: 8px;
-		font-size: 12px;
-		color: var(--el-text-color-secondary);
+		margin-bottom: var(--app-space-2);
+		font-size: var(--app-font-size-caption);
+		color: var(--page-shell-eyebrow);
 	}
 
 	&__title {
 		margin: 0;
 		font-size: 22px;
 		line-height: 1.3;
-		color: var(--el-text-color-primary);
+		color: var(--page-shell-title);
 	}
 
 	&__description {
-		margin: 0 0 16px;
+		margin: 0 0 var(--app-space-4);
 		line-height: 1.7;
-		color: var(--el-text-color-regular);
+		color: var(--page-shell-text);
 	}
 
 	&__meta,
 	&__perm {
 		display: grid;
 		gap: 10px;
-		padding-top: 12px;
-		margin-top: 12px;
-		border-top: 1px dashed var(--el-border-color);
+		padding-top: var(--app-space-3);
+		margin-top: var(--app-space-3);
+		border-top: 1px dashed var(--page-shell-divider);
 	}
 
 	&__meta-label {
-		font-size: 12px;
-		color: var(--el-text-color-secondary);
+		font-size: var(--app-font-size-caption);
+		color: var(--page-shell-eyebrow);
 	}
 
 	&__perm-list {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 8px;
+		gap: var(--app-space-2);
 	}
 
 	code {
 		display: inline-flex;
 		width: fit-content;
 		padding: 4px 8px;
-		font-size: 12px;
+		font-size: var(--app-font-size-caption);
 		border-radius: 6px;
-		background: var(--el-fill-color-light);
-		color: var(--el-text-color-primary);
+		background: var(--page-shell-code-bg);
+		color: var(--page-shell-code-text);
 	}
 }
 </style>

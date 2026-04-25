@@ -1,0 +1,886 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Theme 16 Recruit Plan Contract Snapshot",
+    "version": "0.1.0",
+    "description": "Frozen contract evidence for theme 16 recruitPlan APIs."
+  },
+  "tags": [
+    {
+      "name": "performance.recruitPlan",
+      "description": "Theme 16 recruit plan management APIs."
+    }
+  ],
+  "paths": {
+    "/admin/performance/recruitPlan/page": {
+      "post": {
+        "tags": [
+          "performance.recruitPlan"
+        ],
+        "operationId": "performanceRecruitPlanPage",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecruitPlanPageQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "招聘计划分页结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_RecruitPlanPageResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/recruitPlan/info": {
+      "get": {
+        "tags": [
+          "performance.recruitPlan"
+        ],
+        "operationId": "performanceRecruitPlanInfo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "招聘计划详情结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_RecruitPlanRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/recruitPlan/add": {
+      "post": {
+        "tags": [
+          "performance.recruitPlan"
+        ],
+        "operationId": "performanceRecruitPlanAdd",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecruitPlanSaveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "新增招聘计划结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_RecruitPlanRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/recruitPlan/update": {
+      "post": {
+        "tags": [
+          "performance.recruitPlan"
+        ],
+        "operationId": "performanceRecruitPlanUpdate",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecruitPlanSaveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "修改招聘计划结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_RecruitPlanRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/recruitPlan/delete": {
+      "post": {
+        "tags": [
+          "performance.recruitPlan"
+        ],
+        "operationId": "performanceRecruitPlanDelete",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecruitPlanActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "删除招聘计划结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_RecruitPlanDeleteResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/recruitPlan/import": {
+      "post": {
+        "tags": [
+          "performance.recruitPlan"
+        ],
+        "operationId": "performanceRecruitPlanImport",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecruitPlanImportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "导入招聘计划结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_RecruitPlanImportResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/recruitPlan/export": {
+      "post": {
+        "tags": [
+          "performance.recruitPlan"
+        ],
+        "operationId": "performanceRecruitPlanExport",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecruitPlanExportQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "导出招聘计划结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_RecruitPlanExportRows"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/recruitPlan/submit": {
+      "post": {
+        "tags": [
+          "performance.recruitPlan"
+        ],
+        "operationId": "performanceRecruitPlanSubmit",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecruitPlanActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "提交招聘计划结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_RecruitPlanRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/recruitPlan/close": {
+      "post": {
+        "tags": [
+          "performance.recruitPlan"
+        ],
+        "operationId": "performanceRecruitPlanClose",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecruitPlanActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "关闭招聘计划结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_RecruitPlanRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/recruitPlan/void": {
+      "post": {
+        "tags": [
+          "performance.recruitPlan"
+        ],
+        "operationId": "performanceRecruitPlanVoid",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecruitPlanActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "作废招聘计划结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_RecruitPlanRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/recruitPlan/reopen": {
+      "post": {
+        "tags": [
+          "performance.recruitPlan"
+        ],
+        "operationId": "performanceRecruitPlanReopen",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecruitPlanActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "重新开启招聘计划结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_RecruitPlanRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PagePagination": {
+        "type": "object",
+        "required": [
+          "page",
+          "size",
+          "total"
+        ],
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        }
+      },
+      "JobStandardStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "active",
+          "inactive"
+        ]
+      },
+      "RecruitPlanStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "active",
+          "voided",
+          "closed"
+        ]
+      },
+      "RecruitPlanSourceSnapshot": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "positionName": {
+            "type": "string"
+          },
+          "jobLevel": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetDepartmentId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "targetDepartmentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStandardStatus",
+            "nullable": true
+          },
+          "requirementSummary": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "ApiResponse_RecruitPlanPageResult": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/RecruitPlanPageResult"
+          }
+        }
+      },
+      "ApiResponse_RecruitPlanRecord": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/RecruitPlanRecord"
+          }
+        }
+      },
+      "ApiResponse_RecruitPlanDeleteResult": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/RecruitPlanDeleteResult"
+          }
+        }
+      },
+      "ApiResponse_RecruitPlanImportResult": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/RecruitPlanImportResult"
+          }
+        }
+      },
+      "ApiResponse_RecruitPlanExportRows": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/RecruitPlanExportRows"
+          }
+        }
+      },
+      "RecruitPlanPageQuery": {
+        "type": "object",
+        "required": [
+          "page",
+          "size"
+        ],
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "keyword": {
+            "type": "string"
+          },
+          "targetDepartmentId": {
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RecruitPlanStatus"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          }
+        }
+      },
+      "RecruitPlanRecord": {
+        "type": "object",
+        "required": [
+          "title",
+          "targetDepartmentId",
+          "positionName",
+          "headcount",
+          "startDate",
+          "endDate",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "targetDepartmentId": {
+            "type": "integer"
+          },
+          "targetDepartmentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "positionName": {
+            "type": "string"
+          },
+          "headcount": {
+            "type": "integer"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          },
+          "recruiterId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "recruiterName": {
+            "type": "string",
+            "nullable": true
+          },
+          "requirementSummary": {
+            "type": "string",
+            "nullable": true
+          },
+          "jobStandardId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "jobStandardSummary": {
+            "$ref": "#/components/schemas/RecruitPlanSourceSnapshot",
+            "nullable": true
+          },
+          "jobStandardSnapshot": {
+            "$ref": "#/components/schemas/RecruitPlanSourceSnapshot",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/RecruitPlanStatus"
+          },
+          "createTime": {
+            "type": "string"
+          },
+          "updateTime": {
+            "type": "string"
+          }
+        }
+      },
+      "RecruitPlanSaveRequest": {
+        "type": "object",
+        "required": [
+          "title",
+          "targetDepartmentId",
+          "positionName",
+          "headcount",
+          "startDate",
+          "endDate"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "targetDepartmentId": {
+            "type": "integer"
+          },
+          "positionName": {
+            "type": "string"
+          },
+          "headcount": {
+            "type": "integer"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          },
+          "recruiterId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "requirementSummary": {
+            "type": "string",
+            "nullable": true
+          },
+          "jobStandardId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/RecruitPlanStatus"
+          }
+        }
+      },
+      "RecruitPlanActionRequest": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          }
+        }
+      },
+      "RecruitPlanDeleteResult": {
+        "type": "object",
+        "required": [
+          "id",
+          "deleted"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "deleted": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RecruitPlanImportCellValue": {
+        "nullable": true,
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "integer"
+          }
+        ]
+      },
+      "RecruitPlanImportRow": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "$ref": "#/components/schemas/RecruitPlanImportCellValue"
+          },
+          "targetDepartmentId": {
+            "$ref": "#/components/schemas/RecruitPlanImportCellValue"
+          },
+          "positionName": {
+            "$ref": "#/components/schemas/RecruitPlanImportCellValue"
+          },
+          "headcount": {
+            "$ref": "#/components/schemas/RecruitPlanImportCellValue"
+          },
+          "startDate": {
+            "$ref": "#/components/schemas/RecruitPlanImportCellValue"
+          },
+          "endDate": {
+            "$ref": "#/components/schemas/RecruitPlanImportCellValue"
+          },
+          "recruiterId": {
+            "$ref": "#/components/schemas/RecruitPlanImportCellValue"
+          },
+          "requirementSummary": {
+            "$ref": "#/components/schemas/RecruitPlanImportCellValue"
+          },
+          "jobStandardId": {
+            "$ref": "#/components/schemas/RecruitPlanImportCellValue"
+          }
+        }
+      },
+      "RecruitPlanImportRequest": {
+        "type": "object",
+        "required": [
+          "fileId",
+          "rows"
+        ],
+        "properties": {
+          "fileId": {
+            "type": "integer"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecruitPlanImportRow"
+            }
+          }
+        }
+      },
+      "RecruitPlanImportResult": {
+        "type": "object",
+        "required": [
+          "fileId",
+          "importedCount",
+          "skippedCount"
+        ],
+        "properties": {
+          "fileId": {
+            "type": "integer"
+          },
+          "importedCount": {
+            "type": "integer"
+          },
+          "skippedCount": {
+            "type": "integer"
+          }
+        }
+      },
+      "RecruitPlanExportQuery": {
+        "type": "object",
+        "properties": {
+          "keyword": {
+            "type": "string"
+          },
+          "targetDepartmentId": {
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RecruitPlanStatus"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          }
+        }
+      },
+      "RecruitPlanExportRow": {
+        "type": "object",
+        "required": [
+          "title",
+          "targetDepartmentId",
+          "positionName",
+          "headcount",
+          "startDate",
+          "endDate",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "targetDepartmentId": {
+            "type": "integer"
+          },
+          "targetDepartmentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "positionName": {
+            "type": "string"
+          },
+          "headcount": {
+            "type": "integer"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          },
+          "recruiterId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "recruiterName": {
+            "type": "string",
+            "nullable": true
+          },
+          "requirementSummary": {
+            "type": "string",
+            "nullable": true
+          },
+          "jobStandardId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "jobStandardSummary": {
+            "$ref": "#/components/schemas/RecruitPlanSourceSnapshot",
+            "nullable": true
+          },
+          "jobStandardSnapshot": {
+            "$ref": "#/components/schemas/RecruitPlanSourceSnapshot",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/RecruitPlanStatus"
+          },
+          "createTime": {
+            "type": "string"
+          },
+          "updateTime": {
+            "type": "string"
+          }
+        }
+      },
+      "RecruitPlanExportRows": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/RecruitPlanExportRow"
+        }
+      },
+      "RecruitPlanPageResult": {
+        "type": "object",
+        "required": [
+          "list",
+          "pagination"
+        ],
+        "properties": {
+          "list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecruitPlanRecord"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PagePagination"
+          }
+        }
+      }
+    }
+  }
+}

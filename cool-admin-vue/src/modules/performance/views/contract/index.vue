@@ -122,13 +122,17 @@
 				</el-table-column>
 				<el-table-column prop="status" label="状态" width="110">
 					<template #default="{ row }">
-						<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+						<el-tag :type="statusTagType(row.status)">{{
+							statusLabel(row.status)
+						}}</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
 				<el-table-column label="操作" fixed="right" min-width="220">
 					<template #default="{ row }">
-						<el-button v-if="showInfoButton" text @click="openDetail(row)">详情</el-button>
+						<el-button v-if="showInfoButton" text @click="openDetail(row)"
+							>详情</el-button
+						>
 						<el-button v-if="canEdit(row)" text type="primary" @click="openEdit(row)">
 							编辑
 						</el-button>
@@ -156,12 +160,7 @@
 			</div>
 		</el-card>
 
-		<el-dialog
-			v-model="detailVisible"
-			title="合同详情"
-			width="860px"
-			destroy-on-close
-		>
+		<el-dialog v-model="detailVisible" title="合同详情" width="860px" destroy-on-close>
 			<div v-if="detailContract" class="contract-page__detail">
 				<el-alert
 					v-if="detailContract.status !== 'draft'"
@@ -172,7 +171,9 @@
 				/>
 				<el-descriptions :column="2" border>
 					<el-descriptions-item label="员工">
-						{{ detailContract.employeeName || employeeLabel(detailContract.employeeId) }}
+						{{
+							detailContract.employeeName || employeeLabel(detailContract.employeeId)
+						}}
 					</el-descriptions-item>
 					<el-descriptions-item label="合同类型">
 						{{ typeLabel(detailContract.type) }}
@@ -199,7 +200,10 @@
 						{{ detailContract.position || '-' }}
 					</el-descriptions-item>
 					<el-descriptions-item label="部门">
-						{{ detailContract.departmentName || departmentLabel(detailContract.departmentId) }}
+						{{
+							detailContract.departmentName ||
+							departmentLabel(detailContract.departmentId)
+						}}
 					</el-descriptions-item>
 					<el-descriptions-item label="状态">
 						<el-tag :type="statusTagType(detailContract.status)">
@@ -224,7 +228,11 @@
 		>
 			<el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
 				<el-alert
-					:title="editingContract?.id ? '仅 draft 合同可编辑；编辑时可保持 draft 或转为 active。' : '新建保存后默认进入 draft 状态。'"
+					:title="
+						editingContract?.id
+							? '仅 draft 合同可编辑；编辑时可保持 draft 或转为 active。'
+							: '新建保存后默认进入 draft 状态。'
+					"
 					:type="editingContract?.id ? 'warning' : 'info'"
 					:closable="false"
 					show-icon
@@ -396,27 +404,35 @@ defineOptions({
 });
 
 import { computed, onMounted, reactive, ref } from 'vue';
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
+import { useDict } from '/$/dict';
 import { service } from '/@/cool';
+import { useListPage } from '../../composables/use-list-page.js';
 import { performanceContractService } from '../../service/contract';
+import { loadDepartmentOptions, loadUserOptions } from '../../utils/lookup-options.js';
+import { confirmElementAction, runTrackedElementAction } from '../shared/action-feedback';
 import {
+	createElementWarningFromErrorHandler,
+	resolveErrorMessage,
+	showElementErrorFromError
+} from '../shared/error-message';
+import {
+	type DepartmentOption,
 	type ContractRecord,
 	type ContractStatus,
 	type ContractType,
 	type UserOption,
 	createEmptyContract
 } from '../../types';
+import type { ContractSaveRequest } from '../../types';
 
-interface DepartmentOption {
-	id: number;
-	label: string;
-}
+const CONTRACT_TYPE_DICT_KEY = 'performance.contract.type';
+const CONTRACT_STATUS_DICT_KEY = 'performance.contract.status';
 
-const rows = ref<ContractRecord[]>([]);
 const userOptions = ref<UserOption[]>([]);
 const departmentOptions = ref<DepartmentOption[]>([]);
-const tableLoading = ref(false);
+const { dict } = useDict();
 const submitLoading = ref(false);
 const formVisible = ref(false);
 const detailVisible = ref(false);
@@ -424,18 +440,31 @@ const editingContract = ref<ContractRecord | null>(null);
 const detailContract = ref<ContractRecord | null>(null);
 const formRef = ref<FormInstance>();
 
-const filters = reactive({
-	employeeId: undefined as number | undefined,
-	type: '' as ContractType | '',
-	status: '' as ContractStatus | '',
-	keyword: ''
+const contractList = useListPage({
+	createFilters: () => ({
+		employeeId: undefined,
+		type: '',
+		status: '',
+		keyword: ''
+	}),
+	canLoad: () => canAccess.value,
+	fetchPage: params =>
+		performanceContractService.fetchPage({
+			page: params.page,
+			size: params.size,
+			employeeId: params.employeeId || undefined,
+			type: params.type || undefined,
+			status: params.status || undefined,
+			keyword: params.keyword || undefined
+		}),
+	onError: (error: unknown) => {
+		showElementErrorFromError(error, '合同列表加载失败');
+	}
 });
-
-const pagination = reactive({
-	page: 1,
-	size: 10,
-	total: 0
-});
+const rows = contractList.rows;
+const tableLoading = contractList.loading;
+const filters = contractList.filters;
+const pagination = contractList.pager;
 
 const form = reactive<ContractRecord>(createEmptyContract());
 
@@ -486,24 +515,23 @@ const rules: FormRules = {
 	]
 };
 
-const typeOptions: Array<{ label: string; value: ContractType }> = [
-	{ label: '全职', value: 'full-time' },
-	{ label: '兼职', value: 'part-time' },
-	{ label: '实习', value: 'internship' },
-	{ label: '其他', value: 'other' }
-];
+const typeOptions = computed<Array<{ label: string; value: ContractType }>>(() =>
+	dict.get(CONTRACT_TYPE_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as ContractType
+	}))
+);
 
-const filterStatusOptions: Array<{ label: string; value: ContractStatus }> = [
-	{ label: '草稿', value: 'draft' },
-	{ label: '生效', value: 'active' },
-	{ label: '到期', value: 'expired' },
-	{ label: '终止', value: 'terminated' }
-];
+const filterStatusOptions = computed<Array<{ label: string; value: ContractStatus }>>(() =>
+	dict.get(CONTRACT_STATUS_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as ContractStatus
+	}))
+);
 
-const editableStatusOptions: Array<{ label: string; value: ContractStatus }> = [
-	{ label: '草稿', value: 'draft' },
-	{ label: '生效', value: 'active' }
-];
+const editableStatusOptions = computed<Array<{ label: string; value: ContractStatus }>>(() =>
+	filterStatusOptions.value.filter(item => item.value === 'draft' || item.value === 'active')
+);
 
 const canAccess = computed(() => checkPerm(performanceContractService.permission.page));
 const showInfoButton = computed(() => checkPerm(performanceContractService.permission.info));
@@ -540,82 +568,43 @@ const salaryModel = computed<number | undefined>({
 });
 
 onMounted(async () => {
+	await dict.refresh([CONTRACT_TYPE_DICT_KEY, CONTRACT_STATUS_DICT_KEY]);
 	await Promise.all([loadUsers(), loadDepartments()]);
 	await refresh();
 });
 
 async function loadUsers() {
-	try {
-		const result = await service.base.sys.user.page({
-			page: 1,
-			size: 500
-		});
-
-		userOptions.value = (result.list || []).map((item: any) => ({
-			id: Number(item.id),
-			name: item.name,
-			departmentId: item.departmentId,
-			departmentName: item.departmentName
-		}));
-	} catch (error: any) {
-		userOptions.value = [];
-		ElMessage.warning(error.message || '员工选项加载失败');
-	}
+	userOptions.value = await loadUserOptions(
+		() =>
+			service.base.sys.user.page({
+				page: 1,
+				size: 500
+			}),
+		createElementWarningFromErrorHandler('员工选项加载失败')
+	);
 }
 
 async function loadDepartments() {
-	try {
-		const result = await service.base.sys.department.list();
-		departmentOptions.value = flattenDepartments(result || []);
-	} catch (error: any) {
-		departmentOptions.value = [];
-		ElMessage.warning(error.message || '部门选项加载失败');
-	}
+	departmentOptions.value = await loadDepartmentOptions(
+		() => service.base.sys.department.list(),
+		createElementWarningFromErrorHandler('部门选项加载失败')
+	);
 }
 
 async function refresh() {
-	if (!canAccess.value) {
-		return;
-	}
-
-	tableLoading.value = true;
-
-	try {
-		const result = await performanceContractService.fetchPage({
-			page: pagination.page,
-			size: pagination.size,
-			employeeId: filters.employeeId || undefined,
-			type: filters.type || undefined,
-			status: filters.status || undefined,
-			keyword: filters.keyword || undefined
-		});
-
-		rows.value = result.list || [];
-		pagination.total = result.pagination?.total || 0;
-	} catch (error: any) {
-		ElMessage.error(error.message || '合同列表加载失败');
-	} finally {
-		tableLoading.value = false;
-	}
+	await contractList.reload();
 }
 
 function handleSearch() {
-	pagination.page = 1;
-	refresh();
+	void contractList.search();
 }
 
 function handleReset() {
-	filters.employeeId = undefined;
-	filters.type = '';
-	filters.status = '';
-	filters.keyword = '';
-	pagination.page = 1;
-	refresh();
+	void contractList.reset();
 }
 
 function changePage(page: number) {
-	pagination.page = page;
-	refresh();
+	void contractList.goToPage(page);
 }
 
 function openCreate() {
@@ -660,15 +649,15 @@ async function loadDetail(id: number, next: (record: ContractRecord) => void) {
 	try {
 		const record = await performanceContractService.fetchInfo({ id });
 		next(record);
-	} catch (error: any) {
-		ElMessage.error(error.message || '合同详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '合同详情加载失败');
 	}
 }
 
 async function submitForm() {
 	await formRef.value?.validate();
 
-	if (!typeOptions.some(item => item.value === form.type)) {
+	if (!typeOptions.value.some(item => item.value === form.type)) {
 		ElMessage.error('合同类型不合法');
 		return;
 	}
@@ -696,15 +685,16 @@ async function submitForm() {
 	submitLoading.value = true;
 
 	try {
-		const payload: Partial<ContractRecord> = {
+		const payload: ContractSaveRequest = {
 			id: editingContract.value?.id,
-			employeeId: form.employeeId,
+			employeeId: Number(form.employeeId),
 			type: form.type,
 			title: form.title?.trim() || undefined,
 			contractNumber: form.contractNumber?.trim() || undefined,
 			startDate: form.startDate,
 			endDate: form.endDate,
-			probationPeriod: form.probationPeriod == null ? undefined : Number(form.probationPeriod),
+			probationPeriod:
+				form.probationPeriod == null ? undefined : Number(form.probationPeriod),
 			salary: form.salary == null ? undefined : Number(form.salary),
 			position: form.position?.trim() || undefined,
 			departmentId: form.departmentId || undefined,
@@ -712,7 +702,9 @@ async function submitForm() {
 		};
 
 		if (editingContract.value?.id) {
-			await performanceContractService.updateContract(payload as Partial<ContractRecord> & { id: number });
+			await performanceContractService.updateContract(
+				payload as ContractSaveRequest & { id: number }
+			);
 		} else {
 			await performanceContractService.createContract(payload);
 		}
@@ -720,35 +712,34 @@ async function submitForm() {
 		ElMessage.success('保存成功');
 		formVisible.value = false;
 		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '保存失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '保存失败');
 	} finally {
 		submitLoading.value = false;
 	}
 }
 
 async function handleDelete(row: ContractRecord) {
-	try {
-		await ElMessageBox.confirm(
-			`确认删除合同「${row.title || row.contractNumber || row.id}」吗？`,
-			'删除确认',
-			{
-				type: 'warning'
-			}
-		);
-	} catch {
+	const confirmed = await confirmElementAction(
+		`确认删除合同「${row.title || row.contractNumber || row.id}」吗？`,
+		'删除确认'
+	);
+
+	if (!confirmed) {
 		return;
 	}
 
-	try {
-		await performanceContractService.removeContract({
-			ids: [row.id!]
-		});
-		ElMessage.success('删除成功');
-		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '删除失败');
-	}
+	await runTrackedElementAction({
+		rowId: Number(row.id || 0),
+		actionType: 'delete',
+		request: () =>
+			performanceContractService.removeContract({
+				ids: [row.id!]
+			}),
+		successMessage: '删除成功',
+		errorMessage: '删除失败',
+		refresh
+	});
 }
 
 function handleEmployeeChange(value?: number) {
@@ -774,30 +765,19 @@ function canDelete(row: ContractRecord) {
 }
 
 function isAllowedStatus(status?: ContractStatus) {
-	return filterStatusOptions.some(item => item.value === status);
+	return filterStatusOptions.value.some(item => item.value === status);
 }
 
 function typeLabel(value?: ContractType | null) {
-	const item = typeOptions.find(option => option.value === value);
-	return item?.label || value || '-';
+	return dict.getLabel(CONTRACT_TYPE_DICT_KEY, value) || value || '-';
 }
 
 function statusLabel(status?: ContractStatus | '') {
-	const item = filterStatusOptions.find(option => option.value === status);
-	return item?.label || status || '-';
+	return dict.getLabel(CONTRACT_STATUS_DICT_KEY, status) || status || '-';
 }
 
 function statusTagType(status?: ContractStatus | '') {
-	switch (status) {
-		case 'active':
-			return 'success';
-		case 'terminated':
-			return 'danger';
-		case 'expired':
-			return 'warning';
-		default:
-			return 'info';
-	}
+	return dict.getMeta(CONTRACT_STATUS_DICT_KEY, status)?.tone || 'info';
 }
 
 function detailReadonlyMessage(status?: ContractStatus) {
@@ -852,73 +832,12 @@ function formatInteger(value?: number | null) {
 
 	return `${Number(value)}`;
 }
-
-function flattenDepartments(list: any[], result: DepartmentOption[] = []) {
-	for (const item of list) {
-		result.push({
-			id: Number(item.id),
-			label: item.name
-		});
-
-		if (item.children?.length) {
-			flattenDepartments(item.children, result);
-		}
-	}
-
-	return result;
-}
 </script>
 
 <style lang="scss" scoped>
+@use '../../../../styles/patterns.management-workspace.scss' as managementWorkspace;
+
 .contract-page {
-	display: grid;
-	gap: 16px;
-
-	&__toolbar {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 16px;
-	}
-
-	&__toolbar-left,
-	&__toolbar-right {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 12px;
-	}
-
-	&__header {
-		display: grid;
-		gap: 12px;
-	}
-
-	&__header-main {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-
-		h2 {
-			margin: 0;
-			font-size: 18px;
-		}
-	}
-
-	&__pagination {
-		display: flex;
-		justify-content: flex-end;
-		padding-top: 16px;
-	}
-
-	&__detail {
-		display: grid;
-		gap: 16px;
-	}
-
-	&__dialog-footer {
-		display: flex;
-		justify-content: flex-end;
-		gap: 12px;
-	}
+	@include managementWorkspace.management-workspace-shell(1180px);
 }
 </style>

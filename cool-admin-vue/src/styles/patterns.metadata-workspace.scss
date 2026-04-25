@@ -1,0 +1,130 @@
+/* 文件职责：提供后台元数据工作台页面的共享壳层、工具栏、指标卡和分页样式；不负责具体业务字段、接口和标签语义；维护重点是同类管理页统一消费 app 语义 token，避免继续回挂业务 theme mixin。 */
+
+@use './patterns.data-panel.scss' as dataPanel;
+@use './patterns.overlay-responsive.scss' as overlayResponsive;
+
+@mixin metadata-workspace-shell($table-min-width: 960px) {
+	@include dataPanel.data-panel-shell;
+
+	--metadata-workspace-card-bg: var(--app-surface-card);
+	--metadata-workspace-muted-bg: var(--app-surface-muted);
+	--metadata-workspace-hero-bg: var(--app-surface-hero);
+	--metadata-workspace-border: var(--app-border-strong);
+	--metadata-workspace-text: var(--app-text-primary);
+	--metadata-workspace-text-secondary: var(--app-text-secondary);
+	--metadata-workspace-eyebrow: var(--app-text-tertiary);
+
+	:deep(.el-card) {
+		border-color: var(--metadata-workspace-border);
+		background: var(--metadata-workspace-card-bg);
+		box-shadow: var(--app-shadow-surface);
+	}
+
+	:deep(.el-table) {
+		@include dataPanel.data-panel-table;
+		--el-table-header-bg-color: var(--metadata-workspace-muted-bg);
+		--el-fill-color-light: var(--metadata-workspace-muted-bg);
+	}
+
+	:deep(.el-drawer__body .el-descriptions__label) {
+		background: var(--metadata-workspace-muted-bg);
+	}
+
+	@include overlayResponsive.horizontal-scroll-table($table-min-width);
+
+	&__toolbar,
+	&__toolbar-left,
+	&__toolbar-right,
+	&__filters,
+	&__actions,
+	&__header-main,
+	&__panel-header,
+	&__inline-actions,
+	&__search-summary,
+	&__tag-list {
+		display: flex;
+		gap: var(--app-space-3);
+		flex-wrap: wrap;
+		align-items: center;
+	}
+
+	&__toolbar,
+	&__panel-header {
+		justify-content: space-between;
+	}
+
+	&__header {
+		display: grid;
+		gap: var(--app-space-3);
+	}
+
+	&__header-main h2,
+	&__panel-header h3 {
+		margin: 0;
+		color: var(--metadata-workspace-text);
+	}
+
+	&__panel-header p {
+		margin: 6px 0 0;
+		color: var(--metadata-workspace-text-secondary);
+		line-height: 1.6;
+	}
+
+	&__metric-label,
+	&__metric-helper {
+		font-size: var(--app-font-size-caption);
+		color: var(--metadata-workspace-text-secondary);
+	}
+
+	&__metric-value {
+		margin-top: var(--app-space-2);
+		font-size: var(--app-font-size-kpi);
+		font-weight: 600;
+		color: var(--metadata-workspace-text);
+	}
+
+	&__pagination {
+		display: flex;
+		justify-content: flex-end;
+		margin-top: var(--app-space-4);
+	}
+
+	@include overlayResponsive.overlay-responsive;
+
+	@media (max-width: 768px) {
+		&__toolbar,
+		&__toolbar-left,
+		&__toolbar-right,
+		&__filters,
+		&__actions,
+		&__header-main,
+		&__panel-header,
+		&__inline-actions,
+		&__search-summary {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		&__pagination {
+			justify-content: flex-start;
+		}
+
+		&__toolbar-left,
+		&__toolbar-right,
+		&__filters,
+		&__actions,
+		&__inline-actions {
+			> * {
+				max-width: 100%;
+				min-width: 0;
+			}
+
+			:deep(.el-input),
+			:deep(.el-select),
+			:deep(.el-date-editor.el-input),
+			:deep(.el-date-editor.el-date-editor) {
+				width: 100% !important;
+			}
+		}
+	}
+}

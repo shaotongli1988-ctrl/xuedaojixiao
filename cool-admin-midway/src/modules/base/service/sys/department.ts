@@ -16,7 +16,7 @@ import { BaseSysRoleDepartmentEntity } from '../../entity/sys/role_department';
 import { BaseSysPermsService } from './perms';
 import { BaseSysUserEntity } from '../../entity/sys/user';
 import { Context } from '@midwayjs/koa';
-import * as jwt from 'jsonwebtoken';
+import { resolveUserAdminRuntimeContext, verifyUserAdminToken } from '../../../user/domain';
 
 const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
   return require('../../config').default({
@@ -75,29 +75,25 @@ export class BaseSysDepartmentService extends BaseService {
     if (!token) {
       return undefined;
     }
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
+    return verifyUserAdminToken(token, resolveBaseJwtConfig(this.app).secret);
   }
 
   /**
    * 获得部门菜单
    */
   async list() {
-    const currentAdmin = this.currentAdmin;
-    if (!currentAdmin?.userId) {
+    const currentAdmin = resolveUserAdminRuntimeContext(this.currentAdmin);
+    if (!currentAdmin.userId) {
       return [];
     }
-    const roleIds = Array.isArray(currentAdmin.roleIds) ? currentAdmin.roleIds : [];
+    const roleIds = currentAdmin.roleIds;
     const isAdmin =
       typeof currentAdmin.isAdmin === 'boolean'
         ? currentAdmin.isAdmin
         : await this.baseSysPermsService.isAdmin(roleIds);
     // 部门权限
     const permsDepartmentArr = await this.baseSysPermsService.departmentIds(
-      Number(currentAdmin.userId)
+      currentAdmin.userId
     );
 
     // 过滤部门权限
@@ -106,7 +102,7 @@ export class BaseSysDepartmentService extends BaseService {
       find.andWhere('a.id in (:...ids)', {
         ids: !_.isEmpty(permsDepartmentArr) ? permsDepartmentArr : [null],
       });
-      find.orWhere('a.userId = :userId', { userId: Number(currentAdmin.userId) });
+      find.orWhere('a.userId = :userId', { userId: currentAdmin.userId });
     }
     find.addOrderBy('a.orderNum', 'ASC');
     const departments: BaseSysDepartmentEntity[] = await find.getMany();

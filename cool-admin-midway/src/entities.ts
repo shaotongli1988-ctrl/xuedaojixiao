@@ -21,62 +21,78 @@ import * as entity18 from './modules/performance/entity/approval-instance';
 import * as entity19 from './modules/performance/entity/assessment-score';
 import * as entity20 from './modules/performance/entity/assessment';
 import * as entity21 from './modules/performance/entity/assetAssignment';
-import * as entity22 from './modules/performance/entity/assetDepreciation';
-import * as entity23 from './modules/performance/entity/assetDisposal';
-import * as entity24 from './modules/performance/entity/assetInfo';
-import * as entity25 from './modules/performance/entity/assetInventory';
-import * as entity26 from './modules/performance/entity/assetMaintenance';
-import * as entity27 from './modules/performance/entity/assetProcurement';
-import * as entity28 from './modules/performance/entity/assetTransfer';
-import * as entity29 from './modules/performance/entity/capability-item';
-import * as entity30 from './modules/performance/entity/capability-model';
-import * as entity31 from './modules/performance/entity/capability-portrait';
-import * as entity32 from './modules/performance/entity/certificate-record';
-import * as entity33 from './modules/performance/entity/certificate';
-import * as entity34 from './modules/performance/entity/contract';
-import * as entity35 from './modules/performance/entity/course-enrollment';
-import * as entity36 from './modules/performance/entity/course-exam-result';
-import * as entity37 from './modules/performance/entity/course-practice';
-import * as entity38 from './modules/performance/entity/course-recite';
-import * as entity39 from './modules/performance/entity/course';
-import * as entity40 from './modules/performance/entity/feedback-record';
-import * as entity41 from './modules/performance/entity/feedback-task';
-import * as entity42 from './modules/performance/entity/goal-progress';
-import * as entity43 from './modules/performance/entity/goal';
-import * as entity44 from './modules/performance/entity/hiring';
-import * as entity45 from './modules/performance/entity/indicator';
-import * as entity46 from './modules/performance/entity/interview';
-import * as entity47 from './modules/performance/entity/job-standard';
-import * as entity48 from './modules/performance/entity/meeting';
-import * as entity49 from './modules/performance/entity/pip-record';
-import * as entity50 from './modules/performance/entity/pip';
-import * as entity51 from './modules/performance/entity/promotion-record';
-import * as entity52 from './modules/performance/entity/promotion';
-import * as entity53 from './modules/performance/entity/purchase-order';
-import * as entity54 from './modules/performance/entity/recruit-plan';
-import * as entity55 from './modules/performance/entity/resumePool';
-import * as entity56 from './modules/performance/entity/salary-change';
-import * as entity57 from './modules/performance/entity/salary';
-import * as entity58 from './modules/performance/entity/suggestion';
-import * as entity59 from './modules/performance/entity/supplier';
-import * as entity60 from './modules/performance/entity/talent-asset';
-import * as entity61 from './modules/performance/entity/teacher-agent-audit';
-import * as entity62 from './modules/performance/entity/teacher-agent-relation';
-import * as entity63 from './modules/performance/entity/teacher-agent';
-import * as entity64 from './modules/performance/entity/teacher-attribution-conflict';
-import * as entity65 from './modules/performance/entity/teacher-attribution';
-import * as entity66 from './modules/performance/entity/teacher-class';
-import * as entity67 from './modules/performance/entity/teacher-follow';
-import * as entity68 from './modules/performance/entity/teacher-info';
-import * as entity69 from './modules/plugin/entity/info';
-import * as entity70 from './modules/recycle/entity/data';
-import * as entity71 from './modules/space/entity/info';
-import * as entity72 from './modules/space/entity/type';
-import * as entity73 from './modules/task/entity/info';
-import * as entity74 from './modules/task/entity/log';
-import * as entity75 from './modules/user/entity/address';
-import * as entity76 from './modules/user/entity/info';
-import * as entity77 from './modules/user/entity/wx';
+import * as entity22 from './modules/performance/entity/assetAssignmentRequest';
+import * as entity23 from './modules/performance/entity/assetDepreciation';
+import * as entity24 from './modules/performance/entity/assetDisposal';
+import * as entity25 from './modules/performance/entity/assetInfo';
+import * as entity26 from './modules/performance/entity/assetInventory';
+import * as entity27 from './modules/performance/entity/assetMaintenance';
+import * as entity28 from './modules/performance/entity/assetProcurement';
+import * as entity29 from './modules/performance/entity/assetTransfer';
+import * as entity30 from './modules/performance/entity/capability-item';
+import * as entity31 from './modules/performance/entity/capability-model';
+import * as entity32 from './modules/performance/entity/capability-portrait';
+import * as entity33 from './modules/performance/entity/certificate-record';
+import * as entity34 from './modules/performance/entity/certificate';
+import * as entity35 from './modules/performance/entity/contract';
+import * as entity36 from './modules/performance/entity/course-enrollment';
+import * as entity37 from './modules/performance/entity/course-exam-result';
+import * as entity38 from './modules/performance/entity/course-practice';
+import * as entity39 from './modules/performance/entity/course-recite';
+import * as entity40 from './modules/performance/entity/course';
+import * as entity41 from './modules/performance/entity/documentCenter';
+import * as entity42 from './modules/performance/entity/feedback-record';
+import * as entity43 from './modules/performance/entity/feedback-task';
+import * as entity44 from './modules/performance/entity/goal-ops-department-config';
+import * as entity45 from './modules/performance/entity/goal-ops-plan';
+import * as entity46 from './modules/performance/entity/goal-ops-report';
+import * as entity47 from './modules/performance/entity/goal-progress';
+import * as entity48 from './modules/performance/entity/goal';
+import * as entity49 from './modules/performance/entity/hiring';
+import * as entity50 from './modules/performance/entity/indicator';
+import * as entity51 from './modules/performance/entity/intellectualProperty';
+import * as entity52 from './modules/performance/entity/interview';
+import * as entity53 from './modules/performance/entity/job-standard';
+import * as entity54 from './modules/performance/entity/knowledgeBase';
+import * as entity55 from './modules/performance/entity/knowledgeQa';
+import * as entity56 from './modules/performance/entity/materialCatalog';
+import * as entity57 from './modules/performance/entity/materialInbound';
+import * as entity58 from './modules/performance/entity/materialIssue';
+import * as entity59 from './modules/performance/entity/materialStock';
+import * as entity60 from './modules/performance/entity/materialStockLog';
+import * as entity61 from './modules/performance/entity/meeting';
+import * as entity62 from './modules/performance/entity/officeCollab';
+import * as entity63 from './modules/performance/entity/pip-record';
+import * as entity64 from './modules/performance/entity/pip';
+import * as entity65 from './modules/performance/entity/promotion-record';
+import * as entity66 from './modules/performance/entity/promotion';
+import * as entity67 from './modules/performance/entity/purchase-order';
+import * as entity68 from './modules/performance/entity/recruit-plan';
+import * as entity69 from './modules/performance/entity/resumePool';
+import * as entity70 from './modules/performance/entity/salary-change';
+import * as entity71 from './modules/performance/entity/salary';
+import * as entity72 from './modules/performance/entity/suggestion';
+import * as entity73 from './modules/performance/entity/supplier';
+import * as entity74 from './modules/performance/entity/talentAsset';
+import * as entity75 from './modules/performance/entity/teacher-agent-audit';
+import * as entity76 from './modules/performance/entity/teacher-agent-relation';
+import * as entity77 from './modules/performance/entity/teacher-agent';
+import * as entity78 from './modules/performance/entity/teacher-attribution-conflict';
+import * as entity79 from './modules/performance/entity/teacher-attribution';
+import * as entity80 from './modules/performance/entity/teacher-class';
+import * as entity81 from './modules/performance/entity/teacher-follow';
+import * as entity82 from './modules/performance/entity/teacher-info';
+import * as entity83 from './modules/performance/entity/vehicle';
+import * as entity84 from './modules/performance/entity/workPlan';
+import * as entity85 from './modules/plugin/entity/info';
+import * as entity86 from './modules/recycle/entity/data';
+import * as entity87 from './modules/space/entity/info';
+import * as entity88 from './modules/space/entity/type';
+import * as entity89 from './modules/task/entity/info';
+import * as entity90 from './modules/task/entity/log';
+import * as entity91 from './modules/user/entity/address';
+import * as entity92 from './modules/user/entity/info';
+import * as entity93 from './modules/user/entity/wx';
 export const entities = [
   ...Object.values(entity0),
   ...Object.values(entity1),
@@ -156,4 +172,20 @@ export const entities = [
   ...Object.values(entity75),
   ...Object.values(entity76),
   ...Object.values(entity77),
+  ...Object.values(entity78),
+  ...Object.values(entity79),
+  ...Object.values(entity80),
+  ...Object.values(entity81),
+  ...Object.values(entity82),
+  ...Object.values(entity83),
+  ...Object.values(entity84),
+  ...Object.values(entity85),
+  ...Object.values(entity86),
+  ...Object.values(entity87),
+  ...Object.values(entity88),
+  ...Object.values(entity89),
+  ...Object.values(entity90),
+  ...Object.values(entity91),
+  ...Object.values(entity92),
+  ...Object.values(entity93),
 ];

@@ -2,133 +2,485 @@
  * 绩效模块前端类型。
  * 这里只定义评估单、目标地图等模块内复用结构，不负责接口请求实现。
  */
-export type AssessmentMode = 'my' | 'initiated' | 'pending';
+import type {
+	ApiResponse_AssessmentRecord as GeneratedAssessmentRecordResponse,
+	AssessmentActionRequest,
+	AssessmentExportQuery,
+	AssessmentPageMode,
+	AssessmentPageQuery,
+	AssessmentReviewRequest,
+	AssessmentSaveRequest,
+	AssessmentScoreItem as GeneratedAssessmentScoreItem,
+	AssessmentStatus,
+	DeleteIdsRequest
+} from './generated/assessment';
+import type {
+	ApiResponse_GoalOpsPlanRecord as GeneratedGoalOpsPlanRecordResponse,
+	GoalCreateRequest,
+	GoalExportQuery,
+	GoalExportRow,
+	GoalOpsDailyFinalizeRequest,
+	GoalOpsDailyResultItem,
+	GoalOpsDailySubmitRequest,
+	GoalOpsDepartmentConfig as GeneratedGoalOpsDepartmentConfig,
+	GoalOpsDepartmentScopeQuery,
+	GoalOpsOverviewQuery,
+	GoalOpsPeriodType,
+	GoalOpsPlanPageQuery,
+	GoalOpsPlanSaveRequest,
+	GoalOpsPlanStatus,
+	GoalOpsReportGenerateRequest,
+	GoalOpsReportQuery,
+	GoalOpsReportStatus,
+	GoalOpsReportStatusUpdateRequest,
+	GoalOpsSourceType,
+	GoalPageQuery,
+	GoalProgressUpdateRequest,
+	GoalStatus,
+	GoalUpdateRequest
+} from './generated/goal';
+import type {
+	ApiResponse_DashboardFetchSummaryResult as GeneratedDashboardSummaryResponse,
+	ApiResponse_DashboardCrossSummary as GeneratedDashboardCrossSummaryResponse,
+	DashboardCrossDataStatus as GeneratedDashboardCrossDataStatus,
+	DashboardCrossMetricCard as GeneratedDashboardCrossMetricCard,
+	DashboardCrossMetricCode as GeneratedDashboardCrossMetricCode,
+	DashboardCrossScopeType as GeneratedDashboardCrossScopeType,
+	DashboardCrossSourceDomain as GeneratedDashboardCrossSourceDomain,
+	DashboardDepartmentDistributionItem as GeneratedDashboardDepartmentDistributionItem,
+	DashboardGradeDistributionItem as GeneratedDashboardGradeDistributionItem,
+	DashboardStageProgressItem as GeneratedDashboardStageProgressItem,
+	DashboardSummaryQuery as GeneratedDashboardSummaryQuery,
+	DashboardCrossSummaryQuery as GeneratedDashboardCrossSummaryQuery
+} from './generated/dashboard';
+import type {
+	CapabilityModelInfoQuery as GeneratedCapabilityModelInfoQuery,
+	CapabilityItemInfoQuery as GeneratedCapabilityItemInfoQuery,
+	CapabilityPortraitInfoQuery as GeneratedCapabilityPortraitInfoQuery
+} from './generated/capability';
+import type {
+	CapabilityModelPageResult as GeneratedCapabilityModelPageResponse,
+	CapabilityModelRecord as GeneratedCapabilityModelRecord,
+	CapabilityModelStatus as GeneratedCapabilityModelStatus,
+	CapabilityItemRecord as GeneratedCapabilityItemRecord,
+	CapabilityPortraitRecord as GeneratedCapabilityPortraitRecord,
+	CertificateLedgerPageResult as GeneratedCertificateLedgerPageResponse,
+	CertificateLedgerRecord as GeneratedCertificateLedgerRecord,
+	CertificatePageResult as GeneratedCertificatePageResponse,
+	CertificateRecord as GeneratedCertificateRecord,
+	CertificateRecordStatus as GeneratedCertificateRecordStatus,
+	CertificateStatus as GeneratedCertificateStatus
+} from './generated/talent-development';
+import type {
+	ApiResponse_AssetAssignmentPageResult as GeneratedAssetAssignmentPageResponse,
+	AssetAssignmentRecord as GeneratedAssetAssignmentRecord,
+	AssetAssignmentStatus as GeneratedAssetAssignmentStatus
+} from './generated/asset-assignment';
+import type {
+	ApiResponse_AssetAssignmentRequestPageResult as GeneratedAssetAssignmentRequestPageResponse,
+	AssetAssignmentRequestLevel as GeneratedAssetAssignmentRequestLevel,
+	AssetAssignmentRequestRecord as GeneratedAssetAssignmentRequestRecord,
+	AssetAssignmentRequestStatus as GeneratedAssetAssignmentRequestStatus,
+	AssetAssignmentRequestType as GeneratedAssetAssignmentRequestType
+} from './generated/asset-assignment-request';
+import type {
+	ApiResponse_AssetDashboardSummary as GeneratedAssetDashboardSummaryResponse,
+	AssetCategoryDistributionItem as GeneratedAssetCategoryDistributionItem,
+	AssetDashboardActionSummaryItem as GeneratedAssetDashboardActionSummaryItem,
+	AssetDashboardActivityItem as GeneratedAssetDashboardActivityItem,
+	AssetStatusDistributionItem as GeneratedAssetStatusDistributionItem
+} from './generated/asset-dashboard';
+import type {
+	ApiResponse_AssetDepreciationPageResult as GeneratedAssetDepreciationPageResponse,
+	ApiResponse_AssetDepreciationFetchSummaryResult as GeneratedAssetDepreciationSummaryResponse,
+	AssetDepreciationRecord as GeneratedAssetDepreciationRecord
+} from './generated/asset-depreciation';
+import type {
+	ApiResponse_AssetDisposalPageResult as GeneratedAssetDisposalPageResponse,
+	AssetDisposalRecord as GeneratedAssetDisposalRecord,
+	AssetDisposalStatus as GeneratedAssetDisposalStatus
+} from './generated/asset-disposal';
+import type {
+	ApiResponse_AssetInfoPageResult as GeneratedAssetInfoPageResponse,
+	AssetInfoRecord as GeneratedAssetInfoRecord,
+	AssetStatus as GeneratedAssetStatus
+} from './generated/asset-info';
+import type {
+	ApiResponse_AssetInventoryPageResult as GeneratedAssetInventoryPageResponse,
+	AssetInventoryRecord as GeneratedAssetInventoryRecord,
+	AssetInventoryStatus as GeneratedAssetInventoryStatus
+} from './generated/asset-inventory';
+import type {
+	ApiResponse_AssetMaintenancePageResult as GeneratedAssetMaintenancePageResponse,
+	AssetMaintenanceRecord as GeneratedAssetMaintenanceRecord,
+	AssetMaintenanceStatus as GeneratedAssetMaintenanceStatus
+} from './generated/asset-maintenance';
+import type {
+	ApiResponse_AssetProcurementPageResult as GeneratedAssetProcurementPageResponse,
+	AssetProcurementRecord as GeneratedAssetProcurementRecord,
+	AssetProcurementStatus as GeneratedAssetProcurementStatus
+} from './generated/asset-procurement';
+import type {
+	ApiResponse_AssetReportPageResult as GeneratedAssetReportPageResponse,
+	ApiResponse_AssetReportFetchSummaryResult as GeneratedAssetReportSummaryResponse,
+	AssetReportRecord as GeneratedAssetReportRecord
+} from './generated/asset-report';
+import type {
+	ApiResponse_AssetTransferPageResult as GeneratedAssetTransferPageResponse,
+	AssetTransferRecord as GeneratedAssetTransferRecord,
+	AssetTransferStatus as GeneratedAssetTransferStatus
+} from './generated/asset-transfer';
+import type {
+	ApiResponse_ContractPageResult as GeneratedContractPageResponse,
+	ContractRecord as GeneratedContractRecord,
+	ContractStatus as GeneratedContractStatus,
+	ContractType as GeneratedContractType
+} from './generated/contract';
+import type {
+	ApiResponse_CourseEnrollmentPageResult as GeneratedCourseEnrollmentPageResponse,
+	ApiResponse_CoursePageResult as GeneratedCoursePageResponse,
+	CourseEnrollmentRecord as GeneratedCourseEnrollmentRecord,
+	CourseRecord as GeneratedCourseRecord,
+	CourseStatus as GeneratedCourseStatus
+} from './generated/course';
+import type {
+	ApiResponse_DocumentCenterPageResult as GeneratedDocumentCenterPageResponse,
+	ApiResponse_DocumentCenterFetchStatsResult as GeneratedDocumentCenterStatsResponse,
+	DocumentCenterCategory as GeneratedDocumentCenterCategory,
+	DocumentCenterConfidentiality as GeneratedDocumentCenterConfidentiality,
+	DocumentCenterFileType as GeneratedDocumentCenterFileType,
+	DocumentCenterRecord as GeneratedDocumentCenterRecord,
+	DocumentCenterStatus as GeneratedDocumentCenterStatus,
+	DocumentCenterStorage as GeneratedDocumentCenterStorage
+} from './generated/document-center';
+import type {
+	ApiResponse_FeedbackPageResult as GeneratedFeedbackPageResponse,
+	ApiResponse_FeedbackSummary as GeneratedFeedbackSummaryResponse,
+	FeedbackExportRow as GeneratedFeedbackExportRow,
+	FeedbackRecord as GeneratedFeedbackRecord,
+	FeedbackTaskRecord as GeneratedFeedbackTaskRecord,
+	FeedbackTaskRelationItem as GeneratedFeedbackTaskRelationItem
+} from './generated/feedback';
+import type {
+	ApiResponse_HiringPageResult as GeneratedHiringPageResponse,
+	HiringSourceType as GeneratedHiringSourceType,
+	HiringStatus as GeneratedHiringStatus
+} from './generated/hiring';
+import type {
+	ApiResponse_PipPageResult as GeneratedPipPageResponse,
+	PipExportRow as GeneratedPipExportRow,
+	PipRecord as GeneratedPipRecord,
+	PipTrackRecord as GeneratedPipTrackRecord
+} from './generated/pip';
+import type {
+	ApiResponse_InterviewPageResult as GeneratedInterviewPageResponse,
+	InterviewRecord as GeneratedInterviewRecord,
+	InterviewStatus as GeneratedInterviewStatus,
+	InterviewType as GeneratedInterviewType
+} from './generated/interview';
+import type {
+	ApiResponse_IndicatorPageResult as GeneratedIndicatorPageResponse,
+	IndicatorApplyScope as GeneratedIndicatorApplyScope,
+	IndicatorCategory as GeneratedIndicatorCategory,
+	IndicatorRecord as GeneratedIndicatorRecord,
+	IndicatorStatus as GeneratedIndicatorStatus
+} from './generated/indicator';
+import type {
+	ApiResponse_JobStandardPageResult as GeneratedJobStandardPageResponse,
+	JobStandardRecord as GeneratedJobStandardRecord,
+	JobStandardStatus as GeneratedJobStandardStatus
+} from './generated/job-standard';
+import type {
+	ApiResponse_KnowledgeBaseFetchQaListResult as GeneratedKnowledgeQaListResponse,
+	ApiResponse_KnowledgeBasePageResult as GeneratedKnowledgeBasePageResponse,
+	ApiResponse_KnowledgeBaseFetchStatsResult as GeneratedKnowledgeBaseStatsResponse,
+	ApiResponse_KnowledgeGraphSummary as GeneratedKnowledgeGraphSummaryResponse,
+	ApiResponse_KnowledgeSearchResult as GeneratedKnowledgeSearchResultResponse,
+	KnowledgeBaseRecord as GeneratedKnowledgeBaseRecord,
+	KnowledgeBaseStatus as GeneratedKnowledgeBaseStatus,
+	KnowledgeGraphLink as GeneratedKnowledgeGraphLink,
+	KnowledgeGraphNode as GeneratedKnowledgeGraphNode,
+	KnowledgeQaRecord as GeneratedKnowledgeQaRecord
+} from './generated/knowledge-base';
+import type {
+	ApiResponse_MaterialCatalogPageResult as GeneratedMaterialCatalogPageResponse,
+	MaterialCatalogRecord as GeneratedMaterialCatalogRecord,
+	MaterialCatalogStatus as GeneratedMaterialCatalogStatus
+} from './generated/material-catalog';
+import type {
+	ApiResponse_MaterialInboundPageResult as GeneratedMaterialInboundPageResponse,
+	MaterialInboundRecord as GeneratedMaterialInboundRecord,
+	MaterialInboundStatus as GeneratedMaterialInboundStatus
+} from './generated/material-inbound';
+import type {
+	ApiResponse_MaterialIssuePageResult as GeneratedMaterialIssuePageResponse,
+	MaterialIssueRecord as GeneratedMaterialIssueRecord,
+	MaterialIssueStatus as GeneratedMaterialIssueStatus
+} from './generated/material-issue';
+import type {
+	ApiResponse_MaterialStockPageResult as GeneratedMaterialStockPageResponse,
+	MaterialStockRecord as GeneratedMaterialStockRecord,
+	MaterialStockStatus as GeneratedMaterialStockStatus
+} from './generated/material-stock';
+import type {
+	ApiResponse_MeetingPageResult as GeneratedMeetingPageResponse,
+	MeetingRecord as GeneratedMeetingRecord,
+	MeetingStatus as GeneratedMeetingStatus
+} from './generated/meeting';
+import type {
+	ApiResponse_PromotionPageResult as GeneratedPromotionPageResponse,
+	PromotionRecord as GeneratedPromotionRecord,
+	PromotionReviewRecord as GeneratedPromotionReviewRecord
+} from './generated/promotion';
+import type {
+	ApiResponse_PurchaseOrderPageResult as GeneratedPurchaseOrderPageResponse,
+	PurchaseOrderApprovalLog as GeneratedPurchaseOrderApprovalLog,
+	PurchaseOrderInquiryRecord as GeneratedPurchaseOrderInquiryRecord,
+	PurchaseOrderItemRecord as GeneratedPurchaseOrderItemRecord,
+	PurchaseOrderReceiptRecord as GeneratedPurchaseOrderReceiptRecord,
+	PurchaseOrderRecord as GeneratedPurchaseOrderRecord,
+	PurchaseOrderStatus as GeneratedPurchaseOrderStatus
+} from './generated/purchase-order';
+import type {
+	ApiResponse_PurchaseReportFetchSupplierStatsResult as GeneratedPurchaseReportSupplierStatsResponse,
+	ApiResponse_PurchaseReportFetchSummaryResult as GeneratedPurchaseReportSummaryResponse,
+	ApiResponse_PurchaseReportFetchTrendResult as GeneratedPurchaseReportTrendResponse,
+	PurchaseReportQuery as GeneratedPurchaseReportQuery,
+	PurchaseReportSupplierStat as GeneratedPurchaseReportSupplierStat,
+	PurchaseReportTrendPoint as GeneratedPurchaseReportTrendPoint
+} from './generated/purchase-report';
+import type {
+	ApiResponse_RecruitPlanPageResult as GeneratedRecruitPlanPageResponse,
+	RecruitPlanRecord as GeneratedRecruitPlanRecord,
+	RecruitPlanStatus as GeneratedRecruitPlanStatus
+} from './generated/recruit-plan';
+import type {
+	ApiResponse_ResumePoolPageResult as GeneratedResumePoolPageResponse,
+	ResumePoolAttachmentSummary as GeneratedResumePoolAttachmentSummary,
+	ResumePoolRecord as GeneratedResumePoolRecord,
+	ResumePoolSourceType as GeneratedResumePoolSourceType,
+	ResumePoolStatus as GeneratedResumePoolStatus
+} from './generated/resume-pool';
+import type {
+	ApiResponse_SalaryPageResult as GeneratedSalaryPageResponse,
+	SalaryChangeRecord as GeneratedSalaryChangeRecord,
+	SalaryRecord as GeneratedSalaryRecord
+} from './generated/salary';
+import type {
+	ApiResponse_SuggestionAcceptResult as GeneratedSuggestionAcceptResponse,
+	ApiResponse_SuggestionPageResult as GeneratedSuggestionPageResponse,
+	SuggestionRecord as GeneratedSuggestionRecord,
+	SuggestionRevokeReasonCode as GeneratedSuggestionRevokeReasonCode,
+	SuggestionStatus as GeneratedSuggestionStatus,
+	SuggestionType as GeneratedSuggestionType
+} from './generated/suggestion';
+import type {
+	ApiResponse_SupplierPageResult as GeneratedSupplierPageResponse,
+	SupplierRecord as GeneratedSupplierRecord,
+	SupplierStatus as GeneratedSupplierStatus
+} from './generated/supplier';
+import type {
+	ApiResponse_TalentAssetPageResult as GeneratedTalentAssetPageResponse,
+	TalentAssetRecord as GeneratedTalentAssetRecord,
+	TalentAssetStatus as GeneratedTalentAssetStatus
+} from './generated/talent-asset';
+import type {
+	ApiResponse_TeacherAgentAuditPageResult as GeneratedTeacherAgentAuditPageResponse,
+	TeacherAgentAuditRecord as GeneratedTeacherAgentAuditRecord
+} from './generated/teacher-agent-audit';
+import type {
+	ApiResponse_TeacherAgentRelationPageResult as GeneratedTeacherAgentRelationPageResponse,
+	TeacherAgentRelationRecord as GeneratedTeacherAgentRelationRecord,
+	TeacherAgentRelationStatus as GeneratedTeacherAgentRelationStatus
+} from './generated/teacher-agent-relation';
+import type {
+	ApiResponse_TeacherAgentPageResult as GeneratedTeacherAgentPageResponse,
+	TeacherAgentBlacklistStatus as GeneratedTeacherAgentBlacklistStatus,
+	TeacherAgentRecord as GeneratedTeacherAgentRecord,
+	TeacherAgentStatus as GeneratedTeacherAgentStatus
+} from './generated/teacher-agent';
+import type {
+	ApiResponse_TeacherAttributionConflictDetail as GeneratedTeacherAttributionConflictDetailResponse,
+	ApiResponse_TeacherAttributionConflictPageResult as GeneratedTeacherAttributionConflictPageResponse,
+	TeacherAttributionConflictRecord as GeneratedTeacherAttributionConflictRecord,
+	TeacherAttributionConflictStatus as GeneratedTeacherAttributionConflictStatus
+} from './generated/teacher-attribution-conflict';
+import type {
+	ApiResponse_TeacherAttributionPageResult as GeneratedTeacherAttributionPageResponse,
+	TeacherAttributionInfo as GeneratedTeacherAttributionInfo,
+	TeacherAttributionRecord as GeneratedTeacherAttributionRecord,
+	TeacherAttributionStatus as GeneratedTeacherAttributionStatus
+} from './generated/teacher-attribution';
+import type {
+	ApiResponse_TeacherClassPageResult as GeneratedTeacherClassPageResponse,
+	TeacherClassRecord as GeneratedTeacherClassRecord,
+	TeacherClassStatus as GeneratedTeacherClassStatus
+} from './generated/teacher-class';
+import type {
+	ApiResponse_TeacherDashboardSummary as GeneratedTeacherDashboardSummaryResponse,
+	TeacherDashboardDistributionItem as GeneratedTeacherDashboardDistributionItem
+} from './generated/teacher-dashboard';
+import type {
+	ApiResponse_TeacherFollowPageResult as GeneratedTeacherFollowPageResponse,
+	TeacherFollowRecord as GeneratedTeacherFollowRecord
+} from './generated/teacher-follow';
+import type {
+	ApiResponse_TeacherInfoPageResult as GeneratedTeacherInfoPageResponse,
+	TeacherCooperationStatus as GeneratedTeacherCooperationStatus,
+	TeacherInfoRecord as GeneratedTeacherInfoRecord
+} from './generated/teacher-info';
+import type {
+	ApiResponse_TeacherTodoPageResult as GeneratedTeacherTodoPageResponse,
+	TeacherTodoBucket as GeneratedTeacherTodoBucket,
+	TeacherTodoRecord as GeneratedTeacherTodoRecord
+} from './generated/teacher-todo';
+import type {
+	ApiResponse_WorkPlanPageResult as GeneratedWorkPlanPageResponse,
+	WorkPlanAssignee as GeneratedWorkPlanAssignee,
+	WorkPlanPriority as GeneratedWorkPlanPriority,
+	WorkPlanRecord as GeneratedWorkPlanRecord,
+	WorkPlanStatus as GeneratedWorkPlanStatus
+} from './generated/work-plan';
 
-export type DashboardCrossMetricCode =
-	| 'recruitment_completion_rate'
-	| 'training_pass_rate'
-	| 'meeting_effectiveness_index';
-
-export type DashboardCrossSourceDomain = 'recruitment' | 'training' | 'meeting';
-export type DashboardCrossScopeType = 'global' | 'department_tree';
-export type DashboardCrossDataStatus = 'ready' | 'delayed' | 'unavailable';
-export type RecruitPlanStatus = 'draft' | 'active' | 'closed';
-export type ContractStatus = 'draft' | 'active' | 'expired' | 'terminated';
-export type ContractType = 'full-time' | 'part-time' | 'internship' | 'other';
-export type PurchaseOrderStatus = 'draft' | 'active' | 'cancelled';
-export type SupplierStatus = 'active' | 'inactive';
-export type CapabilityModelStatus = 'draft' | 'active' | 'archived';
-export type CourseStatus = 'draft' | 'published' | 'closed';
-export type CertificateRecordStatus = 'issued' | 'revoked';
-export type CertificateStatus = 'draft' | 'active' | 'retired';
-export type InterviewStatus = 'scheduled' | 'completed' | 'cancelled';
-export type InterviewType = 'technical' | 'behavioral' | 'manager' | 'hr';
-export type ResumePoolStatus = 'new' | 'screening' | 'interviewing' | 'archived';
-export type ResumePoolSourceType = 'manual' | 'attachment' | 'external' | 'referral';
-export type DocumentCenterStatus = 'draft' | 'review' | 'published' | 'archived';
-export type DocumentCenterCategory =
-	| 'policy'
-	| 'process'
-	| 'template'
-	| 'contract'
-	| 'archive'
-	| 'other';
-export type DocumentCenterFileType = 'pdf' | 'doc' | 'xls' | 'ppt' | 'img' | 'zip' | 'other';
-export type DocumentCenterStorage = 'local' | 'cloud' | 'hybrid';
-export type DocumentCenterConfidentiality = 'public' | 'internal' | 'secret';
-export type KnowledgeBaseStatus = 'draft' | 'published' | 'archived';
-export type MeetingStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
-export type TalentAssetStatus = 'new' | 'tracking' | 'archived';
-export type JobStandardStatus = 'draft' | 'active' | 'inactive';
-export type HiringStatus = 'offered' | 'accepted' | 'rejected' | 'closed';
-export type HiringSourceType = 'manual' | 'resumePool' | 'talentAsset' | 'interview';
-export type RecruitmentSourceResource =
-	| 'jobStandard'
-	| 'recruitPlan'
-	| 'resumePool'
-	| 'interview';
-export type TeacherCooperationStatus =
-	| 'uncontacted'
-	| 'contacted'
-	| 'negotiating'
-	| 'partnered'
-	| 'terminated';
-export type TeacherClassStatus = 'draft' | 'active' | 'closed';
-export type TeacherTodoBucket = 'today' | 'overdue';
-export type TeacherAgentStatus = 'active' | 'inactive';
-export type TeacherAgentBlacklistStatus = 'normal' | 'blacklisted';
-export type TeacherAgentRelationStatus = 'active' | 'inactive';
-export type TeacherAttributionStatus = 'pending' | 'active' | 'removed' | 'conflicted';
-export type TeacherAttributionConflictStatus = 'open' | 'resolved' | 'cancelled';
-
-export interface DashboardCrossSummaryQuery {
-	periodType?: string;
-	periodValue?: string;
-	departmentId?: number;
-	metricCodes?: DashboardCrossMetricCode[];
+export type {
+	AssessmentActionRequest,
+	AssessmentExportQuery,
+	AssessmentPageQuery,
+	AssessmentReviewRequest,
+	AssessmentSaveRequest,
+	AssessmentStatus,
+	DeleteIdsRequest
+} from './generated/assessment';
+export type {
+	GoalCreateRequest,
+	GoalExportQuery,
+	GoalExportRow,
+	GoalOpsDailyFinalizeRequest,
+	GoalOpsDailyResultItem,
+	GoalOpsDailySubmitRequest,
+	GoalOpsDepartmentScopeQuery,
+	GoalOpsOverviewQuery,
+	GoalOpsPeriodType,
+	GoalOpsPlanPageQuery,
+	GoalOpsPlanSaveRequest,
+	GoalOpsPlanStatus,
+	GoalOpsReportGenerateRequest,
+	GoalOpsReportQuery,
+	GoalOpsReportStatus,
+	GoalOpsReportStatusUpdateRequest,
+	GoalOpsSourceType,
+	GoalPageQuery,
+	GoalProgressUpdateRequest,
+	GoalStatus,
+	GoalUpdateRequest
+} from './generated/goal';
+export interface GoalOpsTrendRow {
+	planDate: string;
+	publicActualValue: number;
+	personalActualValue: number;
+	totalActualValue: number;
+	totalTargetValue: number;
+	completionRate: number;
 }
+export type { ContractPageQuery, ContractSaveRequest } from './generated/contract';
+export type {
+	CapabilityModelPageQuery,
+	CapabilityModelSaveRequest,
+	CertificateIssueRequest,
+	CertificatePageQuery,
+	CertificateRecordPageQuery
+} from './generated/talent-development';
+export type {
+	HiringCloseRequest,
+	HiringPageQuery,
+	HiringSaveRequest,
+	HiringStatusUpdateRequest,
+	HiringUpdateStatus
+} from './generated/hiring';
+export type { IndicatorPageQuery, IndicatorSaveRequest } from './generated/indicator';
+export type { InterviewPageQuery, InterviewSaveRequest } from './generated/interview';
+export type {
+	JobStandardPageQuery,
+	JobStandardSaveRequest,
+	JobStandardStatusUpdateRequest
+} from './generated/job-standard';
+export type {
+	MeetingCheckInRequest,
+	MeetingPageQuery,
+	MeetingSaveRequest
+} from './generated/meeting';
+export type {
+	RecruitPlanActionRequest,
+	RecruitPlanExportQuery,
+	RecruitPlanImportRequest,
+	RecruitPlanPageQuery,
+	RecruitPlanSaveRequest
+} from './generated/recruit-plan';
+export type {
+	ResumePoolActionRequest,
+	ResumePoolDownloadAttachmentRequest,
+	ResumePoolExportQuery,
+	ResumePoolImportRequest,
+	ResumePoolPageQuery,
+	ResumePoolSaveRequest,
+	ResumePoolUploadAttachmentRequest
+} from './generated/resume-pool';
+export type { TalentAssetPageQuery, TalentAssetSaveRequest } from './generated/talent-asset';
 
-export interface DashboardCrossMetricCard {
-	metricCode: DashboardCrossMetricCode;
-	metricLabel: string;
-	sourceDomain: DashboardCrossSourceDomain;
-	metricValue: number | null;
-	unit: string;
-	periodType: string;
-	periodValue: string;
-	scopeType: DashboardCrossScopeType;
-	departmentId: number | null;
-	updatedAt: string | null;
-	dataStatus: DashboardCrossDataStatus;
-	statusText: string;
-}
-
-export interface DashboardCrossSummary {
-	metricCards: DashboardCrossMetricCard[];
-}
-
-export interface AssessmentScoreItem {
+export type AssessmentMode = AssessmentPageMode;
+export type AssessmentDraft = Omit<AssessmentSaveRequest, 'employeeId' | 'assessorId'> & {
 	id?: number;
-	indicatorId?: number | null;
-	indicatorName: string;
-	score: number;
-	weight: number;
-	comment?: string;
-	weightedScore?: number;
-}
-
-export interface AssessmentRecord {
-	id?: number;
-	code?: string;
-	employeeId: number | undefined;
-	employeeName?: string;
-	assessorId: number | undefined;
-	assessorName?: string;
-	departmentId: number | undefined;
+	employeeId?: number;
+	assessorId?: number;
 	departmentName?: string;
-	periodType: string;
-	periodValue: string;
-	targetCompletion: number;
-	totalScore?: number;
-	grade?: string;
-	selfEvaluation: string;
-	managerFeedback?: string;
-	status?: string;
-	submitTime?: string;
-	approveTime?: string;
-	createTime?: string;
-	updateTime?: string;
-	scoreItems: AssessmentScoreItem[];
+};
+export interface AssessmentInfoQuery {
+	id: number;
 }
-
-export interface AssessmentPageResult {
-	list: AssessmentRecord[];
+export type GoalDraft = Omit<GoalCreateRequest, 'employeeId'> & {
+	employeeId?: number;
+	departmentId?: number;
+};
+export interface GoalInfoQuery {
+	id: number;
+}
+export interface GoalOpsPlanInfoQuery {
+	id: number;
+}
+type ApiResponseData<T extends { data: unknown }> = T['data'];
+type StripIndexSignature<T> = {
+	[K in keyof T as string extends K
+		? never
+		: number extends K
+			? never
+			: symbol extends K
+				? never
+				: K]: T[K];
+};
+export interface PerformanceListPageResult<T> {
+	list: T[];
 	pagination: {
 		page: number;
 		size: number;
 		total: number;
 	};
 }
+export type JsonPrimitive = string | number | boolean | null;
+export type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
+export interface JsonObject {
+	[key: string]: JsonValue | undefined;
+}
+
+export type AssessmentScoreItem = Omit<GeneratedAssessmentScoreItem, 'indicatorId'> & {
+	indicatorId?: number | null;
+};
+
+export type AssessmentRecord = Omit<
+	ApiResponseData<GeneratedAssessmentRecordResponse>,
+	'scoreItems'
+> & {
+	scoreItems?: AssessmentScoreItem[];
+};
 
 export interface AssessmentExportRow {
 	code: string;
@@ -137,7 +489,7 @@ export interface AssessmentExportRow {
 	periodType: string;
 	periodValue: string;
 	assessorName: string;
-	status: string;
+	status: AssessmentStatus;
 	targetCompletion: number;
 	totalScore: number;
 	grade: string;
@@ -145,19 +497,15 @@ export interface AssessmentExportRow {
 	approveTime?: string;
 }
 
-export interface UserOption {
-	id: number;
-	name: string;
-	departmentId?: number | null;
-	departmentName?: string;
-}
+export type AssessmentExportRows = AssessmentExportRow[];
+export type AssessmentPageResult = PerformanceListPageResult<AssessmentRecord>;
 
 export interface GoalProgressRecord {
 	id?: number;
 	goalId?: number;
-	beforeValue: number;
-	afterValue: number;
-	progressRate: number;
+	beforeValue?: number;
+	afterValue?: number;
+	progressRate?: number;
 	remark?: string;
 	operatorId?: number;
 	operatorName?: string;
@@ -166,77 +514,369 @@ export interface GoalProgressRecord {
 
 export interface GoalRecord {
 	id?: number;
-	employeeId: number | undefined;
+	employeeId?: number;
 	employeeName?: string;
-	departmentId: number | undefined;
+	departmentId?: number;
 	departmentName?: string;
-	title: string;
-	description: string;
-	targetValue: number;
-	currentValue: number;
-	unit: string;
-	weight: number;
-	startDate: string;
-	endDate: string;
+	title?: string;
+	description?: string | null;
+	targetValue?: number;
+	currentValue?: number;
+	unit?: string | null;
+	weight?: number;
+	startDate?: string;
+	endDate?: string;
 	progressRate?: number;
-	status?: string;
+	status?: GoalStatus;
 	createTime?: string;
 	updateTime?: string;
 	progressRecords?: GoalProgressRecord[];
 }
 
-export interface GoalPageResult {
-	list: GoalRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
+export type GoalPageResult = PerformanceListPageResult<GoalRecord>;
+
+export interface GoalOpsAccessProfile {
+	departmentId: number | null;
+	activePersonaKey: string | null;
+	roleKind: PerformanceAccessContext['roleKind'];
+	scopeKey: 'company' | 'department' | 'self';
+	isHr: boolean;
+	canManageDepartment: boolean;
+	canMaintainPersonalPlan: boolean;
+	manageableDepartmentIds: number[];
 }
 
-export interface GoalExportRow {
+export type GoalOpsDepartmentConfig = Omit<
+	GeneratedGoalOpsDepartmentConfig,
+	'reportPushTarget' | 'updatedBy' | 'updateTime'
+> & {
+	reportPushTarget?: string | null;
+	updatedBy?: number | null;
+	updateTime?: string | null;
+};
+
+export interface GoalOpsOverviewRow {
+	employeeId: number;
 	employeeName: string;
-	departmentName: string;
-	title: string;
-	targetValue: number;
-	currentValue: number;
-	unit: string;
-	weight: number;
-	status: string;
-	startDate: string;
-	endDate: string;
+	departmentId: number;
+	publicTargetValue: number;
+	publicActualValue: number;
+	personalTargetValue: number;
+	personalActualValue: number;
+	totalTargetValue: number;
+	totalActualValue: number;
+	completionRate: number;
+	assignedCount: number;
+	submittedCount: number;
+	autoZeroCount: number;
+}
+
+export interface GoalOpsDepartmentSummary {
+	planDate: string;
+	departmentId: number;
+	employeeCount: number;
+	publicTargetValue: number;
+	publicActualValue: number;
+	personalTargetValue: number;
+	personalActualValue: number;
+	totalTargetValue: number;
+	totalActualValue: number;
+	completionRate: number;
+	assignedCount: number;
+	submittedCount: number;
+	autoZeroCount: number;
+}
+
+export interface GoalOpsLeaderboard {
+	completionRate: GoalOpsOverviewRow[];
+	output: GoalOpsOverviewRow[];
+}
+
+export interface GoalOpsOverview {
+	planDate: string;
+	departmentId?: number | null;
+	departmentSummary: GoalOpsDepartmentSummary;
+	leaderboard: GoalOpsLeaderboard;
+	rows: GoalOpsOverviewRow[];
+}
+
+export type GoalOpsPlanRecord = Omit<
+	ApiResponseData<GeneratedGoalOpsPlanRecordResponse>,
+	| 'planDate'
+	| 'description'
+	| 'actualValue'
+	| 'completionRate'
+	| 'unit'
+	| 'status'
+	| 'parentPlanId'
+	| 'assignedBy'
+	| 'submittedBy'
+	| 'submittedAt'
+> & {
+	planDate?: string | null;
+	description?: string | null;
+	actualValue?: number | null;
+	completionRate?: number | null;
+	unit?: string | null;
+	status?: GoalOpsPlanStatus;
+	parentPlanId?: number | null;
+	assignedBy?: number | null;
+	submittedBy?: number | null;
+	submittedAt?: string | null;
+};
+
+export type GoalOpsPlanPageResult = PerformanceListPageResult<GoalOpsPlanRecord>;
+
+export interface GoalOpsReportAutoZeroEmployee {
+	employeeId: number;
+	employeeName: string;
+	autoZeroCount: number;
+}
+
+export interface GoalOpsReportSummary {
+	planDate: string;
+	departmentId: number;
+	departmentSummary: GoalOpsDepartmentSummary;
+	topCompletionEmployees: GoalOpsOverviewRow[];
+	topOutputEmployees: GoalOpsOverviewRow[];
+	autoZeroEmployees: GoalOpsReportAutoZeroEmployee[];
+}
+
+export interface GoalOpsReportInfo {
+	id?: number;
+	departmentId: number;
+	reportDate: string;
+	status: GoalOpsReportStatus;
+	summary?: GoalOpsReportSummary | null;
+	generatedAt?: string | null;
+	sentAt?: string | null;
+	pushMode?: string;
+	pushTarget?: string | null;
+	generatedBy?: number | null;
+	operatedBy?: number | null;
+	operationRemark?: string | null;
+	createTime?: string;
 	updateTime?: string;
 }
 
-export interface RecruitPlanRecord {
+export interface GoalOpsDailyFinalizeResult {
+	departmentId: number;
+	planDate: string;
+	autoZeroCount: number;
+}
+
+export interface RecruitPlanDeleteResult {
+	id: number;
+	deleted: boolean;
+}
+
+export interface RecruitPlanImportResult {
+	fileId: number;
+	importedCount: number;
+	skippedCount: number;
+}
+
+export interface ResumePoolImportResult {
+	fileId: number;
+	importedCount: number;
+	overwrittenCount: number;
+	skippedCount: number;
+}
+
+export interface ResumePoolAttachmentDownloadResult {
+	id: number;
+	name: string;
+	size: number;
+	uploadTime: string;
+	url: string;
+	downloadUrl: string;
+	fileId: string;
+}
+
+export interface ResumePoolTalentAssetConvertResult {
+	talentAssetId: number;
+	created: boolean;
+}
+
+export interface ResumePoolCreateInterviewResult {
+	interviewId: number;
+	status: ResumePoolStatus;
+	resumePoolId: number;
+	recruitPlanId?: number | null;
+	jobStandardId?: number | null;
+	sourceSnapshot?: RecruitmentSourceSnapshot;
+	snapshot?: RecruitmentSourceSnapshot;
+	resumePoolSummary?: RecruitmentSourceSnapshot;
+	resumePoolSnapshot?: RecruitmentSourceSnapshot;
+	recruitPlanSummary?: RecruitmentSourceSnapshot | null;
+	recruitPlanSnapshot?: RecruitmentSourceSnapshot | null;
+	jobStandardSummary?: RecruitmentSourceSnapshot | null;
+	jobStandardSnapshot?: RecruitmentSourceSnapshot | null;
+}
+
+export interface ResumePoolExportRow {
 	id?: number;
-	title: string;
+	candidateName: string;
+	targetDepartmentId: number;
+	targetDepartmentName?: string;
+	targetPosition?: string | null;
+	phone: string;
+	email?: string | null;
+	resumeText: string;
+	sourceType: ResumePoolSourceType;
+	sourceRemark?: string | null;
+	externalLink?: string | null;
+	status: ResumePoolStatus;
+	linkedTalentAssetId?: number | null;
+	latestInterviewId?: number | null;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export type DashboardCrossMetricCode = GeneratedDashboardCrossMetricCode;
+export type DashboardCrossSourceDomain = GeneratedDashboardCrossSourceDomain;
+export type DashboardCrossScopeType = GeneratedDashboardCrossScopeType;
+export type DashboardCrossDataStatus = GeneratedDashboardCrossDataStatus;
+export type DashboardSummaryQuery = GeneratedDashboardSummaryQuery;
+export type DashboardStageProgressItem = GeneratedDashboardStageProgressItem;
+export type DashboardDepartmentDistributionItem = GeneratedDashboardDepartmentDistributionItem;
+export type DashboardGradeDistributionItem = GeneratedDashboardGradeDistributionItem;
+export type RecruitPlanStatus = GeneratedRecruitPlanStatus;
+export type ContractStatus = GeneratedContractStatus;
+export type ContractType = GeneratedContractType;
+export type PurchaseOrderStatus = GeneratedPurchaseOrderStatus;
+export type SupplierStatus = GeneratedSupplierStatus;
+export type CapabilityModelStatus = GeneratedCapabilityModelStatus;
+export type CourseStatus = GeneratedCourseStatus;
+export type CertificateRecordStatus = GeneratedCertificateRecordStatus;
+export type CertificateStatus = GeneratedCertificateStatus;
+export type InterviewStatus = GeneratedInterviewStatus;
+export type InterviewType = GeneratedInterviewType;
+export type ResumePoolStatus = GeneratedResumePoolStatus;
+export type ResumePoolSourceType = GeneratedResumePoolSourceType;
+export type DocumentCenterStatus = GeneratedDocumentCenterStatus;
+export type DocumentCenterCategory = GeneratedDocumentCenterCategory;
+export type DocumentCenterFileType = GeneratedDocumentCenterFileType;
+export type DocumentCenterStorage = GeneratedDocumentCenterStorage;
+export type DocumentCenterConfidentiality = GeneratedDocumentCenterConfidentiality;
+export type KnowledgeBaseStatus = GeneratedKnowledgeBaseStatus;
+export type MeetingStatus = GeneratedMeetingStatus;
+export type TalentAssetStatus = GeneratedTalentAssetStatus;
+export type JobStandardStatus = GeneratedJobStandardStatus;
+export type WorkPlanStatus = GeneratedWorkPlanStatus;
+export type WorkPlanPriority = GeneratedWorkPlanPriority;
+export type WorkPlanSourceType = 'manual' | 'dingtalkApproval';
+export type WorkPlanSourceStatus =
+	| 'none'
+	| 'processing'
+	| 'approved'
+	| 'rejected'
+	| 'withdrawn'
+	| 'terminated';
+export type RecruitmentSourceResource =
+	| 'jobStandard'
+	| 'recruitPlan'
+	| 'resumePool'
+	| 'interview'
+	| 'talentAsset';
+export type TeacherCooperationStatus = GeneratedTeacherCooperationStatus;
+export type TeacherClassStatus = GeneratedTeacherClassStatus;
+export type TeacherTodoBucket = GeneratedTeacherTodoBucket;
+export type TeacherAgentStatus = GeneratedTeacherAgentStatus;
+export type TeacherAgentBlacklistStatus = GeneratedTeacherAgentBlacklistStatus;
+export type TeacherAgentRelationStatus = GeneratedTeacherAgentRelationStatus;
+export type TeacherAttributionStatus = GeneratedTeacherAttributionStatus;
+export type TeacherAttributionConflictStatus = GeneratedTeacherAttributionConflictStatus;
+
+export type DashboardCrossSummaryQuery = GeneratedDashboardCrossSummaryQuery;
+export type DashboardCrossMetricCard = Omit<
+	GeneratedDashboardCrossMetricCard,
+	'metricValue' | 'departmentId' | 'updatedAt'
+> & {
+	metricValue: number | null;
+	departmentId: number | null;
+	updatedAt: string | null;
+};
+export type DashboardCrossSummary = Omit<
+	ApiResponseData<GeneratedDashboardCrossSummaryResponse>,
+	'metricCards'
+> & {
+	metricCards: DashboardCrossMetricCard[];
+};
+export type DashboardSummary = ApiResponseData<GeneratedDashboardSummaryResponse>;
+
+export interface UserOption {
+	id: number;
+	name: string;
+	departmentId?: number | null;
+	departmentName?: string;
+}
+
+export interface DepartmentOption {
+	id: number;
+	label: string;
+}
+
+export interface PerformancePersonaOption {
+	key: string;
+	label: string;
+	category: 'org' | 'fn';
+}
+
+export interface PerformanceAccessContext {
+	availablePersonas: PerformancePersonaOption[];
+	defaultPersonaKey: string | null;
+	activePersonaKey: string | null;
+	roleKind: 'employee' | 'manager' | 'hr' | 'readonly' | 'unsupported';
+	canSwitchPersona: boolean;
+	workbenchPages: string[];
+	surfaceAccess: {
+		workbench: boolean;
+		assessmentMy: boolean;
+		assessmentInitiated: boolean;
+		assessmentPending: boolean;
+		approvalConfig: boolean;
+		approvalInstance: boolean;
+		dashboardSummary: boolean;
+		dashboardCrossSummary: boolean;
+	};
+}
+
+export type RecruitPlanRecord = Omit<
+	GeneratedRecruitPlanRecord,
+	| 'targetDepartmentId'
+	| 'targetDepartmentName'
+	| 'requirementSummary'
+	| 'recruiterId'
+	| 'recruiterName'
+	| 'jobStandardId'
+	| 'jobStandardPositionName'
+	| 'sourceSnapshot'
+	| 'jobStandardSummary'
+	| 'jobStandardSnapshot'
+	| 'status'
+> & {
 	targetDepartmentId: number | undefined;
 	targetDepartmentName?: string | null;
-	positionName: string;
-	headcount: number;
-	startDate: string;
-	endDate: string;
+	requirementSummary?: string | null;
 	recruiterId?: number | null;
 	recruiterName?: string | null;
-	requirementSummary?: string | null;
 	jobStandardId?: number | null;
 	jobStandardPositionName?: string | null;
 	jobStandardSummary?: RecruitmentSourceSnapshot | null;
 	jobStandardSnapshot?: RecruitmentSourceSnapshot | null;
 	sourceSnapshot?: RecruitmentSourceSnapshot | null;
 	status?: RecruitPlanStatus;
-	createTime?: string;
-	updateTime?: string;
-}
+};
 
-export interface RecruitPlanPageResult {
+export type RecruitPlanPageResult = Omit<
+	ApiResponseData<GeneratedRecruitPlanPageResponse>,
+	'list'
+> & {
 	list: RecruitPlanRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
+};
+export interface RecruitPlanInfoQuery {
+	id: number;
 }
 
 export type RecruitPlanImportCellValue = string | number | null | undefined;
@@ -261,48 +901,104 @@ export interface RecruitPlanExportRow {
 	updateTime?: string;
 }
 
-export interface ContractRecord {
-	id?: number;
+export type ContractRecord = Omit<
+	GeneratedContractRecord,
+	| 'employeeId'
+	| 'departmentId'
+	| 'departmentName'
+	| 'title'
+	| 'employeeName'
+	| 'contractNumber'
+	| 'probationPeriod'
+	| 'salary'
+	| 'position'
+> & {
 	employeeId: number | undefined;
-	employeeName?: string;
-	type: ContractType;
-	title?: string;
-	contractNumber?: string;
-	startDate: string;
-	endDate: string;
+	departmentId?: number | null;
+	departmentName?: string | null;
+	title?: string | null;
+	employeeName?: string | null;
+	contractNumber?: string | null;
 	probationPeriod?: number | null;
 	salary?: number | null;
-	position?: string;
-	departmentId?: number | null;
-	departmentName?: string;
-	status?: ContractStatus;
-	createTime?: string;
-	updateTime?: string;
-}
+	position?: string | null;
+};
 
-export interface ContractPageResult {
+export type ContractPageResult = Omit<ApiResponseData<GeneratedContractPageResponse>, 'list'> & {
 	list: ContractRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
+};
+export interface ContractInfoQuery {
+	id: number;
 }
+export type ContractRemovePayload = import('./generated/assessment').DeleteIdsRequest;
 
-export interface PurchaseOrderRecord {
-	id?: number;
-	orderNo?: string | null;
-	title: string;
+export type PurchaseOrderItemRecord = Omit<
+	GeneratedPurchaseOrderItemRecord,
+	'specification' | 'unit' | 'unitPrice' | 'amount' | 'remark'
+> & {
+	specification?: string | null;
+	unit?: string | null;
+	unitPrice?: number | null;
+	amount?: number | null;
+	remark?: string | null;
+};
+
+export type PurchaseOrderInquiryRecord = Omit<
+	GeneratedPurchaseOrderInquiryRecord,
+	'supplierId' | 'supplierName' | 'quotedAmount' | 'inquiryRemark' | 'createdBy' | 'createdAt'
+> & {
+	supplierId?: number | null;
+	supplierName?: string | null;
+	quotedAmount?: number | null;
+	inquiryRemark?: string | null;
+	createdBy?: string | null;
+	createdAt?: string | null;
+};
+
+export type PurchaseOrderApprovalLog = Omit<
+	GeneratedPurchaseOrderApprovalLog,
+	'approverId' | 'approverName' | 'remark' | 'createdAt'
+> & {
+	action?: 'submitted' | 'approved' | 'rejected' | 'closed' | string;
+	approverId?: number | null;
+	approverName?: string | null;
+	remark?: string | null;
+	createdAt?: string | null;
+};
+
+export type PurchaseOrderReceiptRecord = Omit<
+	GeneratedPurchaseOrderReceiptRecord,
+	'receivedQuantity' | 'receivedAt' | 'receiverId' | 'receiverName' | 'remark'
+> & {
+	receivedQuantity?: number | null;
+	receivedAt?: string | null;
+	receiverId?: number | null;
+	receiverName?: string | null;
+	remark?: string | null;
+};
+
+export type PurchaseOrderRecord = Omit<
+	GeneratedPurchaseOrderRecord,
+	| 'supplierId'
+	| 'departmentId'
+	| 'requesterId'
+	| 'expectedDeliveryDate'
+	| 'approvedBy'
+	| 'approvedAt'
+	| 'approvalRemark'
+	| 'closedReason'
+	| 'receivedQuantity'
+	| 'receivedAt'
+	| 'items'
+	| 'inquiryRecords'
+	| 'approvalLogs'
+	| 'receiptRecords'
+	| 'remark'
+> & {
 	supplierId: number | undefined;
-	supplierName?: string;
 	departmentId: number | undefined;
-	departmentName?: string;
 	requesterId: number | undefined;
-	requesterName?: string;
-	orderDate: string;
 	expectedDeliveryDate?: string | null;
-	totalAmount: number;
-	currency?: string;
 	approvedBy?: string | null;
 	approvedAt?: string | null;
 	approvalRemark?: string | null;
@@ -314,91 +1010,168 @@ export interface PurchaseOrderRecord {
 	approvalLogs?: PurchaseOrderApprovalLog[];
 	receiptRecords?: PurchaseOrderReceiptRecord[];
 	remark?: string | null;
-	status?: PurchaseOrderStatus;
-	createTime?: string;
-	updateTime?: string;
-}
+};
 
-export interface PurchaseOrderPageResult {
+export type PurchaseOrderPageResult = Omit<
+	ApiResponseData<GeneratedPurchaseOrderPageResponse>,
+	'list'
+> & {
 	list: PurchaseOrderRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
+};
+export type PurchaseOrderPageQuery =
+	import('./generated/purchase-order').PurchaseOrderFetchPageRequest;
+export type PurchaseOrderInfoQuery =
+	import('./generated/purchase-order').PurchaseOrderFetchInfoQuery;
+export type PurchaseOrderCreatePayload = Partial<PurchaseOrderRecord>;
+export type PurchaseOrderUpdatePayload = Partial<PurchaseOrderRecord> & {
+	id: number;
+};
+export type PurchaseOrderRemovePayload =
+	import('./generated/purchase-order').PurchaseOrderRemovePurchaseOrderRequest;
+export type PurchaseOrderSubmitInquiryPayload =
+	import('./generated/purchase-order').PurchaseOrderSubmitInquiryRequest;
+export type PurchaseOrderSubmitApprovalPayload =
+	import('./generated/purchase-order').PurchaseOrderSubmitApprovalRequest;
+export type PurchaseOrderApprovePayload =
+	import('./generated/purchase-order').PurchaseOrderApproveRequest;
+export type PurchaseOrderRejectPayload =
+	import('./generated/purchase-order').PurchaseOrderRejectRequest;
+export type PurchaseOrderReceivePayload =
+	import('./generated/purchase-order').PurchaseOrderReceiveRequest;
+export type PurchaseOrderClosePayload =
+	import('./generated/purchase-order').PurchaseOrderCloseRequest;
+
+/**
+ * 统一采购单及其子表在 page/info 接口下的弱类型字段，避免页面层重复兜底。
+ */
+export function normalizePurchaseOrderDomainRecord(
+	record: PurchaseOrderRecord
+): PurchaseOrderRecord {
+	return {
+		...record,
+		status: normalizePurchaseOrderStatus(record.status),
+		orderNo: String(record.orderNo || ''),
+		expectedDeliveryDate: normalizeOptionalString(record.expectedDeliveryDate),
+		currency: normalizeOptionalString(record.currency) || 'CNY',
+		totalAmount: Number(record.totalAmount || 0),
+		receivedQuantity: Number(record.receivedQuantity || 0),
+		items: normalizePurchaseOrderItemList(record.items),
+		inquiryRecords: normalizePurchaseOrderInquiryList(record.inquiryRecords),
+		approvalLogs: normalizePurchaseOrderApprovalList(record.approvalLogs),
+		receiptRecords: normalizePurchaseOrderReceiptList(record.receiptRecords)
 	};
 }
 
-export interface PurchaseOrderItemRecord {
-	id?: number;
-	itemName: string;
-	specification?: string | null;
-	unit?: string | null;
-	quantity: number;
-	unitPrice?: number | null;
-	amount?: number | null;
-	remark?: string | null;
+function normalizePurchaseOrderStatus(status?: string | null): PurchaseOrderStatus | undefined {
+	switch (status) {
+		case 'draft':
+		case 'cancelled':
+		case 'approved':
+		case 'closed':
+		case 'received':
+		case 'inquiring':
+		case 'pendingApproval':
+			return status;
+		default:
+			return undefined;
+	}
 }
 
-export interface PurchaseOrderInquiryRecord {
-	id?: number;
+function normalizePurchaseOrderItemList(
+	items?: PurchaseOrderItemRecord[] | null
+): PurchaseOrderItemRecord[] {
+	if (!Array.isArray(items)) {
+		return [];
+	}
+
+	return items.map(item => ({
+		...item,
+		itemName: String(item?.itemName || ''),
+		specification: normalizeOptionalString(item?.specification),
+		unit: normalizeOptionalString(item?.unit),
+		quantity: Number(item?.quantity || 0),
+		unitPrice: Number(item?.unitPrice || 0),
+		amount: Number(item?.amount || Number(item?.quantity || 0) * Number(item?.unitPrice || 0)),
+		remark: normalizeOptionalString(item?.remark)
+	}));
+}
+
+function normalizePurchaseOrderInquiryList(
+	records?: PurchaseOrderInquiryRecord[] | null
+): PurchaseOrderInquiryRecord[] {
+	if (!Array.isArray(records)) {
+		return [];
+	}
+
+	return records.map(item => ({
+		...item,
+		supplierId: normalizePositiveIntegerOrUndefined(item?.supplierId),
+		supplierName: String(item?.supplierName || ''),
+		quotedAmount: Number(item?.quotedAmount || 0),
+		inquiryRemark: normalizeOptionalString(item?.inquiryRemark),
+		createdBy: String(item?.createdBy || ''),
+		createdAt: String(item?.createdAt || '')
+	}));
+}
+
+function normalizePurchaseOrderApprovalList(
+	records?: PurchaseOrderApprovalLog[] | null
+): PurchaseOrderApprovalLog[] {
+	if (!Array.isArray(records)) {
+		return [];
+	}
+
+	return records.map(item => ({
+		...item,
+		action: String(item?.action || ''),
+		approverId: normalizePositiveIntegerOrUndefined(item?.approverId),
+		approverName: String(item?.approverName || ''),
+		remark: normalizeOptionalString(item?.remark),
+		createdAt: String(item?.createdAt || '')
+	}));
+}
+
+function normalizePurchaseOrderReceiptList(
+	records?: PurchaseOrderReceiptRecord[] | null
+): PurchaseOrderReceiptRecord[] {
+	if (!Array.isArray(records)) {
+		return [];
+	}
+
+	return records.map(item => ({
+		...item,
+		receivedQuantity: Number(item?.receivedQuantity || 0),
+		receivedAt: String(item?.receivedAt || ''),
+		receiverId: normalizePositiveIntegerOrUndefined(item?.receiverId),
+		receiverName: String(item?.receiverName || ''),
+		remark: normalizeOptionalString(item?.remark)
+	}));
+}
+
+export type PurchaseReportSummary = ApiResponseData<GeneratedPurchaseReportSummaryResponse>;
+export type PurchaseReportQuery = GeneratedPurchaseReportQuery;
+
+export type PurchaseReportTrendPoint = GeneratedPurchaseReportTrendPoint;
+
+export type PurchaseReportSupplierStat = Omit<
+	GeneratedPurchaseReportSupplierStat,
+	'supplierId' | 'lastOrderDate'
+> & {
 	supplierId?: number | null;
-	supplierName?: string | null;
-	quotedAmount?: number | null;
-	inquiryRemark?: string | null;
-	createdBy?: string | null;
-	createdAt?: string | null;
-}
-
-export interface PurchaseOrderApprovalLog {
-	id?: number;
-	action?: 'submitted' | 'approved' | 'rejected' | 'closed' | string;
-	approverId?: number | null;
-	approverName?: string | null;
-	remark?: string | null;
-	createdAt?: string | null;
-}
-
-export interface PurchaseOrderReceiptRecord {
-	id?: number;
-	receivedQuantity?: number | null;
-	receivedAt?: string | null;
-	receiverId?: number | null;
-	receiverName?: string | null;
-	remark?: string | null;
-}
-
-export interface PurchaseReportSummary {
-	totalOrders: number;
-	totalAmount: number;
-	inquiringCount: number;
-	pendingApprovalCount: number;
-	approvedCount: number;
-	receivedCount: number;
-	closedCount: number;
-	cancelledCount: number;
-	supplierCount: number;
-}
-
-export interface PurchaseReportTrendPoint {
-	period: string;
-	orderCount: number;
-	totalAmount: number;
-	approvedCount: number;
-	receivedQuantity: number;
-}
-
-export interface PurchaseReportSupplierStat {
-	supplierId?: number | null;
-	supplierName: string;
-	orderCount: number;
-	totalAmount: number;
-	receivedQuantity: number;
 	lastOrderDate?: string | null;
-}
+};
 
-export interface SupplierRecord {
-	id?: number;
-	name: string;
+export type SupplierRecord = Omit<
+	GeneratedSupplierRecord,
+	| 'code'
+	| 'category'
+	| 'contactName'
+	| 'contactPhone'
+	| 'contactEmail'
+	| 'bankAccount'
+	| 'taxNo'
+	| 'remark'
+> & {
 	code?: string | null;
 	category?: string | null;
 	contactName?: string | null;
@@ -407,152 +1180,126 @@ export interface SupplierRecord {
 	bankAccount?: string | null;
 	taxNo?: string | null;
 	remark?: string | null;
-	status?: SupplierStatus;
-	createTime?: string;
-	updateTime?: string;
-}
+};
 
-export interface SupplierPageResult {
-	list: SupplierRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
-
-export interface CapabilityModelRecord {
-	id?: number;
+export interface SupplierOption {
+	id: number;
 	name: string;
-	code?: string | null;
-	category?: string | null;
-	description?: string | null;
-	status?: CapabilityModelStatus;
-	itemCount?: number;
-	createTime?: string;
-	updateTime?: string;
+	status?: SupplierRecord['status'];
 }
 
-export interface CapabilityModelPageResult {
-	list: CapabilityModelRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
-
-export interface CapabilityItemRecord {
-	id?: number;
-	modelId?: number;
+export interface AssetOption {
+	id: number;
 	name: string;
-	level?: string | null;
-	description?: string | null;
-	evidenceHint?: string | null;
-	updateTime?: string;
+	assetNo?: string;
+	assetStatus?: AssetInfoRecord['assetStatus'];
 }
 
-export interface CapabilityPortraitRecord {
-	employeeId: number;
-	employeeName?: string;
-	departmentId?: number | null;
-	departmentName?: string | null;
-	capabilityTags?: string[];
-	levelSummary?: string[];
-	certificateCount?: number;
-	lastCertifiedAt?: string | null;
-	updatedAt?: string;
-}
-
-export interface CertificateRecord {
-	id?: number;
+export interface MaterialOption {
+	id: number;
 	name: string;
-	code?: string | null;
-	category?: string | null;
-	issuer?: string | null;
-	description?: string | null;
-	validityMonths?: number | null;
-	sourceCourseId?: number | null;
-	status?: CertificateStatus;
-	issuedCount?: number;
-	createTime?: string;
-	updateTime?: string;
-}
-
-export interface CertificatePageResult {
-	list: CertificateRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
-
-export interface CertificateLedgerRecord {
-	id?: number;
-	certificateId?: number;
-	certificateName?: string;
-	employeeId?: number;
-	employeeName?: string;
-	departmentId?: number | null;
-	departmentName?: string | null;
-	issuedAt: string;
-	issuedBy?: string;
-	sourceCourseId?: number | null;
-	status?: CertificateRecordStatus;
-}
-
-export interface CertificateLedgerPageResult {
-	list: CertificateLedgerRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
-
-export interface CourseRecord {
-	id?: number;
-	title: string;
 	code?: string;
-	category?: string;
-	description?: string;
+	category?: string | null;
+	specification?: string | null;
+	unit?: string;
+	status?: MaterialCatalogRecord['status'];
+}
+
+export type LookupErrorHandler = (error: unknown) => void;
+
+export type SupplierPageResult = Omit<ApiResponseData<GeneratedSupplierPageResponse>, 'list'> & {
+	list: SupplierRecord[];
+};
+export type SupplierPageQuery = import('./generated/supplier').SupplierFetchPageRequest;
+export type SupplierInfoQuery = import('./generated/supplier').SupplierFetchInfoQuery;
+export type SupplierCreatePayload = Partial<SupplierRecord>;
+export type SupplierUpdatePayload = Partial<SupplierRecord> & {
+	id: number;
+};
+export type SupplierRemovePayload = import('./generated/supplier').SupplierRemoveSupplierRequest;
+
+export type CapabilityModelRecord = GeneratedCapabilityModelRecord;
+export type CapabilityModelInfoQuery = GeneratedCapabilityModelInfoQuery;
+export type CapabilityItemInfoQuery = GeneratedCapabilityItemInfoQuery;
+export type CapabilityPortraitInfoQuery = GeneratedCapabilityPortraitInfoQuery;
+
+export type CapabilityModelPageResult = GeneratedCapabilityModelPageResponse;
+
+export type CapabilityItemRecord = GeneratedCapabilityItemRecord;
+
+export type CapabilityPortraitRecord = GeneratedCapabilityPortraitRecord;
+
+export type CertificateRecord = GeneratedCertificateRecord;
+export interface CertificateInfoQuery {
+	id: number;
+}
+
+export type CertificatePageResult = GeneratedCertificatePageResponse;
+
+export type CertificateLedgerRecord = GeneratedCertificateLedgerRecord;
+
+export type CertificateLedgerPageResult = GeneratedCertificateLedgerPageResponse;
+
+export type CourseRecord = Omit<GeneratedCourseRecord, 'startDate' | 'endDate'> & {
 	startDate?: string | null;
 	endDate?: string | null;
-	status?: CourseStatus;
-	enrollmentCount?: number;
-	createTime?: string;
-	updateTime?: string;
-}
+};
 
-export interface CoursePageResult {
+export type CoursePageResult = Omit<ApiResponseData<GeneratedCoursePageResponse>, 'list'> & {
 	list: CourseRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
-
-export interface CourseEnrollmentRecord {
-	userId: number;
-	userName: string;
-	enrollTime?: string;
+};
+export type CoursePageQuery = import('./generated/course').CourseFetchPageRequest & {
+	page: number;
+	size: number;
+	keyword?: string;
+	category?: string;
 	status?: string;
+};
+export type CourseInfoQuery = import('./generated/course').CourseFetchInfoQuery;
+export type CourseCreatePayload = Partial<CourseRecord>;
+export type CourseUpdatePayload = Partial<CourseRecord> & { id: number };
+export type CourseRemovePayload = import('./generated/course').CourseRemoveCourseRequest;
+
+export type CourseEnrollmentRecord = Omit<GeneratedCourseEnrollmentRecord, 'score'> & {
 	score?: number | null;
-}
+};
 
-export interface CourseEnrollmentPageResult {
+export type CourseEnrollmentPageResult = Omit<
+	ApiResponseData<GeneratedCourseEnrollmentPageResponse>,
+	'list'
+> & {
 	list: CourseEnrollmentRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
+};
+export type CourseEnrollmentPageQuery =
+	import('./generated/course').CourseFetchEnrollmentPageRequest;
 
-export interface DocumentCenterRecord {
-	id?: number;
+export type DocumentCenterRecord = Omit<GeneratedDocumentCenterRecord, 'sizeMb' | 'expireDate'> & {
+	sizeMb?: number | null;
+	expireDate?: string | null;
+};
+
+export type DocumentCenterPageResult = Omit<
+	ApiResponseData<GeneratedDocumentCenterPageResponse>,
+	'list'
+> & {
+	list: DocumentCenterRecord[];
+};
+export type DocumentCenterPageQuery =
+	import('./generated/document-center').DocumentCenterFetchPageRequest;
+export type DocumentCenterInfoQuery =
+	import('./generated/document-center').DocumentCenterFetchInfoQuery;
+export type DocumentCenterStatsQuery =
+	import('./generated/document-center').DocumentCenterFetchStatsQuery;
+export type DocumentCenterCreatePayload = Partial<DocumentCenterRecord>;
+export type DocumentCenterUpdatePayload = Partial<DocumentCenterRecord> & {
+	id: number;
+};
+export type DocumentCenterRemovePayload =
+	import('./generated/document-center').DocumentCenterRemoveDocumentRequest;
+
+export type DocumentCenterStats = ApiResponseData<GeneratedDocumentCenterStatsResponse>;
+
+export interface DocumentCenterFormModel {
 	fileNo: string;
 	fileName: string;
 	category: DocumentCenterCategory;
@@ -561,33 +1308,12 @@ export interface DocumentCenterRecord {
 	confidentiality: DocumentCenterConfidentiality;
 	ownerName: string;
 	department: string;
-	status?: DocumentCenterStatus;
+	status: DocumentCenterStatus;
 	version: string;
-	sizeMb?: number | null;
-	downloadCount?: number;
-	createTime?: string;
-	updateTime?: string;
-	expireDate?: string | null;
-	tags?: string[];
-	notes?: string;
-}
-
-export interface DocumentCenterPageResult {
-	list: DocumentCenterRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
-
-export interface DocumentCenterStats {
-	total: number;
-	publishedCount: number;
-	reviewCount: number;
-	archivedCount: number;
-	totalSizeMb: number;
-	totalDownloads: number;
+	sizeMb: number;
+	expireDate: string;
+	tagsText: string;
+	notes: string;
 }
 
 export interface KnowledgeBaseRelatedFileSummary {
@@ -596,295 +1322,570 @@ export interface KnowledgeBaseRelatedFileSummary {
 	fileName?: string;
 }
 
-export interface KnowledgeBaseRecord {
-	id?: number;
+export type KnowledgeBaseRecord = GeneratedKnowledgeBaseRecord;
+
+export type KnowledgeBasePageResult = Omit<
+	ApiResponseData<GeneratedKnowledgeBasePageResponse>,
+	'list'
+> & {
+	list: KnowledgeBaseRecord[];
+};
+export type KnowledgeBasePageQuery =
+	import('./generated/knowledge-base').KnowledgeBaseFetchPageRequest;
+export type KnowledgeBaseStatsQuery =
+	import('./generated/knowledge-base').KnowledgeBaseFetchStatsQuery;
+export type KnowledgeBaseCreatePayload =
+	import('./generated/knowledge-base').KnowledgeBaseCreateKnowledgeRequest;
+export type KnowledgeBaseUpdatePayload =
+	import('./generated/knowledge-base').KnowledgeBaseUpdateKnowledgeRequest;
+export type KnowledgeBaseRemovePayload =
+	import('./generated/knowledge-base').KnowledgeBaseRemoveKnowledgeRequest;
+
+export type KnowledgeBaseStats = ApiResponseData<GeneratedKnowledgeBaseStatsResponse>;
+
+export type KnowledgeGraphNode = GeneratedKnowledgeGraphNode;
+
+export type KnowledgeGraphLink = GeneratedKnowledgeGraphLink;
+
+export type KnowledgeGraphSummary = Omit<
+	ApiResponseData<GeneratedKnowledgeGraphSummaryResponse>,
+	'nodes' | 'links'
+> & {
+	nodes: KnowledgeGraphNode[];
+	links: KnowledgeGraphLink[];
+};
+
+export type KnowledgeQaRecord = GeneratedKnowledgeQaRecord;
+export type KnowledgeQaListQuery =
+	import('./generated/knowledge-base').KnowledgeBaseFetchQaListQuery;
+export type KnowledgeQaListResult = ApiResponseData<GeneratedKnowledgeQaListResponse>;
+export type KnowledgeQaCreatePayload =
+	import('./generated/knowledge-base').KnowledgeBaseCreateQaRequest;
+export type KnowledgeSearchQuery =
+	import('./generated/knowledge-base').KnowledgeBaseFetchSearchQuery;
+
+export interface KnowledgeBaseFormModel {
 	kbNo: string;
 	title: string;
 	category: string;
 	summary: string;
 	ownerName: string;
-	status?: KnowledgeBaseStatus;
-	tags?: string[];
-	relatedFileIds?: number[];
-	relatedTopics?: string[];
-	importance?: number;
-	viewCount?: number;
-	createTime?: string;
-	updateTime?: string;
+	status: KnowledgeBaseStatus;
+	importance: number;
+	tagsText: string;
+	relatedTopicsText: string;
+	relatedFileIds: number[];
 }
 
-export interface KnowledgeBasePageResult {
-	list: KnowledgeBaseRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
-
-export interface KnowledgeBaseStats {
-	total: number;
-	publishedCount: number;
-	draftCount: number;
-	fileLinkedCount: number;
-	avgImportance: number;
-	topicCount: number;
-}
-
-export interface KnowledgeGraphNode {
-	id: string;
-	name: string;
-	category?: string;
-	value?: number;
-}
-
-export interface KnowledgeGraphLink {
-	source: string;
-	target: string;
-	value?: number;
-}
-
-export interface KnowledgeGraphSummary {
-	nodes: KnowledgeGraphNode[];
-	links: KnowledgeGraphLink[];
-	categories?: Array<{ name: string }>;
-}
-
-export interface KnowledgeQaRecord {
-	id?: number;
+export interface KnowledgeQaFormModel {
 	question: string;
 	answer: string;
-	relatedKnowledgeIds?: number[];
-	relatedFileIds?: number[];
-	createTime?: string;
-	updateTime?: string;
+	relatedKnowledgeIds: number[];
+	relatedFileIds: number[];
 }
 
-export interface KnowledgeSearchResult {
-	total: number;
+export type KnowledgeSearchResult = Omit<
+	ApiResponseData<GeneratedKnowledgeSearchResultResponse>,
+	'knowledge' | 'files' | 'qas'
+> & {
 	knowledge: KnowledgeBaseRecord[];
 	files: DocumentCenterRecord[];
 	qas: KnowledgeQaRecord[];
-}
+};
 
-export interface InterviewRecord {
-	id?: number;
-	candidateName: string;
-	position: string;
-	departmentId?: number | null;
-	interviewerId: number | undefined;
-	interviewerName?: string;
-	interviewDate: string;
-	interviewType?: InterviewType | null;
-	score?: number | null;
-	resumePoolId?: number | null;
-	recruitPlanId?: number | null;
-	sourceSnapshot?: RecruitmentSourceSnapshot | null;
-	resumePoolSnapshot?: RecruitmentSourceSnapshot | null;
-	recruitPlanSnapshot?: RecruitmentSourceSnapshot | null;
-	status?: InterviewStatus;
-	createTime?: string;
-	updateTime?: string;
-}
+export type HiringSourceType = GeneratedHiringSourceType;
 
-export interface InterviewPageResult {
-	list: InterviewRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
+export type HiringStatus = GeneratedHiringStatus;
 
-export interface ResumePoolAttachmentSummary {
-	id: number;
-	name: string;
-	size: number;
-	uploadTime: string;
-}
-
-export interface ResumePoolRecord {
-	id?: number;
-	candidateName: string;
-	targetDepartmentId: number | undefined;
-	targetDepartmentName?: string;
-	targetPosition?: string | null;
-	phone: string;
-	email?: string | null;
-	resumeText: string;
-	sourceType: ResumePoolSourceType;
-	sourceRemark?: string | null;
-	externalLink?: string | null;
-	recruitPlanId?: number | null;
-	recruitPlanTitle?: string | null;
-	jobStandardId?: number | null;
-	jobStandardPositionName?: string | null;
-	sourceSnapshot?: RecruitmentSourceSnapshot | null;
-	recruitPlanSnapshot?: RecruitmentSourceSnapshot | null;
-	jobStandardSnapshot?: RecruitmentSourceSnapshot | null;
-	attachmentIdList?: number[];
-	attachmentSummaryList?: ResumePoolAttachmentSummary[];
-	status?: ResumePoolStatus;
-	linkedTalentAssetId?: number | null;
-	latestInterviewId?: number | null;
-	createTime?: string;
-	updateTime?: string;
-}
-
-export interface ResumePoolPageResult {
-	list: ResumePoolRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
-
-export interface MeetingRecord {
-	id?: number;
-	title: string;
-	code?: string | null;
-	type?: string | null;
-	description?: string | null;
-	startDate: string;
-	endDate: string;
-	location?: string | null;
-	organizerId: number | undefined;
-	organizerName?: string;
-	participantIds?: number[];
-	participantCount?: number;
-	status?: MeetingStatus;
-	createTime?: string;
-	updateTime?: string;
-}
-
-export interface MeetingPageResult {
-	list: MeetingRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
-
-export interface TalentAssetRecord {
-	id?: number;
-	candidateName: string;
-	code?: string | null;
-	targetDepartmentId: number | undefined;
-	targetDepartmentName?: string;
-	targetPosition?: string | null;
-	source: string;
-	tagList?: string[];
-	followUpSummary?: string | null;
-	nextFollowUpDate?: string | null;
-	status?: TalentAssetStatus;
-	createTime?: string;
-	updateTime?: string;
-}
-
-export interface TalentAssetPageResult {
-	list: TalentAssetRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
-
-export interface HiringRecord {
-	id?: number;
-	candidateName: string;
-	targetDepartmentId: number | undefined;
-	targetDepartmentName?: string | null;
-	targetPosition?: string | null;
-	sourceType?: HiringSourceType | string | null;
-	sourceId?: number | null;
+export type HiringSourceSnapshot = {
+	sourceResource?: HiringSourceType | null;
 	interviewId?: number | null;
 	resumePoolId?: number | null;
 	recruitPlanId?: number | null;
+	recruitPlanTitle?: string | null;
+	candidateName?: string | null;
+	targetDepartmentId?: number | null;
+	targetDepartmentName?: string | null;
+	targetPosition?: string | null;
+	interviewStatus?: InterviewStatus | null;
 	sourceStatusSnapshot?: string | null;
-	sourceSnapshot?: RecruitmentSourceSnapshot | null;
-	interviewSnapshot?: RecruitmentSourceSnapshot | null;
-	resumePoolSnapshot?: RecruitmentSourceSnapshot | null;
-	recruitPlanSnapshot?: RecruitmentSourceSnapshot | null;
+};
+export interface HiringInfoQuery {
+	id: number;
+}
+
+type GeneratedHiringRecord = StripIndexSignature<
+	ApiResponseData<GeneratedHiringPageResponse>['list'][number]
+>;
+
+export type HiringTransportRecord = Omit<
+	GeneratedHiringRecord,
+	| 'targetDepartmentName'
+	| 'targetPosition'
+	| 'sourceType'
+	| 'sourceId'
+	| 'sourceStatusSnapshot'
+	| 'sourceSnapshot'
+	| 'interviewId'
+	| 'resumePoolId'
+	| 'recruitPlanId'
+	| 'hiringDecision'
+	| 'decisionContent'
+	| 'status'
+	| 'offeredAt'
+	| 'acceptedAt'
+	| 'rejectedAt'
+	| 'closedAt'
+	| 'closeReason'
+	| 'interviewSnapshot'
+	| 'resumePoolSnapshot'
+	| 'recruitPlanSnapshot'
+> & {
+	targetDepartmentName?: string | null;
+	targetPosition?: string | null;
+	sourceType?: HiringSourceType | null;
+	sourceId?: number | null;
+	sourceStatusSnapshot?: string | null;
+	sourceSnapshot?: HiringSourceSnapshot | string | null;
+	interviewId?: number | null;
+	resumePoolId?: number | null;
+	recruitPlanId?: number | null;
 	hiringDecision?: string | null;
+	decisionContent?: string | null;
 	status?: HiringStatus;
 	offeredAt?: string | null;
 	acceptedAt?: string | null;
 	rejectedAt?: string | null;
 	closedAt?: string | null;
 	closeReason?: string | null;
-	createTime?: string;
-	updateTime?: string;
-}
+	interviewSnapshot?: HiringSourceSnapshot | null;
+	resumePoolSnapshot?: HiringSourceSnapshot | null;
+	recruitPlanSnapshot?: HiringSourceSnapshot | null;
+};
 
-export interface HiringPageResult {
-	list: HiringRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
+export type HiringRecord = Omit<
+	GeneratedHiringRecord,
+	| 'targetDepartmentName'
+	| 'targetPosition'
+	| 'sourceType'
+	| 'sourceId'
+	| 'sourceStatusSnapshot'
+	| 'sourceSnapshot'
+	| 'interviewId'
+	| 'resumePoolId'
+	| 'recruitPlanId'
+	| 'hiringDecision'
+	| 'decisionContent'
+	| 'status'
+	| 'offeredAt'
+	| 'acceptedAt'
+	| 'rejectedAt'
+	| 'closedAt'
+	| 'closeReason'
+	| 'interviewSnapshot'
+	| 'resumePoolSnapshot'
+	| 'recruitPlanSnapshot'
+> & {
+	targetDepartmentName?: string | null;
+	targetPosition?: string | null;
+	sourceType?: HiringSourceType | null;
+	sourceId?: number | null;
+	sourceStatusSnapshot?: string | null;
+	sourceSnapshot?: HiringSourceSnapshot | null;
+	interviewId?: number | null;
+	resumePoolId?: number | null;
+	recruitPlanId?: number | null;
+	hiringDecision?: string | null;
+	decisionContent?: string | null;
+	status?: HiringStatus;
+	offeredAt?: string | null;
+	acceptedAt?: string | null;
+	rejectedAt?: string | null;
+	closedAt?: string | null;
+	closeReason?: string | null;
+	interviewSnapshot?: HiringSourceSnapshot | null;
+	resumePoolSnapshot?: HiringSourceSnapshot | null;
+	recruitPlanSnapshot?: HiringSourceSnapshot | null;
+};
+
+export type HiringFormRecord = Omit<HiringRecord, 'targetDepartmentId'> & {
+	targetDepartmentId?: number;
+};
+
+export type HiringPageResult = Omit<ApiResponseData<GeneratedHiringPageResponse>, 'list'> & {
+	list: HiringTransportRecord[];
+};
+
+/**
+ * 统一录用记录 transport -> domain 的来源快照和关联 ID 字段。
+ */
+export function normalizeHiringDomainRecord(record: HiringTransportRecord): HiringRecord {
+	const sourceSnapshot =
+		record.sourceSnapshot && typeof record.sourceSnapshot === 'object'
+			? record.sourceSnapshot
+			: null;
+
+	return {
+		...record,
+		interviewId: normalizePositiveIntegerOrUndefined(
+			record.interviewId ?? sourceSnapshot?.interviewId
+		),
+		resumePoolId: normalizePositiveIntegerOrUndefined(
+			record.resumePoolId ?? sourceSnapshot?.resumePoolId
+		),
+		recruitPlanId: normalizePositiveIntegerOrUndefined(
+			record.recruitPlanId ?? sourceSnapshot?.recruitPlanId
+		),
+		sourceSnapshot
 	};
 }
 
-export interface TeacherAgentRecord {
-	id?: number;
-	name: string;
-	agentType: string;
+export type InterviewRecord = Omit<
+	GeneratedInterviewRecord,
+	| 'departmentId'
+	| 'interviewerId'
+	| 'interviewType'
+	| 'score'
+	| 'resumePoolId'
+	| 'recruitPlanId'
+	| 'sourceSnapshot'
+	| 'resumePoolSummary'
+	| 'resumePoolSnapshot'
+	| 'recruitPlanSummary'
+	| 'recruitPlanSnapshot'
+	| 'status'
+> & {
+	departmentId?: number | null | undefined;
+	interviewerId: number | undefined;
+	interviewType?: InterviewType | null;
+	score?: number | null;
+	resumePoolId?: number | null | undefined;
+	recruitPlanId?: number | null | undefined;
+	sourceSnapshot?: RecruitmentSourceSnapshot | null;
+	resumePoolSummary?: RecruitmentSourceSnapshot | null;
+	resumePoolSnapshot?: RecruitmentSourceSnapshot | null;
+	recruitPlanSummary?: RecruitmentSourceSnapshot | null;
+	recruitPlanSnapshot?: RecruitmentSourceSnapshot | null;
+	status?: InterviewStatus;
+};
+
+export type InterviewPageResult = Omit<ApiResponseData<GeneratedInterviewPageResponse>, 'list'> & {
+	list: InterviewRecord[];
+};
+export interface InterviewInfoQuery {
+	id: number;
+}
+
+export type ResumePoolAttachmentSummary = GeneratedResumePoolAttachmentSummary;
+export type ResumePoolInterviewSourceSnapshot = RecruitmentSourceSnapshot;
+export type ResumePoolReferenceSnapshot = RecruitmentSourceSnapshot;
+export type ResumePoolRecruitPlanSnapshot = RecruitmentSourceSnapshot;
+export type ResumePoolJobStandardSnapshot = RecruitmentSourceSnapshot;
+
+export type ResumePoolRecord = Omit<
+	GeneratedResumePoolRecord,
+	| 'targetDepartmentId'
+	| 'targetPosition'
+	| 'email'
+	| 'sourceRemark'
+	| 'externalLink'
+	| 'recruitPlanId'
+	| 'recruitPlanTitle'
+	| 'jobStandardId'
+	| 'jobStandardPositionName'
+	| 'linkedTalentAssetId'
+	| 'latestInterviewId'
+	| 'resumeText'
+	| 'sourceSnapshot'
+	| 'recruitPlanSummary'
+	| 'recruitPlanSnapshot'
+	| 'jobStandardSummary'
+	| 'jobStandardSnapshot'
+	| 'status'
+> & {
+	targetDepartmentId: number | undefined;
+	targetPosition?: string | null;
+	email?: string | null;
+	sourceRemark?: string | null;
+	externalLink?: string | null;
+	recruitPlanId?: number | null;
+	recruitPlanTitle?: string | null;
+	jobStandardId?: number | null;
+	jobStandardPositionName?: string | null;
+	linkedTalentAssetId?: number | null;
+	latestInterviewId?: number | null;
+	resumeText: string;
+	sourceSnapshot?: RecruitmentSourceSnapshot | null;
+	recruitPlanSnapshot?: RecruitmentSourceSnapshot | null;
+	jobStandardSnapshot?: RecruitmentSourceSnapshot | null;
+	status?: ResumePoolStatus;
+};
+
+export type ResumePoolPageResult = Omit<
+	ApiResponseData<GeneratedResumePoolPageResponse>,
+	'list'
+> & {
+	list: ResumePoolRecord[];
+};
+export interface ResumePoolInfoQuery {
+	id: number;
+}
+
+export type MeetingRecord = Omit<
+	GeneratedMeetingRecord,
+	'code' | 'type' | 'description' | 'location' | 'organizerId' | 'organizerName' | 'status'
+> & {
+	code?: string | null;
+	type?: string | null;
+	description?: string | null;
+	location?: string | null;
+	organizerId: number | undefined;
+	organizerName?: string | null;
+	participantIds?: number[];
+	status?: MeetingStatus;
+};
+
+export type MeetingPageResult = Omit<ApiResponseData<GeneratedMeetingPageResponse>, 'list'> & {
+	list: MeetingRecord[];
+};
+export interface MeetingInfoQuery {
+	id: number;
+}
+export type MeetingRemovePayload = import('./generated/assessment').DeleteIdsRequest;
+
+export type TalentAssetRecord = Omit<
+	GeneratedTalentAssetRecord,
+	| 'code'
+	| 'targetDepartmentId'
+	| 'targetDepartmentName'
+	| 'targetPosition'
+	| 'followUpSummary'
+	| 'nextFollowUpDate'
+	| 'status'
+> & {
+	code?: string | null;
+	targetDepartmentId: number | undefined;
+	targetDepartmentName?: string | null;
+	targetPosition?: string | null;
+	followUpSummary?: string | null;
+	nextFollowUpDate?: string | null;
+	status?: TalentAssetStatus;
+};
+
+export type TalentAssetPageResult = Omit<
+	ApiResponseData<GeneratedTalentAssetPageResponse>,
+	'list'
+> & {
+	list: TalentAssetRecord[];
+};
+export interface TalentAssetInfoQuery {
+	id: number;
+}
+
+export type WorkPlanAssignee = GeneratedWorkPlanAssignee;
+
+export type WorkPlanRecord = Omit<
+	GeneratedWorkPlanRecord,
+	| 'description'
+	| 'ownerDepartmentId'
+	| 'ownerDepartmentName'
+	| 'ownerId'
+	| 'ownerName'
+	| 'plannedStartDate'
+	| 'plannedEndDate'
+	| 'startedAt'
+	| 'completedAt'
+	| 'progressSummary'
+	| 'resultSummary'
+	| 'sourceType'
+	| 'sourceBizType'
+	| 'sourceBizId'
+	| 'sourceTitle'
+	| 'sourceStatus'
+	| 'externalInstanceId'
+	| 'externalProcessCode'
+	| 'approvalFinishedAt'
+	| 'sourceSnapshot'
+> & {
+	description?: string | null;
+	ownerDepartmentId: number | undefined;
+	ownerDepartmentName?: string | null;
+	ownerId: number | undefined;
+	ownerName?: string | null;
+	plannedStartDate?: string | null;
+	plannedEndDate?: string | null;
+	startedAt?: string | null;
+	completedAt?: string | null;
+	progressSummary?: string | null;
+	resultSummary?: string | null;
+	sourceType?: WorkPlanSourceType | string | null;
+	sourceBizType?: string | null;
+	sourceBizId?: string | null;
+	sourceTitle?: string | null;
+	sourceStatus?: WorkPlanSourceStatus | string | null;
+	externalInstanceId?: string | null;
+	externalProcessCode?: string | null;
+	approvalFinishedAt?: string | null;
+	sourceSnapshot?: JsonObject | null;
+};
+
+export type WorkPlanPageResult = Omit<ApiResponseData<GeneratedWorkPlanPageResponse>, 'list'> & {
+	list: WorkPlanRecord[];
+};
+export type WorkPlanPageQuery = import('./generated/work-plan').WorkPlanFetchPageRequest & {
+	page: number;
+	size: number;
+	keyword?: string;
+	departmentId?: number;
+	status?: string;
+	sourceStatus?: string;
+};
+export type WorkPlanInfoQuery = import('./generated/work-plan').WorkPlanFetchInfoQuery;
+export type WorkPlanCreatePayload = import('./generated/work-plan').WorkPlanCreateWorkPlanRequest;
+export type WorkPlanUpdatePayload = import('./generated/work-plan').WorkPlanUpdateWorkPlanRequest;
+export type WorkPlanDeletePayload = import('./generated/work-plan').WorkPlanDeleteWorkPlanRequest;
+export type WorkPlanStartPayload = import('./generated/work-plan').WorkPlanStartRequest;
+export type WorkPlanCompletePayload = import('./generated/work-plan').WorkPlanCompleteRequest;
+export type WorkPlanCancelPayload = import('./generated/work-plan').WorkPlanCancelRequest;
+export type WorkPlanSyncPayload =
+	import('./generated/work-plan').WorkPlanSyncDingtalkApprovalRequest & {
+		sourceTitle: string;
+		sourceBizType: string;
+		sourceBizId?: string;
+		externalInstanceId: string;
+		externalProcessCode?: string;
+		sourceStatus: string;
+		planTitle?: string;
+		planDescription?: string;
+		ownerDepartmentId?: number;
+		ownerId?: number;
+		assigneeIds: number[];
+		priority: WorkPlanPriority;
+		plannedStartDate?: string;
+		plannedEndDate?: string;
+		sourceSnapshot?: Record<string, unknown>;
+	};
+
+/**
+ * 统一工作计划默认结构和数组字段，避免页面层自己补空数组和默认值。
+ */
+export function normalizeWorkPlanDomainRecord(
+	record: WorkPlanRecord | null | undefined
+): WorkPlanRecord {
+	return {
+		...createEmptyWorkPlan(),
+		...record,
+		assigneeIds: Array.isArray(record?.assigneeIds) ? record.assigneeIds : [],
+		assigneeList: Array.isArray(record?.assigneeList) ? record.assigneeList : [],
+		assigneeNames: Array.isArray(record?.assigneeNames) ? record.assigneeNames : []
+	};
+}
+
+export type TeacherAgentRecord = Omit<
+	GeneratedTeacherAgentRecord,
+	| 'level'
+	| 'region'
+	| 'cooperationStatus'
+	| 'remark'
+	| 'ownerEmployeeId'
+	| 'ownerDepartmentId'
+	| 'createTime'
+	| 'updateTime'
+> & {
 	level?: string | null;
 	region?: string | null;
 	cooperationStatus?: string | null;
-	status?: TeacherAgentStatus;
-	blacklistStatus?: TeacherAgentBlacklistStatus;
 	remark?: string | null;
 	ownerEmployeeId?: number | null;
 	ownerDepartmentId?: number | null;
 	createTime?: string | null;
 	updateTime?: string | null;
-}
+};
 
-export interface TeacherAgentPageResult {
+export type TeacherAgentPageResult = Omit<
+	ApiResponseData<GeneratedTeacherAgentPageResponse>,
+	'list'
+> & {
 	list: TeacherAgentRecord[];
-	pagination: {
+};
+export type TeacherAgentPageQuery =
+	import('./generated/teacher-agent').TeacherAgentFetchPageRequest & {
 		page: number;
 		size: number;
-		total: number;
 	};
-}
+export type TeacherAgentInfoQuery = import('./generated/teacher-agent').TeacherAgentFetchInfoQuery;
+export type TeacherAgentCreatePayload = Partial<TeacherAgentRecord>;
+export type TeacherAgentUpdatePayload = Partial<TeacherAgentRecord> & { id: number };
+export type TeacherAgentUpdateStatusPayload =
+	import('./generated/teacher-agent').TeacherAgentUpdateStatusRequest;
+export type TeacherAgentBlacklistPayload =
+	import('./generated/teacher-agent').TeacherAgentBlacklistRequest;
+export type TeacherAgentUnblacklistPayload =
+	import('./generated/teacher-agent').TeacherAgentUnblacklistRequest;
 
-export interface TeacherAgentRelationRecord {
-	id?: number;
+export type TeacherAgentRelationRecord = Omit<
+	GeneratedTeacherAgentRelationRecord,
+	| 'parentAgentId'
+	| 'parentAgentName'
+	| 'childAgentId'
+	| 'childAgentName'
+	| 'effectiveTime'
+	| 'remark'
+	| 'ownerEmployeeId'
+	| 'ownerDepartmentId'
+	| 'createTime'
+	| 'updateTime'
+> & {
 	parentAgentId: number | undefined;
 	parentAgentName?: string | null;
 	childAgentId: number | undefined;
 	childAgentName?: string | null;
-	status?: TeacherAgentRelationStatus;
 	effectiveTime?: string | null;
 	remark?: string | null;
 	ownerEmployeeId?: number | null;
 	ownerDepartmentId?: number | null;
 	createTime?: string | null;
 	updateTime?: string | null;
-}
+};
 
-export interface TeacherAgentRelationPageResult {
+export type TeacherAgentRelationPageResult = Omit<
+	ApiResponseData<GeneratedTeacherAgentRelationPageResponse>,
+	'list'
+> & {
 	list: TeacherAgentRelationRecord[];
-	pagination: {
+};
+export type TeacherAgentRelationPageQuery =
+	import('./generated/teacher-agent-relation').TeacherAgentRelationFetchPageRequest & {
 		page: number;
 		size: number;
-		total: number;
 	};
-}
+export type TeacherAgentRelationCreatePayload = Partial<TeacherAgentRelationRecord>;
+export type TeacherAgentRelationUpdatePayload = Partial<TeacherAgentRelationRecord> & {
+	id: number;
+};
+export type TeacherAgentRelationRemovePayload =
+	import('./generated/teacher-agent-relation').TeacherAgentRelationRemoveTeacherAgentRelationRequest;
 
-export interface TeacherAttributionRecord {
-	id?: number;
+export type TeacherAttributionRecord = Omit<
+	GeneratedTeacherAttributionRecord,
+	| 'teacherId'
+	| 'teacherName'
+	| 'agentId'
+	| 'agentName'
+	| 'attributionType'
+	| 'sourceType'
+	| 'sourceRemark'
+	| 'effectiveTime'
+	| 'operatorId'
+	| 'operatorName'
+	| 'createTime'
+	| 'updateTime'
+> & {
 	teacherId?: number | null;
 	teacherName?: string | null;
 	agentId?: number | null;
 	agentName?: string | null;
 	attributionType?: string | null;
-	status?: TeacherAttributionStatus;
 	sourceType?: string | null;
 	sourceRemark?: string | null;
 	effectiveTime?: string | null;
@@ -892,23 +1893,48 @@ export interface TeacherAttributionRecord {
 	operatorName?: string | null;
 	createTime?: string | null;
 	updateTime?: string | null;
-}
+};
 
-export interface TeacherAttributionPageResult {
+export type TeacherAttributionPageResult = Omit<
+	ApiResponseData<GeneratedTeacherAttributionPageResponse>,
+	'list'
+> & {
 	list: TeacherAttributionRecord[];
-	pagination: {
+};
+export type TeacherAttributionPageQuery =
+	import('./generated/teacher-attribution').TeacherAttributionFetchPageRequest & {
 		page: number;
 		size: number;
-		total: number;
+		status?: TeacherAttributionStatus | string;
+		teacherId?: number;
 	};
+export type TeacherAttributionInfoQuery =
+	import('./generated/teacher-attribution').TeacherAttributionFetchInfoQuery;
+export interface TeacherAttributionAssignPayload {
+	teacherId: number;
+	agentId?: number | null;
+	sourceRemark?: string;
 }
+export type TeacherAttributionChangePayload = TeacherAttributionAssignPayload;
+export type TeacherAttributionRemovePayload =
+	import('./generated/teacher-attribution').TeacherAttributionRemoveRequest;
 
-export interface TeacherAttributionConflictRecord {
-	id?: number;
+export type TeacherAttributionConflictRecord = Omit<
+	GeneratedTeacherAttributionConflictRecord,
+	| 'teacherId'
+	| 'teacherName'
+	| 'resolution'
+	| 'resolutionRemark'
+	| 'resolvedBy'
+	| 'resolvedTime'
+	| 'currentAgentId'
+	| 'requestedAgentId'
+	| 'requestedById'
+	| 'createTime'
+	| 'updateTime'
+> & {
 	teacherId?: number | null;
 	teacherName?: string | null;
-	candidateAgentIds?: number[];
-	status?: TeacherAttributionConflictStatus;
 	resolution?: string | null;
 	resolutionRemark?: string | null;
 	resolvedBy?: number | null;
@@ -918,60 +1944,141 @@ export interface TeacherAttributionConflictRecord {
 	requestedById?: number | null;
 	createTime?: string | null;
 	updateTime?: string | null;
-}
+};
 
-export interface TeacherAttributionConflictDetail extends TeacherAttributionConflictRecord {
-	candidateAgents?: Array<{
-		id: number;
-		name: string;
-	}>;
+export type TeacherAttributionConflictDetail = Omit<
+	ApiResponseData<GeneratedTeacherAttributionConflictDetailResponse>,
+	| 'currentAgentName'
+	| 'requestedAgentName'
+	| 'id'
+	| 'teacherId'
+	| 'teacherName'
+	| 'resolution'
+	| 'resolutionRemark'
+	| 'resolvedBy'
+	| 'resolvedTime'
+	| 'currentAgentId'
+	| 'requestedAgentId'
+	| 'requestedById'
+	| 'createTime'
+	| 'updateTime'
+> & {
 	currentAgentName?: string | null;
 	requestedAgentName?: string | null;
-}
+	id?: number;
+	teacherId?: number | null;
+	teacherName?: string | null;
+	resolution?: string | null;
+	resolutionRemark?: string | null;
+	resolvedBy?: number | null;
+	resolvedTime?: string | null;
+	currentAgentId?: number | null;
+	requestedAgentId?: number | null;
+	requestedById?: number | null;
+	createTime?: string | null;
+	updateTime?: string | null;
+};
 
-export interface TeacherAttributionConflictPageResult {
+export type TeacherAttributionConflictPageResult = Omit<
+	ApiResponseData<GeneratedTeacherAttributionConflictPageResponse>,
+	'list'
+> & {
 	list: TeacherAttributionConflictRecord[];
-	pagination: {
+};
+export type TeacherAttributionConflictPageQuery =
+	import('./generated/teacher-attribution-conflict').TeacherAttributionConflictFetchPageRequest & {
 		page: number;
 		size: number;
-		total: number;
+		status?: TeacherAttributionConflictStatus | string;
 	};
-}
-
-export interface TeacherAttributionInfo {
+export type TeacherAttributionConflictInfoQuery =
+	import('./generated/teacher-attribution-conflict').TeacherAttributionConflictFetchInfoQuery;
+export interface TeacherAttributionConflictCreatePayload {
 	teacherId: number;
+	agentId?: number | null;
+	sourceRemark?: string;
+}
+export interface TeacherAttributionConflictResolvePayload {
+	id: number;
+	resolution: 'resolved' | 'cancelled';
+	agentId?: number | null;
+	resolutionRemark?: string;
+}
+export type TeacherAttributionConflictResolveResult =
+	| TeacherAttributionConflictDetail
+	| TeacherAttributionInfo;
+
+export type TeacherAttributionInfo = Omit<
+	GeneratedTeacherAttributionInfo,
+	'teacherName' | 'currentAttribution' | 'openConflicts' | 'history'
+> & {
 	teacherName?: string | null;
 	currentAttribution?: TeacherAttributionRecord | null;
-	openConflictCount?: number;
 	openConflicts?: TeacherAttributionConflictRecord[];
 	history?: TeacherAttributionRecord[];
-}
+};
 
-export interface TeacherAgentAuditRecord {
-	id?: number;
+export type TeacherAgentAuditRecord = Omit<
+	GeneratedTeacherAgentAuditRecord,
+	| 'resourceType'
+	| 'resourceId'
+	| 'action'
+	| 'beforeSnapshot'
+	| 'afterSnapshot'
+	| 'operatorId'
+	| 'operatorName'
+	| 'createTime'
+	| 'updateTime'
+> & {
 	resourceType?: string | null;
 	resourceId?: number | null;
 	action?: string | null;
-	beforeSnapshot?: Record<string, any> | null;
-	afterSnapshot?: Record<string, any> | null;
+	beforeSnapshot?: JsonObject | null;
+	afterSnapshot?: JsonObject | null;
 	operatorId?: number | null;
 	operatorName?: string | null;
 	createTime?: string | null;
 	updateTime?: string | null;
-}
+};
 
-export interface TeacherAgentAuditPageResult {
+export type TeacherAgentAuditPageResult = Omit<
+	ApiResponseData<GeneratedTeacherAgentAuditPageResponse>,
+	'list'
+> & {
 	list: TeacherAgentAuditRecord[];
-	pagination: {
+};
+export type TeacherAgentAuditPageQuery =
+	import('./generated/teacher-agent-audit').TeacherAgentAuditFetchPageRequest & {
 		page: number;
 		size: number;
-		total: number;
 	};
-}
+export type TeacherAgentAuditInfoQuery =
+	import('./generated/teacher-agent-audit').TeacherAgentAuditFetchInfoQuery;
 
-export interface TeacherInfoRecord {
-	id?: number;
-	teacherName: string;
+export type TeacherInfoRecord = Omit<
+	GeneratedTeacherInfoRecord,
+	| 'phone'
+	| 'wechat'
+	| 'schoolName'
+	| 'schoolRegion'
+	| 'schoolType'
+	| 'grade'
+	| 'className'
+	| 'subject'
+	| 'projectTags'
+	| 'intentionLevel'
+	| 'communicationStyle'
+	| 'ownerEmployeeId'
+	| 'ownerEmployeeName'
+	| 'ownerDepartmentId'
+	| 'ownerDepartmentName'
+	| 'lastFollowTime'
+	| 'nextFollowTime'
+	| 'cooperationTime'
+	| 'classCount'
+	| 'createTime'
+	| 'updateTime'
+> & {
 	phone?: string | null;
 	wechat?: string | null;
 	schoolName?: string | null;
@@ -983,7 +2090,6 @@ export interface TeacherInfoRecord {
 	projectTags?: string[] | string | null;
 	intentionLevel?: string | null;
 	communicationStyle?: string | null;
-	cooperationStatus?: TeacherCooperationStatus;
 	ownerEmployeeId?: number | null;
 	ownerEmployeeName?: string | null;
 	ownerDepartmentId?: number | null;
@@ -995,19 +2101,57 @@ export interface TeacherInfoRecord {
 	createTime?: string | null;
 	updateTime?: string | null;
 	[key: string]: unknown;
-}
+};
 
-export interface TeacherInfoPageResult {
+export type TeacherInfoPageResult = Omit<
+	ApiResponseData<GeneratedTeacherInfoPageResponse>,
+	'list'
+> & {
 	list: TeacherInfoRecord[];
-	pagination: {
+};
+export type TeacherInfoPageQuery =
+	import('./generated/teacher-info').TeacherInfoFetchPageRequest & {
 		page: number;
 		size: number;
-		total: number;
+		keyword?: string;
+		cooperationStatus?: TeacherCooperationStatus | string;
+		ownerDepartmentId?: number;
+	};
+export type TeacherInfoInfoQuery = import('./generated/teacher-info').TeacherInfoFetchInfoQuery;
+export type TeacherInfoCreatePayload = Partial<TeacherInfoRecord>;
+export type TeacherInfoUpdatePayload = Partial<TeacherInfoRecord> & { id: number };
+export type TeacherInfoAssignPayload = import('./generated/teacher-info').TeacherInfoAssignRequest;
+export type TeacherInfoUpdateStatusPayload =
+	import('./generated/teacher-info').TeacherInfoUpdateStatusRequest;
+export type TeacherInfoAttributionInfoQuery =
+	import('./generated/teacher-info').TeacherInfoFetchAttributionInfoQuery;
+export type TeacherInfoAttributionHistoryQuery =
+	import('./generated/teacher-info').TeacherInfoFetchAttributionHistoryQuery;
+
+/**
+ * 统一班主任资源的标签字段，避免页面层各自兼容 string/string[]/null。
+ */
+export function normalizeTeacherInfoDomainRecord(record: TeacherInfoRecord): TeacherInfoRecord {
+	return {
+		...record,
+		projectTags: normalizeUnknownStringArray(record.projectTags)
 	};
 }
 
-export interface TeacherFollowRecord {
-	id?: number;
+export type TeacherFollowRecord = Omit<
+	GeneratedTeacherFollowRecord,
+	| 'teacherId'
+	| 'followTime'
+	| 'followMethod'
+	| 'content'
+	| 'followContent'
+	| 'remark'
+	| 'nextFollowTime'
+	| 'createTime'
+	| 'operatorName'
+	| 'creatorEmployeeName'
+	| 'creatorName'
+> & {
 	teacherId?: number | null;
 	followTime?: string | null;
 	followMethod?: string | null;
@@ -1020,45 +2164,72 @@ export interface TeacherFollowRecord {
 	creatorEmployeeName?: string | null;
 	creatorName?: string | null;
 	[key: string]: unknown;
-}
+};
 
-export interface TeacherFollowPageResult {
+export type TeacherFollowPageResult = Omit<
+	ApiResponseData<GeneratedTeacherFollowPageResponse>,
+	'list'
+> & {
 	list: TeacherFollowRecord[];
-	pagination: {
+};
+export type TeacherFollowPageQuery =
+	import('./generated/teacher-follow').TeacherFollowFetchPageRequest & {
 		page: number;
 		size: number;
-		total: number;
+		teacherId: number;
 	};
-}
+export type TeacherFollowCreatePayload =
+	import('./generated/teacher-follow').TeacherFollowCreateTeacherFollowRequest;
 
-export interface TeacherClassRecord {
-	id?: number;
-	classId?: number;
+export type TeacherClassRecord = Omit<
+	GeneratedTeacherClassRecord,
+	| 'teacherId'
+	| 'teacherName'
+	| 'schoolName'
+	| 'grade'
+	| 'projectTag'
+	| 'studentCount'
+	| 'ownerEmployeeId'
+	| 'ownerDepartmentId'
+	| 'createTime'
+	| 'updateTime'
+> & {
 	teacherId: number | undefined;
 	teacherName?: string | null;
-	className: string;
 	schoolName?: string | null;
 	grade?: string | null;
 	projectTag?: string | null;
 	studentCount?: number | null;
-	status?: TeacherClassStatus;
 	ownerEmployeeId?: number | null;
 	ownerDepartmentId?: number | null;
 	createTime?: string | null;
 	updateTime?: string | null;
 	[key: string]: unknown;
-}
+};
 
-export interface TeacherClassPageResult {
+export type TeacherClassPageResult = Omit<
+	ApiResponseData<GeneratedTeacherClassPageResponse>,
+	'list'
+> & {
 	list: TeacherClassRecord[];
-	pagination: {
+};
+export type TeacherClassPageQuery =
+	import('./generated/teacher-class').TeacherClassFetchPageRequest & {
 		page: number;
 		size: number;
-		total: number;
+		keyword?: string;
+		status?: TeacherClassStatus | string;
 	};
-}
+export type TeacherClassInfoQuery = import('./generated/teacher-class').TeacherClassFetchInfoQuery;
+export type TeacherClassCreatePayload = Partial<TeacherClassRecord>;
+export type TeacherClassUpdatePayload = Partial<TeacherClassRecord> & { id: number };
+export type TeacherClassRemovePayload =
+	import('./generated/teacher-class').TeacherClassRemoveTeacherClassRequest;
 
-export interface TeacherDashboardDistributionItem {
+export type TeacherDashboardDistributionItem = Omit<
+	GeneratedTeacherDashboardDistributionItem,
+	'key' | 'label' | 'name' | 'status' | 'value' | 'count'
+> & {
 	key?: string | null;
 	label?: string | null;
 	name?: string | null;
@@ -1066,9 +2237,19 @@ export interface TeacherDashboardDistributionItem {
 	value?: number | null;
 	count?: number | null;
 	[key: string]: unknown;
-}
+};
 
-export interface TeacherDashboardSummary {
+export type TeacherDashboardSummary = Omit<
+	ApiResponseData<GeneratedTeacherDashboardSummaryResponse>,
+	| 'resourceTotal'
+	| 'pendingFollowCount'
+	| 'overdueFollowCount'
+	| 'partneredCount'
+	| 'classCount'
+	| 'memberDistribution'
+	| 'cooperationDistribution'
+	| 'classStatusDistribution'
+> & {
 	resourceTotal?: number | null;
 	pendingFollowCount?: number | null;
 	overdueFollowCount?: number | null;
@@ -1078,10 +2259,23 @@ export interface TeacherDashboardSummary {
 	cooperationDistribution?: TeacherDashboardDistributionItem[];
 	classStatusDistribution?: TeacherDashboardDistributionItem[];
 	[key: string]: unknown;
-}
+};
+export type TeacherDashboardSummaryQuery =
+	import('./generated/teacher-dashboard').TeacherDashboardFetchSummaryQuery;
 
-export interface TeacherTodoRecord {
-	id?: number;
+export type TeacherTodoRecord = Omit<
+	GeneratedTeacherTodoRecord,
+	| 'teacherId'
+	| 'teacherName'
+	| 'phone'
+	| 'wechat'
+	| 'schoolName'
+	| 'schoolRegion'
+	| 'subject'
+	| 'ownerEmployeeName'
+	| 'lastFollowTime'
+	| 'nextFollowTime'
+> & {
 	teacherId?: number | null;
 	teacherName?: string | null;
 	phone?: string | null;
@@ -1092,53 +2286,69 @@ export interface TeacherTodoRecord {
 	ownerEmployeeName?: string | null;
 	lastFollowTime?: string | null;
 	nextFollowTime?: string | null;
-	cooperationStatus?: TeacherCooperationStatus;
-	todoBucket?: TeacherTodoBucket;
 	[key: string]: unknown;
-}
+};
 
-export interface TeacherTodoPageResult {
+export type TeacherTodoPageResult = Omit<
+	ApiResponseData<GeneratedTeacherTodoPageResponse>,
+	'list'
+> & {
 	list: TeacherTodoRecord[];
-	pagination: {
+};
+export type TeacherTodoPageQuery =
+	import('./generated/teacher-todo').TeacherTodoFetchPageRequest & {
 		page: number;
 		size: number;
-		total: number;
+		keyword?: string;
+		todoBucket?: TeacherTodoBucket | string;
 	};
-	bucketSummary?: {
-		today?: number;
-		overdue?: number;
-	};
-}
 
-export interface JobStandardRecord {
-	id?: number;
-	positionName: string;
+export type JobStandardRecord = Omit<
+	GeneratedJobStandardRecord,
+	| 'targetDepartmentId'
+	| 'targetDepartmentName'
+	| 'jobLevel'
+	| 'profileSummary'
+	| 'requirementSummary'
+	| 'interviewTemplateSummary'
+	| 'status'
+> & {
 	targetDepartmentId: number | undefined;
-	targetDepartmentName?: string;
+	targetDepartmentName?: string | null;
 	jobLevel?: string | null;
 	profileSummary?: string | null;
 	requirementSummary?: string | null;
-	skillTagList?: string[];
 	interviewTemplateSummary?: string | null;
 	status?: JobStandardStatus;
-	createTime?: string;
-	updateTime?: string;
-}
+};
 
-export interface JobStandardPageResult {
+export type JobStandardPageResult = Omit<
+	ApiResponseData<GeneratedJobStandardPageResponse>,
+	'list'
+> & {
 	list: JobStandardRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
+};
+export interface JobStandardInfoQuery {
+	id: number;
 }
 
 export interface RecruitmentSourceSnapshot {
+	id?: number | null;
+	title?: string | null;
+	status?: string | null;
+	positionName?: string | null;
+	phone?: string | null;
+	email?: string | null;
+	headcount?: number | null;
+	startDate?: string | null;
+	endDate?: string | null;
+	jobLevel?: string | null;
+	requirementSummary?: string | null;
 	sourceResource?: RecruitmentSourceResource | null;
 	jobStandardId?: number | null;
 	jobStandardPositionName?: string | null;
 	jobStandardRequirementSummary?: string | null;
+	talentAssetId?: number | null;
 	recruitPlanId?: number | null;
 	recruitPlanTitle?: string | null;
 	recruitPlanStatus?: RecruitPlanStatus | null;
@@ -1152,630 +2362,1046 @@ export interface RecruitmentSourceSnapshot {
 	sourceStatusSnapshot?: string | null;
 }
 
-export interface PipTrackRecord {
-	id?: number;
-	pipId?: number;
-	recordDate: string;
-	progress: string;
-	nextPlan?: string;
-	operatorId?: number;
-	operatorName?: string;
-	createTime?: string;
+function normalizePositiveIntegerOrUndefined(value: unknown): number | undefined {
+	const parsed = Number(value);
+	return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
-export interface PipRecord {
-	id?: number;
+function normalizePositiveIntegerOrNull(value: unknown): number | null {
+	const parsed = Number(value);
+	return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function normalizeOptionalString(value: unknown): string | null {
+	const text = typeof value === 'string' ? value.trim() : String(value || '').trim();
+	return text || null;
+}
+
+function normalizeUnknownStringArray(value: unknown): string[] {
+	const source = Array.isArray(value) ? value : typeof value === 'string' ? value.split(',') : [];
+	return Array.from(new Set(source.map(item => String(item || '').trim()).filter(Boolean)));
+}
+
+function normalizeRecruitPlanStatusValue(value: unknown): RecruitPlanStatus | null {
+	switch (value) {
+		case 'draft':
+		case 'active':
+		case 'voided':
+		case 'closed':
+			return value;
+		default:
+			return null;
+	}
+}
+
+function normalizeInterviewStatusValue(value: unknown): InterviewStatus | null {
+	switch (value) {
+		case 'scheduled':
+		case 'completed':
+		case 'cancelled':
+			return value;
+		default:
+			return null;
+	}
+}
+
+/**
+ * 统一招聘计划的来源快照，避免页面层分别兼容 source/jobStandard summary/snapshot。
+ */
+export function normalizeRecruitPlanDomainRecord(record: RecruitPlanRecord): RecruitPlanRecord {
+	const rawSourceSnapshot =
+		record.sourceSnapshot || record.jobStandardSummary || record.jobStandardSnapshot || null;
+	const sourceSnapshot =
+		rawSourceSnapshot && typeof rawSourceSnapshot === 'object'
+			? {
+					...rawSourceSnapshot,
+					sourceResource: rawSourceSnapshot.sourceResource || 'jobStandard',
+					jobStandardId: normalizePositiveIntegerOrNull(
+						record.jobStandardId ??
+							rawSourceSnapshot.jobStandardId ??
+							rawSourceSnapshot.id
+					),
+					jobStandardPositionName:
+						normalizeOptionalString(
+							rawSourceSnapshot.jobStandardPositionName ??
+								rawSourceSnapshot.positionName ??
+								record.jobStandardPositionName ??
+								record.positionName
+						) || null,
+					jobStandardRequirementSummary:
+						normalizeOptionalString(
+							rawSourceSnapshot.jobStandardRequirementSummary ??
+								record.requirementSummary
+						) || null,
+					targetDepartmentId: normalizePositiveIntegerOrNull(
+						rawSourceSnapshot.targetDepartmentId ?? record.targetDepartmentId
+					),
+					targetPosition:
+						normalizeOptionalString(
+							rawSourceSnapshot.targetPosition ??
+								rawSourceSnapshot.jobStandardPositionName ??
+								rawSourceSnapshot.positionName ??
+								record.positionName
+						) || null
+				}
+			: null;
+
+	return {
+		...record,
+		jobStandardId: normalizePositiveIntegerOrUndefined(record.jobStandardId),
+		jobStandardPositionName:
+			sourceSnapshot?.jobStandardPositionName ??
+			normalizeOptionalString(record.jobStandardPositionName),
+		jobStandardSummary: sourceSnapshot,
+		jobStandardSnapshot: sourceSnapshot,
+		sourceSnapshot
+	};
+}
+
+/**
+ * 统一简历池的招聘来源快照，保留招聘计划和职位标准两个来源分支的同一语义。
+ */
+export function normalizeResumePoolDomainRecord(record: ResumePoolRecord): ResumePoolRecord {
+	const rawSourceSnapshot =
+		record.sourceSnapshot && typeof record.sourceSnapshot === 'object'
+			? record.sourceSnapshot
+			: null;
+	const recruitPlanSnapshot =
+		record.recruitPlanSnapshot && typeof record.recruitPlanSnapshot === 'object'
+			? record.recruitPlanSnapshot
+			: null;
+	const jobStandardSnapshot =
+		record.jobStandardSnapshot && typeof record.jobStandardSnapshot === 'object'
+			? record.jobStandardSnapshot
+			: null;
+	const recruitPlanTitle =
+		normalizeOptionalString(
+			record.recruitPlanTitle ??
+				rawSourceSnapshot?.recruitPlanTitle ??
+				recruitPlanSnapshot?.recruitPlanTitle ??
+				recruitPlanSnapshot?.title
+		) || null;
+	const jobStandardPositionName =
+		normalizeOptionalString(
+			record.jobStandardPositionName ??
+				rawSourceSnapshot?.jobStandardPositionName ??
+				jobStandardSnapshot?.jobStandardPositionName ??
+				jobStandardSnapshot?.positionName
+		) || null;
+	const recruitPlanId = normalizePositiveIntegerOrUndefined(record.recruitPlanId);
+	const jobStandardId = normalizePositiveIntegerOrUndefined(record.jobStandardId);
+	const sourceSnapshot =
+		rawSourceSnapshot ||
+		recruitPlanSnapshot ||
+		jobStandardSnapshot ||
+		recruitPlanTitle ||
+		jobStandardPositionName
+			? {
+					...(rawSourceSnapshot || {}),
+					sourceResource:
+						rawSourceSnapshot?.sourceResource ||
+						(recruitPlanId ? 'recruitPlan' : jobStandardId ? 'jobStandard' : null),
+					recruitPlanId: normalizePositiveIntegerOrNull(
+						record.recruitPlanId ??
+							rawSourceSnapshot?.recruitPlanId ??
+							recruitPlanSnapshot?.recruitPlanId ??
+							recruitPlanSnapshot?.id
+					),
+					recruitPlanTitle,
+					recruitPlanStatus: normalizeRecruitPlanStatusValue(
+						rawSourceSnapshot?.recruitPlanStatus ??
+							recruitPlanSnapshot?.recruitPlanStatus ??
+							recruitPlanSnapshot?.status
+					),
+					jobStandardId: normalizePositiveIntegerOrNull(
+						record.jobStandardId ??
+							rawSourceSnapshot?.jobStandardId ??
+							jobStandardSnapshot?.jobStandardId ??
+							jobStandardSnapshot?.id
+					),
+					jobStandardPositionName,
+					jobStandardRequirementSummary:
+						normalizeOptionalString(
+							rawSourceSnapshot?.jobStandardRequirementSummary ??
+								jobStandardSnapshot?.jobStandardRequirementSummary
+						) || null,
+					targetDepartmentId: normalizePositiveIntegerOrNull(
+						rawSourceSnapshot?.targetDepartmentId ??
+							recruitPlanSnapshot?.targetDepartmentId ??
+							jobStandardSnapshot?.targetDepartmentId ??
+							record.targetDepartmentId
+					),
+					targetDepartmentName:
+						normalizeOptionalString(
+							rawSourceSnapshot?.targetDepartmentName ??
+								recruitPlanSnapshot?.targetDepartmentName ??
+								jobStandardSnapshot?.targetDepartmentName
+						) || null,
+					targetPosition:
+						normalizeOptionalString(
+							rawSourceSnapshot?.targetPosition ??
+								record.targetPosition ??
+								jobStandardPositionName
+						) || null
+				}
+			: null;
+
+	return {
+		...record,
+		targetDepartmentId: normalizePositiveIntegerOrUndefined(record.targetDepartmentId),
+		resumeText: typeof record.resumeText === 'string' ? record.resumeText : '',
+		recruitPlanId,
+		jobStandardId,
+		recruitPlanTitle,
+		jobStandardPositionName,
+		sourceSnapshot
+	};
+}
+
+/**
+ * 统一面试记录来源快照，兼容 sourceSnapshot 和招聘链 summary/snapshot 的混合返回。
+ */
+export function normalizeInterviewDomainRecord(record: InterviewRecord): InterviewRecord {
+	const rawSourceSnapshot =
+		record.sourceSnapshot && typeof record.sourceSnapshot === 'object'
+			? record.sourceSnapshot
+			: null;
+	const sourceSnapshot = rawSourceSnapshot
+		? {
+				...rawSourceSnapshot,
+				sourceResource:
+					rawSourceSnapshot.sourceResource ||
+					(rawSourceSnapshot.talentAssetId
+						? 'talentAsset'
+						: rawSourceSnapshot.resumePoolId
+							? 'resumePool'
+							: rawSourceSnapshot.recruitPlanId
+								? 'recruitPlan'
+								: null),
+				talentAssetId: normalizePositiveIntegerOrNull(rawSourceSnapshot.talentAssetId),
+				resumePoolId: normalizePositiveIntegerOrNull(
+					record.resumePoolId ?? rawSourceSnapshot.resumePoolId
+				),
+				recruitPlanId: normalizePositiveIntegerOrNull(
+					record.recruitPlanId ?? rawSourceSnapshot.recruitPlanId
+				),
+				recruitPlanStatus: normalizeRecruitPlanStatusValue(
+					rawSourceSnapshot.recruitPlanStatus
+				),
+				candidateName:
+					normalizeOptionalString(
+						rawSourceSnapshot.candidateName ?? record.candidateName
+					) || null,
+				targetDepartmentId: normalizePositiveIntegerOrNull(
+					rawSourceSnapshot.targetDepartmentId ?? record.departmentId
+				),
+				targetPosition:
+					normalizeOptionalString(rawSourceSnapshot.targetPosition ?? record.position) ||
+					null,
+				interviewStatus: normalizeInterviewStatusValue(
+					rawSourceSnapshot.interviewStatus ?? record.status
+				)
+			}
+		: normalizeInterviewSourceSummary(record);
+
+	return {
+		...record,
+		departmentId: normalizePositiveIntegerOrUndefined(record.departmentId),
+		interviewerId: normalizePositiveIntegerOrUndefined(record.interviewerId),
+		resumePoolId: normalizePositiveIntegerOrUndefined(
+			record.resumePoolId ?? sourceSnapshot?.resumePoolId
+		),
+		recruitPlanId: normalizePositiveIntegerOrUndefined(
+			record.recruitPlanId ?? sourceSnapshot?.recruitPlanId
+		),
+		sourceSnapshot
+	};
+}
+
+function normalizeInterviewSourceSummary(
+	record: InterviewRecord
+): RecruitmentSourceSnapshot | null {
+	const resumePoolSummary =
+		record.resumePoolSummary && typeof record.resumePoolSummary === 'object'
+			? record.resumePoolSummary
+			: record.resumePoolSnapshot && typeof record.resumePoolSnapshot === 'object'
+				? record.resumePoolSnapshot
+				: null;
+	if (resumePoolSummary) {
+		return {
+			sourceResource: 'resumePool',
+			resumePoolId: normalizePositiveIntegerOrNull(
+				record.resumePoolId ?? resumePoolSummary.resumePoolId ?? resumePoolSummary.id
+			),
+			recruitPlanId: normalizePositiveIntegerOrNull(
+				record.recruitPlanId ?? resumePoolSummary.recruitPlanId
+			),
+			recruitPlanTitle:
+				normalizeOptionalString(
+					record.recruitPlanSummary?.title ??
+						record.recruitPlanSnapshot?.title ??
+						resumePoolSummary.recruitPlanTitle
+				) || null,
+			candidateName:
+				normalizeOptionalString(resumePoolSummary.candidateName ?? record.candidateName) ||
+				null,
+			targetDepartmentId: normalizePositiveIntegerOrNull(
+				resumePoolSummary.targetDepartmentId ?? record.departmentId
+			),
+			targetDepartmentName:
+				normalizeOptionalString(resumePoolSummary.targetDepartmentName) || null,
+			targetPosition:
+				normalizeOptionalString(resumePoolSummary.targetPosition ?? record.position) || null
+		};
+	}
+
+	const recruitPlanSummary =
+		record.recruitPlanSummary && typeof record.recruitPlanSummary === 'object'
+			? record.recruitPlanSummary
+			: record.recruitPlanSnapshot && typeof record.recruitPlanSnapshot === 'object'
+				? record.recruitPlanSnapshot
+				: null;
+	if (recruitPlanSummary) {
+		return {
+			sourceResource: 'recruitPlan',
+			recruitPlanId: normalizePositiveIntegerOrNull(
+				record.recruitPlanId ?? recruitPlanSummary.recruitPlanId ?? recruitPlanSummary.id
+			),
+			recruitPlanTitle:
+				normalizeOptionalString(
+					recruitPlanSummary.recruitPlanTitle ?? recruitPlanSummary.title
+				) || null,
+			recruitPlanStatus: normalizeRecruitPlanStatusValue(
+				recruitPlanSummary.recruitPlanStatus ?? recruitPlanSummary.status
+			),
+			candidateName: normalizeOptionalString(record.candidateName) || null,
+			targetDepartmentId: normalizePositiveIntegerOrNull(
+				recruitPlanSummary.targetDepartmentId ?? record.departmentId
+			),
+			targetDepartmentName:
+				normalizeOptionalString(recruitPlanSummary.targetDepartmentName) || null,
+			targetPosition:
+				normalizeOptionalString(
+					recruitPlanSummary.positionName ??
+						recruitPlanSummary.targetPosition ??
+						record.position
+				) || null
+		};
+	}
+
+	return null;
+}
+
+export type PipTrackRecord = GeneratedPipTrackRecord;
+
+export type PipRecord = Omit<
+	GeneratedPipRecord,
+	'assessmentId' | 'employeeId' | 'ownerId' | 'trackRecords'
+> & {
 	assessmentId?: number | null;
 	employeeId: number | undefined;
-	employeeName?: string;
 	ownerId: number | undefined;
-	ownerName?: string;
-	title: string;
-	improvementGoal: string;
-	sourceReason: string;
-	startDate: string;
-	endDate: string;
-	status?: string;
-	resultSummary?: string;
-	createTime?: string;
-	updateTime?: string;
 	trackRecords?: PipTrackRecord[];
-}
+};
 
-export interface PipPageResult {
+export type PipPageResult = Omit<ApiResponseData<GeneratedPipPageResponse>, 'list'> & {
 	list: PipRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
-
-export interface PipExportRow {
+};
+export type PipPageQuery = import('./generated/pip').PipFetchPageRequest & {
+	page: number;
+	size: number;
+	keyword?: string;
+	employeeId?: number;
+	ownerId?: number;
+	status?: string;
+	assessmentId?: number;
+};
+export type PipInfoQuery = import('./generated/pip').PipFetchInfoQuery;
+export type PipCreatePayload = Partial<PipRecord>;
+export type PipUpdatePayload = Partial<PipRecord> & {
 	id: number;
+};
+export type PipStartPayload = import('./generated/pip').PipStartRequest;
+export type PipTrackPayload = import('./generated/pip').PipTrackRequest;
+export type PipCompletePayload = import('./generated/pip').PipCompleteRequest;
+export type PipClosePayload = import('./generated/pip').PipCloseRequest;
+export type PipExportQuery = import('./generated/pip').PipExportSummaryRequest & {
+	keyword?: string;
+	employeeId?: number;
+	ownerId?: number;
+	status?: string;
+	assessmentId?: number;
+};
+
+export type PipExportRow = Omit<GeneratedPipExportRow, 'assessmentId'> & {
 	assessmentId?: number | null;
-	employeeId: number;
-	employeeName?: string;
-	ownerId: number;
-	ownerName?: string;
-	title: string;
-	startDate: string;
-	endDate: string;
-	status: string;
-	createTime?: string;
-	updateTime?: string;
-}
+};
 
-export type IndicatorCategory = 'assessment' | 'goal' | 'feedback';
-export type IndicatorApplyScope = 'all' | 'department' | 'employee';
+export type IndicatorCategory = GeneratedIndicatorCategory;
+export type IndicatorApplyScope = GeneratedIndicatorApplyScope;
+export type IndicatorStatus = GeneratedIndicatorStatus;
 
-export interface IndicatorRecord {
-	id?: number;
-	name: string;
-	code: string;
-	category: IndicatorCategory;
-	weight: number;
-	scoreScale: number;
-	applyScope: IndicatorApplyScope;
-	description: string;
-	status: number;
-	createTime?: string;
-	updateTime?: string;
-}
+export type IndicatorRecord = Omit<GeneratedIndicatorRecord, 'description'> & {
+	description?: string | null;
+};
 
-export interface IndicatorPageResult {
+export type IndicatorPageResult = Omit<ApiResponseData<GeneratedIndicatorPageResponse>, 'list'> & {
 	list: IndicatorRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
+};
+export interface IndicatorInfoQuery {
+	id: number;
 }
+export type IndicatorRemovePayload = import('./generated/assessment').DeleteIdsRequest;
 
 export type FeedbackRelationType = '上级' | '同级' | '下级' | '协作人';
 
-export interface FeedbackTaskRelationItem {
-	feedbackUserId: number;
-	feedbackUserName?: string;
+export type FeedbackTaskRelationItem = Omit<GeneratedFeedbackTaskRelationItem, 'relationType'> & {
 	relationType: FeedbackRelationType | string;
-}
+};
 
-export interface FeedbackRecord {
-	id?: number;
-	taskId?: number;
-	feedbackUserId?: number;
-	feedbackUserName?: string;
+export type FeedbackRecord = Omit<GeneratedFeedbackRecord, 'relationType'> & {
 	relationType: FeedbackRelationType | string;
-	score: number;
-	content?: string;
-	status?: string;
-	submitTime?: string;
-	createTime?: string;
-}
+};
 
-export interface FeedbackSummary {
-	taskId: number;
-	averageScore: number;
-	submittedCount: number;
-	totalCount: number;
+export type FeedbackSummary = Omit<ApiResponseData<GeneratedFeedbackSummaryResponse>, 'records'> & {
 	records: FeedbackRecord[];
-}
+};
 
-export interface FeedbackTaskRecord {
-	id?: number;
+export type FeedbackTaskRecord = Omit<
+	GeneratedFeedbackTaskRecord,
+	'assessmentId' | 'employeeId' | 'relationTypes'
+> & {
 	assessmentId?: number | null;
 	employeeId: number | undefined;
-	employeeName?: string;
-	title: string;
-	deadline?: string;
-	status?: string;
-	submittedCount?: number;
-	totalCount?: number;
-	createTime?: string;
-	updateTime?: string;
-	feedbackUserIds?: number[];
 	relationTypes?: FeedbackTaskRelationItem[];
-}
+};
 
-export interface FeedbackPageResult {
+export type FeedbackPageResult = Omit<ApiResponseData<GeneratedFeedbackPageResponse>, 'list'> & {
 	list: FeedbackTaskRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
-
-export interface FeedbackExportRow {
-	taskId: number;
-	assessmentId?: number | null;
-	employeeId: number;
-	title: string;
-	deadline?: string;
-	averageScore: number;
-	submittedCount: number;
-	totalCount: number;
-}
-
-export interface SalaryChangeRecord {
-	id?: number;
-	salaryId?: number;
-	beforeAmount: number;
-	adjustAmount: number;
-	afterAmount: number;
-	changeReason: string;
-	operatorId?: number;
-	operatorName?: string;
-	createTime?: string;
-}
-
-export interface SalaryRecord {
-	id?: number;
-	employeeId: number | undefined;
-	employeeName?: string;
-	assessmentId?: number | null;
-	periodValue: string;
-	baseSalary: number;
-	performanceBonus: number;
-	adjustAmount: number;
-	finalAmount: number;
-	grade?: string;
-	effectiveDate: string;
+};
+export type FeedbackPageQuery = import('./generated/feedback').FeedbackFetchPageRequest & {
+	page: number;
+	size: number;
+	keyword?: string;
+	employeeId?: number;
 	status?: string;
-	createTime?: string;
-	updateTime?: string;
+};
+export type FeedbackInfoQuery = import('./generated/feedback').FeedbackFetchInfoQuery;
+export type FeedbackSubmitPayload = import('./generated/feedback').FeedbackSubmitFeedbackRequest;
+export type FeedbackSummaryQuery = import('./generated/feedback').FeedbackFetchSummaryQuery;
+
+export type FeedbackExportRow = Omit<GeneratedFeedbackExportRow, 'assessmentId'> & {
+	assessmentId?: number | null;
+};
+export type FeedbackExportQuery = import('./generated/feedback').FeedbackExportSummaryRequest & {
+	keyword?: string;
+	employeeId?: number;
+	status?: string;
+};
+
+export type SalaryChangeRecord = GeneratedSalaryChangeRecord;
+
+export type SalaryRecord = Omit<
+	GeneratedSalaryRecord,
+	'employeeId' | 'assessmentId' | 'changeRecords'
+> & {
+	employeeId: number | undefined;
+	assessmentId?: number | null;
 	changeRecords?: SalaryChangeRecord[];
-}
+};
 
-export interface SalaryPageResult {
+export type SalaryPageResult = Omit<ApiResponseData<GeneratedSalaryPageResponse>, 'list'> & {
 	list: SalaryRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
+};
+export type SalaryPageQuery = import('./generated/salary').SalaryFetchPageRequest & {
+	page: number;
+	size: number;
+	employeeId?: number;
+	status?: string;
+	periodValue?: string;
+	effectiveDateStart?: string;
+	effectiveDateEnd?: string;
+};
+export type SalaryInfoQuery = import('./generated/salary').SalaryFetchInfoQuery;
+export type SalaryCreatePayload = Partial<SalaryRecord>;
+export type SalaryUpdatePayload = Partial<SalaryRecord> & {
+	id: number;
+};
+export type SalaryConfirmPayload = import('./generated/salary').SalaryConfirmSalaryRequest;
+export type SalaryArchivePayload = import('./generated/salary').SalaryArchiveSalaryRequest;
+export type SalaryAddChangePayload = import('./generated/salary').SalaryAddChangeRequest;
 
-export interface PromotionReviewRecord {
-	id?: number;
-	promotionId?: number;
-	reviewerId: number;
-	reviewerName?: string;
-	decision: 'approved' | 'rejected';
-	comment?: string;
-	createTime?: string;
-}
+export type PromotionReviewRecord = GeneratedPromotionReviewRecord;
 
-export interface PromotionRecord {
-	id?: number;
+export type PromotionRecord = Omit<
+	GeneratedPromotionRecord,
+	'assessmentId' | 'employeeId' | 'sponsorId' | 'reviewRecords'
+> & {
 	assessmentId?: number | null | undefined;
 	employeeId: number | undefined;
-	employeeName?: string;
 	sponsorId: number | undefined;
-	sponsorName?: string;
-	fromPosition: string;
-	toPosition: string;
-	reason: string;
-	sourceReason: string;
-	status?: string;
-	reviewTime?: string;
-	createTime?: string;
-	updateTime?: string;
 	reviewRecords?: PromotionReviewRecord[];
-}
+};
 
-export interface PromotionPageResult {
+export type PromotionPageResult = Omit<ApiResponseData<GeneratedPromotionPageResponse>, 'list'> & {
 	list: PromotionRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
-
-export type SuggestionType = 'pip' | 'promotion';
-export type SuggestionStatus = 'pending' | 'accepted' | 'ignored' | 'rejected' | 'revoked';
-export type SuggestionRevokeReasonCode =
-	| 'thresholdError'
-	| 'assessmentCorrected'
-	| 'scopeError'
-	| 'duplicateSuggestion';
-
-export interface SuggestionRecord {
-	id?: number;
-	suggestionType: SuggestionType;
-	status?: SuggestionStatus;
-	assessmentId?: number;
+};
+export type PromotionPageQuery = import('./generated/promotion').PromotionFetchPageRequest & {
+	page: number;
+	size: number;
 	employeeId?: number;
-	employeeName?: string;
-	departmentId?: number;
-	departmentName?: string;
-	periodType?: string;
-	periodValue?: string;
-	triggerLabel?: string;
-	createTime?: string;
-	handleTime?: string;
+	assessmentId?: number;
+	status?: string;
+	toPosition?: string;
+};
+export type PromotionInfoQuery = import('./generated/promotion').PromotionFetchInfoQuery;
+export type PromotionCreatePayload = Partial<PromotionRecord>;
+export type PromotionUpdatePayload = Partial<PromotionRecord> & {
+	id: number;
+};
+export type PromotionSubmitPayload = import('./generated/promotion').PromotionSubmitRequest;
+export type PromotionReviewPayload = import('./generated/promotion').PromotionReviewRequest;
+
+export type SuggestionType = GeneratedSuggestionType;
+export type SuggestionStatus = GeneratedSuggestionStatus;
+export type SuggestionRevokeReasonCode = GeneratedSuggestionRevokeReasonCode;
+
+export type SuggestionRecord = Omit<
+	GeneratedSuggestionRecord,
+	'handlerId' | 'handlerName' | 'linkedEntityType' | 'linkedEntityId'
+> & {
 	handlerId?: number | null;
 	handlerName?: string | null;
-	ruleVersion?: string;
-	revokeReason?: string;
 	linkedEntityType?: string | null;
 	linkedEntityId?: number | null;
-}
+};
 
-export interface SuggestionPageResult {
+export type SuggestionPageResult = Omit<
+	ApiResponseData<GeneratedSuggestionPageResponse>,
+	'list'
+> & {
 	list: SuggestionRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
+};
+export type SuggestionPageQuery = import('./generated/suggestion').SuggestionFetchPageRequest & {
+	page: number;
+	size: number;
+	suggestionType?: SuggestionType | string;
+	status?: SuggestionStatus | string;
+	employeeId?: number;
+	departmentId?: number;
+	assessmentId?: number;
+	periodValue?: string;
+};
+export type SuggestionInfoQuery = import('./generated/suggestion').SuggestionFetchInfoQuery;
+export type SuggestionAcceptPayload = import('./generated/suggestion').SuggestionAcceptRequest;
+export type SuggestionIgnorePayload = import('./generated/suggestion').SuggestionIgnoreRequest;
+export type SuggestionRejectPayload = import('./generated/suggestion').SuggestionRejectRequest;
+export type SuggestionRevokePayload = import('./generated/suggestion').SuggestionRevokeRequest;
 
-export interface SuggestionAcceptResult {
+export type SuggestionAcceptResult = Omit<
+	ApiResponseData<GeneratedSuggestionAcceptResponse>,
+	'suggestion'
+> & {
 	suggestion?: SuggestionRecord;
-	prefill?: {
-		assessmentId?: number;
-		employeeId?: number;
-		suggestionType?: SuggestionType;
-		suggestionId?: number;
-	};
-}
+};
 
-export type AssetStatus =
-	| 'pendingInbound'
-	| 'available'
-	| 'assigned'
-	| 'maintenance'
-	| 'inTransfer'
-	| 'inventorying'
-	| 'scrapped'
-	| 'lost';
-export type AssetAssignmentStatus = 'assigned' | 'returned' | 'lost';
-export type AssetMaintenanceStatus = 'scheduled' | 'inProgress' | 'completed' | 'cancelled';
-export type AssetProcurementStatus = 'draft' | 'submitted' | 'received' | 'cancelled';
-export type AssetTransferStatus = 'draft' | 'submitted' | 'inTransit' | 'completed' | 'cancelled';
-export type AssetInventoryStatus = 'draft' | 'counting' | 'completed' | 'closed';
-export type AssetDisposalStatus = 'draft' | 'submitted' | 'approved' | 'scrapped' | 'cancelled';
+export type AssetStatus = GeneratedAssetStatus;
+export type AssetAssignmentStatus = GeneratedAssetAssignmentStatus;
+export type AssetAssignmentRequestStatus = GeneratedAssetAssignmentRequestStatus;
+export type AssetAssignmentRequestLevel = GeneratedAssetAssignmentRequestLevel;
+export type AssetAssignmentRequestType = GeneratedAssetAssignmentRequestType;
+export type AssetMaintenanceStatus = GeneratedAssetMaintenanceStatus;
+export type AssetProcurementStatus = GeneratedAssetProcurementStatus;
+export type AssetTransferStatus = GeneratedAssetTransferStatus;
+export type AssetInventoryStatus = GeneratedAssetInventoryStatus;
+export type AssetDisposalStatus = GeneratedAssetDisposalStatus;
 
-export interface AssetStatusDistributionItem {
-	status: AssetStatus;
-	count: number;
-	amount?: number;
-}
+export type AssetStatusDistributionItem = GeneratedAssetStatusDistributionItem;
 
-export interface AssetCategoryDistributionItem {
-	category: string;
-	count: number;
-	amount?: number;
-}
+export type AssetCategoryDistributionItem = GeneratedAssetCategoryDistributionItem;
 
-export interface AssetDashboardActivityItem {
-	id?: number;
-	module:
-		| 'assetInfo'
-		| 'assetAssignment'
-		| 'assetMaintenance'
-		| 'assetProcurement'
-		| 'assetTransfer'
-		| 'assetInventory'
-		| 'assetDisposal';
-	title: string;
-	status?: string;
-	operatorName?: string;
-	occurredAt?: string;
-}
+export type AssetDashboardActivityItem = Omit<
+	GeneratedAssetDashboardActivityItem,
+	'assetId' | 'departmentId' | 'documentKey'
+> & {
+	assetId?: number | null;
+	departmentId?: number | null;
+	documentKey?: string | null;
+};
 
-export interface AssetDashboardSummary {
-	totalAssetCount: number;
-	pendingInboundCount: number;
-	availableCount: number;
-	assignedCount: number;
-	maintenanceCount: number;
-	inventoryingCount: number;
-	scrappedCount: number;
-	lostCount: number;
-	totalOriginalAmount: number;
-	monthlyDepreciationAmount: number;
-	pendingDisposalCount: number;
-	expiringWarrantyCount: number;
+export type AssetDashboardActionSummaryItem = GeneratedAssetDashboardActionSummaryItem;
+
+export type AssetDashboardSummary = Omit<
+	ApiResponseData<GeneratedAssetDashboardSummaryResponse>,
+	| 'statusDistribution'
+	| 'categoryDistribution'
+	| 'actionOverview'
+	| 'actionTimeline'
+	| 'recentActivities'
+> & {
 	statusDistribution: AssetStatusDistributionItem[];
 	categoryDistribution: AssetCategoryDistributionItem[];
+	actionOverview: {
+		today: AssetDashboardActionSummaryItem;
+		thisWeek: AssetDashboardActionSummaryItem;
+		thisMonth: AssetDashboardActionSummaryItem;
+	};
+	actionTimeline: AssetDashboardActivityItem[];
 	recentActivities: AssetDashboardActivityItem[];
-	updatedAt?: string;
-}
+};
 
-export interface AssetInfoRecord {
-	id?: number;
-	assetNo: string;
-	name: string;
-	category: string;
-	assetStatus?: AssetStatus;
-	assetType?: string;
-	brand?: string;
-	model?: string;
-	serialNo?: string;
-	location?: string;
-	departmentId?: number;
-	departmentName?: string;
-	managerId?: number;
-	managerName?: string;
-	purchaseDate?: string;
-	purchaseAmount?: number;
-	supplierId?: number | null;
-	supplierName?: string;
-	purchaseOrderId?: number | null;
-	warrantyExpiry?: string;
-	residualValue?: number;
-	depreciationMonths?: number;
-	depreciationStartMonth?: string;
-	remark?: string;
-	createTime?: string;
-	updateTime?: string;
-}
+export type AssetInfoRecord = Omit<GeneratedAssetInfoRecord, 'supplierId' | 'purchaseOrderId'> & {
+	supplierId?: number | null | undefined;
+	purchaseOrderId?: number | null | undefined;
+};
 
-export interface AssetInfoPageResult {
+export type AssetInfoPageResult = Omit<ApiResponseData<GeneratedAssetInfoPageResponse>, 'list'> & {
 	list: AssetInfoRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
+};
+export type AssetInfoPageQuery = import('./generated/asset-info').AssetInfoFetchPageRequest;
+export type AssetInfoInfoQuery = import('./generated/asset-info').AssetInfoFetchInfoQuery;
+export type AssetInfoCreatePayload = Partial<AssetInfoRecord>;
+export type AssetInfoUpdatePayload = Partial<AssetInfoRecord> & {
+	id: number;
+};
+export type AssetInfoRemovePayload = import('./generated/asset-info').AssetInfoRemoveAssetRequest;
+export type AssetInfoUpdateStatusPayload =
+	import('./generated/asset-info').AssetInfoUpdateAssetStatusRequest;
 
-export interface AssetAssignmentRecord {
-	id?: number;
-	assetId?: number;
-	assetNo?: string;
-	assetName?: string;
-	assetStatus?: AssetStatus;
-	assigneeId?: number;
-	assigneeName?: string;
-	departmentId?: number;
-	departmentName?: string;
-	assignDate: string;
-	expectedReturnDate?: string;
-	actualReturnDate?: string;
-	purpose?: string;
-	returnRemark?: string;
-	status?: AssetAssignmentStatus;
-	createTime?: string;
-	updateTime?: string;
-}
+export type AssetAssignmentRecord = GeneratedAssetAssignmentRecord;
 
-export interface AssetAssignmentPageResult {
+export type AssetAssignmentPageResult = Omit<
+	ApiResponseData<GeneratedAssetAssignmentPageResponse>,
+	'list'
+> & {
 	list: AssetAssignmentRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
+};
+export type AssetAssignmentPageQuery =
+	import('./generated/asset-assignment').AssetAssignmentFetchPageRequest;
+export type AssetAssignmentCreatePayload =
+	import('./generated/asset-assignment').AssetAssignmentCreateAssignmentRequest;
+export type AssetAssignmentUpdatePayload =
+	import('./generated/asset-assignment').AssetAssignmentUpdateAssignmentRequest;
+export type AssetAssignmentReturnPayload =
+	import('./generated/asset-assignment').AssetAssignmentReturnAssetRequest;
+export type AssetAssignmentMarkLostPayload =
+	import('./generated/asset-assignment').AssetAssignmentMarkLostRequest;
+export type AssetAssignmentRemovePayload =
+	import('./generated/asset-assignment').AssetAssignmentRemoveAssignmentRequest;
 
-export interface AssetMaintenanceRecord {
-	id?: number;
-	assetId?: number;
-	assetNo?: string;
-	assetName?: string;
-	assetStatus?: AssetStatus;
-	maintenanceType?: string;
-	vendorName?: string;
-	cost?: number;
-	planDate?: string;
-	startDate?: string;
-	completeDate?: string;
-	description?: string;
-	resultSummary?: string;
-	status?: AssetMaintenanceStatus;
-	createTime?: string;
-	updateTime?: string;
-}
+export type AssetAssignmentRequestRecord = GeneratedAssetAssignmentRequestRecord;
 
-export interface AssetMaintenancePageResult {
+export type AssetAssignmentRequestPageResult = Omit<
+	ApiResponseData<GeneratedAssetAssignmentRequestPageResponse>,
+	'list'
+> & {
+	list: AssetAssignmentRequestRecord[];
+};
+export type AssetAssignmentRequestPageQuery =
+	import('./generated/asset-assignment-request').AssetAssignmentRequestFetchPageRequest;
+export type AssetAssignmentRequestInfoQuery =
+	import('./generated/asset-assignment-request').AssetAssignmentRequestFetchInfoQuery;
+export type AssetAssignmentRequestCreatePayload =
+	import('./generated/asset-assignment-request').AssetAssignmentRequestCreateDraftRequest;
+export type AssetAssignmentRequestUpdatePayload =
+	import('./generated/asset-assignment-request').AssetAssignmentRequestUpdateDraftRequest;
+export type AssetAssignmentRequestSubmitPayload =
+	import('./generated/asset-assignment-request').AssetAssignmentRequestSubmitRequestRequest;
+export type AssetAssignmentRequestWithdrawPayload =
+	import('./generated/asset-assignment-request').AssetAssignmentRequestWithdrawRequestRequest;
+export type AssetAssignmentRequestAssignPayload =
+	import('./generated/asset-assignment-request').AssetAssignmentRequestAssignAssetRequest;
+export type AssetAssignmentRequestCancelPayload =
+	import('./generated/asset-assignment-request').AssetAssignmentRequestCancelRequestRequest;
+
+export type AssetMaintenanceRecord = GeneratedAssetMaintenanceRecord;
+
+export type AssetMaintenancePageResult = Omit<
+	ApiResponseData<GeneratedAssetMaintenancePageResponse>,
+	'list'
+> & {
 	list: AssetMaintenanceRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
+};
+export type AssetMaintenancePageQuery =
+	import('./generated/asset-maintenance').AssetMaintenanceFetchPageRequest;
+export type AssetMaintenanceCreatePayload =
+	import('./generated/asset-maintenance').AssetMaintenanceCreateMaintenanceRequest;
+export type AssetMaintenanceUpdatePayload =
+	import('./generated/asset-maintenance').AssetMaintenanceUpdateMaintenanceRequest;
+export type AssetMaintenanceCompletePayload =
+	import('./generated/asset-maintenance').AssetMaintenanceCompleteMaintenanceRequest;
+export type AssetMaintenanceCancelPayload =
+	import('./generated/asset-maintenance').AssetMaintenanceCancelMaintenanceRequest;
+export type AssetMaintenanceRemovePayload =
+	import('./generated/asset-maintenance').AssetMaintenanceRemoveMaintenanceRequest;
 
-export interface AssetProcurementRecord {
-	id?: number;
-	procurementNo?: string;
-	title: string;
-	assetCategory: string;
-	quantity: number;
-	amount: number;
-	departmentId?: number;
-	departmentName?: string;
-	requesterId?: number;
-	requesterName?: string;
-	supplierId?: number | null;
-	supplierName?: string;
-	purchaseOrderId?: number | null;
-	expectedArrivalDate?: string;
-	receiveDate?: string;
-	remark?: string;
-	status?: AssetProcurementStatus;
-	createTime?: string;
-	updateTime?: string;
-}
+export type AssetProcurementRecord = Omit<
+	GeneratedAssetProcurementRecord,
+	'supplierId' | 'purchaseOrderId'
+> & {
+	supplierId?: number | null | undefined;
+	purchaseOrderId?: number | null | undefined;
+};
 
-export interface AssetProcurementPageResult {
+export type AssetProcurementPageResult = Omit<
+	ApiResponseData<GeneratedAssetProcurementPageResponse>,
+	'list'
+> & {
 	list: AssetProcurementRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
+};
+export type AssetProcurementPageQuery =
+	import('./generated/asset-procurement').AssetProcurementFetchPageRequest;
+export type AssetProcurementInfoQuery =
+	import('./generated/asset-procurement').AssetProcurementFetchInfoQuery;
+export type AssetProcurementCreatePayload = Partial<AssetProcurementRecord>;
+export type AssetProcurementUpdatePayload = Partial<AssetProcurementRecord> & {
+	id: number;
+};
+export type AssetProcurementSubmitPayload =
+	import('./generated/asset-procurement').AssetProcurementSubmitProcurementRequest;
+export type AssetProcurementReceivePayload =
+	import('./generated/asset-procurement').AssetProcurementReceiveProcurementRequest;
+export type AssetProcurementCancelPayload =
+	import('./generated/asset-procurement').AssetProcurementCancelProcurementRequest;
 
-export interface AssetTransferRecord {
-	id?: number;
-	transferNo?: string;
-	assetId?: number;
-	assetNo?: string;
-	assetName?: string;
-	assetStatus?: AssetStatus;
-	fromDepartmentId?: number;
-	fromDepartmentName?: string;
-	toDepartmentId?: number;
-	toDepartmentName?: string;
-	fromLocation?: string;
-	toLocation?: string;
-	applicantId?: number;
-	applicantName?: string;
-	submitTime?: string;
-	completeTime?: string;
-	remark?: string;
-	status?: AssetTransferStatus;
-	createTime?: string;
-	updateTime?: string;
-}
+export type AssetTransferRecord = GeneratedAssetTransferRecord;
 
-export interface AssetTransferPageResult {
+export type AssetTransferPageResult = Omit<
+	ApiResponseData<GeneratedAssetTransferPageResponse>,
+	'list'
+> & {
 	list: AssetTransferRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
+};
+export type AssetTransferPageQuery =
+	import('./generated/asset-transfer').AssetTransferFetchPageRequest;
+export type AssetTransferInfoQuery =
+	import('./generated/asset-transfer').AssetTransferFetchInfoQuery;
+export type AssetTransferCreatePayload =
+	import('./generated/asset-transfer').AssetTransferCreateTransferRequest;
+export type AssetTransferUpdatePayload =
+	import('./generated/asset-transfer').AssetTransferUpdateTransferRequest;
+export type AssetTransferSubmitPayload =
+	import('./generated/asset-transfer').AssetTransferSubmitTransferRequest;
+export type AssetTransferCompletePayload =
+	import('./generated/asset-transfer').AssetTransferCompleteTransferRequest;
+export type AssetTransferCancelPayload =
+	import('./generated/asset-transfer').AssetTransferCancelTransferRequest;
 
-export interface AssetInventoryRecord {
-	id?: number;
-	inventoryNo?: string;
-	scopeLabel?: string;
-	departmentId?: number;
-	departmentName?: string;
-	location?: string;
-	ownerId?: number;
-	ownerName?: string;
-	plannedDate?: string;
-	completedDate?: string;
-	assetCount?: number;
-	matchedCount?: number;
-	differenceCount?: number;
-	remark?: string;
-	status?: AssetInventoryStatus;
-	createTime?: string;
-	updateTime?: string;
-}
+export type AssetInventoryRecord = GeneratedAssetInventoryRecord;
 
-export interface AssetInventoryPageResult {
+export type AssetInventoryPageResult = Omit<
+	ApiResponseData<GeneratedAssetInventoryPageResponse>,
+	'list'
+> & {
 	list: AssetInventoryRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
+};
+export type AssetInventoryPageQuery =
+	import('./generated/asset-inventory').AssetInventoryFetchPageRequest;
+export type AssetInventoryInfoQuery =
+	import('./generated/asset-inventory').AssetInventoryFetchInfoQuery;
+export type AssetInventoryCreatePayload =
+	import('./generated/asset-inventory').AssetInventoryCreateInventoryRequest;
+export type AssetInventoryUpdatePayload =
+	import('./generated/asset-inventory').AssetInventoryUpdateInventoryRequest;
+export type AssetInventoryStartPayload =
+	import('./generated/asset-inventory').AssetInventoryStartInventoryRequest;
+export type AssetInventoryCompletePayload =
+	import('./generated/asset-inventory').AssetInventoryCompleteInventoryRequest;
+export type AssetInventoryClosePayload =
+	import('./generated/asset-inventory').AssetInventoryCloseInventoryRequest;
 
-export interface AssetDepreciationSummary {
-	month?: string;
-	assetCount: number;
-	totalOriginalAmount: number;
-	totalAccumulatedDepreciation: number;
-	totalNetValue: number;
-	currentMonthDepreciation: number;
-	lastRecalculatedAt?: string;
-}
+export type AssetDepreciationSummary = ApiResponseData<GeneratedAssetDepreciationSummaryResponse>;
 
-export interface AssetDepreciationRecord {
-	id?: number;
-	assetId?: number;
-	assetNo?: string;
-	assetName?: string;
-	assetStatus?: AssetStatus;
-	departmentId?: number;
-	departmentName?: string;
-	depreciationMonth: string;
-	originalAmount: number;
-	residualValue: number;
-	monthlyDepreciation: number;
-	accumulatedDepreciation: number;
-	netValue: number;
-	updateTime?: string;
-}
+export type AssetDepreciationRecord = GeneratedAssetDepreciationRecord;
 
-export interface AssetDepreciationPageResult {
+export type AssetDepreciationPageResult = Omit<
+	ApiResponseData<GeneratedAssetDepreciationPageResponse>,
+	'list'
+> & {
 	list: AssetDepreciationRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
-	};
-}
+};
+export type AssetDepreciationPageQuery =
+	import('./generated/asset-depreciation').AssetDepreciationFetchPageRequest;
+export type AssetDepreciationSummaryQuery =
+	import('./generated/asset-depreciation').AssetDepreciationFetchSummaryQuery;
+export type AssetDepreciationRecalculatePayload =
+	import('./generated/asset-depreciation').AssetDepreciationRecalculateRequest;
 
-export interface AssetDisposalRecord {
-	id?: number;
-	disposalNo?: string;
-	assetId?: number;
-	assetNo?: string;
-	assetName?: string;
-	assetStatus?: AssetStatus;
-	departmentId?: number;
-	departmentName?: string;
-	applicantId?: number;
-	applicantName?: string;
-	reason: string;
-	estimatedResidualAmount?: number;
-	submitTime?: string;
-	approveTime?: string;
-	executeTime?: string;
-	remark?: string;
-	status?: AssetDisposalStatus;
-	createTime?: string;
-	updateTime?: string;
-}
+export type AssetDisposalRecord = GeneratedAssetDisposalRecord;
 
-export interface AssetDisposalPageResult {
+export type AssetDisposalPageResult = Omit<
+	ApiResponseData<GeneratedAssetDisposalPageResponse>,
+	'list'
+> & {
 	list: AssetDisposalRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
+};
+export type AssetDisposalPageQuery =
+	import('./generated/asset-disposal').AssetDisposalFetchPageRequest;
+export type AssetDisposalInfoQuery =
+	import('./generated/asset-disposal').AssetDisposalFetchInfoQuery;
+export type AssetDisposalCreatePayload =
+	import('./generated/asset-disposal').AssetDisposalCreateDisposalRequest;
+export type AssetDisposalUpdatePayload =
+	import('./generated/asset-disposal').AssetDisposalUpdateDisposalRequest;
+export type AssetDisposalSubmitPayload =
+	import('./generated/asset-disposal').AssetDisposalSubmitDisposalRequest;
+export type AssetDisposalApprovePayload =
+	import('./generated/asset-disposal').AssetDisposalApproveDisposalRequest;
+export type AssetDisposalExecutePayload =
+	import('./generated/asset-disposal').AssetDisposalExecuteDisposalRequest;
+export type AssetDisposalCancelPayload =
+	import('./generated/asset-disposal').AssetDisposalCancelDisposalRequest;
+
+export type AssetReportSummary = ApiResponseData<GeneratedAssetReportSummaryResponse>;
+export type AssetReportSummaryQuery =
+	import('./generated/asset-report').AssetReportFetchSummaryQuery & {
+		keyword?: string;
 	};
-}
 
-export interface AssetReportSummary {
-	assetCount: number;
-	totalOriginalAmount: number;
-	totalNetValue: number;
-	assignedCount: number;
-	maintenanceCount: number;
-	scrappedCount: number;
-	lostCount: number;
-}
+export type AssetReportRecord = GeneratedAssetReportRecord;
 
-export interface AssetReportRecord {
-	id?: number;
-	reportDate?: string;
-	assetId?: number;
-	assetNo?: string;
-	assetName?: string;
-	category?: string;
-	departmentId?: number;
-	departmentName?: string;
-	assetStatus?: AssetStatus;
-	originalAmount?: number;
-	netValue?: number;
-	monthlyDepreciation?: number;
-	disposalStatus?: AssetDisposalStatus;
-	remark?: string;
-}
-
-export interface AssetReportPageResult {
+export type AssetReportPageResult = Omit<
+	ApiResponseData<GeneratedAssetReportPageResponse>,
+	'list'
+> & {
 	list: AssetReportRecord[];
-	pagination: {
-		page: number;
-		size: number;
-		total: number;
+};
+export type AssetReportPageQuery = import('./generated/asset-report').AssetReportFetchPageRequest;
+export type AssetReportExportQuery =
+	import('./generated/asset-report').AssetReportExportReportQuery & {
+		keyword?: string;
+	};
+export type AssetReportExportResult = AssetReportRecord[];
+
+export type MaterialCatalogStatus = GeneratedMaterialCatalogStatus;
+export type MaterialStockStatus = GeneratedMaterialStockStatus;
+export type MaterialInboundStatus = GeneratedMaterialInboundStatus;
+export type MaterialIssueStatus = GeneratedMaterialIssueStatus;
+
+export type MaterialCatalogRecord = Omit<
+	GeneratedMaterialCatalogRecord,
+	'category' | 'specification' | 'remark'
+> & {
+	category?: string | null;
+	specification?: string | null;
+	remark?: string | null;
+};
+
+export type MaterialCatalogPageResult = Omit<
+	ApiResponseData<GeneratedMaterialCatalogPageResponse>,
+	'list'
+> & {
+	list: MaterialCatalogRecord[];
+};
+export type MaterialCatalogPageQuery =
+	import('./generated/material-catalog').MaterialCatalogFetchPageRequest;
+export type MaterialCatalogInfoQuery =
+	import('./generated/material-catalog').MaterialCatalogFetchInfoQuery;
+export type MaterialCatalogCreatePayload = Partial<MaterialCatalogRecord>;
+export type MaterialCatalogUpdatePayload = Partial<MaterialCatalogRecord> & {
+	id: number;
+};
+export type MaterialCatalogRemovePayload =
+	import('./generated/material-catalog').MaterialCatalogRemoveMaterialRequest;
+
+export type MaterialStockRecord = Omit<
+	GeneratedMaterialStockRecord,
+	'category' | 'specification' | 'lastInboundTime' | 'lastIssueTime'
+> & {
+	category?: string | null;
+	specification?: string | null;
+	lastInboundTime?: string | null;
+	lastIssueTime?: string | null;
+};
+
+export type MaterialStockPageResult = Omit<
+	ApiResponseData<GeneratedMaterialStockPageResponse>,
+	'list'
+> & {
+	list: MaterialStockRecord[];
+};
+export type MaterialStockPageQuery =
+	import('./generated/material-stock').MaterialStockFetchPageRequest;
+export type MaterialStockInfoQuery =
+	import('./generated/material-stock').MaterialStockFetchInfoQuery;
+
+export type MaterialInboundRecord = Omit<
+	GeneratedMaterialInboundRecord,
+	| 'category'
+	| 'specification'
+	| 'sourceType'
+	| 'sourceBizId'
+	| 'submittedAt'
+	| 'receivedBy'
+	| 'receivedAt'
+	| 'remark'
+> & {
+	category?: string | null;
+	specification?: string | null;
+	sourceType?: string | null;
+	sourceBizId?: string | null;
+	submittedAt?: string | null;
+	receivedBy?: number | null;
+	receivedAt?: string | null;
+	remark?: string | null;
+};
+
+export type MaterialInboundPageResult = Omit<
+	ApiResponseData<GeneratedMaterialInboundPageResponse>,
+	'list'
+> & {
+	list: MaterialInboundRecord[];
+};
+export type MaterialInboundPageQuery =
+	import('./generated/material-inbound').MaterialInboundFetchPageRequest;
+export type MaterialInboundInfoQuery =
+	import('./generated/material-inbound').MaterialInboundFetchInfoQuery;
+export type MaterialInboundCreatePayload = Partial<MaterialInboundRecord>;
+export type MaterialInboundUpdatePayload = Partial<MaterialInboundRecord> & {
+	id: number;
+};
+export type MaterialInboundSubmitPayload =
+	import('./generated/material-inbound').MaterialInboundSubmitInboundRequest;
+export type MaterialInboundReceivePayload =
+	import('./generated/material-inbound').MaterialInboundReceiveInboundRequest;
+export type MaterialInboundCancelPayload =
+	import('./generated/material-inbound').MaterialInboundCancelInboundRequest;
+
+export type MaterialIssueRecord = Omit<
+	GeneratedMaterialIssueRecord,
+	| 'category'
+	| 'specification'
+	| 'purpose'
+	| 'issueDate'
+	| 'submittedAt'
+	| 'issuedBy'
+	| 'issuedAt'
+	| 'remark'
+> & {
+	category?: string | null;
+	specification?: string | null;
+	purpose?: string | null;
+	issueDate?: string | null;
+	submittedAt?: string | null;
+	issuedBy?: number | null;
+	issuedAt?: string | null;
+	remark?: string | null;
+};
+
+export type MaterialIssuePageResult = Omit<
+	ApiResponseData<GeneratedMaterialIssuePageResponse>,
+	'list'
+> & {
+	list: MaterialIssueRecord[];
+};
+export type MaterialIssuePageQuery =
+	import('./generated/material-issue').MaterialIssueFetchPageRequest;
+export type MaterialIssueInfoQuery =
+	import('./generated/material-issue').MaterialIssueFetchInfoQuery;
+export type MaterialIssueCreatePayload = Partial<MaterialIssueRecord>;
+export type MaterialIssueUpdatePayload = Partial<MaterialIssueRecord> & {
+	id: number;
+};
+export type MaterialIssueSubmitPayload =
+	import('./generated/material-issue').MaterialIssueSubmitIssueRequest;
+export type MaterialIssueActionPayload =
+	import('./generated/material-issue').MaterialIssueIssueMaterialRequest;
+export type MaterialIssueCancelPayload =
+	import('./generated/material-issue').MaterialIssueCancelIssueRequest;
+
+export function createEmptyMaterialCatalog(): MaterialCatalogRecord {
+	return {
+		code: '',
+		materialNo: '',
+		name: '',
+		category: '',
+		specification: '',
+		unit: '',
+		safetyStock: 0,
+		referenceUnitCost: 0,
+		status: 'active',
+		remark: ''
 	};
 }
 
-export function createEmptyAssessment(): AssessmentRecord {
+export function createEmptyMaterialStock(): MaterialStockRecord {
+	return {
+		stockId: undefined,
+		catalogId: undefined,
+		materialId: undefined,
+		departmentId: undefined,
+		materialCode: '',
+		materialNo: '',
+		materialName: '',
+		category: '',
+		specification: '',
+		unit: '',
+		currentQty: 0,
+		availableQty: 0,
+		reservedQty: 0,
+		issuedQty: 0,
+		safetyStock: 0,
+		status: 'active',
+		stockStatus: 'sufficient',
+		lastUnitCost: 0,
+		stockAmount: 0,
+		isLowStock: false,
+		lastInboundTime: '',
+		lastIssueTime: ''
+	};
+}
+
+export function createEmptyMaterialInbound(): MaterialInboundRecord {
+	return {
+		title: '',
+		catalogId: undefined,
+		materialId: undefined,
+		departmentId: undefined,
+		materialCode: '',
+		materialNo: '',
+		materialName: '',
+		category: '',
+		specification: '',
+		unit: '',
+		quantity: 1,
+		unitCost: 0,
+		unitPrice: 0,
+		amount: 0,
+		totalAmount: 0,
+		sourceType: '',
+		sourceBizId: '',
+		remark: '',
+		status: 'draft'
+	};
+}
+
+export function createEmptyMaterialIssue(): MaterialIssueRecord {
+	return {
+		title: '',
+		catalogId: undefined,
+		materialId: undefined,
+		departmentId: undefined,
+		materialCode: '',
+		materialNo: '',
+		materialName: '',
+		category: '',
+		specification: '',
+		unit: '',
+		quantity: 1,
+		assigneeId: undefined,
+		assigneeName: '',
+		issueDate: '',
+		submittedAt: '',
+		issuedBy: null,
+		issuedByName: '',
+		issuedAt: '',
+		purpose: '',
+		remark: '',
+		status: 'draft'
+	};
+}
+
+export function createEmptyAssessment(): AssessmentDraft {
 	return {
 		employeeId: undefined,
 		assessorId: undefined,
@@ -1795,7 +3421,7 @@ export function createEmptyAssessment(): AssessmentRecord {
 	};
 }
 
-export function createEmptyGoal(): GoalRecord {
+export function createEmptyGoal(): GoalDraft {
 	return {
 		employeeId: undefined,
 		departmentId: undefined,
@@ -1806,8 +3432,52 @@ export function createEmptyGoal(): GoalRecord {
 		unit: '',
 		weight: 0,
 		startDate: '',
-		endDate: '',
-		progressRecords: []
+		endDate: ''
+	};
+}
+
+export function createEmptyGoalOpsDepartmentConfig(): GoalOpsDepartmentConfig {
+	return {
+		departmentId: undefined,
+		departmentName: '',
+		assignTime: '09:00',
+		submitDeadline: '18:00',
+		reportSendTime: '18:30',
+		reportPushMode: 'system_and_group',
+		reportPushTarget: ''
+	};
+}
+
+export function createEmptyGoalOpsAccessProfile(): GoalOpsAccessProfile {
+	return {
+		departmentId: null,
+		activePersonaKey: null,
+		roleKind: 'unsupported',
+		scopeKey: 'self',
+		isHr: false,
+		canManageDepartment: false,
+		canMaintainPersonalPlan: false,
+		manageableDepartmentIds: []
+	};
+}
+
+export function createEmptyGoalOpsPlan(currentUserId?: number): GoalOpsPlanRecord {
+	return {
+		employeeId: currentUserId,
+		departmentId: undefined,
+		periodType: 'day',
+		planDate: '',
+		periodStartDate: '',
+		periodEndDate: '',
+		sourceType: 'public',
+		title: '',
+		description: '',
+		targetValue: 0,
+		actualValue: 0,
+		unit: '',
+		status: 'assigned',
+		parentPlanId: null,
+		isSystemGenerated: false
 	};
 }
 
@@ -1957,6 +3627,37 @@ export function createEmptyDocumentCenter(): DocumentCenterRecord {
 	};
 }
 
+export function createEmptyDocumentCenterForm(): DocumentCenterFormModel {
+	const record = createEmptyDocumentCenter();
+	return {
+		fileNo: record.fileNo,
+		fileName: record.fileName,
+		category: record.category,
+		fileType: record.fileType,
+		storage: record.storage,
+		confidentiality: record.confidentiality,
+		ownerName: record.ownerName,
+		department: record.department,
+		status: record.status || 'draft',
+		version: record.version,
+		sizeMb: Number(record.sizeMb || 0),
+		expireDate: record.expireDate || '',
+		tagsText: '',
+		notes: record.notes || ''
+	};
+}
+
+export function createEmptyDocumentCenterStats(): DocumentCenterStats {
+	return {
+		total: 0,
+		publishedCount: 0,
+		reviewCount: 0,
+		archivedCount: 0,
+		totalSizeMb: 0,
+		totalDownloads: 0
+	};
+}
+
 export function createEmptyKnowledgeBase(): KnowledgeBaseRecord {
 	return {
 		kbNo: '',
@@ -1973,12 +3674,80 @@ export function createEmptyKnowledgeBase(): KnowledgeBaseRecord {
 	};
 }
 
+export function createEmptyKnowledgeBaseForm(): KnowledgeBaseFormModel {
+	const record = createEmptyKnowledgeBase();
+	return {
+		kbNo: record.kbNo,
+		title: record.title,
+		category: record.category,
+		summary: record.summary,
+		ownerName: record.ownerName,
+		status: record.status || 'draft',
+		importance: Number(record.importance || 0),
+		tagsText: '',
+		relatedTopicsText: '',
+		relatedFileIds: []
+	};
+}
+
+export function createEmptyKnowledgeBaseStats(): KnowledgeBaseStats {
+	return {
+		total: 0,
+		publishedCount: 0,
+		draftCount: 0,
+		fileLinkedCount: 0,
+		avgImportance: 0,
+		topicCount: 0
+	};
+}
+
 export function createEmptyKnowledgeQa(): KnowledgeQaRecord {
 	return {
 		question: '',
 		answer: '',
 		relatedKnowledgeIds: [],
 		relatedFileIds: []
+	};
+}
+
+export function createEmptyKnowledgeQaForm(): KnowledgeQaFormModel {
+	const record = createEmptyKnowledgeQa();
+	return {
+		question: record.question,
+		answer: record.answer,
+		relatedKnowledgeIds: record.relatedKnowledgeIds || [],
+		relatedFileIds: record.relatedFileIds || []
+	};
+}
+
+export function createEmptyKnowledgeSearchResult(): KnowledgeSearchResult {
+	return {
+		total: 0,
+		knowledge: [],
+		files: [],
+		qas: []
+	};
+}
+
+export function createEmptyHiring(): HiringFormRecord {
+	return {
+		candidateName: '',
+		targetDepartmentId: undefined,
+		targetPosition: '',
+		sourceType: 'manual',
+		sourceId: undefined,
+		interviewId: undefined,
+		resumePoolId: undefined,
+		recruitPlanId: undefined,
+		sourceStatusSnapshot: '',
+		sourceSnapshot: null,
+		interviewSnapshot: null,
+		resumePoolSnapshot: null,
+		recruitPlanSnapshot: null,
+		hiringDecision: '',
+		decisionContent: '',
+		status: 'offered',
+		closeReason: ''
 	};
 }
 
@@ -2054,24 +3823,30 @@ export function createEmptyTalentAsset(): TalentAssetRecord {
 	};
 }
 
-export function createEmptyHiring(): HiringRecord {
+export function createEmptyWorkPlan(): WorkPlanRecord {
 	return {
-		candidateName: '',
-		targetDepartmentId: undefined,
-		targetPosition: '',
+		title: '',
+		description: '',
+		ownerDepartmentId: undefined,
+		ownerId: undefined,
+		assigneeIds: [],
+		assigneeList: [],
+		assigneeNames: [],
+		priority: 'medium',
+		plannedStartDate: '',
+		plannedEndDate: '',
+		status: 'draft',
+		progressSummary: '',
+		resultSummary: '',
 		sourceType: 'manual',
-		sourceId: undefined,
-		interviewId: undefined,
-		resumePoolId: undefined,
-		recruitPlanId: undefined,
-		sourceStatusSnapshot: '',
-		sourceSnapshot: null,
-		interviewSnapshot: null,
-		resumePoolSnapshot: null,
-		recruitPlanSnapshot: null,
-		hiringDecision: '',
-		status: 'offered',
-		closeReason: ''
+		sourceBizType: '',
+		sourceBizId: '',
+		sourceTitle: '',
+		sourceStatus: 'none',
+		externalInstanceId: '',
+		externalProcessCode: '',
+		approvalFinishedAt: '',
+		sourceSnapshot: null
 	};
 }
 
@@ -2167,6 +3942,7 @@ export function createEmptyJobStandard(): JobStandardRecord {
 
 export function createEmptyPip(): PipRecord {
 	return {
+		suggestionId: undefined,
 		assessmentId: null,
 		employeeId: undefined,
 		ownerId: undefined,
@@ -2221,6 +3997,7 @@ export function createEmptySalary(): SalaryRecord {
 
 export function createEmptyPromotion(currentUserId?: number): PromotionRecord {
 	return {
+		suggestionId: undefined,
 		assessmentId: undefined,
 		employeeId: undefined,
 		sponsorId: currentUserId,
@@ -2268,6 +4045,23 @@ export function createEmptyAssetAssignment(): AssetAssignmentRecord {
 		purpose: '',
 		returnRemark: '',
 		status: 'assigned'
+	};
+}
+
+export function createEmptyAssetAssignmentRequest(): AssetAssignmentRequestRecord {
+	return {
+		requestType: 'standard',
+		assetCategory: '',
+		assetModelRequest: '',
+		quantity: 1,
+		unitPriceEstimate: 0,
+		usageReason: '',
+		expectedUseStartDate: '',
+		targetDepartmentId: undefined,
+		exceptionReason: '',
+		originalAssetId: undefined,
+		originalAssignmentId: undefined,
+		status: 'draft'
 	};
 }
 
@@ -2342,4 +4136,255 @@ export function createEmptyAssetDisposal(): AssetDisposalRecord {
 		remark: '',
 		status: 'draft'
 	};
+}
+
+export type AnnualInspectionStatus =
+	| 'draft'
+	| 'preparing'
+	| 'submitted'
+	| 'approved'
+	| 'rejected'
+	| 'expired';
+
+export type AnnualInspectionCategory = 'safety' | 'equipment' | 'license' | 'compliance' | 'other';
+
+export interface AnnualInspectionRecord {
+	[key: string]: unknown;
+	id?: number;
+	title: string;
+	status: AnnualInspectionStatus;
+	notes: string;
+	createTime: string;
+	updateTime: string;
+	materialNo: string;
+	category: AnnualInspectionCategory;
+	department: string;
+	ownerName: string;
+	dueDate: string;
+	completeness: number;
+	version: string;
+	reminderDays: number;
+}
+
+export interface AnnualInspectionStats {
+	[key: string]: unknown;
+	total: number;
+	overdueCount: number;
+	approvedCount: number;
+	avgCompleteness: number;
+}
+
+export type HonorStatus = 'draft' | 'published' | 'archived';
+
+export type HonorType = 'individual' | 'team' | 'organization';
+
+export type HonorLevel = 'departmental' | 'city' | 'provincial' | 'national' | 'international';
+
+export interface HonorRecord {
+	[key: string]: unknown;
+	id?: number;
+	title: string;
+	status: HonorStatus;
+	notes: string;
+	createTime: string;
+	updateTime: string;
+	honorNo: string;
+	honorType: HonorType;
+	level: HonorLevel;
+	winnerName: string;
+	department: string;
+	awardedAt: string;
+	issuer: string;
+	impactScore: number;
+	evidenceUrl: string | null;
+}
+
+export interface HonorStats {
+	[key: string]: unknown;
+	total: number;
+	publishedCount: number;
+	thisYearCount: number;
+	avgImpactScore: number;
+}
+
+export type PublicityMaterialStatus = 'draft' | 'review' | 'approved' | 'published' | 'offline';
+
+export type PublicityMaterialType = 'poster' | 'video' | 'article' | 'ppt' | 'brochure';
+
+export type PublicityMaterialChannel = 'website' | 'wechat' | 'weibo' | 'offline' | 'all';
+
+export interface PublicityMaterialDocumentSummary {
+	[key: string]: unknown;
+	id: number;
+	fileNo: string;
+	fileName: string;
+}
+
+export interface PublicityMaterialRecord {
+	[key: string]: unknown;
+	id?: number;
+	title: string;
+	status: PublicityMaterialStatus;
+	notes: string;
+	createTime: string;
+	updateTime: string;
+	materialNo: string;
+	materialType: PublicityMaterialType;
+	channel: PublicityMaterialChannel;
+	ownerName: string;
+	publishDate: string;
+	views: number;
+	downloads: number;
+	designOwner: string;
+	relatedDocumentId: number | null;
+	relatedDocumentSummary?: PublicityMaterialDocumentSummary;
+}
+
+export interface PublicityMaterialStats {
+	[key: string]: unknown;
+	total: number;
+	reviewingCount: number;
+	publishedCount: number;
+	totalViews: number;
+}
+
+export type DesignCollabStatus = 'todo' | 'in_progress' | 'review' | 'done' | 'cancelled';
+
+export type DesignCollabPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+export interface DesignCollabRecord {
+	[key: string]: unknown;
+	id?: number;
+	title: string;
+	status: DesignCollabStatus;
+	notes: string;
+	createTime: string;
+	updateTime: string;
+	taskNo: string;
+	requesterName: string;
+	assigneeName: string;
+	priority: DesignCollabPriority;
+	dueDate: string;
+	progress: number;
+	workload: number;
+	relatedMaterialNo: string | null;
+}
+
+export interface DesignCollabStats {
+	[key: string]: unknown;
+	total: number;
+	doneCount: number;
+	inProgressCount: number;
+	overdueCount: number;
+}
+
+export type ExpressCollabStatus = 'created' | 'in_transit' | 'delivered' | 'exception' | 'returned';
+
+export type ExpressCollabServiceLevel = 'standard' | 'express' | 'same_day';
+
+export type ExpressCollabSyncStatus = 'synced' | 'pending' | 'failed';
+
+export interface ExpressCollabRecord {
+	[key: string]: unknown;
+	id?: number;
+	title: string;
+	status: ExpressCollabStatus;
+	notes: string;
+	createTime: string;
+	updateTime: string;
+	trackingNo: string;
+	orderNo: string;
+	courierCompany: string;
+	serviceLevel: ExpressCollabServiceLevel;
+	origin: string;
+	destination: string;
+	senderName: string;
+	receiverName: string;
+	sourceSystem: string;
+	syncStatus: ExpressCollabSyncStatus;
+	lastEvent: string;
+	lastUpdate: string;
+	etaDate: string;
+}
+
+export interface ExpressCollabStats {
+	[key: string]: unknown;
+	total: number;
+	inTransitCount: number;
+	deliveredCount: number;
+	exceptionCount: number;
+	pendingSyncCount: number;
+}
+
+export type VehicleType = 'sedan' | 'suv' | 'mpv' | 'bus' | 'truck' | 'other';
+
+export type VehicleStatus = 'idle' | 'in_use' | 'maintenance' | 'inspection_due' | 'retired';
+
+export interface VehicleRecord {
+	[key: string]: unknown;
+	id?: number;
+	vehicleNo: string;
+	plateNo: string;
+	brand: string;
+	model: string;
+	vehicleType: VehicleType;
+	ownerDepartment: string;
+	managerName: string;
+	seats: number;
+	registerDate: string;
+	inspectionDueDate: string | null;
+	insuranceDueDate: string | null;
+	status: VehicleStatus;
+	usageScope: string | null;
+	notes: string | null;
+	createTime: string;
+	updateTime: string;
+}
+
+export interface VehicleStats {
+	[key: string]: unknown;
+	total: number;
+	inUseCount: number;
+	maintenanceCount: number;
+	inspectionDueCount: number;
+}
+
+export type IntellectualPropertyType = 'patent' | 'trademark' | 'copyright' | 'softwareCopyright';
+
+export type IntellectualPropertyStatus =
+	| 'drafting'
+	| 'applying'
+	| 'registered'
+	| 'expired'
+	| 'invalidated';
+
+export type IntellectualPropertyRiskLevel = 'low' | 'medium' | 'high';
+
+export interface IntellectualPropertyRecord {
+	[key: string]: unknown;
+	id?: number;
+	ipNo: string;
+	title: string;
+	ipType: IntellectualPropertyType;
+	ownerDepartment: string;
+	ownerName: string;
+	applicantName: string;
+	applyDate: string;
+	grantDate: string | null;
+	expiryDate: string | null;
+	status: IntellectualPropertyStatus;
+	registryNo: string | null;
+	usageScope: string | null;
+	riskLevel: IntellectualPropertyRiskLevel | null;
+	notes: string | null;
+	createTime: string;
+	updateTime: string;
+}
+
+export interface IntellectualPropertyStats {
+	[key: string]: unknown;
+	total: number;
+	registeredCount: number;
+	expiringCount: number;
+	expiredCount: number;
 }

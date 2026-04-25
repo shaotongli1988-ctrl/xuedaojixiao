@@ -4,23 +4,27 @@
  * 不负责待办、资源或班级列表请求。
  */
 import { BaseService } from '/@/cool';
-import type { TeacherDashboardSummary } from '../types';
+import { asPerformanceServicePromise } from './service-contract';
+import { decodeTeacherDashboardSummary } from './teacher-contract';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import type { TeacherDashboardSummary, TeacherDashboardSummaryQuery } from '../types';
 
 export default class PerformanceTeacherDashboardService extends BaseService {
-	permission = {
-		summary: 'performance:teacherDashboard:summary'
-	};
+	permission = PERMISSIONS.performance.teacherDashboard;
 
 	constructor() {
 		super('admin/performance/teacherDashboard');
 	}
 
-	fetchSummary(params?: Record<string, unknown>) {
-		return this.request({
-			url: '/summary',
-			method: 'GET',
-			params
-		}) as unknown as Promise<TeacherDashboardSummary>;
+	fetchSummary(params?: TeacherDashboardSummaryQuery) {
+		return asPerformanceServicePromise<TeacherDashboardSummary>(
+			this.request({
+				url: '/summary',
+				method: 'GET',
+				params
+			}),
+			decodeTeacherDashboardSummary
+		);
 	}
 }
 

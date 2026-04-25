@@ -1,15 +1,17 @@
 <!-- 文件职责：承接主题20资产报表页面；不负责 BI 看板、外部导出模板或财务总账分析；依赖 asset-report service、共享金额格式化和通用资产 CRUD 页面壳；维护重点是 summary/page/export 三个冻结接口必须全部有入口。 -->
 <template>
 	<div class="asset-report-page">
-		<AssetCrudPage
+		<asset-crud-page
 			title="资产报表"
 			description="查看资产原值、净值、报废状态和月度折旧，支持导出。"
 			notice="报表导出首批只做资产侧导出，不进入财务总账或税务分析。"
-			page-permission="performance:assetReport:page"
+			:page-permission="PERMISSIONS.performance.assetReport.page"
 			:columns="columns"
 			:filters="filters"
 			:create-filters="createFilters"
-			:fetch-page="performanceAssetReportService.fetchPage.bind(performanceAssetReportService)"
+			:fetch-page="
+				performanceAssetReportService.fetchPage.bind(performanceAssetReportService)
+			"
 			:toolbar-actions="toolbarActions"
 		/>
 		<el-card shadow="never" v-loading="loading">
@@ -29,15 +31,20 @@
 <script lang="ts" setup>
 import { reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
-import { export_json_to_excel } from '/@/plugins/excel/utils';
+import { exportJsonToExcel } from '/@/plugins/excel/utils';
 import AssetCrudPage from './asset-crud-page.vue';
 import { performanceAssetReportService } from '../../service/asset-report';
-import {
-	assetStatusTagMap,
-	disposalStatusTagMap,
-	enumOptions,
-	formatMoney
-} from './shared';
+import type {
+	AssetReportExportQuery,
+	AssetReportExportResult,
+	AssetReportPageResult,
+	AssetReportRecord,
+	AssetReportSummary
+} from '../../types';
+import { PERMISSIONS } from '../../../base/generated/permissions.generated';
+import { assetStatusTagMap, disposalStatusTagMap, enumOptions, formatMoney } from './shared';
+import type { CrudToolbarAction } from '../shared/crud-page-shell';
+import { resolveErrorMessage, showElementErrorFromError } from '../shared/error-message';
 
 const columns = [
 	{ prop: 'assetNo', label: '资产编号', minWidth: 140 },
@@ -66,13 +73,23 @@ const summary = reactive({
 });
 const loading = ref(false);
 
-const toolbarActions = [
+interface AssetReportFilters {
+	[key: string]: unknown;
+	keyword: string;
+	category: string;
+	assetStatus: string;
+	reportDate: string;
+}
+
+const toolbarActions: CrudToolbarAction[] = [
 	{
 		key: 'export',
 		label: '导出',
-		permission: 'performance:assetReport:export',
-		handler: async (context: { filters?: Record<string, any> }) => {
-			const filters = normalizeFilters(context?.filters || createFilters());
+		permission: PERMISSIONS.performance.assetReport.export,
+		handler: async context => {
+			const filters = normalizeFilters(
+				(context.filters || createFilters()) as AssetReportFilters
+			);
 			const response = await performanceAssetReportService.exportReport(filters);
 			const exportedList = extractList(response);
 
@@ -104,12 +121,12 @@ function createFilters() {
 async function loadSummary() {
 	loading.value = true;
 	try {
-		const result = await performanceAssetReportService.fetchSummary({
+		const result: AssetReportSummary = await performanceAssetReportService.fetchSummary({
 			reportDate: createFilters().reportDate
 		});
 		Object.assign(summary, result || {});
-	} catch (error: any) {
-		ElMessage.error(error?.message || '报表汇总加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '报表汇总加载失败');
 	} finally {
 		loading.value = false;
 	}
@@ -117,7 +134,7 @@ async function loadSummary() {
 
 loadSummary();
 
-function normalizeFilters(raw: Record<string, any>) {
+function normalizeFilters(raw: AssetReportFilters): AssetReportExportQuery {
 	return {
 		keyword: raw.keyword || undefined,
 		category: raw.category || undefined,
@@ -126,7 +143,14 @@ function normalizeFilters(raw: Record<string, any>) {
 	};
 }
 
-function extractList(response: any) {
+function extractList(
+	response:
+		| AssetReportExportResult
+		| AssetReportPageResult
+		| AssetReportRecord[]
+		| null
+		| undefined
+) {
 	if (Array.isArray(response)) {
 		return response;
 	}
@@ -135,15 +159,11 @@ function extractList(response: any) {
 		return response.list;
 	}
 
-	if (Array.isArray(response?.data)) {
-		return response.data;
-	}
-
 	return null;
 }
 
-function downloadExportAsExcel(list: any[], reportDate?: string) {
-		export_json_to_excel({
+function downloadExportAsExcel(list: AssetReportRecord[], reportDate?: string) {
+	exportJsonToExcel({
 		header: [
 			'报表月份',
 			'资产编号',
@@ -163,7 +183,9 @@ function downloadExportAsExcel(list: any[], reportDate?: string) {
 			item.assetName || '',
 			item.category || '',
 			item.departmentName || '',
-			assetStatusTagMap[item.assetStatus as keyof typeof assetStatusTagMap]?.label || item.assetStatus || '',
+			assetStatusTagMap[item.assetStatus as keyof typeof assetStatusTagMap]?.label ||
+				item.assetStatus ||
+				'',
 			Number(item.originalAmount || 0).toFixed(2),
 			Number(item.netValue || 0).toFixed(2),
 			Number(item.monthlyDepreciation || 0).toFixed(2),
@@ -181,13 +203,29 @@ function downloadExportAsExcel(list: any[], reportDate?: string) {
 </script>
 
 <style lang="scss" scoped>
+@use '../../../../styles/patterns.data-panel.scss' as dataPanel;
+
 .asset-report-page {
-	display: grid;
-	gap: 16px;
+	@include dataPanel.data-panel-shell;
+
+	--asset-report-card-bg: var(--app-surface-card);
+	--asset-report-muted-bg: var(--app-surface-muted);
+	--asset-report-border: var(--app-border-strong);
+
+	:deep(.el-card) {
+		border-color: var(--asset-report-border);
+		background: var(--asset-report-card-bg);
+		box-shadow: var(--app-shadow-surface);
+	}
+
+	:deep(.el-table) {
+		@include dataPanel.data-panel-table;
+		--el-table-header-bg-color: var(--asset-report-muted-bg);
+	}
 
 	&__summary {
 		display: flex;
-		gap: 12px;
+		gap: var(--app-space-3);
 		flex-wrap: wrap;
 	}
 }

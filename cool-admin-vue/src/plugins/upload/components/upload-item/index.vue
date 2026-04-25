@@ -349,7 +349,7 @@ onMounted(() => {
 		top: 0;
 		height: 100%;
 		width: 100%;
-		background-color: rgba(0, 0, 0, 0.1);
+		background-color: var(--app-overlay-mask-soft);
 		pointer-events: none;
 		transition: opacity 0.3s;
 		opacity: 0;
@@ -364,7 +364,7 @@ onMounted(() => {
 		&-value {
 			position: absolute;
 			font-size: 26px;
-			color: #fff;
+			color: var(--app-text-on-primary);
 
 			&::after {
 				content: '%';
@@ -385,7 +385,7 @@ onMounted(() => {
 		position: absolute;
 		top: 5px;
 		left: 5px;
-		color: #fff;
+		color: var(--app-text-on-primary);
 		font-size: 12px;
 		padding: 2px 4px;
 		border-radius: 4px;
@@ -407,18 +407,18 @@ onMounted(() => {
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		background-color: rgba(0, 0, 0, 0.5);
+		background-color: var(--app-overlay-mask-strong);
 		border-radius: 6px;
 		opacity: 0;
 		transition: opacity 0.3s cubic-bezier(0.55, 0, 0.1, 1);
 
 		.el-icon {
-			color: #fff;
+			color: var(--app-text-on-primary);
 			margin: 0 8px;
 			font-size: 20px;
 
 			&:hover {
-				color: #eee;
+				color: var(--app-text-on-primary-muted);
 			}
 		}
 	}

@@ -4,19 +4,23 @@
  * 不负责资源详情、跟进新增或合作标记。
  */
 import { BaseService } from '/@/cool';
-import type { TeacherTodoPageResult } from '../types';
+import { asPerformanceServicePromise } from './service-contract';
+import { decodeTeacherTodoPageResult } from './teacher-contract';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import type { TeacherTodoPageQuery, TeacherTodoPageResult } from '../types';
 
 export default class PerformanceTeacherTodoService extends BaseService {
-	permission = {
-		page: 'performance:teacherTodo:page'
-	};
+	permission = PERMISSIONS.performance.teacherTodo;
 
 	constructor() {
 		super('admin/performance/teacherTodo');
 	}
 
-	fetchPage(data: any) {
-		return super.page(data) as unknown as Promise<TeacherTodoPageResult>;
+	fetchPage(data: TeacherTodoPageQuery) {
+		return asPerformanceServicePromise<TeacherTodoPageResult>(
+			super.page(data),
+			decodeTeacherTodoPageResult
+		);
 	}
 }
 

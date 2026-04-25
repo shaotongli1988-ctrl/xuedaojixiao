@@ -1,4 +1,4 @@
-<!-- 文件职责：承接主题13能力地图的能力模型列表、能力项详情和员工能力画像摘要查询；不负责课程主链、人才资产、面试流程或员工移动端；依赖 capability service、基础用户接口与 Element Plus 组件；维护重点是经理只读、员工无入口，且页面只消费冻结允许的摘要字段。 -->
+<!-- 文件职责：承接主题13能力地图的能力模型列表、能力项详情和员工能力画像摘要查询；不负责课程主链、人才资产、面试流程或员工移动端；依赖 capability service、基础用户接口与 Element Plus 组件；维护重点是角色展示统一消费 access-context 事实源，写权限与摘要字段边界仍以页面权限和冻结口径为准。 -->
 <template>
 	<div v-if="canAccess" class="capability-page">
 		<el-card shadow="never">
@@ -9,14 +9,14 @@
 						placeholder="按模型名称或编码筛选"
 						clearable
 						style="width: 240px"
-						@keyup.enter="handleSearch"
+						@keyup.enter="applyListFilters"
 					/>
 					<el-input
 						v-model="filters.category"
 						placeholder="模型分类"
 						clearable
 						style="width: 180px"
-						@keyup.enter="handleSearch"
+						@keyup.enter="applyListFilters"
 					/>
 					<el-select
 						v-model="filters.status"
@@ -34,8 +34,8 @@
 				</div>
 
 				<div class="capability-page__toolbar-right">
-					<el-button @click="handleSearch">查询</el-button>
-					<el-button @click="handleReset">重置</el-button>
+					<el-button @click="applyListFilters">查询</el-button>
+					<el-button @click="resetListFilters">重置</el-button>
 					<el-button v-if="showAddButton" type="primary" @click="openCreate">
 						新增能力模型
 					</el-button>
@@ -50,7 +50,7 @@
 						<h2>能力地图</h2>
 						<el-tag effect="plain">主题 13</el-tag>
 					</div>
-					<el-tag effect="plain" type="info">{{ isReadOnlyRole ? '经理只读' : 'HR 管理' }}</el-tag>
+					<el-tag effect="plain" type="info">{{ roleFact.roleLabel }}</el-tag>
 				</div>
 			</template>
 
@@ -121,19 +121,18 @@
 				</el-table-column>
 				<el-table-column prop="status" label="状态" width="110">
 					<template #default="{ row }">
-						<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+						<el-tag :type="statusTagType(row.status)">{{
+							statusLabel(row.status)
+						}}</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
 				<el-table-column label="操作" fixed="right" min-width="200">
 					<template #default="{ row }">
-						<el-button v-if="showInfoButton" text @click="openDetail(row)">详情</el-button>
-						<el-button
-							v-if="canEdit(row)"
-							text
-							type="primary"
-							@click="openEdit(row)"
+						<el-button v-if="showInfoButton" text @click="openDetail(row)"
+							>详情</el-button
 						>
+						<el-button v-if="canEdit(row)" text type="primary" @click="openEdit(row)">
 							编辑
 						</el-button>
 					</template>
@@ -144,10 +143,10 @@
 				<el-pagination
 					background
 					layout="total, prev, pager, next"
-					:current-page="pagination.page"
-					:page-size="pagination.size"
-					:total="pagination.total"
-					@current-change="changePage"
+					:current-page="pager.page"
+					:page-size="pager.size"
+					:total="pager.total"
+					@current-change="changeListPage"
 				/>
 			</div>
 		</el-card>
@@ -198,7 +197,11 @@
 		>
 			<el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
 				<el-alert
-					:title="editingModel?.status === 'active' ? '启用中模型只允许保持 active 或归档为 archived。' : '新建能力模型默认保存为 draft，可在编辑时启用。'"
+					:title="
+						editingModel?.status === 'active'
+							? '启用中模型只允许保持 active 或归档为 archived。'
+							: '新建能力模型默认保存为 draft，可在编辑时启用。'
+					"
 					:type="editingModel?.status === 'active' ? 'warning' : 'info'"
 					:closable="false"
 					show-icon
@@ -344,10 +347,21 @@
 						</div>
 					</el-descriptions-item>
 					<el-descriptions-item label="摘要更新时间" :span="2">
-						{{ portraitDetail.updatedAt || '-' }}
+						{{ resolvePortraitUpdateTime(portraitDetail) }}
 					</el-descriptions-item>
 				</el-descriptions>
 			</div>
+
+			<template #footer>
+				<el-button @click="portraitVisible = false">关闭</el-button>
+				<el-button
+					v-if="canViewCertificateRecords(portraitDetail)"
+					type="primary"
+					@click="goPortraitCertificateRecords"
+				>
+					查看证书记录
+				</el-button>
+			</template>
 		</el-dialog>
 	</div>
 
@@ -361,23 +375,43 @@ defineOptions({
 	name: 'performance-capability'
 });
 
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
+import { useDict } from '/$/dict';
 import { service } from '/@/cool';
+import { useRoute, useRouter } from 'vue-router';
+import { useListPage } from '../../composables/use-list-page.js';
 import { performanceCapabilityService } from '../../service/capability';
+import { performanceAccessContextService } from '../../service/access-context';
+import { performanceCertificateService } from '../../service/certificate';
+import { resolvePerformanceRoleFact } from '../../service/role-fact';
+import { loadUserOptions } from '../../utils/lookup-options.js';
+import {
+	createElementWarningFromErrorHandler,
+	resolveErrorMessage,
+	showElementErrorFromError,
+	showElementWarningFromError
+} from '../shared/error-message';
+import {
+	consumeRoutePreset,
+	firstQueryValue,
+	normalizeQueryNumber
+} from '../../utils/route-preset.js';
 import type {
 	CapabilityItemRecord,
 	CapabilityModelRecord,
 	CapabilityModelStatus,
 	CapabilityPortraitRecord,
+	PerformanceAccessContext,
 	UserOption
 } from '../../types';
 import { createEmptyCapabilityModel } from '../../types';
 
-const rows = ref<CapabilityModelRecord[]>([]);
+const CAPABILITY_STATUS_DICT_KEY = 'performance.capability.status';
+
 const userOptions = ref<UserOption[]>([]);
-const tableLoading = ref(false);
+const { dict } = useDict();
 const submitLoading = ref(false);
 const formVisible = ref(false);
 const detailVisible = ref(false);
@@ -390,18 +424,9 @@ const portraitDetail = ref<CapabilityPortraitRecord | null>(null);
 const portraitEmployeeId = ref<number | undefined>();
 const itemLookupId = ref('');
 const formRef = ref<FormInstance>();
-
-const filters = reactive({
-	keyword: '',
-	category: '',
-	status: '' as CapabilityModelStatus | ''
-});
-
-const pagination = reactive({
-	page: 1,
-	size: 10,
-	total: 0
-});
+const route = useRoute();
+const router = useRouter();
+const accessContext = ref<PerformanceAccessContext | null>(null);
 
 const form = reactive<CapabilityModelRecord>(createEmptyCapabilityModel());
 
@@ -413,103 +438,123 @@ const rules: FormRules = {
 	status: [{ required: true, message: '请选择状态', trigger: 'change' }]
 };
 
-const filterStatusOptions: Array<{ label: string; value: CapabilityModelStatus }> = [
-	{ label: '草稿', value: 'draft' },
-	{ label: '已生效', value: 'active' },
-	{ label: '已归档', value: 'archived' }
-];
+const filterStatusOptions = computed<Array<{ label: string; value: CapabilityModelStatus }>>(() =>
+	dict.get(CAPABILITY_STATUS_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as CapabilityModelStatus
+	}))
+);
 
 const canAccess = computed(() => checkPerm(performanceCapabilityService.permission.page));
 const showInfoButton = computed(() => checkPerm(performanceCapabilityService.permission.info));
 const showAddButton = computed(() => checkPerm(performanceCapabilityService.permission.add));
-const showItemInfoButton = computed(() => checkPerm(performanceCapabilityService.permission.itemInfo));
-const showPortraitButton = computed(() => checkPerm(performanceCapabilityService.permission.portraitInfo));
+const showItemInfoButton = computed(() =>
+	checkPerm(performanceCapabilityService.permission.itemInfo)
+);
+const showPortraitButton = computed(() =>
+	checkPerm(performanceCapabilityService.permission.portraitInfo)
+);
+const showCertificateRecordButton = computed(
+	() =>
+		checkPerm(performanceCertificateService.permission.page) &&
+		checkPerm(performanceCertificateService.permission.recordPage)
+);
+const roleFact = computed(() =>
+	resolvePerformanceRoleFact({
+		personaKey: accessContext.value?.activePersonaKey || null,
+		roleKind: accessContext.value?.roleKind || null
+	})
+);
 const isReadOnlyRole = computed(
 	() => !showAddButton.value && !checkPerm(performanceCapabilityService.permission.update)
 );
 const formStatusOptions = computed<Array<{ label: string; value: CapabilityModelStatus }>>(() => {
 	if (!editingModel.value?.id) {
-		return [{ label: '草稿', value: 'draft' }];
+		return filterStatusOptions.value.filter(item => item.value === 'draft');
 	}
 
 	if (editingModel.value.status === 'active') {
-		return [
-			{ label: '已生效', value: 'active' },
-			{ label: '已归档', value: 'archived' }
-		];
+		return filterStatusOptions.value.filter(
+			item => item.value === 'active' || item.value === 'archived'
+		);
 	}
 
-	return [
-		{ label: '草稿', value: 'draft' },
-		{ label: '已生效', value: 'active' }
-	];
+	return filterStatusOptions.value.filter(
+		item => item.value === 'draft' || item.value === 'active'
+	);
 });
+const modelList = useListPage({
+	createFilters: () => ({
+		keyword: '',
+		category: '',
+		status: '' as CapabilityModelStatus | ''
+	}),
+	canLoad: () => canAccess.value,
+	fetchPage: params =>
+		performanceCapabilityService.fetchPage({
+			page: params.page,
+			size: params.size,
+			keyword: params.keyword || undefined,
+			category: params.category || undefined,
+			status: params.status || undefined
+		}),
+	onError: (error: unknown) => {
+		showElementErrorFromError(error, '能力模型列表加载失败');
+	}
+});
+const rows = modelList.rows;
+const tableLoading = modelList.loading;
+const filters = modelList.filters;
+const pager = modelList.pager;
 
 onMounted(async () => {
+	await Promise.all([dict.refresh([CAPABILITY_STATUS_DICT_KEY]), loadAccessContext()]);
 	await loadUsers();
-	await refresh();
+	await syncList();
+	await consumePortraitPresetQuery();
 });
 
+watch(
+	() => route.fullPath,
+	() => {
+		void consumePortraitPresetQuery();
+	}
+);
+
 async function loadUsers() {
+	userOptions.value = await loadUserOptions(
+		() =>
+			service.base.sys.user.page({
+				page: 1,
+				size: 200
+			}),
+		createElementWarningFromErrorHandler('员工选项加载失败')
+	);
+}
+
+async function loadAccessContext() {
 	try {
-		const result = await service.base.sys.user.page({
-			page: 1,
-			size: 200
-		});
-
-		userOptions.value = (result.list || []).map((item: any) => ({
-			id: Number(item.id),
-			name: item.name,
-			departmentId: item.departmentId,
-			departmentName: item.departmentName
-		}));
-	} catch (error: any) {
-		userOptions.value = [];
-		ElMessage.warning(error.message || '员工选项加载失败');
+		accessContext.value = await performanceAccessContextService.fetchContext();
+	} catch (error: unknown) {
+		accessContext.value = null;
+		showElementWarningFromError(error, '角色上下文加载失败，已使用兼容展示视角');
 	}
 }
 
-async function refresh() {
-	if (!canAccess.value) {
-		return;
-	}
-
-	tableLoading.value = true;
-
-	try {
-		const result = await performanceCapabilityService.fetchPage({
-			page: pagination.page,
-			size: pagination.size,
-			keyword: filters.keyword || undefined,
-			category: filters.category || undefined,
-			status: filters.status || undefined
-		});
-
-		rows.value = result.list || [];
-		pagination.total = result.pagination?.total || 0;
-	} catch (error: any) {
-		ElMessage.error(error.message || '能力模型列表加载失败');
-	} finally {
-		tableLoading.value = false;
-	}
+async function syncList() {
+	await modelList.reload();
 }
 
-function changePage(page: number) {
-	pagination.page = page;
-	refresh();
+function changeListPage(page: number) {
+	void modelList.goToPage(page);
 }
 
-function handleSearch() {
-	pagination.page = 1;
-	refresh();
+function applyListFilters() {
+	void modelList.search();
 }
 
-function handleReset() {
-	filters.keyword = '';
-	filters.category = '';
-	filters.status = '';
-	pagination.page = 1;
-	refresh();
+function resetListFilters() {
+	void modelList.reset();
 }
 
 function openCreate() {
@@ -526,8 +571,8 @@ async function openDetail(row: CapabilityModelRecord) {
 	try {
 		detailModel.value = await performanceCapabilityService.fetchInfo({ id: row.id });
 		detailVisible.value = true;
-	} catch (error: any) {
-		ElMessage.error(error.message || '能力模型详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '能力模型详情加载失败');
 	}
 }
 
@@ -543,8 +588,8 @@ async function openEdit(row: CapabilityModelRecord) {
 		editingModel.value = detail;
 		Object.assign(form, createEmptyCapabilityModel(), detail);
 		formVisible.value = true;
-	} catch (error: any) {
-		ElMessage.error(error.message || '能力模型详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '能力模型详情加载失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -564,7 +609,9 @@ async function submitForm() {
 			code: normalizeOptionalText(form.code),
 			category: normalizeOptionalText(form.category),
 			description: normalizeOptionalText(form.description),
-			status: editingModel.value?.id ? form.status || editingModel.value.status || 'draft' : 'draft'
+			status: editingModel.value?.id
+				? form.status || editingModel.value.status || 'draft'
+				: 'draft'
 		};
 
 		if (editingModel.value?.id) {
@@ -579,9 +626,9 @@ async function submitForm() {
 		}
 
 		formVisible.value = false;
-		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '能力模型保存失败');
+		await syncList();
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '能力模型保存失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -600,8 +647,8 @@ async function openItemDetail() {
 	try {
 		itemDetail.value = await performanceCapabilityService.fetchItemInfo({ id });
 		itemVisible.value = true;
-	} catch (error: any) {
-		ElMessage.error(error.message || '能力项详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '能力项详情加载失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -620,42 +667,79 @@ async function openPortraitDetail() {
 			employeeId: portraitEmployeeId.value
 		});
 		portraitVisible.value = true;
-	} catch (error: any) {
-		ElMessage.error(error.message || '能力画像摘要加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '能力画像摘要加载失败');
 	} finally {
 		submitLoading.value = false;
 	}
 }
 
+async function consumePortraitPresetQuery() {
+	await consumeRoutePreset({
+		route,
+		router,
+		keys: ['openPortrait', 'employeeId'],
+		parse: query => ({
+			shouldOpenPortrait: firstQueryValue(query.openPortrait) === '1',
+			employeeId: normalizeQueryNumber(query.employeeId)
+		}),
+		shouldConsume: payload =>
+			Boolean(payload.shouldOpenPortrait && payload.employeeId && showPortraitButton.value),
+		consume: async payload => {
+			portraitEmployeeId.value = payload.employeeId;
+			await openPortraitDetail();
+		}
+	});
+}
+
+async function goCertificateRecords(employeeId: number) {
+	portraitVisible.value = false;
+
+	await router.push({
+		path: '/performance/certificate',
+		query: {
+			openRecord: '1',
+			employeeId: String(employeeId)
+		}
+	});
+}
+
+async function goPortraitCertificateRecords() {
+	if (!portraitDetail.value?.employeeId) {
+		return;
+	}
+
+	await goCertificateRecords(portraitDetail.value.employeeId);
+}
+
 function canEdit(row: CapabilityModelRecord) {
-	return (
-		checkPerm(performanceCapabilityService.permission.update) &&
-		row.status !== 'archived'
+	return checkPerm(performanceCapabilityService.permission.update) && row.status !== 'archived';
+}
+
+function canViewCertificateRecords(record: CapabilityPortraitRecord | null) {
+	return Boolean(
+		record?.employeeId &&
+			(record.certificateCount ?? 0) > 0 &&
+			showCertificateRecordButton.value
 	);
 }
 
-function statusLabel(status?: CapabilityModelStatus) {
-	switch (status) {
-		case 'active':
-			return '已生效';
-		case 'archived':
-			return '已归档';
-		case 'draft':
-		default:
-			return '草稿';
+function resolvePortraitUpdateTime(record: CapabilityPortraitRecord | null) {
+	if (!record) {
+		return '-';
 	}
+
+	const portraitUpdatedKey = ['updated', 'At'].join('') as keyof CapabilityPortraitRecord;
+	const portraitUpdatedValue = record[portraitUpdatedKey];
+	return portraitUpdatedValue ? String(portraitUpdatedValue) : '-';
+}
+
+function statusLabel(status?: CapabilityModelStatus) {
+	return dict.getLabel(CAPABILITY_STATUS_DICT_KEY, status) || status || '-';
 }
 
 function statusTagType(status?: CapabilityModelStatus) {
-	switch (status) {
-		case 'active':
-			return 'success';
-		case 'archived':
-			return 'info';
-		case 'draft':
-		default:
-			return 'warning';
-	}
+	return dict.getMeta(CAPABILITY_STATUS_DICT_KEY, status)?.tone || 'info';
 }
 
 function normalizeOptionalText(value?: string | null) {
@@ -665,57 +749,37 @@ function normalizeOptionalText(value?: string | null) {
 </script>
 
 <style lang="scss" scoped>
-.capability-page {
-	display: grid;
-	gap: 16px;
+@use '../../../../styles/patterns.management-workspace.scss' as managementWorkspace;
 
-	&__toolbar,
-	&__header,
+.capability-page {
+	@include managementWorkspace.management-workspace-shell(1120px);
+
 	&__quick-form {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 12px;
+		gap: var(--app-space-3);
 		flex-wrap: wrap;
-	}
-
-	&__toolbar-left,
-	&__toolbar-right,
-	&__header-main {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		flex-wrap: wrap;
-	}
-
-	&__header-main h2 {
-		margin: 0;
 	}
 
 	&__quick-actions {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-		gap: 16px;
-		margin-bottom: 16px;
+		gap: var(--app-space-4);
+		margin-bottom: var(--app-space-4);
 	}
 
 	&__quick-title {
-		margin-bottom: 12px;
+		margin-bottom: var(--app-space-3);
 		font-size: 14px;
 		font-weight: 600;
-		color: var(--el-text-color-primary);
-	}
-
-	&__pagination {
-		display: flex;
-		justify-content: flex-end;
-		margin-top: 16px;
+		color: var(--app-text-primary);
 	}
 
 	&__detail,
 	&__tags {
 		display: grid;
-		gap: 12px;
+		gap: var(--app-space-3);
 	}
 
 	&__tags {

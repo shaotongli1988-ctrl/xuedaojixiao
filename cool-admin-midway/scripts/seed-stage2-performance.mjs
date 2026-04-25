@@ -17,6 +17,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const menuJsonPath = path.resolve(__dirname, '../src/modules/base/menu.json');
 const stage2MenuRouters = new Set([
   '/data-center/dashboard',
+  '/performance/workbench',
+  '/performance/work-plan',
   '/performance/my-assessment',
   '/performance/initiated',
   '/performance/pending',
@@ -53,6 +55,8 @@ const stage2MenuRouters = new Set([
   '/performance/supplier',
   '/performance/asset/dashboard',
   '/performance/asset/ledger',
+  '/performance/asset/request',
+  '/performance/asset/request-pending',
   '/performance/asset/assignment',
   '/performance/asset/maintenance',
   '/performance/asset/report',
@@ -61,6 +65,15 @@ const stage2MenuRouters = new Set([
   '/performance/asset/inventory',
   '/performance/asset/depreciation',
   '/performance/asset/disposal',
+  '/performance/material/catalog',
+  '/performance/material/stock',
+  '/performance/material/inbound',
+  '/performance/material/issue',
+  '/performance/office/annual-inspection',
+  '/performance/office/honor',
+  '/performance/office/publicity-material',
+  '/performance/office/design-collab',
+  '/performance/office/express-collab',
   '/performance/office/document-center',
   '/performance/office/knowledge-base',
   '/performance/office/vehicle',
@@ -68,11 +81,11 @@ const stage2MenuRouters = new Set([
 ]);
 
 const connection = await mysql.createConnection({
-  host: '127.0.0.1',
-  port: 3306,
-  user: 'root',
-  password: '123456',
-  database: 'cool',
+  host: process.env.LOCAL_DB_HOST || '127.0.0.1',
+  port: Number(process.env.LOCAL_DB_PORT || 3306),
+  user: process.env.LOCAL_DB_USER || 'root',
+  password: process.env.LOCAL_DB_PASSWORD || '123456',
+  database: process.env.LOCAL_DB_NAME || 'cool',
 });
 
 const password123456 = 'e10adc3949ba59abbe56e057f20f883e';
@@ -119,21 +132,6 @@ function loadStage2PerformanceMenus() {
 async function queryOne(sql, params = []) {
   const [rows] = await connection.query(sql, params);
   return rows[0] || null;
-}
-
-async function ensureTableColumn(tableName, columnName, columnDefinition) {
-  const [rows] = await connection.query(
-    `SHOW COLUMNS FROM \`${tableName}\` LIKE ?`,
-    [columnName]
-  );
-
-  if (Array.isArray(rows) && rows.length > 0) {
-    return;
-  }
-
-  await connection.query(
-    `ALTER TABLE \`${tableName}\` ADD COLUMN ${columnDefinition}`
-  );
 }
 
 async function upsertMenuNode(menu, parentId = null) {
@@ -248,21 +246,40 @@ async function ensureUser({
   return result.insertId;
 }
 
-async function ensureRole({ name, label, remark, menuIds, departmentIds }) {
-  const existing = await queryOne(
-    'SELECT id FROM base_sys_role WHERE label = ? LIMIT 1',
-    [label]
-  );
-
+async function ensureRole({
+  name,
+  label,
+  remark,
+  menuIds,
+  departmentIds,
+  isSuperAdmin = false,
+}) {
   const menuIdList = JSON.stringify(menuIds);
   const departmentIdList = JSON.stringify(departmentIds);
+  const superAdminFlag = isSuperAdmin ? 1 : 0;
+  const existing = isSuperAdmin
+    ? await queryOne(
+        `SELECT id
+           FROM base_sys_role
+          WHERE isSuperAdmin = 1
+             OR label = ?
+          LIMIT 1`,
+        [label]
+      )
+    : await queryOne(
+        `SELECT id
+           FROM base_sys_role
+          WHERE label = ?
+          LIMIT 1`,
+        [label]
+      );
 
   if (existing) {
     await connection.query(
       `UPDATE base_sys_role
-          SET userId = '1', name = ?, remark = ?, relevance = 1, menuIdList = ?, departmentIdList = ?, updateTime = ?
+          SET userId = '1', name = ?, remark = ?, isSuperAdmin = ?, relevance = 1, menuIdList = ?, departmentIdList = ?, updateTime = ?
         WHERE id = ?`,
-      [name, remark, menuIdList, departmentIdList, now(), existing.id]
+      [name, remark, superAdminFlag, menuIdList, departmentIdList, now(), existing.id]
     );
     await replaceRoleBindings(existing.id, menuIds, departmentIds);
     return existing.id;
@@ -270,9 +287,9 @@ async function ensureRole({ name, label, remark, menuIds, departmentIds }) {
 
   const [result] = await connection.query(
     `INSERT INTO base_sys_role
-      (userId, name, label, remark, relevance, menuIdList, departmentIdList, createTime, updateTime, tenantId)
-     VALUES ('1', ?, ?, ?, 1, ?, ?, ?, ?, NULL)`,
-    [name, label, remark, menuIdList, departmentIdList, now(), now()]
+      (userId, name, label, isSuperAdmin, remark, relevance, menuIdList, departmentIdList, createTime, updateTime, tenantId)
+     VALUES ('1', ?, ?, ?, ?, 1, ?, ?, ?, ?, NULL)`,
+    [name, label, superAdminFlag, remark, menuIdList, departmentIdList, now(), now()]
   );
   await replaceRoleBindings(result.insertId, menuIds, departmentIds);
   return result.insertId;
@@ -308,6 +325,22 @@ async function replaceUserRoles(userId, roleIds) {
       [userId, roleId, now(), now()]
     );
   }
+}
+
+async function listAllMenuIds() {
+  const [rows] = await connection.query('SELECT id FROM base_sys_menu ORDER BY id ASC');
+  return (Array.isArray(rows) ? rows : [])
+    .map(item => Number(item.id))
+    .filter(item => Number.isInteger(item) && item > 0);
+}
+
+async function listAllDepartmentIds() {
+  const [rows] = await connection.query(
+    'SELECT id FROM base_sys_department ORDER BY id ASC'
+  );
+  return (Array.isArray(rows) ? rows : [])
+    .map(item => Number(item.id))
+    .filter(item => Number.isInteger(item) && item > 0);
 }
 
 async function upsertParam({ keyName, name, data, dataType = 0, remark = null }) {
@@ -349,6 +382,59 @@ async function syncStage2RuntimeMeta(extra = {}) {
     remark: '由 seed-stage2-performance.mjs 自动回写，用于 smoke 前置门禁校验',
   });
   return seedMeta;
+}
+
+async function upsertApprovalConfig({ objectType, version, enabled, nodes }) {
+  const existing = await queryOne(
+    'SELECT id FROM performance_approval_config WHERE objectType = ? LIMIT 1',
+    [objectType]
+  );
+
+  let configId = existing?.id || null;
+
+  if (configId) {
+    await connection.query(
+      `UPDATE performance_approval_config
+          SET version = ?, enabled = ?, notifyMode = 'interface_only', updateTime = ?
+        WHERE id = ?`,
+      [version, enabled ? 1 : 0, now(), configId]
+    );
+  } else {
+    const [result] = await connection.query(
+      `INSERT INTO performance_approval_config
+        (objectType, version, enabled, notifyMode, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, 'interface_only', ?, ?, NULL)`,
+      [objectType, version, enabled ? 1 : 0, now(), now()]
+    );
+    configId = result.insertId;
+  }
+
+  await connection.query(
+    'DELETE FROM performance_approval_config_node WHERE configId = ?',
+    [configId]
+  );
+
+  for (const item of nodes) {
+    await connection.query(
+      `INSERT INTO performance_approval_config_node
+        (configId, nodeOrder, nodeCode, nodeName, resolverType, resolverValue, timeoutHours, allowTransfer, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        configId,
+        item.nodeOrder,
+        item.nodeCode,
+        item.nodeName,
+        item.resolverType,
+        item.resolverValue ?? null,
+        item.timeoutHours ?? null,
+        item.allowTransfer ? 1 : 0,
+        now(),
+        now(),
+      ]
+    );
+  }
+
+  return configId;
 }
 
 async function collectMenuIds({ routers = [], perms = [] }) {
@@ -527,6 +613,104 @@ async function replaceGoals(seedRows) {
         ]
       );
     }
+  }
+}
+
+async function replaceGoalOpsSeed({ configs = [], plans = [], reports = [] }) {
+  const departmentIds = Array.from(
+    new Set(
+      [...configs, ...plans, ...reports]
+        .map(item => Number(item.departmentId))
+        .filter(item => Number.isInteger(item) && item > 0)
+    )
+  );
+
+  if (departmentIds.length) {
+    await connection.query(
+      'DELETE FROM performance_goal_ops_report WHERE departmentId IN (?)',
+      [departmentIds]
+    );
+    await connection.query(
+      'DELETE FROM performance_goal_ops_plan WHERE departmentId IN (?)',
+      [departmentIds]
+    );
+    await connection.query(
+      'DELETE FROM performance_goal_ops_department_config WHERE departmentId IN (?)',
+      [departmentIds]
+    );
+  }
+
+  for (const row of configs) {
+    await connection.query(
+      `INSERT INTO performance_goal_ops_department_config
+        (departmentId, assignTime, submitDeadline, reportSendTime, reportPushMode, reportPushTarget, updatedBy, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.departmentId,
+        row.assignTime,
+        row.submitDeadline,
+        row.reportSendTime,
+        row.reportPushMode,
+        row.reportPushTarget,
+        row.updatedBy,
+        now(),
+        now(),
+      ]
+    );
+  }
+
+  for (const row of plans) {
+    await connection.query(
+      `INSERT INTO performance_goal_ops_plan
+        (departmentId, employeeId, periodType, planDate, periodStartDate, periodEndDate, sourceType, title, description, targetValue, actualValue, unit, status, parentPlanId, isSystemGenerated, assignedBy, submittedBy, submittedAt, extJson, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.departmentId,
+        row.employeeId,
+        row.periodType,
+        row.planDate,
+        row.periodStartDate,
+        row.periodEndDate,
+        row.sourceType,
+        row.title,
+        row.description,
+        row.targetValue,
+        row.actualValue,
+        row.unit,
+        row.status,
+        row.parentPlanId,
+        row.isSystemGenerated,
+        row.assignedBy,
+        row.submittedBy,
+        row.submittedAt,
+        row.extJson,
+        now(),
+        now(),
+      ]
+    );
+  }
+
+  for (const row of reports) {
+    await connection.query(
+      `INSERT INTO performance_goal_ops_report
+        (departmentId, reportDate, status, summaryJson, generatedAt, sentAt, pushMode, pushTarget, generatedBy, operatedBy, operationRemark, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.departmentId,
+        row.reportDate,
+        row.status,
+        row.summaryJson,
+        row.generatedAt,
+        row.sentAt,
+        row.pushMode,
+        row.pushTarget,
+        row.generatedBy,
+        row.operatedBy,
+        row.operationRemark,
+        now(),
+        now(),
+      ]
+    );
   }
 }
 
@@ -1407,52 +1591,7 @@ async function replaceTeacherChannelAgentAuditData(seedRows) {
 }
 
 async function ensureCourseTables() {
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_course (
-      id int NOT NULL AUTO_INCREMENT,
-      title varchar(200) NOT NULL,
-      code varchar(100) DEFAULT NULL,
-      category varchar(100) DEFAULT NULL,
-      description text DEFAULT NULL,
-      startDate varchar(10) DEFAULT NULL,
-      endDate varchar(10) DEFAULT NULL,
-      status varchar(20) NOT NULL DEFAULT 'draft',
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uk_performance_course_code (code),
-      KEY idx_performance_course_title (title),
-      KEY idx_performance_course_category (category),
-      KEY idx_performance_course_status (status),
-      KEY idx_performance_course_create_time (createTime),
-      KEY idx_performance_course_update_time (updateTime),
-      KEY idx_performance_course_tenant (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_course_enrollment (
-      id int NOT NULL AUTO_INCREMENT,
-      courseId int NOT NULL,
-      userId int NOT NULL,
-      enrollTime varchar(19) DEFAULT NULL,
-      status varchar(50) DEFAULT NULL,
-      score decimal(8,2) DEFAULT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uk_performance_course_enrollment_course_user (courseId, userId),
-      KEY idx_performance_course_enrollment_course (courseId),
-      KEY idx_performance_course_enrollment_user (userId),
-      KEY idx_performance_course_enrollment_status (status),
-      KEY idx_performance_course_enrollment_enroll_time (enrollTime),
-      KEY idx_performance_course_enrollment_create_time (createTime),
-      KEY idx_performance_course_enrollment_update_time (updateTime),
-      KEY idx_performance_course_enrollment_tenant (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
+  // Performance schema is owned by formal migrations; seed only writes data.
 }
 
 async function replaceCourses(seedRows) {
@@ -1522,85 +1661,7 @@ async function replaceCourses(seedRows) {
 }
 
 async function ensureCourseLearningTables() {
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_course_recite (
-      id int NOT NULL AUTO_INCREMENT,
-      courseId int NOT NULL,
-      employeeId int NOT NULL,
-      courseTitle varchar(200) NOT NULL,
-      title varchar(200) NOT NULL,
-      taskType varchar(20) NOT NULL DEFAULT 'recite',
-      promptText text DEFAULT NULL,
-      submissionText text DEFAULT NULL,
-      status varchar(20) NOT NULL DEFAULT 'pending',
-      latestScore decimal(8,2) DEFAULT NULL,
-      feedbackSummary varchar(500) DEFAULT NULL,
-      submittedAt varchar(19) DEFAULT NULL,
-      evaluatedAt varchar(19) DEFAULT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uk_performance_course_recite_scope (courseId, employeeId, title),
-      KEY idx_performance_course_recite_course_id (courseId),
-      KEY idx_performance_course_recite_employee_id (employeeId),
-      KEY idx_performance_course_recite_status (status),
-      KEY idx_performance_course_recite_update_time (updateTime),
-      KEY idx_performance_course_recite_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_course_practice (
-      id int NOT NULL AUTO_INCREMENT,
-      courseId int NOT NULL,
-      employeeId int NOT NULL,
-      courseTitle varchar(200) NOT NULL,
-      title varchar(200) NOT NULL,
-      taskType varchar(20) NOT NULL DEFAULT 'practice',
-      promptText text DEFAULT NULL,
-      submissionText text DEFAULT NULL,
-      status varchar(20) NOT NULL DEFAULT 'pending',
-      latestScore decimal(8,2) DEFAULT NULL,
-      feedbackSummary varchar(500) DEFAULT NULL,
-      submittedAt varchar(19) DEFAULT NULL,
-      evaluatedAt varchar(19) DEFAULT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uk_performance_course_practice_scope (courseId, employeeId, title),
-      KEY idx_performance_course_practice_course_id (courseId),
-      KEY idx_performance_course_practice_employee_id (employeeId),
-      KEY idx_performance_course_practice_status (status),
-      KEY idx_performance_course_practice_update_time (updateTime),
-      KEY idx_performance_course_practice_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_course_exam (
-      id int NOT NULL AUTO_INCREMENT,
-      courseId int NOT NULL,
-      employeeId int NOT NULL,
-      courseTitle varchar(200) NOT NULL,
-      resultStatus varchar(20) NOT NULL DEFAULT 'locked',
-      latestScore decimal(8,2) DEFAULT NULL,
-      passThreshold decimal(8,2) DEFAULT NULL,
-      summaryText varchar(500) DEFAULT NULL,
-      updatedAt varchar(19) DEFAULT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uk_performance_course_exam_scope (courseId, employeeId),
-      KEY idx_performance_course_exam_course_id (courseId),
-      KEY idx_performance_course_exam_employee_id (employeeId),
-      KEY idx_performance_course_exam_status (resultStatus),
-      KEY idx_performance_course_exam_update_time (updateTime),
-      KEY idx_performance_course_exam_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
+  // Performance schema is owned by formal migrations; seed only writes data.
 }
 
 async function replaceCourseTaskRows(tableName, seedRows) {
@@ -1615,14 +1676,13 @@ async function replaceCourseTaskRows(tableName, seedRows) {
 
     await connection.query(
       `INSERT INTO ${tableName}
-        (courseId, employeeId, courseTitle, title, taskType, promptText, submissionText, status, latestScore, feedbackSummary, submittedAt, evaluatedAt, createTime, updateTime, tenantId)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+        (courseId, employeeId, courseTitle, title, promptText, submissionText, status, latestScore, feedbackSummary, submittedAt, evaluatedAt, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
       [
         row.courseId,
         row.employeeId,
         row.courseTitle,
         row.title,
-        row.taskType,
         row.promptText ?? null,
         row.submissionText ?? null,
         row.status,
@@ -1862,6 +1922,60 @@ async function replaceKnowledgeQas(seedRows) {
   return inserted;
 }
 
+async function ensureOfficeCollabTable() {
+  // Performance schema is owned by formal migrations; seed only writes data.
+}
+
+async function replaceOfficeCollabRecords(seedRows) {
+  await ensureOfficeCollabTable();
+  const recordNos = seedRows.map(item => item.recordNo).filter(Boolean);
+
+  if (recordNos.length) {
+    await connection.query(
+      'DELETE FROM performance_office_collab WHERE recordNo IN (?)',
+      [recordNos]
+    );
+  }
+
+  const inserted = [];
+
+  for (const row of seedRows) {
+    const [result] = await connection.query(
+      `INSERT INTO performance_office_collab
+        (moduleKey, recordNo, title, status, department, ownerName, assigneeName, category, priority, version, dueDate, eventDate, progressValue, scoreValue, relatedDocumentId, extJson, notes, createTime, updateTime, tenantId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        row.moduleKey,
+        row.recordNo,
+        row.title,
+        row.status,
+        row.department ?? null,
+        row.ownerName ?? null,
+        row.assigneeName ?? null,
+        row.category ?? null,
+        row.priority ?? null,
+        row.version ?? null,
+        row.dueDate ?? null,
+        row.eventDate ?? null,
+        row.progressValue ?? 0,
+        row.scoreValue ?? 0,
+        row.relatedDocumentId ?? null,
+        JSON.stringify(row.extra || {}),
+        row.notes ?? null,
+        now(),
+        now(),
+      ]
+    );
+
+    inserted.push({
+      id: result.insertId,
+      ...row,
+    });
+  }
+
+  return inserted;
+}
+
 async function replaceSuppliers(seedRows) {
   const names = seedRows.map(item => item.name);
   const codes = seedRows.map(item => item.code).filter(Boolean);
@@ -1987,118 +2101,7 @@ async function replacePurchaseOrders(seedRows) {
 }
 
 async function ensureCapabilityTables() {
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_capability_model (
-      id int NOT NULL AUTO_INCREMENT,
-      name varchar(200) NOT NULL,
-      code varchar(100) DEFAULT NULL,
-      category varchar(100) DEFAULT NULL,
-      description text DEFAULT NULL,
-      status varchar(20) NOT NULL DEFAULT 'draft',
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uk_performance_capability_model_code (code),
-      KEY idx_performance_capability_model_name (name),
-      KEY idx_performance_capability_model_category (category),
-      KEY idx_performance_capability_model_status (status),
-      KEY idx_performance_capability_model_create_time (createTime),
-      KEY idx_performance_capability_model_update_time (updateTime),
-      KEY idx_performance_capability_model_tenant (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_capability_item (
-      id int NOT NULL AUTO_INCREMENT,
-      modelId int NOT NULL,
-      name varchar(200) NOT NULL,
-      level varchar(50) DEFAULT NULL,
-      description text DEFAULT NULL,
-      evidenceHint text DEFAULT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uk_performance_capability_item_model_name (modelId, name),
-      KEY idx_performance_capability_item_model_id (modelId),
-      KEY idx_performance_capability_item_level (level),
-      KEY idx_performance_capability_item_update_time (updateTime),
-      KEY idx_performance_capability_item_tenant (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_capability_portrait (
-      id int NOT NULL AUTO_INCREMENT,
-      employeeId int NOT NULL,
-      departmentId int DEFAULT NULL,
-      capabilityTags json DEFAULT NULL,
-      levelSummary json DEFAULT NULL,
-      updatedAt varchar(19) NOT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uk_performance_capability_portrait_employee (employeeId),
-      KEY idx_performance_capability_portrait_department_id (departmentId),
-      KEY idx_performance_capability_portrait_updated_at (updatedAt),
-      KEY idx_performance_capability_portrait_tenant (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_certificate (
-      id int NOT NULL AUTO_INCREMENT,
-      name varchar(200) NOT NULL,
-      code varchar(100) DEFAULT NULL,
-      category varchar(100) DEFAULT NULL,
-      issuer varchar(200) DEFAULT NULL,
-      description text DEFAULT NULL,
-      validityMonths int DEFAULT NULL,
-      sourceCourseId int DEFAULT NULL,
-      status varchar(20) NOT NULL DEFAULT 'draft',
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uk_performance_certificate_code (code),
-      KEY idx_performance_certificate_name (name),
-      KEY idx_performance_certificate_category (category),
-      KEY idx_performance_certificate_status (status),
-      KEY idx_performance_certificate_source_course_id (sourceCourseId),
-      KEY idx_performance_certificate_update_time (updateTime),
-      KEY idx_performance_certificate_tenant (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_certificate_record (
-      id int NOT NULL AUTO_INCREMENT,
-      certificateId int NOT NULL,
-      employeeId int NOT NULL,
-      departmentId int DEFAULT NULL,
-      sourceCourseId int DEFAULT NULL,
-      issuedAt varchar(19) NOT NULL,
-      issuedById int NOT NULL,
-      issuedBy varchar(100) NOT NULL,
-      remark text DEFAULT NULL,
-      status varchar(20) NOT NULL DEFAULT 'issued',
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      KEY idx_performance_certificate_record_certificate_id (certificateId),
-      KEY idx_performance_certificate_record_employee_id (employeeId),
-      KEY idx_performance_certificate_record_department_id (departmentId),
-      KEY idx_performance_certificate_record_source_course_id (sourceCourseId),
-      KEY idx_performance_certificate_record_issued_at (issuedAt),
-      KEY idx_performance_certificate_record_status (status),
-      KEY idx_performance_certificate_record_update_time (updateTime),
-      KEY idx_performance_certificate_record_tenant (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
+  // Performance schema is owned by formal migrations; seed only writes data.
 }
 
 async function replaceCapabilitySeedData({
@@ -2308,1210 +2311,63 @@ async function replaceCapabilitySeedData({
 }
 
 async function ensureInterviewTable() {
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_interview (
-      id int NOT NULL AUTO_INCREMENT,
-      candidateName varchar(100) NOT NULL,
-      position varchar(100) NOT NULL,
-      departmentId int DEFAULT NULL,
-      interviewerId int NOT NULL,
-      interviewDate varchar(19) NOT NULL,
-      interviewType varchar(20) DEFAULT NULL,
-      score decimal(5,2) DEFAULT NULL,
-      status varchar(20) NOT NULL DEFAULT 'scheduled',
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      KEY idx_performance_interview_candidate_name (candidateName),
-      KEY idx_performance_interview_department_id (departmentId),
-      KEY idx_performance_interview_interviewer_id (interviewerId),
-      KEY idx_performance_interview_interview_date (interviewDate),
-      KEY idx_performance_interview_status (status),
-      KEY idx_performance_interview_create_time (createTime),
-      KEY idx_performance_interview_update_time (updateTime),
-      KEY idx_performance_interview_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
+  // Performance schema is owned by formal migrations; seed only writes data.
+}
 
-  await ensureTableColumn(
-    'performance_interview',
-    'resumePoolId',
-    '`resumePoolId` int DEFAULT NULL'
-  );
-  await ensureTableColumn(
-    'performance_interview',
-    'recruitPlanId',
-    '`recruitPlanId` int DEFAULT NULL'
-  );
-  await ensureTableColumn(
-    'performance_interview',
-    'resumePoolSnapshot',
-    '`resumePoolSnapshot` json DEFAULT NULL'
-  );
-  await ensureTableColumn(
-    'performance_interview',
-    'recruitPlanSnapshot',
-    '`recruitPlanSnapshot` json DEFAULT NULL'
-  );
+async function ensureGoalPlanTables() {
+  // Performance schema is owned by formal migrations; seed only writes data.
 }
 
 async function ensureMeetingTable() {
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_meeting (
-      id int NOT NULL AUTO_INCREMENT,
-      title varchar(200) NOT NULL,
-      code varchar(100) DEFAULT NULL,
-      type varchar(100) DEFAULT NULL,
-      description text DEFAULT NULL,
-      startDate varchar(19) NOT NULL,
-      endDate varchar(19) NOT NULL,
-      location varchar(200) DEFAULT NULL,
-      organizerId int NOT NULL,
-      participantIds json DEFAULT NULL,
-      participantCount int NOT NULL DEFAULT 0,
-      status varchar(20) NOT NULL DEFAULT 'scheduled',
-      lastCheckInTime varchar(19) DEFAULT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      KEY idx_performance_meeting_title (title),
-      KEY idx_performance_meeting_code (code),
-      KEY idx_performance_meeting_start_date (startDate),
-      KEY idx_performance_meeting_end_date (endDate),
-      KEY idx_performance_meeting_organizer_id (organizerId),
-      KEY idx_performance_meeting_status (status),
-      KEY idx_performance_meeting_last_check_in_time (lastCheckInTime),
-      KEY idx_performance_meeting_create_time (createTime),
-      KEY idx_performance_meeting_update_time (updateTime),
-      KEY idx_performance_meeting_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
+  // Performance schema is owned by formal migrations; seed only writes data.
 }
 
 async function ensureTalentAssetTable() {
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_talent_asset (
-      id int NOT NULL AUTO_INCREMENT,
-      candidateName varchar(100) NOT NULL,
-      code varchar(100) DEFAULT NULL,
-      targetDepartmentId int NOT NULL,
-      targetPosition varchar(100) DEFAULT NULL,
-      source varchar(100) NOT NULL,
-      tagList json DEFAULT NULL,
-      followUpSummary text DEFAULT NULL,
-      nextFollowUpDate varchar(19) DEFAULT NULL,
-      status varchar(20) NOT NULL DEFAULT 'new',
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uk_performance_talent_asset_code (code),
-      KEY idx_performance_talent_asset_candidate_name (candidateName),
-      KEY idx_performance_talent_asset_target_department_id (targetDepartmentId),
-      KEY idx_performance_talent_asset_status (status),
-      KEY idx_performance_talent_asset_create_time (createTime),
-      KEY idx_performance_talent_asset_update_time (updateTime),
-      KEY idx_performance_talent_asset_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
+  // Performance schema is owned by formal migrations; seed only writes data.
 }
 
 async function ensureResumePoolTable() {
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_resume_pool (
-      id int NOT NULL AUTO_INCREMENT,
-      candidateName varchar(100) NOT NULL,
-      targetDepartmentId int NOT NULL,
-      targetPosition varchar(100) DEFAULT NULL,
-      phone varchar(30) NOT NULL,
-      email varchar(100) DEFAULT NULL,
-      resumeText text NOT NULL,
-      sourceType varchar(20) NOT NULL,
-      sourceRemark text DEFAULT NULL,
-      externalLink varchar(500) DEFAULT NULL,
-      attachmentIdList json DEFAULT NULL,
-      status varchar(20) NOT NULL DEFAULT 'new',
-      linkedTalentAssetId int DEFAULT NULL,
-      latestInterviewId int DEFAULT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      KEY idx_performance_resume_pool_candidate_name (candidateName),
-      KEY idx_performance_resume_pool_target_department_id (targetDepartmentId),
-      KEY idx_performance_resume_pool_phone (phone),
-      KEY idx_performance_resume_pool_email (email),
-      KEY idx_performance_resume_pool_source_type (sourceType),
-      KEY idx_performance_resume_pool_status (status),
-      KEY idx_performance_resume_pool_linked_talent_asset_id (linkedTalentAssetId),
-      KEY idx_performance_resume_pool_latest_interview_id (latestInterviewId),
-      KEY idx_performance_resume_pool_create_time (createTime),
-      KEY idx_performance_resume_pool_update_time (updateTime),
-      KEY idx_performance_resume_pool_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await ensureTableColumn(
-    'performance_resume_pool',
-    'recruitPlanId',
-    '`recruitPlanId` int DEFAULT NULL'
-  );
-  await ensureTableColumn(
-    'performance_resume_pool',
-    'jobStandardId',
-    '`jobStandardId` int DEFAULT NULL'
-  );
-  await ensureTableColumn(
-    'performance_resume_pool',
-    'recruitPlanSnapshot',
-    '`recruitPlanSnapshot` json DEFAULT NULL'
-  );
-  await ensureTableColumn(
-    'performance_resume_pool',
-    'jobStandardSnapshot',
-    '`jobStandardSnapshot` json DEFAULT NULL'
-  );
+  // Performance schema is owned by formal migrations; seed only writes data.
 }
 
 async function ensureHiringTable() {
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_hiring (
-      id int NOT NULL AUTO_INCREMENT,
-      candidateName varchar(100) NOT NULL,
-      targetDepartmentId int NOT NULL,
-      targetPosition varchar(100) DEFAULT NULL,
-      decisionContent text DEFAULT NULL,
-      sourceType varchar(30) DEFAULT NULL,
-      sourceId int DEFAULT NULL,
-      sourceSnapshot json DEFAULT NULL,
-      status varchar(20) NOT NULL DEFAULT 'offered',
-      offeredAt varchar(19) DEFAULT NULL,
-      acceptedAt varchar(19) DEFAULT NULL,
-      rejectedAt varchar(19) DEFAULT NULL,
-      closedAt varchar(19) DEFAULT NULL,
-      closeReason text DEFAULT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      KEY idx_performance_hiring_candidate_name (candidateName),
-      KEY idx_performance_hiring_target_department_id (targetDepartmentId),
-      KEY idx_performance_hiring_source_type (sourceType),
-      KEY idx_performance_hiring_source_id (sourceId),
-      KEY idx_performance_hiring_status (status),
-      KEY idx_performance_hiring_offered_at (offeredAt),
-      KEY idx_performance_hiring_accepted_at (acceptedAt),
-      KEY idx_performance_hiring_rejected_at (rejectedAt),
-      KEY idx_performance_hiring_closed_at (closedAt),
-      KEY idx_performance_hiring_create_time (createTime),
-      KEY idx_performance_hiring_update_time (updateTime),
-      KEY idx_performance_hiring_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await ensureTableColumn(
-    'performance_hiring',
-    'interviewId',
-    '`interviewId` int DEFAULT NULL'
-  );
-  await ensureTableColumn(
-    'performance_hiring',
-    'resumePoolId',
-    '`resumePoolId` int DEFAULT NULL'
-  );
-  await ensureTableColumn(
-    'performance_hiring',
-    'recruitPlanId',
-    '`recruitPlanId` int DEFAULT NULL'
-  );
-  await ensureTableColumn(
-    'performance_hiring',
-    'interviewSnapshot',
-    '`interviewSnapshot` json DEFAULT NULL'
-  );
-  await ensureTableColumn(
-    'performance_hiring',
-    'resumePoolSnapshot',
-    '`resumePoolSnapshot` json DEFAULT NULL'
-  );
-  await ensureTableColumn(
-    'performance_hiring',
-    'recruitPlanSnapshot',
-    '`recruitPlanSnapshot` json DEFAULT NULL'
-  );
+  // Performance schema is owned by formal migrations; seed only writes data.
 }
 
 async function ensureRecruitPlanTable() {
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_recruit_plan (
-      id int NOT NULL AUTO_INCREMENT,
-      title varchar(200) NOT NULL,
-      targetDepartmentId int NOT NULL,
-      positionName varchar(100) NOT NULL,
-      headcount int NOT NULL,
-      startDate varchar(10) NOT NULL,
-      endDate varchar(10) NOT NULL,
-      recruiterId int DEFAULT NULL,
-      requirementSummary text DEFAULT NULL,
-      status varchar(20) NOT NULL DEFAULT 'draft',
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      KEY idx_performance_recruit_plan_title (title),
-      KEY idx_performance_recruit_plan_target_department_id (targetDepartmentId),
-      KEY idx_performance_recruit_plan_position_name (positionName),
-      KEY idx_performance_recruit_plan_start_date (startDate),
-      KEY idx_performance_recruit_plan_end_date (endDate),
-      KEY idx_performance_recruit_plan_recruiter_id (recruiterId),
-      KEY idx_performance_recruit_plan_status (status),
-      KEY idx_performance_recruit_plan_create_time (createTime),
-      KEY idx_performance_recruit_plan_update_time (updateTime),
-      KEY idx_performance_recruit_plan_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await ensureTableColumn(
-    'performance_recruit_plan',
-    'jobStandardId',
-    '`jobStandardId` int DEFAULT NULL'
-  );
-  await ensureTableColumn(
-    'performance_recruit_plan',
-    'jobStandardSnapshot',
-    '`jobStandardSnapshot` json DEFAULT NULL'
-  );
+  // Performance schema is owned by formal migrations; seed only writes data.
 }
 
 async function ensureJobStandardTable() {
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_job_standard (
-      id int NOT NULL AUTO_INCREMENT,
-      positionName varchar(100) NOT NULL,
-      targetDepartmentId int NOT NULL,
-      jobLevel varchar(100) DEFAULT NULL,
-      profileSummary text DEFAULT NULL,
-      requirementSummary text DEFAULT NULL,
-      skillTagList json DEFAULT NULL,
-      interviewTemplateSummary text DEFAULT NULL,
-      status varchar(20) NOT NULL DEFAULT 'draft',
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      KEY idx_performance_job_standard_position_name (positionName),
-      KEY idx_performance_job_standard_target_department_id (targetDepartmentId),
-      KEY idx_performance_job_standard_status (status),
-      KEY idx_performance_job_standard_create_time (createTime),
-      KEY idx_performance_job_standard_update_time (updateTime),
-      KEY idx_performance_job_standard_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
+  // Performance schema is owned by formal migrations; seed only writes data.
 }
 
 async function ensureTeacherChannelTables() {
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_teacher_info (
-      id int NOT NULL AUTO_INCREMENT,
-      teacherName varchar(100) NOT NULL,
-      phone varchar(20) DEFAULT NULL,
-      wechat varchar(50) DEFAULT NULL,
-      schoolName varchar(100) DEFAULT NULL,
-      schoolRegion varchar(100) DEFAULT NULL,
-      schoolType varchar(100) DEFAULT NULL,
-      grade varchar(50) DEFAULT NULL,
-      className varchar(100) DEFAULT NULL,
-      subject varchar(50) DEFAULT NULL,
-      projectTags json DEFAULT NULL,
-      intentionLevel varchar(30) DEFAULT NULL,
-      communicationStyle varchar(50) DEFAULT NULL,
-      cooperationStatus varchar(20) NOT NULL DEFAULT 'uncontacted',
-      ownerEmployeeId int NOT NULL,
-      ownerDepartmentId int NOT NULL,
-      lastFollowTime varchar(19) DEFAULT NULL,
-      nextFollowTime varchar(19) DEFAULT NULL,
-      cooperationTime varchar(19) DEFAULT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      KEY idx_performance_teacher_info_teacher_name (teacherName),
-      KEY idx_performance_teacher_info_school_name (schoolName),
-      KEY idx_performance_teacher_info_cooperation_status (cooperationStatus),
-      KEY idx_performance_teacher_info_owner_employee_id (ownerEmployeeId),
-      KEY idx_performance_teacher_info_owner_department_id (ownerDepartmentId),
-      KEY idx_performance_teacher_info_last_follow_time (lastFollowTime),
-      KEY idx_performance_teacher_info_next_follow_time (nextFollowTime),
-      KEY idx_performance_teacher_info_cooperation_time (cooperationTime),
-      KEY idx_performance_teacher_info_create_time (createTime),
-      KEY idx_performance_teacher_info_update_time (updateTime),
-      KEY idx_performance_teacher_info_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_teacher_follow (
-      id int NOT NULL AUTO_INCREMENT,
-      teacherId int NOT NULL,
-      followTime varchar(19) NOT NULL,
-      nextFollowTime varchar(19) DEFAULT NULL,
-      followMethod varchar(50) DEFAULT NULL,
-      followContent text NOT NULL,
-      creatorEmployeeId int NOT NULL,
-      creatorEmployeeName varchar(100) NOT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      KEY idx_performance_teacher_follow_teacher_id (teacherId),
-      KEY idx_performance_teacher_follow_follow_time (followTime),
-      KEY idx_performance_teacher_follow_next_follow_time (nextFollowTime),
-      KEY idx_performance_teacher_follow_creator_employee_id (creatorEmployeeId),
-      KEY idx_performance_teacher_follow_create_time (createTime),
-      KEY idx_performance_teacher_follow_update_time (updateTime),
-      KEY idx_performance_teacher_follow_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_teacher_class (
-      id int NOT NULL AUTO_INCREMENT,
-      teacherId int NOT NULL,
-      teacherName varchar(100) NOT NULL,
-      className varchar(100) NOT NULL,
-      schoolName varchar(100) DEFAULT NULL,
-      grade varchar(50) DEFAULT NULL,
-      projectTag varchar(50) DEFAULT NULL,
-      studentCount int NOT NULL DEFAULT 0,
-      status varchar(20) NOT NULL DEFAULT 'draft',
-      ownerEmployeeId int NOT NULL,
-      ownerDepartmentId int NOT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      KEY idx_performance_teacher_class_teacher_id (teacherId),
-      KEY idx_performance_teacher_class_status (status),
-      KEY idx_performance_teacher_class_owner_employee_id (ownerEmployeeId),
-      KEY idx_performance_teacher_class_owner_department_id (ownerDepartmentId),
-      KEY idx_performance_teacher_class_create_time (createTime),
-      KEY idx_performance_teacher_class_update_time (updateTime),
-      KEY idx_performance_teacher_class_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_teacher_agent (
-      id int NOT NULL AUTO_INCREMENT,
-      name varchar(100) NOT NULL,
-      agentType varchar(20) NOT NULL,
-      level varchar(30) DEFAULT NULL,
-      region varchar(50) DEFAULT NULL,
-      cooperationStatus varchar(30) DEFAULT NULL,
-      status varchar(20) NOT NULL DEFAULT 'active',
-      blacklistStatus varchar(20) NOT NULL DEFAULT 'normal',
-      remark text DEFAULT NULL,
-      ownerEmployeeId int NOT NULL,
-      ownerDepartmentId int NOT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      KEY idx_performance_teacher_agent_name (name),
-      KEY idx_performance_teacher_agent_agent_type (agentType),
-      KEY idx_performance_teacher_agent_status (status),
-      KEY idx_performance_teacher_agent_blacklist_status (blacklistStatus),
-      KEY idx_performance_teacher_agent_owner_employee_id (ownerEmployeeId),
-      KEY idx_performance_teacher_agent_owner_department_id (ownerDepartmentId),
-      KEY idx_performance_teacher_agent_create_time (createTime),
-      KEY idx_performance_teacher_agent_update_time (updateTime),
-      KEY idx_performance_teacher_agent_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_teacher_agent_relation (
-      id int NOT NULL AUTO_INCREMENT,
-      parentAgentId int NOT NULL,
-      childAgentId int NOT NULL,
-      status varchar(20) NOT NULL DEFAULT 'active',
-      effectiveTime varchar(19) DEFAULT NULL,
-      remark text DEFAULT NULL,
-      ownerEmployeeId int NOT NULL,
-      ownerDepartmentId int NOT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      KEY idx_performance_teacher_agent_relation_parent_agent_id (parentAgentId),
-      KEY idx_performance_teacher_agent_relation_child_agent_id (childAgentId),
-      KEY idx_performance_teacher_agent_relation_status (status),
-      KEY idx_performance_teacher_agent_relation_owner_employee_id (ownerEmployeeId),
-      KEY idx_performance_teacher_agent_relation_owner_department_id (ownerDepartmentId),
-      KEY idx_performance_teacher_agent_relation_create_time (createTime),
-      KEY idx_performance_teacher_agent_relation_update_time (updateTime),
-      KEY idx_performance_teacher_agent_relation_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_teacher_attribution (
-      id int NOT NULL AUTO_INCREMENT,
-      teacherId int NOT NULL,
-      agentId int DEFAULT NULL,
-      attributionType varchar(20) NOT NULL,
-      status varchar(20) NOT NULL DEFAULT 'active',
-      sourceType varchar(30) DEFAULT NULL,
-      sourceRemark text DEFAULT NULL,
-      effectiveTime varchar(19) DEFAULT NULL,
-      operatorId int DEFAULT NULL,
-      operatorName varchar(100) DEFAULT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      KEY idx_performance_teacher_attribution_teacher_id (teacherId),
-      KEY idx_performance_teacher_attribution_agent_id (agentId),
-      KEY idx_performance_teacher_attribution_status (status),
-      KEY idx_performance_teacher_attribution_effective_time (effectiveTime),
-      KEY idx_performance_teacher_attribution_operator_id (operatorId),
-      KEY idx_performance_teacher_attribution_create_time (createTime),
-      KEY idx_performance_teacher_attribution_update_time (updateTime),
-      KEY idx_performance_teacher_attribution_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_teacher_attribution_conflict (
-      id int NOT NULL AUTO_INCREMENT,
-      teacherId int NOT NULL,
-      candidateAgentIds json DEFAULT NULL,
-      status varchar(20) NOT NULL DEFAULT 'open',
-      resolution varchar(30) DEFAULT NULL,
-      resolutionRemark text DEFAULT NULL,
-      resolvedBy int DEFAULT NULL,
-      resolvedTime varchar(19) DEFAULT NULL,
-      currentAgentId int DEFAULT NULL,
-      requestedAgentId int DEFAULT NULL,
-      requestedById int DEFAULT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      KEY idx_performance_teacher_attribution_conflict_teacher_id (teacherId),
-      KEY idx_performance_teacher_attribution_conflict_status (status),
-      KEY idx_performance_teacher_attribution_conflict_resolved_by (resolvedBy),
-      KEY idx_performance_teacher_attribution_conflict_resolved_time (resolvedTime),
-      KEY idx_performance_teacher_attribution_conflict_current_agent_id (currentAgentId),
-      KEY idx_performance_teacher_attribution_conflict_requested_agent_id (requestedAgentId),
-      KEY idx_performance_teacher_attribution_conflict_requested_by_id (requestedById),
-      KEY idx_performance_teacher_attribution_conflict_create_time (createTime),
-      KEY idx_performance_teacher_attribution_conflict_update_time (updateTime),
-      KEY idx_performance_teacher_attribution_conflict_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_teacher_agent_audit (
-      id int NOT NULL AUTO_INCREMENT,
-      resourceType varchar(30) NOT NULL,
-      resourceId int NOT NULL,
-      action varchar(30) NOT NULL,
-      beforeSnapshot json DEFAULT NULL,
-      afterSnapshot json DEFAULT NULL,
-      operatorId int NOT NULL,
-      operatorName varchar(100) NOT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      KEY idx_performance_teacher_agent_audit_resource_type (resourceType),
-      KEY idx_performance_teacher_agent_audit_resource_id (resourceId),
-      KEY idx_performance_teacher_agent_audit_action (action),
-      KEY idx_performance_teacher_agent_audit_operator_id (operatorId),
-      KEY idx_performance_teacher_agent_audit_create_time (createTime),
-      KEY idx_performance_teacher_agent_audit_update_time (updateTime),
-      KEY idx_performance_teacher_agent_audit_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
+  // Performance schema is owned by formal migrations; seed only writes data.
 }
 
 async function ensureContractTable() {
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_contract (
-      id int NOT NULL AUTO_INCREMENT,
-      employeeId int NOT NULL,
-      type varchar(20) NOT NULL,
-      title varchar(200) DEFAULT NULL,
-      contractNumber varchar(50) DEFAULT NULL,
-      startDate varchar(10) NOT NULL,
-      endDate varchar(10) NOT NULL,
-      probationPeriod int DEFAULT NULL,
-      salary decimal(10,2) DEFAULT NULL,
-      position varchar(100) DEFAULT NULL,
-      departmentId int DEFAULT NULL,
-      status varchar(20) NOT NULL DEFAULT 'draft',
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      KEY idx_performance_contract_employee_id (employeeId),
-      KEY idx_performance_contract_type (type),
-      KEY idx_performance_contract_contract_number (contractNumber),
-      KEY idx_performance_contract_start_date (startDate),
-      KEY idx_performance_contract_end_date (endDate),
-      KEY idx_performance_contract_department_id (departmentId),
-      KEY idx_performance_contract_status (status),
-      KEY idx_performance_contract_create_time (createTime),
-      KEY idx_performance_contract_update_time (updateTime),
-      KEY idx_performance_contract_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
+  // Performance schema is owned by formal migrations; seed only writes data.
 }
 
 async function ensureOfficeKnowledgeTables() {
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_document_center (
-      id int NOT NULL AUTO_INCREMENT,
-      fileNo varchar(64) NOT NULL,
-      fileName varchar(200) NOT NULL,
-      category varchar(32) NOT NULL,
-      fileType varchar(32) NOT NULL,
-      storage varchar(32) NOT NULL,
-      confidentiality varchar(32) NOT NULL,
-      ownerName varchar(100) NOT NULL,
-      department varchar(100) NOT NULL,
-      status varchar(32) NOT NULL DEFAULT 'draft',
-      version varchar(32) NOT NULL,
-      sizeMb decimal(10,2) NOT NULL DEFAULT 0,
-      downloadCount int NOT NULL DEFAULT 0,
-      expireDate varchar(10) DEFAULT NULL,
-      tags text DEFAULT NULL,
-      notes text DEFAULT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uk_performance_document_center_file_no (fileNo),
-      KEY idx_performance_document_center_file_name (fileName),
-      KEY idx_performance_document_center_category (category),
-      KEY idx_performance_document_center_file_type (fileType),
-      KEY idx_performance_document_center_storage (storage),
-      KEY idx_performance_document_center_confidentiality (confidentiality),
-      KEY idx_performance_document_center_status (status),
-      KEY idx_performance_document_center_create_time (createTime),
-      KEY idx_performance_document_center_update_time (updateTime),
-      KEY idx_performance_document_center_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_knowledge_base (
-      id int NOT NULL AUTO_INCREMENT,
-      kbNo varchar(64) NOT NULL,
-      title varchar(200) NOT NULL,
-      category varchar(64) NOT NULL,
-      summary text NOT NULL,
-      ownerName varchar(100) NOT NULL,
-      status varchar(32) NOT NULL DEFAULT 'draft',
-      tags text DEFAULT NULL,
-      relatedFileIds text DEFAULT NULL,
-      relatedTopics text DEFAULT NULL,
-      importance int NOT NULL DEFAULT 70,
-      viewCount int NOT NULL DEFAULT 0,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uk_performance_knowledge_base_kb_no (kbNo),
-      KEY idx_performance_knowledge_base_title (title),
-      KEY idx_performance_knowledge_base_category (category),
-      KEY idx_performance_knowledge_base_status (status),
-      KEY idx_performance_knowledge_base_create_time (createTime),
-      KEY idx_performance_knowledge_base_update_time (updateTime),
-      KEY idx_performance_knowledge_base_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_knowledge_qa (
-      id int NOT NULL AUTO_INCREMENT,
-      question varchar(500) NOT NULL,
-      answer text NOT NULL,
-      relatedKnowledgeIds text DEFAULT NULL,
-      relatedFileIds text DEFAULT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      KEY idx_performance_knowledge_qa_question (question(191)),
-      KEY idx_performance_knowledge_qa_create_time (createTime),
-      KEY idx_performance_knowledge_qa_update_time (updateTime),
-      KEY idx_performance_knowledge_qa_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
+  // Performance schema is owned by formal migrations; seed only writes data.
 }
 
 async function ensureProcurementTables() {
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_supplier (
-      id int NOT NULL AUTO_INCREMENT,
-      name varchar(200) NOT NULL,
-      code varchar(100) DEFAULT NULL,
-      category varchar(100) DEFAULT NULL,
-      contactName varchar(100) DEFAULT NULL,
-      contactPhone varchar(50) DEFAULT NULL,
-      contactEmail varchar(100) DEFAULT NULL,
-      bankAccount varchar(100) DEFAULT NULL,
-      taxNo varchar(100) DEFAULT NULL,
-      remark text DEFAULT NULL,
-      status varchar(20) NOT NULL DEFAULT 'active',
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uk_performance_supplier_code (code),
-      KEY idx_performance_supplier_name (name),
-      KEY idx_performance_supplier_category (category),
-      KEY idx_performance_supplier_status (status),
-      KEY idx_performance_supplier_create_time (createTime),
-      KEY idx_performance_supplier_update_time (updateTime),
-      KEY idx_performance_supplier_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_purchase_order (
-      id int NOT NULL AUTO_INCREMENT,
-      orderNo varchar(100) DEFAULT NULL,
-      title varchar(200) NOT NULL,
-      supplierId int NOT NULL,
-      departmentId int NOT NULL,
-      requesterId int NOT NULL,
-      orderDate varchar(10) NOT NULL,
-      totalAmount decimal(12,2) NOT NULL,
-      currency varchar(20) NOT NULL DEFAULT 'CNY',
-      remark text DEFAULT NULL,
-      status varchar(20) NOT NULL DEFAULT 'draft',
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uk_performance_purchase_order_order_no (orderNo),
-      KEY idx_performance_purchase_order_title (title),
-      KEY idx_performance_purchase_order_supplier_id (supplierId),
-      KEY idx_performance_purchase_order_department_id (departmentId),
-      KEY idx_performance_purchase_order_requester_id (requesterId),
-      KEY idx_performance_purchase_order_order_date (orderDate),
-      KEY idx_performance_purchase_order_status (status),
-      KEY idx_performance_purchase_order_create_time (createTime),
-      KEY idx_performance_purchase_order_update_time (updateTime),
-      KEY idx_performance_purchase_order_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await ensureTableColumn(
-    'performance_purchase_order',
-    'expectedDeliveryDate',
-    '`expectedDeliveryDate` varchar(10) DEFAULT NULL'
-  );
-  await ensureTableColumn(
-    'performance_purchase_order',
-    'approvedBy',
-    '`approvedBy` int DEFAULT NULL'
-  );
-  await ensureTableColumn(
-    'performance_purchase_order',
-    'approvedAt',
-    '`approvedAt` varchar(19) DEFAULT NULL'
-  );
-  await ensureTableColumn(
-    'performance_purchase_order',
-    'approvalRemark',
-    '`approvalRemark` text DEFAULT NULL'
-  );
-  await ensureTableColumn(
-    'performance_purchase_order',
-    'closedReason',
-    '`closedReason` text DEFAULT NULL'
-  );
-  await ensureTableColumn(
-    'performance_purchase_order',
-    'receivedQuantity',
-    '`receivedQuantity` decimal(12,2) NOT NULL DEFAULT 0'
-  );
-  await ensureTableColumn(
-    'performance_purchase_order',
-    'receivedAt',
-    '`receivedAt` varchar(19) DEFAULT NULL'
-  );
-  await ensureTableColumn(
-    'performance_purchase_order',
-    'items',
-    '`items` json DEFAULT NULL'
-  );
-  await ensureTableColumn(
-    'performance_purchase_order',
-    'inquiryRecords',
-    '`inquiryRecords` json DEFAULT NULL'
-  );
-  await ensureTableColumn(
-    'performance_purchase_order',
-    'approvalLogs',
-    '`approvalLogs` json DEFAULT NULL'
-  );
-  await ensureTableColumn(
-    'performance_purchase_order',
-    'receiptRecords',
-    '`receiptRecords` json DEFAULT NULL'
-  );
+  // Performance schema is owned by formal migrations; seed only writes data.
 }
 
 async function ensureAssetTables() {
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_asset_info (
-      id int NOT NULL AUTO_INCREMENT,
-      assetNo varchar(50) NOT NULL,
-      assetName varchar(200) NOT NULL,
-      category varchar(100) DEFAULT NULL,
-      assetType varchar(100) DEFAULT NULL,
-      brand varchar(100) DEFAULT NULL,
-      model varchar(100) DEFAULT NULL,
-      serialNo varchar(100) DEFAULT NULL,
-      status varchar(30) NOT NULL DEFAULT 'available',
-      location varchar(200) DEFAULT NULL,
-      ownerDepartmentId int NOT NULL,
-      managerId int DEFAULT NULL,
-      purchaseDate varchar(10) DEFAULT NULL,
-      purchaseCost decimal(12,2) NOT NULL DEFAULT 0,
-      supplierId int DEFAULT NULL,
-      purchaseOrderId int DEFAULT NULL,
-      warrantyExpiry varchar(10) DEFAULT NULL,
-      depreciationMonths int NOT NULL DEFAULT 0,
-      depreciatedAmount decimal(12,2) NOT NULL DEFAULT 0,
-      netBookValue decimal(12,2) NOT NULL DEFAULT 0,
-      lastInventoryTime varchar(19) DEFAULT NULL,
-      remark text DEFAULT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uk_performance_asset_no (assetNo),
-      KEY idx_performance_asset_info_category (category),
-      KEY idx_performance_asset_info_serial_no (serialNo),
-      KEY idx_performance_asset_info_status (status),
-      KEY idx_performance_asset_info_owner_department_id (ownerDepartmentId),
-      KEY idx_performance_asset_info_manager_id (managerId),
-      KEY idx_performance_asset_info_supplier_id (supplierId),
-      KEY idx_performance_asset_info_purchase_order_id (purchaseOrderId),
-      KEY idx_performance_asset_info_create_time (createTime),
-      KEY idx_performance_asset_info_update_time (updateTime),
-      KEY idx_performance_asset_info_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_asset_assignment (
-      id int NOT NULL AUTO_INCREMENT,
-      assetId int NOT NULL,
-      assigneeId int NOT NULL,
-      departmentId int NOT NULL,
-      assignDate varchar(10) NOT NULL,
-      returnDate varchar(10) DEFAULT NULL,
-      status varchar(20) NOT NULL DEFAULT 'assigned',
-      purpose text DEFAULT NULL,
-      returnNote text DEFAULT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      KEY idx_performance_asset_assignment_asset_id (assetId),
-      KEY idx_performance_asset_assignment_assignee_id (assigneeId),
-      KEY idx_performance_asset_assignment_department_id (departmentId),
-      KEY idx_performance_asset_assignment_status (status),
-      KEY idx_performance_asset_assignment_create_time (createTime),
-      KEY idx_performance_asset_assignment_update_time (updateTime),
-      KEY idx_performance_asset_assignment_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_asset_maintenance (
-      id int NOT NULL AUTO_INCREMENT,
-      assetId int NOT NULL,
-      departmentId int NOT NULL,
-      maintenanceType varchar(50) DEFAULT NULL,
-      vendor varchar(100) DEFAULT NULL,
-      cost decimal(12,2) NOT NULL DEFAULT 0,
-      startDate varchar(19) DEFAULT NULL,
-      completedDate varchar(19) DEFAULT NULL,
-      status varchar(20) NOT NULL DEFAULT 'scheduled',
-      description text DEFAULT NULL,
-      result text DEFAULT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      KEY idx_performance_asset_maintenance_asset_id (assetId),
-      KEY idx_performance_asset_maintenance_department_id (departmentId),
-      KEY idx_performance_asset_maintenance_status (status),
-      KEY idx_performance_asset_maintenance_create_time (createTime),
-      KEY idx_performance_asset_maintenance_update_time (updateTime),
-      KEY idx_performance_asset_maintenance_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_asset_procurement (
-      id int NOT NULL AUTO_INCREMENT,
-      procurementNo varchar(50) NOT NULL,
-      title varchar(200) NOT NULL,
-      purchaseOrderId int DEFAULT NULL,
-      supplierId int DEFAULT NULL,
-      ownerDepartmentId int NOT NULL,
-      managerId int DEFAULT NULL,
-      assetName varchar(200) NOT NULL,
-      category varchar(100) DEFAULT NULL,
-      assetType varchar(100) DEFAULT NULL,
-      brand varchar(100) DEFAULT NULL,
-      model varchar(100) DEFAULT NULL,
-      serialNo varchar(100) DEFAULT NULL,
-      location varchar(200) DEFAULT NULL,
-      purchaseDate varchar(10) DEFAULT NULL,
-      unitCost decimal(12,2) NOT NULL DEFAULT 0,
-      quantity int NOT NULL DEFAULT 1,
-      warrantyExpiry varchar(10) DEFAULT NULL,
-      depreciationMonths int NOT NULL DEFAULT 0,
-      receivedAssetIds json DEFAULT NULL,
-      submittedAt varchar(19) DEFAULT NULL,
-      receivedAt varchar(19) DEFAULT NULL,
-      status varchar(20) NOT NULL DEFAULT 'draft',
-      remark text DEFAULT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uk_performance_asset_procurement_no (procurementNo),
-      KEY idx_performance_asset_procurement_purchase_order_id (purchaseOrderId),
-      KEY idx_performance_asset_procurement_supplier_id (supplierId),
-      KEY idx_performance_asset_procurement_owner_department_id (ownerDepartmentId),
-      KEY idx_performance_asset_procurement_manager_id (managerId),
-      KEY idx_performance_asset_procurement_category (category),
-      KEY idx_performance_asset_procurement_status (status),
-      KEY idx_performance_asset_procurement_create_time (createTime),
-      KEY idx_performance_asset_procurement_update_time (updateTime),
-      KEY idx_performance_asset_procurement_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_asset_transfer (
-      id int NOT NULL AUTO_INCREMENT,
-      transferNo varchar(50) NOT NULL,
-      assetId int NOT NULL,
-      fromDepartmentId int NOT NULL,
-      toDepartmentId int NOT NULL,
-      toManagerId int DEFAULT NULL,
-      fromLocation varchar(200) DEFAULT NULL,
-      toLocation varchar(200) DEFAULT NULL,
-      reason text DEFAULT NULL,
-      submittedAt varchar(19) DEFAULT NULL,
-      completedAt varchar(19) DEFAULT NULL,
-      status varchar(20) NOT NULL DEFAULT 'draft',
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uk_performance_asset_transfer_no (transferNo),
-      KEY idx_performance_asset_transfer_asset_id (assetId),
-      KEY idx_performance_asset_transfer_from_department_id (fromDepartmentId),
-      KEY idx_performance_asset_transfer_to_department_id (toDepartmentId),
-      KEY idx_performance_asset_transfer_to_manager_id (toManagerId),
-      KEY idx_performance_asset_transfer_status (status),
-      KEY idx_performance_asset_transfer_create_time (createTime),
-      KEY idx_performance_asset_transfer_update_time (updateTime),
-      KEY idx_performance_asset_transfer_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_asset_inventory (
-      id int NOT NULL AUTO_INCREMENT,
-      inventoryNo varchar(50) NOT NULL,
-      assetId int NOT NULL,
-      ownerDepartmentId int NOT NULL,
-      locationSnapshot varchar(200) DEFAULT NULL,
-      resultSummary text DEFAULT NULL,
-      startedAt varchar(19) DEFAULT NULL,
-      completedAt varchar(19) DEFAULT NULL,
-      closedAt varchar(19) DEFAULT NULL,
-      status varchar(20) NOT NULL DEFAULT 'draft',
-      remark text DEFAULT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uk_performance_asset_inventory_no (inventoryNo),
-      KEY idx_performance_asset_inventory_asset_id (assetId),
-      KEY idx_performance_asset_inventory_owner_department_id (ownerDepartmentId),
-      KEY idx_performance_asset_inventory_status (status),
-      KEY idx_performance_asset_inventory_create_time (createTime),
-      KEY idx_performance_asset_inventory_update_time (updateTime),
-      KEY idx_performance_asset_inventory_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_asset_depreciation (
-      id int NOT NULL AUTO_INCREMENT,
-      assetId int NOT NULL,
-      periodValue varchar(7) NOT NULL,
-      depreciationAmount decimal(12,2) NOT NULL DEFAULT 0,
-      accumulatedAmount decimal(12,2) NOT NULL DEFAULT 0,
-      netBookValue decimal(12,2) NOT NULL DEFAULT 0,
-      sourceCost decimal(12,2) NOT NULL DEFAULT 0,
-      recalculatedAt varchar(19) DEFAULT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      KEY idx_performance_asset_depreciation_asset_id (assetId),
-      KEY idx_performance_asset_depreciation_period_value (periodValue),
-      KEY idx_performance_asset_depreciation_create_time (createTime),
-      KEY idx_performance_asset_depreciation_update_time (updateTime),
-      KEY idx_performance_asset_depreciation_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_asset_disposal (
-      id int NOT NULL AUTO_INCREMENT,
-      disposalNo varchar(50) NOT NULL,
-      assetId int NOT NULL,
-      ownerDepartmentId int NOT NULL,
-      reason text NOT NULL,
-      remark text DEFAULT NULL,
-      approvedById int DEFAULT NULL,
-      executedById int DEFAULT NULL,
-      submittedAt varchar(19) DEFAULT NULL,
-      approvedAt varchar(19) DEFAULT NULL,
-      executedAt varchar(19) DEFAULT NULL,
-      status varchar(20) NOT NULL DEFAULT 'draft',
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uk_performance_asset_disposal_no (disposalNo),
-      KEY idx_performance_asset_disposal_asset_id (assetId),
-      KEY idx_performance_asset_disposal_owner_department_id (ownerDepartmentId),
-      KEY idx_performance_asset_disposal_approved_by_id (approvedById),
-      KEY idx_performance_asset_disposal_executed_by_id (executedById),
-      KEY idx_performance_asset_disposal_status (status),
-      KEY idx_performance_asset_disposal_create_time (createTime),
-      KEY idx_performance_asset_disposal_update_time (updateTime),
-      KEY idx_performance_asset_disposal_tenant_id (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
+  // Performance schema is owned by formal migrations; seed only writes data.
 }
 
 async function ensureFeedbackTables() {
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_feedback_task (
-      id int NOT NULL AUTO_INCREMENT,
-      assessmentId int NOT NULL,
-      employeeId int NOT NULL,
-      title varchar(200) NOT NULL,
-      deadline varchar(19) DEFAULT NULL,
-      creatorId int NOT NULL,
-      status varchar(20) NOT NULL DEFAULT 'draft',
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      KEY idx_feedback_task_assessment (assessmentId),
-      KEY idx_feedback_task_employee (employeeId),
-      KEY idx_feedback_task_deadline (deadline),
-      KEY idx_feedback_task_creator (creatorId),
-      KEY idx_feedback_task_status (status),
-      KEY idx_feedback_task_create_time (createTime),
-      KEY idx_feedback_task_update_time (updateTime),
-      KEY idx_feedback_task_tenant (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_feedback_record (
-      id int NOT NULL AUTO_INCREMENT,
-      taskId int NOT NULL,
-      feedbackUserId int NOT NULL,
-      relationType varchar(20) NOT NULL,
-      score decimal(5,2) NOT NULL DEFAULT 0,
-      content text DEFAULT NULL,
-      status varchar(20) NOT NULL DEFAULT 'draft',
-      submitTime varchar(19) DEFAULT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uk_feedback_record_task_user (taskId, feedbackUserId),
-      KEY idx_feedback_record_task (taskId),
-      KEY idx_feedback_record_user (feedbackUserId),
-      KEY idx_feedback_record_status (status),
-      KEY idx_feedback_record_submit_time (submitTime),
-      KEY idx_feedback_record_create_time (createTime),
-      KEY idx_feedback_record_update_time (updateTime),
-      KEY idx_feedback_record_tenant (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
+  // Performance schema is owned by formal migrations; seed only writes data.
 }
 
 async function ensureApprovalTables() {
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_approval_config (
-      id int NOT NULL AUTO_INCREMENT,
-      objectType varchar(30) NOT NULL,
-      version varchar(30) NOT NULL,
-      enabled tinyint(1) NOT NULL DEFAULT 0,
-      notifyMode varchar(30) NOT NULL DEFAULT 'interface_only',
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uk_approval_config_object_type (objectType),
-      KEY idx_performance_approval_config_version (version),
-      KEY idx_performance_approval_config_enabled (enabled),
-      KEY idx_performance_approval_config_create_time (createTime),
-      KEY idx_performance_approval_config_update_time (updateTime),
-      KEY idx_performance_approval_config_tenant (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_approval_config_node (
-      id int NOT NULL AUTO_INCREMENT,
-      configId int NOT NULL,
-      nodeOrder int NOT NULL,
-      nodeCode varchar(50) NOT NULL,
-      nodeName varchar(100) NOT NULL,
-      resolverType varchar(50) NOT NULL,
-      resolverValue varchar(200) DEFAULT NULL,
-      timeoutHours int DEFAULT NULL,
-      allowTransfer tinyint(1) NOT NULL DEFAULT 1,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uk_approval_config_node_order (configId, nodeOrder),
-      KEY idx_performance_approval_config_node_config_id (configId),
-      KEY idx_performance_approval_config_node_resolver_type (resolverType),
-      KEY idx_performance_approval_config_node_create_time (createTime),
-      KEY idx_performance_approval_config_node_update_time (updateTime),
-      KEY idx_performance_approval_config_node_tenant (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_approval_instance (
-      id int NOT NULL AUTO_INCREMENT,
-      objectType varchar(30) NOT NULL,
-      objectId int NOT NULL,
-      sourceStatus varchar(30) NOT NULL,
-      configId int NOT NULL,
-      configVersion varchar(30) NOT NULL,
-      applicantId int NOT NULL,
-      employeeId int NOT NULL,
-      departmentId int NOT NULL,
-      status varchar(30) NOT NULL DEFAULT 'pending_resolution',
-      currentNodeOrder int DEFAULT NULL,
-      currentApproverId int DEFAULT NULL,
-      launchTime varchar(19) NOT NULL,
-      finishTime varchar(19) DEFAULT NULL,
-      fallbackReason varchar(500) DEFAULT NULL,
-      fallbackOperatorId int DEFAULT NULL,
-      terminateReason varchar(500) DEFAULT NULL,
-      terminateOperatorId int DEFAULT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      KEY idx_approval_instance_object_status (objectType, objectId, status),
-      KEY idx_performance_approval_instance_source_status (sourceStatus),
-      KEY idx_performance_approval_instance_config_id (configId),
-      KEY idx_performance_approval_instance_applicant_id (applicantId),
-      KEY idx_performance_approval_instance_employee_id (employeeId),
-      KEY idx_performance_approval_instance_department_id (departmentId),
-      KEY idx_performance_approval_instance_status (status),
-      KEY idx_performance_approval_instance_current_node_order (currentNodeOrder),
-      KEY idx_approval_instance_current_approver (currentApproverId),
-      KEY idx_performance_approval_instance_launch_time (launchTime),
-      KEY idx_performance_approval_instance_finish_time (finishTime),
-      KEY idx_performance_approval_instance_fallback_operator_id (fallbackOperatorId),
-      KEY idx_performance_approval_instance_terminate_operator_id (terminateOperatorId),
-      KEY idx_performance_approval_instance_create_time (createTime),
-      KEY idx_performance_approval_instance_update_time (updateTime),
-      KEY idx_performance_approval_instance_tenant (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_approval_instance_node (
-      id int NOT NULL AUTO_INCREMENT,
-      instanceId int NOT NULL,
-      nodeOrder int NOT NULL,
-      nodeCode varchar(50) NOT NULL,
-      nodeName varchar(100) NOT NULL,
-      resolverType varchar(50) NOT NULL,
-      resolverValueSnapshot varchar(200) DEFAULT NULL,
-      allowTransfer tinyint(1) NOT NULL DEFAULT 1,
-      approverId int DEFAULT NULL,
-      status varchar(20) NOT NULL DEFAULT 'pending',
-      actionTime varchar(19) DEFAULT NULL,
-      transferFromUserId int DEFAULT NULL,
-      transferReason varchar(500) DEFAULT NULL,
-      comment text DEFAULT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      UNIQUE KEY uk_approval_instance_node_order (instanceId, nodeOrder),
-      KEY idx_performance_approval_instance_node_instance_id (instanceId),
-      KEY idx_performance_approval_instance_node_resolver_type (resolverType),
-      KEY idx_performance_approval_instance_node_approver_id (approverId),
-      KEY idx_performance_approval_instance_node_status (status),
-      KEY idx_performance_approval_instance_node_action_time (actionTime),
-      KEY idx_performance_approval_instance_node_transfer_from_user_id (transferFromUserId),
-      KEY idx_performance_approval_instance_node_create_time (createTime),
-      KEY idx_performance_approval_instance_node_update_time (updateTime),
-      KEY idx_performance_approval_instance_node_tenant (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS performance_approval_action_log (
-      id int NOT NULL AUTO_INCREMENT,
-      instanceId int NOT NULL,
-      instanceNodeId int DEFAULT NULL,
-      action varchar(30) NOT NULL,
-      operatorId int NOT NULL,
-      fromStatus varchar(30) DEFAULT NULL,
-      toStatus varchar(30) DEFAULT NULL,
-      reason varchar(500) DEFAULT NULL,
-      detail varchar(1000) DEFAULT NULL,
-      createTime varchar(19) NOT NULL,
-      updateTime varchar(19) NOT NULL,
-      tenantId int DEFAULT NULL,
-      PRIMARY KEY (id),
-      KEY idx_approval_action_instance_time (instanceId, createTime),
-      KEY idx_performance_approval_action_log_instance_node_id (instanceNodeId),
-      KEY idx_performance_approval_action_log_action (action),
-      KEY idx_performance_approval_action_log_operator_id (operatorId),
-      KEY idx_performance_approval_action_log_create_time (createTime),
-      KEY idx_performance_approval_action_log_update_time (updateTime),
-      KEY idx_performance_approval_action_log_tenant (tenantId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
+  // Performance schema is owned by formal migrations; seed only writes data.
 }
 
 async function main() {
@@ -3537,6 +2393,7 @@ async function main() {
     await ensureAssetTables();
     await ensureFeedbackTables();
     await ensureApprovalTables();
+    await ensureGoalPlanTables();
 
     const headquartersId = await ensureDepartment({
       name: '总部',
@@ -3569,6 +2426,15 @@ async function main() {
       orderNum: 15,
     });
 
+    const adminUserId = await ensureUser({
+      username: 'admin',
+      name: '系统超管',
+      nickName: '系统超管',
+      departmentId: headquartersId,
+      phone: 'stage2-admin-0001',
+      email: 'stage2-admin-mailbox',
+      remark: '阶段2联调-系统超管账号',
+    });
     const hrUserId = await ensureUser({
       username: 'hr_admin',
       name: 'HR管理员',
@@ -3586,6 +2452,15 @@ async function main() {
       phone: 'stage2-manager-0001',
       email: 'stage2-manager-mailbox',
       remark: '阶段2联调-部门经理',
+    });
+    const assetAdminUserId = await ensureUser({
+      username: 'asset_admin',
+      name: '资产管理员',
+      nickName: '资产管理员',
+      departmentId: headquartersId,
+      phone: 'stage2-asset-0001',
+      email: 'stage2-asset-mailbox',
+      remark: '阶段2联调-资产管理员',
     });
     const employeeUserId = await ensureUser({
       username: 'employee_platform',
@@ -3627,6 +2502,8 @@ async function main() {
     const hrMenuIds = await collectMenuIds({
       routers: [
         '/data-center/dashboard',
+        '/performance/workbench',
+        '/performance/work-plan',
         '/performance/recruitment-center',
         '/performance/my-assessment',
         '/performance/initiated',
@@ -3652,6 +2529,11 @@ async function main() {
         '/performance/hiring',
         '/performance/meeting',
         '/performance/contract',
+        '/performance/office/annual-inspection',
+        '/performance/office/honor',
+        '/performance/office/publicity-material',
+        '/performance/office/design-collab',
+        '/performance/office/express-collab',
         '/performance/office/document-center',
         '/performance/office/knowledge-base',
         '/performance/office/vehicle',
@@ -3666,6 +2548,8 @@ async function main() {
         '/performance/supplier',
         '/performance/asset/dashboard',
         '/performance/asset/ledger',
+        '/performance/asset/request',
+        '/performance/asset/request-pending',
         '/performance/asset/assignment',
         '/performance/asset/maintenance',
         '/performance/asset/report',
@@ -3674,10 +2558,23 @@ async function main() {
         '/performance/asset/inventory',
         '/performance/asset/depreciation',
         '/performance/asset/disposal',
+        '/performance/material/catalog',
+        '/performance/material/stock',
+        '/performance/material/inbound',
+        '/performance/material/issue',
       ],
       perms: [
         'performance:dashboard:summary',
         'performance:dashboard:crossSummary',
+        'performance:workPlan:page',
+        'performance:workPlan:info',
+        'performance:workPlan:add',
+        'performance:workPlan:update',
+        'performance:workPlan:delete',
+        'performance:workPlan:start',
+        'performance:workPlan:complete',
+        'performance:workPlan:cancel',
+        'performance:workPlan:sync',
         'performance:assessment:myPage',
         'performance:assessment:info',
         'performance:assessment:page',
@@ -3703,6 +2600,10 @@ async function main() {
         'performance:goal:update',
         'performance:goal:delete',
         'performance:goal:progressUpdate',
+        'performance:goal:opsManage',
+        'performance:goal:opsGlobalScope',
+        'performance:goal:opsAccessProfile',
+        'performance:goal:opsDepartmentConfig',
         'performance:goal:export',
         'performance:feedback:page',
         'performance:feedback:info',
@@ -3835,6 +2736,7 @@ async function main() {
         'performance:hiring:add',
         'performance:hiring:updateStatus',
         'performance:hiring:close',
+        'performance:hiring:all',
         'performance:meeting:page',
         'performance:meeting:info',
         'performance:meeting:add',
@@ -3846,6 +2748,36 @@ async function main() {
         'performance:contract:add',
         'performance:contract:update',
         'performance:contract:delete',
+        'performance:annualInspection:page',
+        'performance:annualInspection:info',
+        'performance:annualInspection:stats',
+        'performance:annualInspection:add',
+        'performance:annualInspection:update',
+        'performance:annualInspection:delete',
+        'performance:honor:page',
+        'performance:honor:info',
+        'performance:honor:stats',
+        'performance:honor:add',
+        'performance:honor:update',
+        'performance:honor:delete',
+        'performance:publicityMaterial:page',
+        'performance:publicityMaterial:info',
+        'performance:publicityMaterial:stats',
+        'performance:publicityMaterial:add',
+        'performance:publicityMaterial:update',
+        'performance:publicityMaterial:delete',
+        'performance:designCollab:page',
+        'performance:designCollab:info',
+        'performance:designCollab:stats',
+        'performance:designCollab:add',
+        'performance:designCollab:update',
+        'performance:designCollab:delete',
+        'performance:expressCollab:page',
+        'performance:expressCollab:info',
+        'performance:expressCollab:stats',
+        'performance:expressCollab:add',
+        'performance:expressCollab:update',
+        'performance:expressCollab:delete',
         'performance:documentCenter:page',
         'performance:documentCenter:info',
         'performance:documentCenter:stats',
@@ -3946,6 +2878,29 @@ async function main() {
         'performance:assetReport:summary',
         'performance:assetReport:page',
         'performance:assetReport:export',
+        'performance:materialCatalog:page',
+        'performance:materialCatalog:info',
+        'performance:materialCatalog:add',
+        'performance:materialCatalog:update',
+        'performance:materialCatalog:updateStatus',
+        'performance:materialCatalog:delete',
+        'performance:materialStock:page',
+        'performance:materialStock:info',
+        'performance:materialStock:summary',
+        'performance:materialInbound:page',
+        'performance:materialInbound:info',
+        'performance:materialInbound:add',
+        'performance:materialInbound:update',
+        'performance:materialInbound:submit',
+        'performance:materialInbound:receive',
+        'performance:materialInbound:cancel',
+        'performance:materialIssue:page',
+        'performance:materialIssue:info',
+        'performance:materialIssue:add',
+        'performance:materialIssue:update',
+        'performance:materialIssue:submit',
+        'performance:materialIssue:issue',
+        'performance:materialIssue:cancel',
         'performance:talentAsset:page',
         'performance:talentAsset:info',
         'performance:talentAsset:add',
@@ -3953,9 +2908,37 @@ async function main() {
         'performance:talentAsset:delete',
       ],
     });
+    const assetAdminMenuIds = await collectMenuIds({
+      routers: [
+        '/performance/pending',
+        '/performance/asset/dashboard',
+        '/performance/asset/ledger',
+        '/performance/asset/request-pending',
+        '/performance/asset/assignment',
+      ],
+      perms: [
+        'performance:approvalFlow:info',
+        'performance:approvalFlow:approve',
+        'performance:approvalFlow:reject',
+        'performance:approvalFlow:transfer',
+        'performance:approvalFlow:remind',
+        'performance:assetDashboard:summary',
+        'performance:assetInfo:page',
+        'performance:assetInfo:info',
+        'performance:assetAssignmentRequest:page',
+        'performance:assetAssignmentRequest:info',
+        'performance:assetAssignmentRequest:assign',
+        'performance:assetAssignment:page',
+        'performance:assetAssignment:add',
+        'performance:assetAssignment:update',
+        'performance:assetAssignment:return',
+      ],
+    });
     const managerMenuIds = await collectMenuIds({
       routers: [
         '/data-center/dashboard',
+        '/performance/workbench',
+        '/performance/work-plan',
         '/performance/recruitment-center',
         '/performance/my-assessment',
         '/performance/initiated',
@@ -3998,6 +2981,15 @@ async function main() {
       perms: [
         'performance:dashboard:summary',
         'performance:dashboard:crossSummary',
+        'performance:workPlan:page',
+        'performance:workPlan:info',
+        'performance:workPlan:add',
+        'performance:workPlan:update',
+        'performance:workPlan:delete',
+        'performance:workPlan:start',
+        'performance:workPlan:complete',
+        'performance:workPlan:cancel',
+        'performance:workPlan:sync',
         'performance:assessment:myPage',
         'performance:assessment:info',
         'performance:assessment:page',
@@ -4019,6 +3011,9 @@ async function main() {
         'performance:goal:update',
         'performance:goal:delete',
         'performance:goal:progressUpdate',
+        'performance:goal:opsManage',
+        'performance:goal:opsAccessProfile',
+        'performance:goal:opsDepartmentConfig',
         'performance:goal:export',
         'performance:feedback:page',
         'performance:feedback:info',
@@ -4140,6 +3135,14 @@ async function main() {
         'performance:assetDashboard:summary',
         'performance:assetInfo:page',
         'performance:assetInfo:info',
+        'performance:assetAssignmentRequest:page',
+        'performance:assetAssignmentRequest:info',
+        'performance:assetAssignmentRequest:add',
+        'performance:assetAssignmentRequest:update',
+        'performance:assetAssignmentRequest:submit',
+        'performance:assetAssignmentRequest:withdraw',
+        'performance:assetAssignmentRequest:assign',
+        'performance:assetAssignmentRequest:cancel',
         'performance:assetAssignment:page',
         'performance:assetAssignment:add',
         'performance:assetAssignment:update',
@@ -4187,16 +3190,23 @@ async function main() {
     });
     const employeeMenuIds = await collectMenuIds({
       routers: [
+        '/performance/workbench',
+        '/performance/work-plan',
         '/performance/my-assessment',
         '/performance/goals',
         '/performance/feedback',
         '/performance/course-learning',
+        '/performance/asset/request',
         '/performance/teacher-channel/dashboard',
         '/performance/teacher-channel/teacher',
         '/performance/teacher-channel/todo',
         '/performance/teacher-channel/class',
       ],
       perms: [
+        'performance:workPlan:page',
+        'performance:workPlan:info',
+        'performance:workPlan:start',
+        'performance:workPlan:complete',
         'performance:assessment:myPage',
         'performance:assessment:info',
         'performance:assessment:update',
@@ -4204,10 +3214,17 @@ async function main() {
         'performance:approvalFlow:info',
         'performance:approvalFlow:withdraw',
         'performance:approvalFlow:remind',
+        'performance:assetAssignmentRequest:page',
+        'performance:assetAssignmentRequest:info',
+        'performance:assetAssignmentRequest:add',
+        'performance:assetAssignmentRequest:update',
+        'performance:assetAssignmentRequest:submit',
+        'performance:assetAssignmentRequest:withdraw',
         'performance:goal:page',
         'performance:goal:info',
         'performance:goal:update',
         'performance:goal:progressUpdate',
+        'performance:goal:opsAccessProfile',
         'performance:feedback:page',
         'performance:feedback:info',
         'performance:feedback:submit',
@@ -4282,12 +3299,37 @@ async function main() {
         'performance:feedback:summary',
       ],
     });
+    const superAdminMenuIds = await listAllMenuIds();
+    const superAdminDepartmentIds = await listAllDepartmentIds();
+
+    const superAdminRoleId = await ensureRole({
+      name: '系统超管',
+      label: 'system_root',
+      remark: '阶段2联调-系统超管角色',
+      menuIds: superAdminMenuIds,
+      departmentIds: superAdminDepartmentIds,
+      isSuperAdmin: true,
+    });
 
     const hrRoleId = await ensureRole({
       name: '绩效HR管理员',
       label: 'performance_hr',
       remark: '阶段2联调-HR管理员',
       menuIds: hrMenuIds,
+      departmentIds: [
+        headquartersId,
+        rdCenterId,
+        salesCenterId,
+        hrDepartmentId,
+        platformGroupId,
+        businessGroupId,
+      ],
+    });
+    const assetAdminRoleId = await ensureRole({
+      name: '绩效资产管理员',
+      label: 'performance_asset_admin',
+      remark: '阶段2联调-资产管理员',
+      menuIds: assetAdminMenuIds,
       departmentIds: [
         headquartersId,
         rdCenterId,
@@ -4326,12 +3368,49 @@ async function main() {
       departmentIds: [platformGroupId],
     });
 
+    await replaceUserRoles(adminUserId, [superAdminRoleId]);
     await replaceUserRoles(hrUserId, [hrRoleId]);
+    await replaceUserRoles(assetAdminUserId, [assetAdminRoleId]);
     await replaceUserRoles(managerUserId, [managerRoleId]);
     await replaceUserRoles(employeeUserId, [employeeRoleId]);
     await replaceUserRoles(feedbackUserId, [feedbackRoleId]);
     await replaceUserRoles(salesEmployeeUserId, [employeeRoleId]);
     await replaceUserRoles(readonlyTeacherUserId, [readonlyTeacherRoleId]);
+
+    await upsertApprovalConfig({
+      objectType: 'assetAssignmentRequest',
+      version: 'theme20-asset-request-v1',
+      enabled: true,
+      nodes: [
+        {
+          nodeOrder: 1,
+          nodeCode: 'department-manager-review',
+          nodeName: '部门负责人审批',
+          resolverType: 'applicant_direct_manager',
+          resolverValue: null,
+          timeoutHours: 24,
+          allowTransfer: true,
+        },
+        {
+          nodeOrder: 2,
+          nodeCode: 'asset-admin-confirm',
+          nodeName: '资产管理员确认',
+          resolverType: 'specified_user',
+          resolverValue: String(assetAdminUserId),
+          timeoutHours: 24,
+          allowTransfer: true,
+        },
+        {
+          nodeOrder: 3,
+          nodeCode: 'management-confirm',
+          nodeName: '管理层确认',
+          resolverType: 'specified_user',
+          resolverValue: String(adminUserId),
+          timeoutHours: 24,
+          allowTransfer: true,
+        },
+      ],
+    });
 
     const seededCourses = await replaceCourses([
       {
@@ -4581,6 +3660,97 @@ async function main() {
       documentCenterRows.map(item => [item.fileNo, item.id])
     );
 
+    await replaceOfficeCollabRecords([
+      {
+        moduleKey: 'annualInspection',
+        recordNo: 'PMS-T22-NJ-001',
+        title: '联调-主题22-消防设施年检材料',
+        status: 'preparing',
+        department: '行政部',
+        ownerName: '主题22-HR管理员',
+        category: 'safety',
+        version: 'V1.2',
+        dueDate: '2026-12-20',
+        progressValue: 78,
+        extra: {
+          reminderDays: 15,
+        },
+        notes: '主题22联调-年检材料样例',
+      },
+      {
+        moduleKey: 'honor',
+        recordNo: 'PMS-T22-RY-001',
+        title: '联调-主题22-市级优秀校区荣誉',
+        status: 'published',
+        department: '校区运营中心',
+        ownerName: '主题22-校区团队',
+        eventDate: '2026-04-18',
+        scoreValue: 91,
+        extra: {
+          honorType: 'team',
+          level: 'city',
+          issuer: '上海市教委',
+          evidenceUrl: null,
+        },
+        notes: '主题22联调-荣誉管理样例',
+      },
+      {
+        moduleKey: 'publicityMaterial',
+        recordNo: 'PMS-T22-XC-001',
+        title: '联调-主题22-春招宣传海报',
+        status: 'review',
+        ownerName: '主题22-HR管理员',
+        assigneeName: '主题22-设计负责人',
+        eventDate: '2026-04-22',
+        scoreValue: 256,
+        relatedDocumentId: documentCenterIdMap.get('PMS-DOC-21-POLICY-001') ?? null,
+        extra: {
+          materialType: 'poster',
+          channel: 'wechat',
+          downloads: 18,
+        },
+        notes: '主题22联调-宣传资料样例',
+      },
+      {
+        moduleKey: 'designCollab',
+        recordNo: 'PMS-T22-MG-001',
+        title: '联调-主题22-招生物料设计协同',
+        status: 'in_progress',
+        ownerName: '主题22-市场中心',
+        assigneeName: '主题22-视觉设计师',
+        priority: 'high',
+        dueDate: '2026-05-12',
+        progressValue: 64,
+        extra: {
+          workload: 3,
+          relatedMaterialNo: 'PMS-T22-XC-001',
+        },
+        notes: '主题22联调-美工协同样例',
+      },
+      {
+        moduleKey: 'expressCollab',
+        recordNo: 'PMS-T22-KD-001',
+        title: '联调-主题22-校区资料快递协同',
+        status: 'in_transit',
+        ownerName: '主题22-行政专员',
+        assigneeName: '主题22-杭州校区',
+        category: '顺丰',
+        dueDate: '2026-04-28',
+        eventDate: '2026-04-19 10:30:00',
+        extra: {
+          orderNo: 'PMS-T22-EXP-001',
+          courierCompany: '顺丰',
+          serviceLevel: 'express',
+          origin: '上海总部',
+          destination: '杭州校区',
+          sourceSystem: 'manual',
+          syncStatus: 'pending',
+          lastEvent: '已揽收',
+        },
+        notes: '主题22联调-快递协同样例',
+      },
+    ]);
+
     const knowledgeBaseRows = await replaceKnowledgeBases([
       {
         kbNo: 'PMS-KB-21-ONBOARDING-001',
@@ -4672,7 +3842,7 @@ async function main() {
       seededSuppliers.map(item => [item.code || item.name, item])
     );
 
-    await replacePurchaseOrders([
+    const seededPurchaseOrders = await replacePurchaseOrders([
       {
         orderNo: 'PMS-PO-DRAFT-001',
         title: '联调-主题11平台草稿采购单',
@@ -4680,21 +3850,253 @@ async function main() {
         departmentId: platformGroupId,
         requesterId: managerUserId,
         orderDate: '2026-05-20',
+        expectedDeliveryDate: '2026-05-28',
+        items: [
+          {
+            itemName: '云主机扩容',
+            quantity: 3,
+            unitPrice: 4296.17,
+            amount: 12888.5,
+          },
+        ],
         totalAmount: 12888.5,
         currency: 'CNY',
         remark: '主题11联调-草稿采购单，可删除',
         status: 'draft',
       },
       {
-        orderNo: 'PMS-PO-ACTIVE-001',
-        title: '联调-主题11平台生效采购单',
+        orderNo: 'PMS-PO-INQUIRING-001',
+        title: '联调-主题11平台询价采购单',
+        supplierId: supplierByCode.get('PMS-SUPPLIER-ACTIVE-001').id,
+        departmentId: platformGroupId,
+        requesterId: managerUserId,
+        orderDate: '2026-05-18',
+        expectedDeliveryDate: '2026-05-30',
+        items: [
+          {
+            itemName: '询价带宽扩容',
+            quantity: 2,
+            unitPrice: 4600,
+            amount: 9200,
+          },
+        ],
+        inquiryRecords: [
+          {
+            round: 1,
+            supplierName: '联调-主题11平台云服务商',
+            quotedAmount: 9200,
+            quotedAt: '2026-05-18 14:00:00',
+            operatorId: managerUserId,
+            operatorName: '研发经理',
+          },
+        ],
+        totalAmount: 9200,
+        currency: 'CNY',
+        remark: '主题11联调-询价中样例',
+        status: 'inquiring',
+      },
+      {
+        orderNo: 'PMS-PO-PENDING-001',
+        title: '联调-主题11待审批采购单',
+        supplierId: supplierByCode.get('PMS-SUPPLIER-ACTIVE-001').id,
+        departmentId: platformGroupId,
+        requesterId: managerUserId,
+        orderDate: '2026-05-17',
+        expectedDeliveryDate: '2026-05-29',
+        items: [
+          {
+            itemName: '审批前服务器采购',
+            quantity: 4,
+            unitPrice: 5250,
+            amount: 21000,
+          },
+        ],
+        inquiryRecords: [
+          {
+            round: 1,
+            supplierName: '联调-主题11平台云服务商',
+            quotedAmount: 21000,
+            quotedAt: '2026-05-17 16:30:00',
+            operatorId: managerUserId,
+            operatorName: '研发经理',
+          },
+        ],
+        totalAmount: 21000,
+        currency: 'CNY',
+        remark: '主题11联调-待审批样例',
+        status: 'pendingApproval',
+      },
+      {
+        orderNo: 'PMS-PO-APPROVED-001',
+        title: '联调-主题11已审批采购单',
+        supplierId: supplierByCode.get('PMS-SUPPLIER-ACTIVE-001').id,
+        departmentId: platformGroupId,
+        requesterId: managerUserId,
+        orderDate: '2026-05-16',
+        expectedDeliveryDate: '2026-05-27',
+        approvedBy: hrUserId,
+        approvedAt: '2026-05-16 18:00:00',
+        approvalRemark: '预算已核定，同意采购。',
+        items: [
+          {
+            itemName: '数据库许可证',
+            quantity: 5,
+            unitPrice: 3000,
+            amount: 15000,
+          },
+        ],
+        inquiryRecords: [
+          {
+            round: 1,
+            supplierName: '联调-主题11平台云服务商',
+            quotedAmount: 15000,
+            quotedAt: '2026-05-16 11:00:00',
+            operatorId: managerUserId,
+            operatorName: '研发经理',
+          },
+        ],
+        approvalLogs: [
+          {
+            decision: 'approved',
+            remark: '预算已核定，同意采购。',
+            operatorId: hrUserId,
+            operatorName: 'HR管理员',
+            operatedAt: '2026-05-16 18:00:00',
+          },
+        ],
+        totalAmount: 15000,
+        currency: 'CNY',
+        remark: '主题11联调-已审批样例',
+        status: 'approved',
+      },
+      {
+        orderNo: 'PMS-PO-RECEIVED-001',
+        title: '联调-主题11已收货采购单',
+        supplierId: supplierByCode.get('PMS-SUPPLIER-ACTIVE-001').id,
+        departmentId: platformGroupId,
+        requesterId: managerUserId,
+        orderDate: '2026-05-15',
+        expectedDeliveryDate: '2026-05-26',
+        approvedBy: hrUserId,
+        approvedAt: '2026-05-15 15:20:00',
+        approvalRemark: '分批收货，允许入场。',
+        receivedQuantity: 6,
+        receivedAt: '2026-05-19 10:00:00',
+        items: [
+          {
+            itemName: '办公终端',
+            quantity: 6,
+            unitPrice: 1800,
+            amount: 10800,
+          },
+        ],
+        inquiryRecords: [
+          {
+            round: 1,
+            supplierName: '联调-主题11平台云服务商',
+            quotedAmount: 10800,
+            quotedAt: '2026-05-15 10:30:00',
+            operatorId: managerUserId,
+            operatorName: '研发经理',
+          },
+        ],
+        approvalLogs: [
+          {
+            decision: 'approved',
+            remark: '同意收货。',
+            operatorId: hrUserId,
+            operatorName: 'HR管理员',
+            operatedAt: '2026-05-15 15:20:00',
+          },
+        ],
+        receiptRecords: [
+          {
+            receivedQuantity: 6,
+            receivedAt: '2026-05-19 10:00:00',
+            operatorId: managerUserId,
+            operatorName: '研发经理',
+            remark: '首批到货验收完成。',
+          },
+        ],
+        totalAmount: 10800,
+        currency: 'CNY',
+        remark: '主题11联调-已收货样例',
+        status: 'received',
+      },
+      {
+        orderNo: 'PMS-PO-CLOSED-001',
+        title: '联调-主题11已关闭采购单',
+        supplierId: supplierByCode.get('联调-主题11咨询供应商').id,
+        departmentId: platformGroupId,
+        requesterId: managerUserId,
+        orderDate: '2026-05-12',
+        expectedDeliveryDate: '2026-05-22',
+        approvedBy: hrUserId,
+        approvedAt: '2026-05-13 09:00:00',
+        approvalRemark: '项目结项前补充采购。',
+        closedReason: '项目已验收，采购执行完成。',
+        receivedQuantity: 1,
+        receivedAt: '2026-05-18 17:30:00',
+        items: [
+          {
+            itemName: '咨询交付包',
+            quantity: 1,
+            unitPrice: 9800,
+            amount: 9800,
+          },
+        ],
+        inquiryRecords: [
+          {
+            round: 1,
+            supplierName: '联调-主题11咨询供应商',
+            quotedAmount: 9800,
+            quotedAt: '2026-05-12 14:00:00',
+            operatorId: managerUserId,
+            operatorName: '研发经理',
+          },
+        ],
+        approvalLogs: [
+          {
+            decision: 'approved',
+            remark: '项目结项前补充采购。',
+            operatorId: hrUserId,
+            operatorName: 'HR管理员',
+            operatedAt: '2026-05-13 09:00:00',
+          },
+        ],
+        receiptRecords: [
+          {
+            receivedQuantity: 1,
+            receivedAt: '2026-05-18 17:30:00',
+            operatorId: managerUserId,
+            operatorName: '研发经理',
+            remark: '咨询材料已验收并归档。',
+          },
+        ],
+        totalAmount: 9800,
+        currency: 'CNY',
+        remark: '主题11联调-已关闭样例',
+        status: 'closed',
+      },
+      {
+        orderNo: 'PMS-PO-ACTIVE-LEGACY-001',
+        title: '联调-主题11兼容生效采购单',
         supplierId: supplierByCode.get('PMS-SUPPLIER-INACTIVE-001').id,
         departmentId: platformGroupId,
         requesterId: managerUserId,
         orderDate: '2026-05-18',
+        expectedDeliveryDate: '2026-05-31',
+        items: [
+          {
+            itemName: '遗留兼容硬件采购',
+            quantity: 2,
+            unitPrice: 17800,
+            amount: 35600,
+          },
+        ],
         totalAmount: 35600,
         currency: 'CNY',
-        remark: '主题11联调-生效采购单，验证删除限制',
+        remark: '主题11联调-兼容现有 supplier delete guard 的 legacy active 样例',
         status: 'active',
       },
       {
@@ -4704,6 +4106,15 @@ async function main() {
         departmentId: salesCenterId,
         requesterId: salesEmployeeUserId,
         orderDate: '2026-05-10',
+        expectedDeliveryDate: '2026-05-19',
+        items: [
+          {
+            itemName: '跨部门咨询采购',
+            quantity: 1,
+            unitPrice: 8888,
+            amount: 8888,
+          },
+        ],
         totalAmount: 8888,
         currency: 'CNY',
         remark: '主题11联调-跨部门取消采购单',
@@ -5376,6 +4787,23 @@ async function main() {
       },
     ]);
 
+    const goalPlanSmokeDate = '2026-04-19';
+    await replaceGoalOpsSeed({
+      configs: [
+        {
+          departmentId: platformGroupId,
+          assignTime: '09:15',
+          submitDeadline: '18:00',
+          reportSendTime: '18:30',
+          reportPushMode: 'system_and_group',
+          reportPushTarget: 'goal-plan-stage2-group',
+          updatedBy: managerUserId,
+        },
+      ],
+      plans: [],
+      reports: [],
+    });
+
     await replaceIndicators([
       {
         name: '阶段2-目标达成',
@@ -5626,15 +5054,49 @@ async function main() {
       },
     ]);
 
+    const purchaseOrderByNo = new Map(
+      seededPurchaseOrders.map(item => [item.orderNo || item.title, item])
+    );
+
     seedMeta = await syncStage2RuntimeMeta({
+      goalPlanSmokeDate,
+      goalPlanDepartmentId: Number(platformGroupId || 0),
+      goalPlanManagerUserId: Number(managerUserId || 0),
+      goalPlanEmployeeUserId: Number(employeeUserId || 0),
       recruitPlanImportSpaceId,
       recruitPlanImportSpaceName: 'stage2-theme16-recruit-plan-import-template.xlsx',
+      theme11SupplierInfoId: Number(supplierByCode.get('PMS-SUPPLIER-ACTIVE-001')?.id || 0),
+      theme11PurchaseOrderInfoId: Number(
+        purchaseOrderByNo.get('PMS-PO-APPROVED-001')?.id || 0
+      ),
+      theme11ProtectedOrderDeleteId: Number(
+        purchaseOrderByNo.get('PMS-PO-APPROVED-001')?.id || 0
+      ),
+      theme11ReferencedSupplierDeleteId: Number(
+        supplierByCode.get('PMS-SUPPLIER-INACTIVE-001')?.id || 0
+      ),
+      theme11InquiryOrderId: Number(
+        purchaseOrderByNo.get('PMS-PO-INQUIRING-001')?.id || 0
+      ),
+      theme11PendingApprovalOrderId: Number(
+        purchaseOrderByNo.get('PMS-PO-PENDING-001')?.id || 0
+      ),
+      theme11ApprovedOrderId: Number(
+        purchaseOrderByNo.get('PMS-PO-APPROVED-001')?.id || 0
+      ),
+      theme11ReceivedOrderId: Number(
+        purchaseOrderByNo.get('PMS-PO-RECEIVED-001')?.id || 0
+      ),
+      theme11ClosedOrderId: Number(
+        purchaseOrderByNo.get('PMS-PO-CLOSED-001')?.id || 0
+      ),
+      theme11ProcurementSampleDepartmentId: Number(platformGroupId || 0),
     });
 
     await connection.commit();
 
     console.log('Stage-2 performance seed completed for modules 1/2/4/5/6/7/8/9 baseline.');
-    console.log('Accounts: admin, hr_admin, manager_rd, employee_platform, feedback_peer, employee_sales, readonly_teacher');
+    console.log('Accounts: admin, hr_admin, asset_admin, manager_rd, employee_platform, feedback_peer, employee_sales, readonly_teacher');
     console.log('Password: 123456');
     console.log(`Runtime seed version: ${seedMeta.version}`);
     console.log(`Runtime seed scopes: ${seedMeta.scopes.join(', ')}`);

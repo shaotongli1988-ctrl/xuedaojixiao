@@ -12,6 +12,7 @@ describe('base role admin resolution', () => {
       findOneBy: jest.fn().mockResolvedValue({
         id: 1,
         label: 'performance_hr',
+        isSuperAdmin: false,
         name: '绩效HR管理员',
       }),
     };
@@ -38,12 +39,13 @@ describe('base role admin resolution', () => {
     });
   });
 
-  test('info should keep all menus and departments only for admin label', async () => {
+  test('info should keep all menus and departments only for super-admin role flag', async () => {
     const service = new BaseSysRoleService() as any;
     service.baseSysRoleEntity = {
       findOneBy: jest.fn().mockResolvedValue({
         id: 9,
-        label: 'admin',
+        label: 'system_root',
+        isSuperAdmin: true,
         name: '超级管理员',
       }),
     };
@@ -60,7 +62,7 @@ describe('base role admin resolution', () => {
     expect(service.baseSysRoleDepartmentEntity.findBy).toHaveBeenCalledWith({});
   });
 
-  test('list should exclude admin role by label instead of fixed id', async () => {
+  test('list should exclude super-admin role by flag instead of role label or fixed id', async () => {
     const where = jest.fn().mockReturnThis();
     const getMany = jest.fn().mockResolvedValue([]);
     const service = new BaseSysRoleService() as any;
@@ -91,10 +93,7 @@ describe('base role admin resolution', () => {
 
     brackets.whereFactory(bracketQueryBuilder);
 
-    expect(bracketQueryBuilder.where).toHaveBeenCalledWith(
-      'a.label != :label',
-      { label: 'admin' }
-    );
+    expect(bracketQueryBuilder.where).toHaveBeenCalledWith('COALESCE(a.isSuperAdmin, 0) != 1');
     expect(bracketQueryBuilder.andWhere).toHaveBeenCalledWith(
       '(a.userId=:userId or a.id in (:...roleId))',
       {
@@ -115,7 +114,7 @@ describe('base role admin resolution', () => {
       }),
     };
     service.baseSysRoleEntity = {
-      findBy: jest.fn().mockResolvedValue([{ id: 9, label: 'admin' }]),
+      findBy: jest.fn().mockResolvedValue([{ id: 9, label: 'system_root', isSuperAdmin: true }]),
     };
     service.baseSysUserRoleEntity = {
       findBy: jest.fn().mockResolvedValue([
@@ -131,7 +130,7 @@ describe('base role admin resolution', () => {
     await service.refreshPerms(100);
 
     expect(service.baseSysRoleEntity.findBy).toHaveBeenCalledWith({
-      label: 'admin',
+      isSuperAdmin: true,
     });
     expect(service.baseSysUserRoleEntity.findBy).toHaveBeenCalledWith({
       roleId: expect.anything(),
@@ -149,5 +148,33 @@ describe('base role admin resolution', () => {
       3,
       33
     );
+  });
+
+  test('sanitize helper should strip incoming super-admin flag from public role CRUD payload', async () => {
+    const service = new BaseSysRoleService() as any;
+    const payload = {
+      id: 15,
+      name: '普通角色',
+      label: 'normal_role',
+      isSuperAdmin: true,
+    };
+
+    const result = service.sanitizeSuperAdminFlag(payload);
+
+    expect(result.isSuperAdmin).toBeUndefined();
+  });
+
+  test('update should reject touching system super-admin role directly', async () => {
+    const service = new BaseSysRoleService() as any;
+    service.baseSysRoleEntity = {
+      findBy: jest.fn().mockResolvedValue([{ id: 9, isSuperAdmin: true }]),
+    };
+
+    await expect(
+      service.update({
+        id: 9,
+        name: '非法修改',
+      })
+    ).rejects.toThrow('系统超管角色仅允许通过系统基座维护');
   });
 });

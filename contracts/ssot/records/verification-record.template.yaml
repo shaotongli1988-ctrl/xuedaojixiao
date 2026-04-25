@@ -1,0 +1,52 @@
+# xuedao repo-level verification record template.
+# Use to capture actual commands and outcomes for repository-wide governance
+# changes, contract sync, and guard updates.
+
+recordVersion: "1.0"
+verificationId: "XUEDAO-VER-YYYYMMDD-001"
+changeId: "XUEDAO-CHG-YYYYMMDD-001"
+owner: "engineering"
+executedAt: "YYYY-MM-DDTHH:mm:ss+08:00"
+overallStatus: "partial_pass"
+
+coverage:
+  riskLevel: "L2"
+  categories:
+    normalPath: "covered"
+    errorPath: "covered"
+    boundary: "covered"
+    permission: "covered"
+    stateFlow: "covered"
+    contract: "covered"
+    releaseReadiness: "not_run"
+
+checks:
+  - name: "repo-consistency-guards"
+    type: "quality"
+    command: "node ./scripts/run-repo-consistency-guards.mjs"
+    scope: "repository governance"
+    status: "not_run"
+    artifacts: []
+
+  - name: "unified-delivery-final"
+    type: "quality"
+    command: "node ./scripts/check-unified-delivery.mjs --phase final --all"
+    scope: "delivery gate"
+    status: "not_run"
+    artifacts: []
+
+skipped:
+  - name: "broader-build"
+    reason: "Template placeholder"
+    risk: "Fill this when a real repo change skips broader verification"
+
+findings:
+  blockers: []
+  followUps: []
+
+residualRisk: []
+
+summary:
+  passedChecks: 0
+  failedChecks: 0
+  skippedChecks: 0

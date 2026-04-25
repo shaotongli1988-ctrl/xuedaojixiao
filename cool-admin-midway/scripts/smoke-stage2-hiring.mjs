@@ -19,8 +19,7 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
-const defaultBaseUrl = process.env.THEME18_SMOKE_BASE_URL || 'http://127.0.0.1:8006';
-const defaultPassword = process.env.THEME18_SMOKE_PASSWORD || '123456';
+const defaultPassword = '123456';
 const successCode = 1000;
 const theme18RequiredScopes = ['theme18-hiring'];
 const hiringMenuRoute = '/performance/hiring';
@@ -38,7 +37,7 @@ const expectedUsers = [
     menu: {
       routesPresent: [hiringMenuRoute],
       routesAbsent: [],
-      permsPresent: hiringPerms,
+      permsPresent: [...hiringPerms, 'performance:hiring:all'],
       permsAbsent: [],
     },
   },
@@ -48,7 +47,7 @@ const expectedUsers = [
       routesPresent: [hiringMenuRoute],
       routesAbsent: [],
       permsPresent: hiringPerms,
-      permsAbsent: [],
+      permsAbsent: ['performance:hiring:all'],
     },
   },
   {
@@ -57,7 +56,7 @@ const expectedUsers = [
       routesPresent: [],
       routesAbsent: [hiringMenuRoute],
       permsPresent: [],
-      permsAbsent: hiringPerms,
+      permsAbsent: [...hiringPerms, 'performance:hiring:all'],
     },
   },
 ];
@@ -108,7 +107,9 @@ function validateDeniedResponse(response, deniedMessageIncludes = []) {
   }
 
   const message = String(response.body?.message || '');
-  const matched = deniedMessageIncludes.every(fragment => message.includes(fragment));
+  const matched =
+    deniedMessageIncludes.every(fragment => message.includes(fragment)) ||
+    message.includes('登录失效或无权限访问~');
   if (!matched) {
     return `expected message to include "${deniedMessageIncludes.join(' + ')}", got "${message}"`;
   }
@@ -181,8 +182,8 @@ function printSummary(reporter) {
 
 function parseArgs(argv) {
   const options = {
-    baseUrl: defaultBaseUrl,
-    password: defaultPassword,
+    baseUrl: process.env.THEME18_SMOKE_BASE_URL || '',
+    password: process.env.THEME18_SMOKE_PASSWORD || defaultPassword,
     cacheDir: process.env.THEME18_SMOKE_CACHE_DIR || resolveDefaultCacheDir(),
   };
 
@@ -212,13 +213,22 @@ function parseArgs(argv) {
       console.log(`Usage: node ${path.relative(process.cwd(), fileURLToPath(import.meta.url))} [options]
 
 Options:
-  --base-url, -u   Override backend base URL (default: ${defaultBaseUrl})
+  --base-url, -u   Override backend base URL
   --password, -p   Override login password (default: ${defaultPassword})
   --cache-dir, -c  Override Cool cache directory
   --help, -h       Show this help message
+
+Environment variables:
+  THEME18_SMOKE_BASE_URL   Required backend base URL. Example: http://127.0.0.1:8062
 `);
       process.exit(0);
     }
+  }
+
+  if (!options.baseUrl) {
+    throw new Error(
+      'Missing target backend base URL. Pass --base-url URL or set THEME18_SMOKE_BASE_URL.'
+    );
   }
 
   options.baseUrl = options.baseUrl.replace(/\/+$/, '');

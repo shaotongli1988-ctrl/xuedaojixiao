@@ -4,6 +4,28 @@
  * 这里只验证主题10的 HR-only、状态流、删除限制和输入校验，不负责数据库或控制器联调。
  */
 import { PerformanceContractService } from '../../src/modules/performance/service/contract';
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
+
+function attachAccessContextService(service: any) {
+  if (!service.baseSysMenuService) {
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue([]),
+    };
+  }
+  if (!service.baseSysPermsService) {
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+  }
+  service.performanceAccessContextService = Object.assign(
+    new PerformanceAccessContextService(),
+    {
+      ctx: service.ctx,
+      baseSysMenuService: service.baseSysMenuService,
+      baseSysPermsService: service.baseSysPermsService,
+    }
+  );
+}
 
 describe('performance contract service', () => {
   test('should allow hr create update and delete draft contract', async () => {
@@ -32,6 +54,9 @@ describe('performance contract service', () => {
     };
     service.baseSysDepartmentEntity = {
       findOneBy: jest.fn().mockResolvedValue({ id: 11, name: '研发部' }),
+    };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
     };
     service.performanceContractEntity = {
       create: jest.fn().mockImplementation(payload => payload),
@@ -62,6 +87,7 @@ describe('performance contract service', () => {
           throw new Error('结束日期必须晚于开始日期');
         }
       });
+    attachAccessContextService(service);
 
     await expect(
       service.add({
@@ -126,6 +152,10 @@ describe('performance contract service', () => {
     service.baseSysMenuService = {
       getPerms: jest.fn().mockResolvedValue([]),
     };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+    attachAccessContextService(service);
 
     await expect(service.page({})).rejects.toThrow('无权限查看合同列表');
     await expect(service.info(1)).rejects.toThrow('无权限查看合同详情');
@@ -161,6 +191,9 @@ describe('performance contract service', () => {
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce({ id: 11, name: '研发部' }),
     };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
     service.performanceContractEntity = {
       create: jest.fn().mockImplementation(payload => payload),
       save: jest.fn().mockResolvedValue({ id: 201 }),
@@ -179,6 +212,7 @@ describe('performance contract service', () => {
         status: 'draft',
       }),
     };
+    attachAccessContextService(service);
 
     await expect(
       service.add({
@@ -241,9 +275,13 @@ describe('performance contract service', () => {
     service.baseSysDepartmentEntity = {
       findOneBy: jest.fn().mockResolvedValue({ id: 11, name: '研发部' }),
     };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
     service.performanceContractEntity = {
       findBy: jest.fn().mockResolvedValue([{ id: 301, status: 'active' }]),
     };
+    attachAccessContextService(service);
 
     await expect(
       service.add({
@@ -258,6 +296,69 @@ describe('performance contract service', () => {
     await expect(service.delete([301])).rejects.toThrow('当前状态不允许删除');
   });
 
+  test('should reject draft-only creation and invalid probation or salary', async () => {
+    const service = new PerformanceContractService() as any;
+    service.ctx = {
+      admin: {
+        userId: 1,
+        username: 'hr_admin',
+        roleIds: [1],
+      },
+    };
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue(['performance:contract:add']),
+    };
+    service.baseSysUserEntity = {
+      findOneBy: jest
+        .fn()
+        .mockResolvedValue({ id: 2, name: '员工A', departmentId: 11 }),
+    };
+    service.baseSysDepartmentEntity = {
+      findOneBy: jest.fn().mockResolvedValue({ id: 11, name: '研发部' }),
+    };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+    service.performanceContractEntity = {
+      create: jest.fn().mockImplementation(payload => payload),
+      save: jest.fn(),
+    };
+    attachAccessContextService(service);
+
+    await expect(
+      service.add({
+        employeeId: 2,
+        type: 'full-time',
+        startDate: '2026-05-01',
+        endDate: '2027-04-30',
+        departmentId: 11,
+        status: 'active',
+      })
+    ).rejects.toThrow('新增合同状态只能为 draft');
+
+    await expect(
+      service.add({
+        employeeId: 2,
+        type: 'full-time',
+        startDate: '2026-05-01',
+        endDate: '2027-04-30',
+        departmentId: 11,
+        probationPeriod: -1,
+      })
+    ).rejects.toThrow('试用期不合法');
+
+    await expect(
+      service.add({
+        employeeId: 2,
+        type: 'full-time',
+        startDate: '2026-05-01',
+        endDate: '2027-04-30',
+        departmentId: 11,
+        salary: 'abc',
+      })
+    ).rejects.toThrow('薪资金额不合法');
+  });
+
   test('should reject editing expired or terminated contracts', async () => {
     const service = new PerformanceContractService() as any;
     service.ctx = {
@@ -269,6 +370,9 @@ describe('performance contract service', () => {
     };
     service.baseSysMenuService = {
       getPerms: jest.fn().mockResolvedValue(['performance:contract:update']),
+    };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
     };
     service.performanceContractEntity = {
       findOneBy: jest
@@ -284,6 +388,7 @@ describe('performance contract service', () => {
           status: 'terminated',
         }),
     };
+    attachAccessContextService(service);
 
     await expect(
       service.updateContract({

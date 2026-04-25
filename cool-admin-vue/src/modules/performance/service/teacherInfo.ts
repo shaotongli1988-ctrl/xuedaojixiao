@@ -4,74 +4,117 @@
  * 不负责跟进、合作标记、班级和看板请求。
  */
 import { BaseService } from '/@/cool';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeTeacherAttributionInfo,
+	decodeTeacherAttributionRecord,
+	decodeTeacherInfoPageResult,
+	decodeTeacherInfoRecord
+} from './teacher-contract';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import type {
 	TeacherAttributionInfo,
 	TeacherAttributionRecord,
 	TeacherCooperationStatus,
+	TeacherInfoAssignPayload,
+	TeacherInfoAttributionHistoryQuery,
+	TeacherInfoAttributionInfoQuery,
+	TeacherInfoCreatePayload,
+	TeacherInfoInfoQuery,
+	TeacherInfoPageQuery,
 	TeacherInfoPageResult,
-	TeacherInfoRecord
+	TeacherInfoRecord,
+	TeacherInfoUpdatePayload,
+	TeacherInfoUpdateStatusPayload
 } from '../types';
 
 export default class PerformanceTeacherInfoService extends BaseService {
-	permission = {
-		page: 'performance:teacherInfo:page',
-		info: 'performance:teacherInfo:info',
-		add: 'performance:teacherInfo:add',
-		update: 'performance:teacherInfo:update',
-		assign: 'performance:teacherInfo:assign',
-		updateStatus: 'performance:teacherInfo:updateStatus'
-	};
+	permission = PERMISSIONS.performance.teacherInfo;
 
 	constructor() {
 		super('admin/performance/teacherInfo');
 	}
 
-	fetchPage(data: any) {
-		return super.page(data) as unknown as Promise<TeacherInfoPageResult>;
+	fetchPage(data: TeacherInfoPageQuery) {
+		return asPerformanceServicePromise<TeacherInfoPageResult>(
+			super.page(data),
+			decodeTeacherInfoPageResult
+		);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<TeacherInfoRecord>;
+	fetchInfo(params: TeacherInfoInfoQuery) {
+		return asPerformanceServicePromise<TeacherInfoRecord>(
+			super.info(params),
+			decodeTeacherInfoRecord
+		);
 	}
 
-	createTeacherInfo(data: Partial<TeacherInfoRecord>) {
-		return super.add(data) as unknown as Promise<TeacherInfoRecord>;
+	createTeacherInfo(data: TeacherInfoCreatePayload) {
+		return asPerformanceServicePromise<TeacherInfoRecord>(
+			super.add(data),
+			decodeTeacherInfoRecord
+		);
 	}
 
-	updateTeacherInfo(data: Partial<TeacherInfoRecord> & { id: number }) {
-		return super.update(data) as unknown as Promise<TeacherInfoRecord>;
+	updateTeacherInfo(data: TeacherInfoUpdatePayload) {
+		return asPerformanceServicePromise<TeacherInfoRecord>(
+			super.update(data),
+			decodeTeacherInfoRecord
+		);
 	}
 
-	assign(data: { id: number; ownerEmployeeId: number }) {
-		return this.request({
-			url: '/assign',
-			method: 'POST',
-			data
-		}) as unknown as Promise<TeacherInfoRecord>;
+	assign(data: TeacherInfoAssignPayload) {
+		return asPerformanceServicePromise<TeacherInfoRecord>(
+			this.request({
+				url: '/assign',
+				method: 'POST',
+				data
+			}),
+			decodeTeacherInfoRecord
+		);
 	}
 
-	updateStatus(data: { id: number; status: TeacherCooperationStatus }) {
-		return this.request({
-			url: '/updateStatus',
-			method: 'POST',
-			data
-		}) as unknown as Promise<TeacherInfoRecord>;
+	updateStatus(data: TeacherInfoUpdateStatusPayload) {
+		return asPerformanceServicePromise<TeacherInfoRecord>(
+			this.request({
+				url: '/updateStatus',
+				method: 'POST',
+				data
+			}),
+			decodeTeacherInfoRecord
+		);
 	}
 
-	fetchAttributionInfo(params: { id: number }) {
-		return this.request({
-			url: '/attributionInfo',
-			method: 'GET',
-			params
-		}) as unknown as Promise<TeacherAttributionInfo>;
+	fetchAttributionInfo(params: TeacherInfoAttributionInfoQuery) {
+		return asPerformanceServicePromise<TeacherAttributionInfo>(
+			this.request({
+				url: '/attributionInfo',
+				method: 'GET',
+				params
+			}),
+			decodeTeacherAttributionInfo
+		);
 	}
 
-	fetchAttributionHistory(params: { id: number }) {
-		return this.request({
-			url: '/attributionHistory',
-			method: 'GET',
-			params
-		}) as unknown as Promise<TeacherAttributionRecord[]>;
+	fetchAttributionHistory(params: TeacherInfoAttributionHistoryQuery) {
+		return asPerformanceServicePromise<TeacherAttributionRecord[]>(
+			this.request({
+				url: '/attributionHistory',
+				method: 'GET',
+				params
+			}),
+			value =>
+				Array.isArray(value)
+					? value.map((item, index) =>
+							decodeTeacherAttributionRecord(
+								item,
+								`teacherAttributionHistory[${index}]`
+							)
+						)
+					: (() => {
+							throw new Error('teacherAttributionHistory 必须为数组');
+						})()
+		);
 	}
 }
 

@@ -1,0 +1,63 @@
+# xuedao repo-level change record template.
+# Use for repository-wide SSOT, contract, or guard changes.
+
+recordVersion: "1.0"
+changeId: "XUEDAO-CHG-YYYYMMDD-001"
+title: "Describe the repo-level governance or contract change"
+owner: "engineering"
+status: "draft"
+reviewers:
+  - "backend-owner"
+  - "frontend-owner"
+requestedAt: "YYYY-MM-DD"
+targetRelease: "YYYY.MM.rN"
+
+classification:
+  riskLevel: "L2"
+  severityGate: "strict-change-template"
+  triggers:
+    - "shared_module"
+    - "release_governance"
+
+scope:
+  outcome: ""
+  nonGoals: []
+  affectedModules: []
+
+sourceOfTruth:
+  primaryDocs:
+    - "contracts/openapi/xuedao.openapi.json"
+    - "contracts/ssot/xuedao-ssot-manifest.yaml"
+  linkedDocs:
+    - "performance-management-system/docs/24-自动化测试策略与脚本规划.md"
+  machineSourcesTouched: []
+  generatedConsumers: []
+
+impactSurface:
+  code: []
+  tests: []
+  docs: []
+  scripts: []
+  config: []
+  migrations: []
+
+acceptance:
+  normal: []
+  error: []
+  boundary: []
+  permission: []
+  stateFlow: []
+
+deliveryEvidenceRequired:
+  - "verification_record"
+  - "repo_guard_report"
+  - "rollback_statement"
+
+releaseAndRollback:
+  rolloutSteps: []
+  rollbackPath: []
+  monitoring: []
+
+waivers: []
+notes: []
+residualRisk: []

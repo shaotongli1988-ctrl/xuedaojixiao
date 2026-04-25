@@ -6,9 +6,25 @@
 import {
   assertCertificateTransition,
   normalizeCertificatePayload,
+  normalizeCertificateRecordStatus,
+  normalizeCertificateStatus,
   normalizeIssuePayload,
 } from '../../src/modules/performance/service/certificate-helper';
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
 import { PerformanceCertificateService } from '../../src/modules/performance/service/certificate';
+
+function attachAccessContext(service: any) {
+  const accessService = new PerformanceAccessContextService() as any;
+  accessService.ctx = service.ctx;
+  accessService.baseSysMenuService =
+    service.baseSysMenuService || { getPerms: jest.fn().mockResolvedValue([]) };
+  accessService.baseSysPermsService =
+    service.baseSysPermsService || {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+  service.performanceAccessContextService = accessService;
+  return service;
+}
 
 describe('performance certificate helper', () => {
   test('should normalize draft certificate payload by default', () => {
@@ -47,6 +63,28 @@ describe('performance certificate helper', () => {
     });
   });
 
+  test('should reject invalid certificate id in issue payload', () => {
+    expect(() =>
+      normalizeIssuePayload({
+        certificateId: 0,
+        employeeId: 2,
+        issuedAt: '2026-04-18 10:00:00',
+      })
+    ).toThrow('证书 ID 不合法');
+  });
+
+  test('should reject invalid certificate statuses and non-draft add status', () => {
+    expect(() => normalizeCertificateStatus('enabled')).toThrow(
+      '证书状态不合法'
+    );
+    expect(() => normalizeCertificateRecordStatus('cancelled')).toThrow(
+      '证书记录状态不合法'
+    );
+    expect(() =>
+      assertCertificateTransition(undefined, 'active', 'add')
+    ).toThrow('新增证书状态只能为 draft');
+  });
+
   test('should reject illegal certificate transition', () => {
     expect(() =>
       assertCertificateTransition('active', 'draft', 'update')
@@ -69,6 +107,7 @@ describe('performance certificate service', () => {
     service.performanceCertificateEntity = {
       findOneBy: jest.fn().mockResolvedValue({ id: 9, code: 'CERT-001' }),
     };
+    attachAccessContext(service);
 
     await expect(
       service.add({
@@ -96,6 +135,7 @@ describe('performance certificate service', () => {
         status: 'draft',
       }),
     };
+    attachAccessContext(service);
 
     await expect(
       service.issue({
@@ -144,6 +184,7 @@ describe('performance certificate service', () => {
         status: 'issued',
       }),
     };
+    attachAccessContext(service);
 
     await expect(
       service.issue({
@@ -164,6 +205,22 @@ describe('performance certificate service', () => {
       sourceCourseId: null,
       status: 'issued',
     });
+  });
+
+  test('should reject invalid certificate id on detail lookup', async () => {
+    const service = new PerformanceCertificateService() as any;
+    service.ctx = {
+      admin: {
+        userId: 1,
+        roleIds: [1],
+      },
+    };
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue(['performance:certificate:info']),
+    };
+    attachAccessContext(service);
+
+    await expect(service.info(0)).rejects.toThrow('证书 ID 不合法');
   });
 
   test('should scope record page by manager department tree', async () => {
@@ -211,6 +268,7 @@ describe('performance certificate service', () => {
     service.performanceCertificateRecordEntity = {
       createQueryBuilder: jest.fn().mockReturnValue(qb),
     };
+    attachAccessContext(service);
 
     const result = await service.recordPage({ page: 1, size: 10, status: 'issued' });
 

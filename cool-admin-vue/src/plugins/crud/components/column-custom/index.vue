@@ -187,7 +187,7 @@ defineExpose({
 		}
 
 		.right {
-			border-left: 1px solid #eee;
+			border-left: 1px solid var(--app-divider);
 		}
 	}
 }

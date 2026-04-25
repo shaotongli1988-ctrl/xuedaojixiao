@@ -1,14 +1,9 @@
 /**
  * 供应商领域服务。
  * 这里只负责主题11冻结的 `supplier page/info/add/update/delete` 最小主链，不负责评级、资质、合同管理、结算中心或外部系统集成。
- * 维护重点是经理只读、敏感字段脱敏和“inactive 且无关联有效采购订单”删除约束必须由服务端兜底。
+ * 维护重点是经理只读、敏感字段脱敏和“inactive 且无关联未结束采购订单”删除约束必须由服务端兜底。
  */
 import {
-  App,
-  ASYNC_CONTEXT_KEY,
-  ASYNC_CONTEXT_MANAGER_KEY,
-  AsyncContextManager,
-  IMidwayApplication,
   Inject,
   Provide,
   Scope,
@@ -16,22 +11,35 @@ import {
 } from '@midwayjs/core';
 import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
-import { Brackets, In, Repository } from 'typeorm';
-import * as jwt from 'jsonwebtoken';
+import { Brackets, In, Not, Repository } from 'typeorm';
 import { BaseSysMenuService } from '../../base/service/sys/menu';
 import { PerformancePurchaseOrderEntity } from '../entity/purchase-order';
 import { PerformanceSupplierEntity } from '../entity/supplier';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import { SUPPLIER_STATUS_VALUES } from './supplier-dict';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
 
-type SupplierStatus = 'active' | 'inactive';
-
-const SUPPLIER_STATUS: SupplierStatus[] = ['active', 'inactive'];
-
-const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
-  return require('../../base/config').default({
-    app,
-    env: app?.getEnv?.(),
-  }).jwt;
-};
+type SupplierStatus = (typeof SUPPLIER_STATUS_VALUES)[number];
+const PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resourceNotFound
+  );
+const PERFORMANCE_STATE_ACTION_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateActionNotAllowed
+  );
+const PERFORMANCE_STATE_DELETE_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateDeleteNotAllowed
+  );
 
 function normalizePageNumber(value: any, fallback: number) {
   const parsed = Number(value);
@@ -75,53 +83,23 @@ export class PerformanceSupplierService extends BaseService {
   baseSysMenuService: BaseSysMenuService;
 
   @Inject()
-  ctx;
-
-  @App()
-  app: IMidwayApplication;
+  performanceAccessContextService: PerformanceAccessContextService;
 
   private readonly perms = {
-    page: 'performance:supplier:page',
-    info: 'performance:supplier:info',
-    add: 'performance:supplier:add',
-    update: 'performance:supplier:update',
-    delete: 'performance:supplier:delete',
+    page: PERMISSIONS.performance.supplier.page,
+    info: PERMISSIONS.performance.supplier.info,
+    add: PERMISSIONS.performance.supplier.add,
+    update: PERMISSIONS.performance.supplier.update,
+    delete: PERMISSIONS.performance.supplier.delete,
   };
 
-  private get currentCtx() {
-    if (this.ctx?.admin) {
-      return this.ctx;
-    }
-
-    try {
-      const contextManager: AsyncContextManager = this.app
-        .getApplicationContext()
-        .get(ASYNC_CONTEXT_MANAGER_KEY);
-      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as any;
-    } catch (error) {
-      return this.ctx;
-    }
-  }
-
-  private get currentAdmin() {
-    if (this.currentCtx?.admin) {
-      return this.currentCtx.admin;
-    }
-
-    const token =
-      this.currentCtx?.get?.('Authorization') ||
-      this.currentCtx?.headers?.authorization;
-
-    if (!token) {
-      return undefined;
-    }
-
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
-  }
+  private readonly capabilityByPerm: Record<string, PerformanceCapabilityKey> = {
+    [PERMISSIONS.performance.supplier.page]: 'supplier.read',
+    [PERMISSIONS.performance.supplier.info]: 'supplier.read',
+    [PERMISSIONS.performance.supplier.add]: 'supplier.create',
+    [PERMISSIONS.performance.supplier.update]: 'supplier.update',
+    [PERMISSIONS.performance.supplier.delete]: 'supplier.delete',
+  };
 
   async page(query: any) {
     const perms = await this.currentPerms();
@@ -242,18 +220,19 @@ export class PerformanceSupplierService extends BaseService {
     });
 
     if (rows.length !== validIds.length) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     rows.forEach(item => {
       if (item.status !== 'inactive') {
-        throw new CoolCommException('当前状态不允许删除');
+        throw new CoolCommException(PERFORMANCE_STATE_DELETE_NOT_ALLOWED_MESSAGE);
       }
     });
 
+    // 删除保护按终态排除，兼容历史联调样例中的 legacy active 状态。
     const activeOrders = await this.performancePurchaseOrderEntity.findBy({
       supplierId: In(validIds as number[]),
-      status: 'active' as any,
+      status: Not(In(['closed', 'cancelled'])) as any,
     });
 
     if (activeOrders.length) {
@@ -361,13 +340,13 @@ export class PerformanceSupplierService extends BaseService {
       return nextStatus;
     }
 
-    throw new CoolCommException('当前状态不允许执行该操作');
+    throw new CoolCommException(PERFORMANCE_STATE_ACTION_NOT_ALLOWED_MESSAGE);
   }
 
   private normalizeStatus(value: any) {
     const status = String(value || 'active').trim() as SupplierStatus;
 
-    if (!SUPPLIER_STATUS.includes(status)) {
+    if (!SUPPLIER_STATUS_VALUES.includes(status)) {
       throw new CoolCommException('供应商状态不合法');
     }
 
@@ -375,33 +354,41 @@ export class PerformanceSupplierService extends BaseService {
   }
 
   private async currentPerms() {
-    const admin = this.currentAdmin;
+    return this.performanceAccessContextService.resolveAccessContext(undefined, {
+      allowEmptyRoleIds: false,
+      missingAuthMessage: '登录状态已失效',
+    });
+  }
 
-    if (!admin?.roleIds) {
-      throw new CoolCommException('登录状态已失效');
+  private resolveCapabilityKey(perm: string): PerformanceCapabilityKey {
+    const capabilityKey = this.capabilityByPerm[perm];
+    if (!capabilityKey) {
+      throw new CoolCommException(`未映射的供应商权限: ${perm}`);
     }
-
-    return this.baseSysMenuService.getPerms(admin.roleIds);
+    return capabilityKey;
   }
 
-  private hasPerm(perms: string[], perm: string) {
-    return perms.includes(perm);
-  }
-
-  private assertPerm(perms: string[], perm: string, message: string) {
-    if (!this.hasPerm(perms, perm)) {
+  private assertPerm(
+    access: PerformanceResolvedAccessContext,
+    perm: string,
+    message: string
+  ) {
+    if (
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        this.resolveCapabilityKey(perm)
+      )
+    ) {
       throw new CoolCommException(message);
     }
   }
 
-  private isHr(perms: string[]) {
-    return (
-      this.currentAdmin?.isAdmin === true ||
-      this.currentAdmin?.username === 'admin' ||
-      this.hasPerm(perms, this.perms.add) ||
-      this.hasPerm(perms, this.perms.update) ||
-      this.hasPerm(perms, this.perms.delete)
-    );
+  private isHr(access: PerformanceResolvedAccessContext) {
+    return this.performanceAccessContextService.hasAnyCapability(access, [
+      'supplier.create',
+      'supplier.update',
+      'supplier.delete',
+    ]);
   }
 
   private async assertCodeUnique(code?: string | null, excludeId?: number) {
@@ -420,7 +407,7 @@ export class PerformanceSupplierService extends BaseService {
     const supplier = await this.performanceSupplierEntity.findOneBy({ id });
 
     if (!supplier) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     return supplier;

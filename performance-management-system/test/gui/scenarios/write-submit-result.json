@@ -1,0 +1,211 @@
+{
+  "meta": {
+    "name": "write-submit-result-gui",
+    "description": "关键写操作提交结果态最小 GUI 点测"
+  },
+  "defaults": {
+    "uiBaseUrl": "http://127.0.0.1:9007",
+    "apiBaseUrl": "http://127.0.0.1:8006",
+    "chromeDebugUrl": "http://127.0.0.1:9222",
+    "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/write-submit-result",
+    "password": "123456",
+    "viewport": {
+      "width": 1440,
+      "height": 1100,
+      "deviceScaleFactor": 1,
+      "mobile": false
+    }
+  },
+  "scenarios": [
+    {
+      "name": "hr-write-submit-success",
+      "username": "hr_admin",
+      "route": "/performance/initiated",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "已发起考核",
+            "详情"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "clickText",
+          "text": "详情",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "评估单详情",
+            "发起晋升"
+          ],
+          "timeoutMs": 8000
+        },
+        {
+          "type": "clickText",
+          "text": "发起晋升",
+          "rootSelector": ".el-dialog",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "晋升管理",
+            "新建晋升单",
+            "当前岗位",
+            "目标岗位"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "inputByLabel",
+          "label": "当前岗位",
+          "value": "GUI当前岗位-20260419",
+          "waitAfterMs": 300
+        },
+        {
+          "type": "inputByLabel",
+          "label": "目标岗位",
+          "value": "GUI目标岗位-20260419",
+          "waitAfterMs": 300
+        },
+        {
+          "type": "screenshot",
+          "file": "write-submit-hr-promotion-form.png"
+        },
+        {
+          "type": "clickText",
+          "text": "保存",
+          "rootSelector": ".el-dialog",
+          "waitAfterMs": 2200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "晋升管理",
+            "GUI目标岗位-20260419"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "write-submit-hr-promotion-saved.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/meeting",
+          "waitAfterMs": 2200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "会议管理",
+            "签到"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "clickText",
+          "text": "签到",
+          "index": 0,
+          "waitAfterMs": 800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "会议签到",
+            "执行会议级签到"
+          ],
+          "timeoutMs": 8000
+        },
+        {
+          "type": "clickText",
+          "text": "确定",
+          "rootSelector": ".el-message-box",
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "会议管理"
+          ],
+          "excludes": [
+            "执行会议级签到"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "write-submit-hr-meeting-checkin-result.png"
+        }
+      ]
+    },
+    {
+      "name": "manager-write-submit-restricted",
+      "username": "manager_rd",
+      "route": "/performance/pending",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "待我审批",
+            "详情"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "clickText",
+          "text": "详情",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "评估单详情",
+            "关闭"
+          ],
+          "timeoutMs": 8000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "评估单详情",
+            "关闭"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "write-submit-manager-restricted.png"
+        }
+      ]
+    },
+    {
+      "name": "employee-write-submit-no-entry",
+      "username": "employee_platform",
+      "route": "/performance/promotion",
+      "waitAfterNavigateMs": 1800,
+      "steps": [
+        {
+          "type": "assertBodyText",
+          "includes": [
+            "404",
+            "找不到您要查找的页面"
+          ],
+          "excludes": [
+            "晋升管理"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "write-submit-employee-promotion-404.png"
+        }
+      ]
+    }
+  ]
+}

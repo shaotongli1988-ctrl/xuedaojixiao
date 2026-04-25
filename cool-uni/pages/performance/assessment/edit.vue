@@ -143,14 +143,17 @@ function goHome() {
 }
 
 async function save() {
-	if (!form.value) {
+	if (!form.value || !form.value.id) {
 		return;
 	}
 
 	submitting.value = true;
 
 	try {
-		await performanceAssessmentService.updateAssessment(form.value);
+		await performanceAssessmentService.updateAssessment({
+			...form.value,
+			id: form.value.id,
+		});
 		ui.showToast("草稿已保存");
 		backToDetail();
 	} catch (error: any) {

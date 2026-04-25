@@ -1,0 +1,70 @@
+{
+  "meta": {
+    "name": "cool-uni-persona-gui",
+    "description": "cool-uni H5 同账号读取数据库 persona 的最小 GUI 留痕"
+  },
+  "defaults": {
+    "uiBaseUrl": "http://127.0.0.1:9933/#",
+    "loginRoute": "/pages/user/login",
+    "apiBaseUrl": "http://127.0.0.1:8001",
+    "chromeDebugUrl": "http://127.0.0.1:9222",
+    "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/persona-uni-cold-start",
+    "password": "123456",
+    "viewport": {
+      "width": 430,
+      "height": 932,
+      "deviceScaleFactor": 1,
+      "mobile": true
+    }
+  },
+  "scenarios": [
+    {
+      "name": "hr-admin-uni-home-performance-operator",
+      "username": "hr_admin",
+      "route": "/pages/index/home",
+      "waitAfterNavigateMs": 5000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "移动工作台",
+            "绩效运营视角",
+            "已发起考核",
+            "招聘计划"
+          ],
+          "timeoutMs": 15000
+        },
+        {
+          "type": "assertBodyText",
+          "includes": [
+            "绩效运营视角",
+            "当前账号",
+            "移动工作台",
+            "已发起考核",
+            "薪资管理",
+            "指标库",
+            "招聘计划"
+          ],
+          "excludes": [
+            "HRBP 视角"
+          ]
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "移动工作台",
+            "已发起考核",
+            "薪资管理",
+            "指标库",
+            "招聘计划",
+            "当前账号 · 绩效运营视角"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "cool-uni-hr-home-performance-operator.png"
+        }
+      ]
+    }
+  ]
+}

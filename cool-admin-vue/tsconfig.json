@@ -8,7 +8,7 @@
 		"noImplicitAny": false,
 
 		"types": [
-			"./build/cool/eps",
+			"./build/cool/eps.ssot",
 			"./env",
 			"@cool-vue/crud/index",
 			"@cool-vue/vite-plugin/client",
@@ -21,6 +21,6 @@
 			"/~/*": ["./packages/*"]
 		}
 	},
-	"include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"],
+	"include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "build/cool/eps.ssot.d.ts"],
 	"exclude": ["node_modules", "dist"]
 }

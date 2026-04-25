@@ -1,0 +1,136 @@
+{
+  "name": "operations-support-loop-gui",
+  "description": "会议/合同/采购闭环最小 GUI 点测",
+  "configPath": "/Users/shaotongli/Documents/xuedao/performance-management-system/test/gui/scenarios/operations-support-loop.json",
+  "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/operations-support-loop",
+  "uiBaseUrl": "http://127.0.0.1:9007",
+  "apiBaseUrl": "http://127.0.0.1:8006",
+  "chromeDebugUrl": "http://127.0.0.1:9222",
+  "generatedAt": "2026-04-20T02:32:02.472Z",
+  "scenarios": [
+    {
+      "name": "hr-operations-support-loop",
+      "username": "hr_admin",
+      "route": "/performance/meeting",
+      "status": "failed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "会议管理",
+            "新建会议"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/operations-support-loop/operations-loop-hr-meeting.png"
+        },
+        {
+          "index": 3,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/contract"
+        },
+        {
+          "index": 4,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "合同管理",
+            "新建合同"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 5,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/operations-support-loop/operations-loop-hr-contract.png"
+        },
+        {
+          "index": 6,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/purchase-order"
+        },
+        {
+          "index": 7,
+          "type": "waitBodyText",
+          "status": "failed",
+          "error": "waitUntil timeout: (() => {\n\t\tconst text = document.body?.innerText || \"\";\n\t\treturn [\"采购订单管理\",\"新增采购订单\"].every(item => text.includes(item))\n\t\t\t&& [].every(item => !text.includes(item));\n\t})()"
+        }
+      ],
+      "error": "waitUntil timeout: (() => {\n\t\tconst text = document.body?.innerText || \"\";\n\t\treturn [\"采购订单管理\",\"新增采购订单\"].every(item => text.includes(item))\n\t\t\t&& [].every(item => !text.includes(item));\n\t})()"
+    },
+    {
+      "name": "manager-operations-support-loop",
+      "username": "manager_rd",
+      "route": "/performance/meeting",
+      "status": "failed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "会议管理",
+            "新建会议"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/operations-support-loop/operations-loop-manager-meeting.png"
+        },
+        {
+          "index": 3,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/purchase-order"
+        },
+        {
+          "index": 4,
+          "type": "waitBodyText",
+          "status": "failed",
+          "error": "waitUntil timeout: (() => {\n\t\tconst text = document.body?.innerText || \"\";\n\t\treturn [\"采购订单管理\",\"经理范围维护\"].every(item => text.includes(item))\n\t\t\t&& [].every(item => !text.includes(item));\n\t})()"
+        }
+      ],
+      "error": "waitUntil timeout: (() => {\n\t\tconst text = document.body?.innerText || \"\";\n\t\treturn [\"采购订单管理\",\"经理范围维护\"].every(item => text.includes(item))\n\t\t\t&& [].every(item => !text.includes(item));\n\t})()"
+    },
+    {
+      "name": "employee-operations-no-entry",
+      "username": "employee_platform",
+      "route": "/",
+      "status": "failed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "assertVisibleText",
+          "status": "failed",
+          "error": "assertVisibleText failed: includes=[\"我的考核\"] excludes=[\"会议管理\",\"合同管理\",\"采购订单管理\",\"供应商管理\"]"
+        }
+      ],
+      "error": "assertVisibleText failed: includes=[\"我的考核\"] excludes=[\"会议管理\",\"合同管理\",\"采购订单管理\",\"供应商管理\"]"
+    }
+  ],
+  "summary": {
+    "pass": 0,
+    "fail": 3
+  }
+}

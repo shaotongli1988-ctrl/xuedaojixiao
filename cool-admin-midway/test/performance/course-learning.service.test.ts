@@ -6,6 +6,28 @@
 import { PerformanceCourseExamService } from '../../src/modules/performance/service/course-exam';
 import { PerformanceCoursePracticeService } from '../../src/modules/performance/service/course-practice';
 import { PerformanceCourseReciteService } from '../../src/modules/performance/service/course-recite';
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
+
+function attachAccessContextService(service: any) {
+  if (!service.baseSysMenuService) {
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue([]),
+    };
+  }
+  if (!service.baseSysPermsService) {
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+  }
+  service.performanceAccessContextService = Object.assign(
+    new PerformanceAccessContextService(),
+    {
+      ctx: service.ctx,
+      baseSysMenuService: service.baseSysMenuService,
+      baseSysPermsService: service.baseSysPermsService,
+    }
+  );
+}
 
 describe('performance course learning services', () => {
   test('should return recite page with self-only summary fields', async () => {
@@ -54,6 +76,7 @@ describe('performance course learning services', () => {
         1,
       ]),
     };
+    attachAccessContextService(service);
 
     await expect(
       service.page({ page: 1, size: 20, courseId: 10 })
@@ -98,6 +121,7 @@ describe('performance course learning services', () => {
         userId: 99,
       }),
     };
+    attachAccessContextService(service);
 
     await expect(service.info(201)).rejects.toThrow('无权访问该背诵任务');
   });
@@ -148,6 +172,7 @@ describe('performance course learning services', () => {
       status: 'submitted',
       submissionText: '我的文本提交',
     });
+    attachAccessContextService(service);
 
     await expect(
       service.submit({
@@ -170,6 +195,49 @@ describe('performance course learning services', () => {
         evaluatedAt: null,
       })
     );
+  });
+
+  test('should reject submitting evaluated recite task', async () => {
+    const service = new PerformanceCourseReciteService() as any;
+    service.ctx = {
+      admin: {
+        userId: 3,
+        roleIds: [3],
+      },
+    };
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue(['performance:courseRecite:submit']),
+    };
+    service.performanceCourseReciteEntity = {
+      findOneBy: jest.fn().mockResolvedValue({
+        id: 302,
+        courseId: 10,
+        userId: 3,
+        status: 'evaluated',
+      }),
+    };
+    service.performanceCourseEntity = {
+      findOneBy: jest.fn().mockResolvedValue({
+        id: 10,
+        title: '新员工课程',
+        status: 'published',
+      }),
+    };
+    service.performanceCourseEnrollmentEntity = {
+      findOneBy: jest.fn().mockResolvedValue({
+        courseId: 10,
+        userId: 3,
+        status: 'registered',
+      }),
+    };
+    attachAccessContextService(service);
+
+    await expect(
+      service.submit({
+        id: 302,
+        submissionText: '再次提交',
+      })
+    ).rejects.toThrow('已评估任务不可再次提交');
   });
 
   test('should reject submitting evaluated practice task', async () => {
@@ -205,6 +273,7 @@ describe('performance course learning services', () => {
         status: 'registered',
       }),
     };
+    attachAccessContextService(service);
 
     await expect(
       service.submit({
@@ -225,6 +294,7 @@ describe('performance course learning services', () => {
     service.baseSysMenuService = {
       getPerms: jest.fn().mockResolvedValue([]),
     };
+    attachAccessContextService(service);
 
     await expect(
       service.page({ page: 1, size: 20, courseId: 10 })
@@ -258,6 +328,7 @@ describe('performance course learning services', () => {
         updateTime: '2026-04-18 10:00:00',
       }),
     };
+    attachAccessContextService(service);
     service.performanceCourseExamResultEntity = {
       findOneBy: jest.fn().mockResolvedValue(null),
     };
@@ -275,6 +346,7 @@ describe('performance course learning services', () => {
     service.performanceCoursePracticeEntity = {
       findBy: jest.fn().mockResolvedValue([]),
     };
+    attachAccessContextService(service);
 
     await expect(service.summary(10)).resolves.toEqual({
       courseId: 10,
@@ -332,6 +404,7 @@ describe('performance course learning services', () => {
     service.performanceCoursePracticeEntity = {
       findBy: jest.fn().mockResolvedValue([]),
     };
+    attachAccessContextService(service);
 
     await expect(service.summary(10)).resolves.toEqual({
       courseId: 10,
@@ -384,6 +457,7 @@ describe('performance course learning services', () => {
         vendor: '不应返回',
       }),
     };
+    attachAccessContextService(service);
 
     const result = await service.summary(10);
 

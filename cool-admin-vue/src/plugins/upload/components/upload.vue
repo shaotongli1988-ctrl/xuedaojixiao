@@ -614,7 +614,7 @@ defineExpose({
 			right: 0px;
 			top: 0px;
 			color: var(--el-color-danger);
-			background-color: #fff;
+			background-color: var(--app-surface-card);
 			border-radius: 100%;
 		}
 

@@ -3,51 +3,76 @@
  * 这里只封装主题19 V0.2 冻结的 teacherAttribution 接口，不负责冲突处理和审计请求。
  */
 import { BaseService } from '/@/cool';
-import type { TeacherAttributionInfo, TeacherAttributionPageResult, TeacherAttributionRecord } from '../types';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeTeacherAttributionInfo,
+	decodeTeacherAttributionInfoOrRecord,
+	decodeTeacherAttributionPageResult
+} from './teacher-contract';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import type {
+	TeacherAttributionAssignPayload,
+	TeacherAttributionChangePayload,
+	TeacherAttributionInfo,
+	TeacherAttributionInfoQuery,
+	TeacherAttributionPageQuery,
+	TeacherAttributionPageResult,
+	TeacherAttributionRecord,
+	TeacherAttributionRemovePayload
+} from '../types';
 
 export default class PerformanceTeacherAttributionService extends BaseService {
-	permission = {
-		page: 'performance:teacherAttribution:page',
-		info: 'performance:teacherAttribution:info',
-		assign: 'performance:teacherAttribution:assign',
-		change: 'performance:teacherAttribution:change',
-		remove: 'performance:teacherAttribution:remove'
-	};
+	permission = PERMISSIONS.performance.teacherAttribution;
 
 	constructor() {
 		super('admin/performance/teacherAttribution');
 	}
 
-	fetchPage(data: any) {
-		return super.page(data) as unknown as Promise<TeacherAttributionPageResult>;
+	fetchPage(data: TeacherAttributionPageQuery) {
+		return asPerformanceServicePromise<TeacherAttributionPageResult>(
+			super.page(data),
+			decodeTeacherAttributionPageResult
+		);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<TeacherAttributionInfo | TeacherAttributionRecord>;
+	fetchInfo(params: TeacherAttributionInfoQuery) {
+		return asPerformanceServicePromise<TeacherAttributionInfo | TeacherAttributionRecord>(
+			super.info(params),
+			decodeTeacherAttributionInfoOrRecord
+		);
 	}
 
-	assign(data: any) {
-		return this.request({
-			url: '/assign',
-			method: 'POST',
-			data
-		}) as unknown as Promise<TeacherAttributionInfo>;
+	assign(data: TeacherAttributionAssignPayload) {
+		return asPerformanceServicePromise<TeacherAttributionInfo>(
+			this.request({
+				url: '/assign',
+				method: 'POST',
+				data
+			}),
+			decodeTeacherAttributionInfo
+		);
 	}
 
-	change(data: any) {
-		return this.request({
-			url: '/change',
-			method: 'POST',
-			data
-		}) as unknown as Promise<TeacherAttributionInfo>;
+	change(data: TeacherAttributionChangePayload) {
+		return asPerformanceServicePromise<TeacherAttributionInfo>(
+			this.request({
+				url: '/change',
+				method: 'POST',
+				data
+			}),
+			decodeTeacherAttributionInfo
+		);
 	}
 
-	remove(data: { teacherId: number }) {
-		return this.request({
-			url: '/remove',
-			method: 'POST',
-			data
-		}) as unknown as Promise<TeacherAttributionInfo>;
+	remove(data: TeacherAttributionRemovePayload) {
+		return asPerformanceServicePromise<TeacherAttributionInfo>(
+			this.request({
+				url: '/remove',
+				method: 'POST',
+				data
+			}),
+			decodeTeacherAttributionInfo
+		);
 	}
 }
 

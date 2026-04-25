@@ -7,27 +7,57 @@ import { service } from '/@/cool';
 import { performanceAssetInfoService } from '../../service/asset-info';
 import { performanceSupplierService } from '../../service/supplier';
 import { loadDepartmentOptions, loadUserOptions } from '../../utils/lookup-options.js';
-import type { AssetInfoRecord, SupplierRecord, UserOption } from '../../types';
+import {
+	createElementLookupWarningHandler,
+	createLookupWarningHandler,
+	resolveLookupErrorMessage
+} from '../shared/lookup-warning';
+import type {
+	AssetOption,
+	DepartmentOption,
+	LookupErrorHandler,
+	SupplierOption,
+	UserOption
+} from '../../types';
+import type { CrudSelectOption } from '../shared/crud-page-shell';
 
-export interface DepartmentOption {
-	id: number;
-	label: string;
+export type { DepartmentOption } from '../../types';
+export type { AssetOption } from '../../types';
+export type { LookupErrorHandler } from '../../types';
+export type { SupplierOption } from '../../types';
+export { createElementLookupWarningHandler, createLookupWarningHandler, resolveLookupErrorMessage };
+
+export function toSelectOptions<T extends { id: number; label: string }>(
+	list: T[]
+): CrudSelectOption[] {
+	return list.map(item => ({
+		label: item.label,
+		value: item.id
+	}));
 }
 
-export interface AssetOption {
-	id: number;
-	name: string;
-	assetNo?: string;
-	assetStatus?: AssetInfoRecord['assetStatus'];
+export function toAssetSelectOptions(list: AssetOption[]): CrudSelectOption[] {
+	return list.map(item => ({
+		label: item.assetNo ? `${item.assetNo} / ${item.name}` : item.name,
+		value: item.id
+	}));
 }
 
-export interface SupplierOption {
-	id: number;
-	name: string;
-	status?: SupplierRecord['status'];
+export function toSupplierSelectOptions(list: SupplierOption[]): CrudSelectOption[] {
+	return list.map(item => ({
+		label: item.name,
+		value: item.id
+	}));
 }
 
-export async function loadAssetUserOptions(onError?: (error: any) => void) {
+export function toUserSelectOptions(list: UserOption[]): CrudSelectOption[] {
+	return list.map(item => ({
+		label: item.departmentName ? `${item.name} / ${item.departmentName}` : item.name,
+		value: item.id
+	}));
+}
+
+export async function loadAssetUserOptions(onError?: LookupErrorHandler) {
 	return loadUserOptions(
 		() =>
 			service.base.sys.user.page({
@@ -38,13 +68,13 @@ export async function loadAssetUserOptions(onError?: (error: any) => void) {
 	) as Promise<UserOption[]>;
 }
 
-export async function loadAssetDepartmentOptions(onError?: (error: any) => void) {
+export async function loadAssetDepartmentOptions(onError?: LookupErrorHandler) {
 	return loadDepartmentOptions(() => service.base.sys.department.list(), onError) as Promise<
 		DepartmentOption[]
 	>;
 }
 
-export async function loadAssetOptions(onError?: (error: any) => void) {
+export async function loadAssetOptions(onError?: LookupErrorHandler) {
 	try {
 		const result = await performanceAssetInfoService.fetchPage({
 			page: 1,
@@ -63,7 +93,7 @@ export async function loadAssetOptions(onError?: (error: any) => void) {
 	}
 }
 
-export async function loadAssetSupplierOptions(onError?: (error: any) => void) {
+export async function loadAssetSupplierOptions(onError?: LookupErrorHandler) {
 	try {
 		const result = await performanceSupplierService.fetchPage({
 			page: 1,

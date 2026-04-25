@@ -205,7 +205,7 @@ export default defineComponent({
 				uni.createSelectorQuery()
 					.in(proxy)
 					.select(`#cl-form-item--${id}`)
-					.boundingClientRect((res) => {
+					.boundingClientRect((res: any) => {
 						if (res) {
 							proxy.$root.scrollTo(res.top);
 						}

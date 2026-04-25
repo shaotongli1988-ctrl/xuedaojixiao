@@ -103,7 +103,7 @@ export default defineComponent({
 		}
 
 		// 选择
-		function select(index: number, item: any) {
+		function select(index: string | number, item: any) {
 			if (item.disabled) {
 				return false;
 			}
@@ -113,7 +113,7 @@ export default defineComponent({
 					visible.value = false;
 				});
 			} else {
-				close(index);
+				close(Number(index));
 			}
 		}
 

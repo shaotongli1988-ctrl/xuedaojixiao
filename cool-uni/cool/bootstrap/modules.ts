@@ -20,7 +20,7 @@ export async function createModules() {
 		"desc",
 	);
 
-	for (let i in modules) {
+	for (const i in modules) {
 		const { name, value } = modules[i];
 		const data = value ? value() : undefined;
 

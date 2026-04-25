@@ -4,46 +4,58 @@
  * 不负责财务凭证、关账或会计扩展能力。
  */
 import { BaseService } from '/@/cool';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeAssetDepreciationPageResult,
+	decodeAssetDepreciationSummary
+} from './asset-depreciation-contract';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 import type {
+	AssetDepreciationPageQuery,
 	AssetDepreciationPageResult,
-	AssetDepreciationSummary
+	AssetDepreciationRecalculatePayload,
+	AssetDepreciationSummary,
+	AssetDepreciationSummaryQuery
 } from '../types';
 
 export default class PerformanceAssetDepreciationService extends BaseService {
 	permission = {
-		page: 'performance:assetDepreciation:page',
-		summary: 'performance:assetDepreciation:summary',
-		recalculate: 'performance:assetDepreciation:recalculate'
+		page: PERMISSIONS.performance.assetDepreciation.page,
+		summary: PERMISSIONS.performance.assetDepreciation.summary,
+		recalculate: PERMISSIONS.performance.assetDepreciation.recalculate
 	};
 
 	constructor() {
 		super('admin/performance/assetDepreciation');
 	}
 
-	fetchPage(data: {
-		page: number;
-		size: number;
-		keyword?: string;
-		depreciationMonth?: string;
-		departmentId?: number;
-	}) {
-		return super.page(data) as unknown as Promise<AssetDepreciationPageResult>;
+	fetchPage(data: AssetDepreciationPageQuery) {
+		return asPerformanceServicePromise<AssetDepreciationPageResult>(
+			super.page(data),
+			decodeAssetDepreciationPageResult
+		);
 	}
 
-	fetchSummary(params?: { depreciationMonth?: string; departmentId?: number }) {
-		return this.request({
-			url: '/summary',
-			method: 'GET',
-			params
-		}) as unknown as Promise<AssetDepreciationSummary>;
+	fetchSummary(params?: AssetDepreciationSummaryQuery) {
+		return asPerformanceServicePromise<AssetDepreciationSummary>(
+			this.request({
+				url: '/summary',
+				method: 'GET',
+				params
+			}),
+			decodeAssetDepreciationSummary
+		);
 	}
 
-	recalculate(data: { depreciationMonth: string; departmentId?: number }) {
-		return this.request({
-			url: '/recalculate',
-			method: 'POST',
-			data
-		}) as unknown as Promise<AssetDepreciationSummary>;
+	recalculate(data: AssetDepreciationRecalculatePayload) {
+		return asPerformanceServicePromise<AssetDepreciationSummary>(
+			this.request({
+				url: '/recalculate',
+				method: 'POST',
+				data
+			}),
+			decodeAssetDepreciationSummary
+		);
 	}
 }
 

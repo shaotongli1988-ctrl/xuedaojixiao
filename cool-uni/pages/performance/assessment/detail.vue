@@ -33,8 +33,8 @@
 							<text class="detail-card__meta">{{ detail.code || "未生成编码" }}</text>
 						</view>
 						<status-pill
-							:label="assessmentStatusLabel(detail.status)"
-							:tone="assessmentStatusTone(detail.status)"
+							:label="statusLabel(detail.status)"
+							:tone="statusTone(detail.status)"
 						/>
 					</view>
 
@@ -50,7 +50,9 @@
 
 				<view class="detail-card">
 					<text class="detail-card__section">自评内容</text>
-					<text class="detail-card__paragraph">{{ detail.selfEvaluation || "未填写" }}</text>
+					<text class="detail-card__paragraph">{{
+						detail.selfEvaluation || "未填写"
+					}}</text>
 					<text v-if="detail.managerFeedback" class="detail-card__section">审批意见</text>
 					<text v-if="detail.managerFeedback" class="detail-card__paragraph">
 						{{ detail.managerFeedback }}
@@ -74,10 +76,7 @@
 					</view>
 				</view>
 
-				<view
-					v-if="user.roleKind === 'manager' && canAssessmentReview(detail)"
-					class="detail-card"
-				>
+				<view v-if="canReviewForm(detail)" class="detail-card">
 					<text class="detail-card__section">审批意见</text>
 					<textarea
 						v-model.trim="reviewComment"
@@ -88,29 +87,17 @@
 
 				<view class="detail-actions">
 					<cl-button plain @tap="backToSource">返回</cl-button>
-					<cl-button
-						v-if="user.roleKind === 'employee' && canAssessmentEdit(detail)"
-						plain
-						@tap="openEdit"
-					>
+					<cl-button v-if="canEditAction(detail)" plain @tap="openEdit">
 						编辑草稿
 					</cl-button>
-					<cl-button
-						v-if="user.roleKind === 'employee' && canAssessmentSubmit(detail)"
-						type="primary"
-						@tap="submitSelf"
-					>
+					<cl-button v-if="canSubmitAction(detail)" type="primary" @tap="submitSelf">
 						提交自评
 					</cl-button>
-					<cl-button
-						v-if="user.roleKind === 'manager' && canAssessmentReview(detail)"
-						plain
-						@tap="review('reject')"
-					>
+					<cl-button v-if="canRejectAction(detail)" plain @tap="review('reject')">
 						驳回
 					</cl-button>
 					<cl-button
-						v-if="user.roleKind === 'manager' && canAssessmentReview(detail)"
+						v-if="canApproveAction(detail)"
 						type="primary"
 						@tap="review('approve')"
 					>
@@ -129,8 +116,6 @@ import { router } from "/@/cool/router";
 import { useStore } from "/@/cool/store";
 import { performanceAssessmentService } from "/@/service/performance/assessment";
 import {
-	assessmentStatusLabel,
-	assessmentStatusTone,
 	canAssessmentEdit,
 	canAssessmentReview,
 	canAssessmentSubmit,
@@ -140,7 +125,9 @@ import { useUi } from "/$/cool-ui";
 import PageState from "/@/pages/performance/components/page-state.vue";
 import StatusPill from "/@/pages/performance/components/status-pill.vue";
 
-const { user } = useStore();
+const ASSESSMENT_STATUS_DICT_KEY = "performance.assessment.status";
+
+const { user, dict } = useStore();
 const ui = useUi();
 
 const detail = ref<AssessmentRecord | null>(null);
@@ -152,6 +139,27 @@ const state = ref({
 
 const recordId = computed(() => Number(router.query.id || 0));
 const source = computed(() => String(router.query.source || "assessment"));
+const canEditAction = (record: AssessmentRecord | null) =>
+	record
+		? user.hasPerm(performanceAssessmentService.permission.update) && canAssessmentEdit(record)
+		: false;
+const canSubmitAction = (record: AssessmentRecord | null) =>
+	record
+		? user.hasPerm(performanceAssessmentService.permission.submit) &&
+			canAssessmentSubmit(record)
+		: false;
+const canApproveAction = (record: AssessmentRecord | null) =>
+	record
+		? user.hasPerm(performanceAssessmentService.permission.approve) &&
+			canAssessmentReview(record)
+		: false;
+const canRejectAction = (record: AssessmentRecord | null) =>
+	record
+		? user.hasPerm(performanceAssessmentService.permission.reject) &&
+			canAssessmentReview(record)
+		: false;
+const canReviewForm = (record: AssessmentRecord | null) =>
+	Boolean(record) && (canApproveAction(record) || canRejectAction(record));
 
 function resolveMode(message?: string) {
 	if (/无权限|无权/.test(String(message || ""))) {
@@ -179,6 +187,7 @@ async function load() {
 	state.value = { mode: "loading", error: "" };
 
 	try {
+		await dict.refresh([ASSESSMENT_STATUS_DICT_KEY]);
 		detail.value = await performanceAssessmentService.fetchInfo({
 			id: recordId.value,
 		});
@@ -212,6 +221,11 @@ function backToSource() {
 }
 
 function openEdit() {
+	if (!canEditAction(detail.value)) {
+		ui.showTips("当前无权编辑该考核");
+		return;
+	}
+
 	router.push({
 		path: "/pages/performance/assessment/edit",
 		query: { id: recordId.value },
@@ -219,6 +233,11 @@ function openEdit() {
 }
 
 async function submitSelf() {
+	if (!canSubmitAction(detail.value)) {
+		ui.showTips("当前无权提交该考核");
+		return;
+	}
+
 	try {
 		await performanceAssessmentService.submit({ id: recordId.value });
 		ui.showToast("提交成功");
@@ -229,6 +248,14 @@ async function submitSelf() {
 }
 
 async function review(action: "approve" | "reject") {
+	const allowed =
+		action === "approve" ? canApproveAction(detail.value) : canRejectAction(detail.value);
+
+	if (!allowed) {
+		ui.showTips("当前无权执行审批动作");
+		return;
+	}
+
 	try {
 		await performanceAssessmentService[action]({
 			id: recordId.value,
@@ -239,6 +266,15 @@ async function review(action: "approve" | "reject") {
 	} catch (error: any) {
 		ui.showTips(error?.message || "审批失败");
 	}
+}
+
+function statusLabel(value?: string | null) {
+	return dict.getLabel(ASSESSMENT_STATUS_DICT_KEY, value) || value || "未知";
+}
+
+function statusTone(value?: string | null): "info" | "warning" | "success" | "error" {
+	const tone = dict.getMeta(ASSESSMENT_STATUS_DICT_KEY, value)?.tone;
+	return tone === "success" || tone === "warning" ? tone : tone === "danger" ? "error" : "info";
 }
 
 onShow(load);

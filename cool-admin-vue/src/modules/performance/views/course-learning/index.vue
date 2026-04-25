@@ -19,6 +19,14 @@
 					placeholder="请输入课程 ID"
 				/>
 				<el-button type="primary" @click="applyCourseId">进入课程学习</el-button>
+				<el-button
+					v-if="showCourseDetailButton && courseId"
+					type="primary"
+					plain
+					@click="goCourseDetail(courseId)"
+				>
+					查看课程详情
+				</el-button>
 				<el-button @click="reloadCurrentCourse">刷新当前课程</el-button>
 				<span class="course-learning-page__hint">当前课程 ID：{{ courseId || '-' }}</span>
 			</div>
@@ -29,13 +37,17 @@
 				<el-col :xs="24" :md="8">
 					<el-card shadow="never" class="course-learning-page__stat">
 						<div class="course-learning-page__stat-label">背诵任务</div>
-						<div class="course-learning-page__stat-value">{{ recitePagination.total }}</div>
+						<div class="course-learning-page__stat-value">
+							{{ recitePagination.total }}
+						</div>
 					</el-card>
 				</el-col>
 				<el-col :xs="24" :md="8">
 					<el-card shadow="never" class="course-learning-page__stat">
 						<div class="course-learning-page__stat-label">练习任务</div>
-						<div class="course-learning-page__stat-value">{{ practicePagination.total }}</div>
+						<div class="course-learning-page__stat-value">
+							{{ practicePagination.total }}
+						</div>
 					</el-card>
 				</el-col>
 				<el-col :xs="24" :md="8">
@@ -84,7 +96,9 @@
 							<el-table-column prop="title" label="任务标题" min-width="180" />
 							<el-table-column prop="status" label="状态" width="120">
 								<template #default="{ row }">
-									<el-tag :type="taskStatusTag(row.status)">{{ taskStatusLabel(row.status) }}</el-tag>
+									<el-tag :type="taskStatusTag(row.status)">{{
+										taskStatusLabel(row.status)
+									}}</el-tag>
 								</template>
 							</el-table-column>
 							<el-table-column prop="latestScore" label="最近分数" width="100">
@@ -96,7 +110,9 @@
 							<el-table-column prop="evaluatedAt" label="评估时间" min-width="170" />
 							<el-table-column label="操作" width="180" fixed="right">
 								<template #default="{ row }">
-									<el-button text @click="openTaskDetail(row, 'recite')">详情</el-button>
+									<el-button text @click="openTaskDetail(row, 'recite')"
+										>详情</el-button
+									>
 									<el-button
 										text
 										type="primary"
@@ -143,7 +159,9 @@
 							<el-table-column prop="title" label="任务标题" min-width="180" />
 							<el-table-column prop="status" label="状态" width="120">
 								<template #default="{ row }">
-									<el-tag :type="taskStatusTag(row.status)">{{ taskStatusLabel(row.status) }}</el-tag>
+									<el-tag :type="taskStatusTag(row.status)">{{
+										taskStatusLabel(row.status)
+									}}</el-tag>
 								</template>
 							</el-table-column>
 							<el-table-column prop="latestScore" label="最近分数" width="100">
@@ -155,7 +173,9 @@
 							<el-table-column prop="evaluatedAt" label="评估时间" min-width="170" />
 							<el-table-column label="操作" width="180" fixed="right">
 								<template #default="{ row }">
-									<el-button text @click="openTaskDetail(row, 'practice')">详情</el-button>
+									<el-button text @click="openTaskDetail(row, 'practice')"
+										>详情</el-button
+									>
 									<el-button
 										text
 										type="primary"
@@ -213,7 +233,9 @@
 		</template>
 
 		<el-card v-else shadow="never">
-			<el-empty description="缺少课程上下文，请先输入 courseId 或从课程入口携带查询参数进入" />
+			<el-empty
+				description="缺少课程上下文，请先输入 courseId 或从课程入口携带查询参数进入"
+			/>
 		</el-card>
 
 		<el-dialog v-model="detailVisible" title="任务详情" width="760px" destroy-on-close>
@@ -299,87 +321,113 @@ defineOptions({
 import { computed, onMounted, ref, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useRoute, useRouter } from 'vue-router';
+import { useDict } from '/$/dict';
 import { checkPerm } from '/$/base/utils/permission';
+import { useListPage } from '../../composables/use-list-page.js';
 import type {
 	CourseExamSummaryRecord,
 	CourseLearningTaskRecord,
 	CourseLearningTaskStatus
 } from '../../course-learning';
+import { performanceCourseService } from '../../service/course';
+import { PERMISSIONS } from '../../../base/generated/permissions.generated';
 import {
 	performanceCourseExamService,
 	performanceCoursePracticeService,
 	performanceCourseReciteService
 } from '../../service/course-learning';
 
+const COURSE_LEARNING_TASK_STATUS_DICT_KEY = 'performance.courseLearning.taskStatus';
+const COURSE_LEARNING_EXAM_STATUS_DICT_KEY = 'performance.courseLearning.examStatus';
+
 type LearningTab = 'recite' | 'practice' | 'exam';
 type TagType = 'info' | 'success' | 'warning' | 'danger';
 
-const TASK_STATUS_TAG_MAP: Record<CourseLearningTaskStatus, TagType> = {
-	pending: 'info',
-	submitted: 'warning',
-	evaluated: 'success'
-};
-
-const EXAM_STATUS_TAG_MAP: Record<CourseExamSummaryRecord['resultStatus'], TagType> = {
-	locked: 'info',
-	pending: 'warning',
-	passed: 'success',
-	failed: 'danger'
-};
-
 const route = useRoute();
 const router = useRouter();
+const { dict } = useDict();
 
 const canAccess = computed(() => {
 	return [
-		'performance:courseRecite:page',
-		'performance:coursePractice:page',
-		'performance:courseExam:summary'
+		PERMISSIONS.performance.courseRecite.page,
+		PERMISSIONS.performance.coursePractice.page,
+		PERMISSIONS.performance.courseExam.summary
 	].some(checkPerm);
 });
+const showCourseDetailButton = computed(
+	() =>
+		checkPerm(performanceCourseService.permission.page) &&
+		checkPerm(performanceCourseService.permission.info)
+);
 
 const activeTab = ref<LearningTab>('recite');
 const courseIdInput = ref<number | undefined>();
-const reciteStatus = ref<CourseLearningTaskStatus | ''>('');
-const practiceStatus = ref<CourseLearningTaskStatus | ''>('');
-
-const reciteRows = ref<CourseLearningTaskRecord[]>([]);
-const practiceRows = ref<CourseLearningTaskRecord[]>([]);
 const examSummary = ref<CourseExamSummaryRecord | null>(null);
 const detailTask = ref<CourseLearningTaskRecord | null>(null);
 const submitTask = ref<CourseLearningTaskRecord | null>(null);
 const submitTaskType = ref<'recite' | 'practice'>('recite');
 const submissionText = ref('');
 
-const reciteLoading = ref(false);
-const practiceLoading = ref(false);
 const examLoading = ref(false);
 const detailLoading = ref(false);
 const submitLoading = ref(false);
 const detailVisible = ref(false);
 const submitVisible = ref(false);
 
-const recitePagination = ref({
-	page: 1,
-	size: 10,
-	total: 0
-});
-
-const practicePagination = ref({
-	page: 1,
-	size: 10,
-	total: 0
-});
-
-const taskStatusOptions = [
-	{ label: '待完成', value: 'pending' },
-	{ label: '已提交', value: 'submitted' },
-	{ label: '已评估', value: 'evaluated' }
-];
+const taskStatusOptions = computed<Array<{ label: string; value: CourseLearningTaskStatus }>>(() =>
+	dict.get(COURSE_LEARNING_TASK_STATUS_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as CourseLearningTaskStatus
+	}))
+);
 
 const courseId = computed(() => {
 	const value = Number(route.query.courseId);
 	return Number.isInteger(value) && value > 0 ? value : 0;
+});
+const reciteList = useListPage({
+	createFilters: () => ({
+		status: '' as CourseLearningTaskStatus | ''
+	}),
+	canLoad: () => Boolean(courseId.value),
+	fetchPage: async params =>
+		performanceCourseReciteService.fetchPage({
+			page: params.page,
+			size: params.size,
+			courseId: courseId.value,
+			status: params.status || undefined
+		})
+});
+const practiceList = useListPage({
+	createFilters: () => ({
+		status: '' as CourseLearningTaskStatus | ''
+	}),
+	canLoad: () => Boolean(courseId.value),
+	fetchPage: async params =>
+		performanceCoursePracticeService.fetchPage({
+			page: params.page,
+			size: params.size,
+			courseId: courseId.value,
+			status: params.status || undefined
+		})
+});
+const reciteRows = reciteList.rows;
+const practiceRows = practiceList.rows;
+const reciteLoading = reciteList.loading;
+const practiceLoading = practiceList.loading;
+const recitePagination = reciteList.pager;
+const practicePagination = practiceList.pager;
+const reciteStatus = computed<CourseLearningTaskStatus | ''>({
+	get: () => reciteList.filters.status,
+	set: value => {
+		reciteList.filters.status = value || '';
+	}
+});
+const practiceStatus = computed<CourseLearningTaskStatus | ''>({
+	get: () => practiceList.filters.status,
+	set: value => {
+		practiceList.filters.status = value || '';
+	}
 });
 
 const currentCourseTitle = computed(() => {
@@ -432,6 +480,16 @@ async function applyCourseId() {
 	});
 }
 
+async function goCourseDetail(courseId: number) {
+	await router.push({
+		path: '/performance/course',
+		query: {
+			openDetail: '1',
+			courseId: String(courseId)
+		}
+	});
+}
+
 async function reloadCurrentCourse() {
 	if (!courseId.value) {
 		return;
@@ -440,41 +498,11 @@ async function reloadCurrentCourse() {
 }
 
 async function fetchReciteTasks() {
-	if (!courseId.value) {
-		return;
-	}
-	reciteLoading.value = true;
-	try {
-		const data = await performanceCourseReciteService.fetchPage({
-			page: recitePagination.value.page,
-			size: recitePagination.value.size,
-			courseId: courseId.value,
-			status: reciteStatus.value || undefined
-		});
-		reciteRows.value = data.list || [];
-		recitePagination.value = data.pagination;
-	} finally {
-		reciteLoading.value = false;
-	}
+	await reciteList.reload();
 }
 
 async function fetchPracticeTasks() {
-	if (!courseId.value) {
-		return;
-	}
-	practiceLoading.value = true;
-	try {
-		const data = await performanceCoursePracticeService.fetchPage({
-			page: practicePagination.value.page,
-			size: practicePagination.value.size,
-			courseId: courseId.value,
-			status: practiceStatus.value || undefined
-		});
-		practiceRows.value = data.list || [];
-		practicePagination.value = data.pagination;
-	} finally {
-		practiceLoading.value = false;
-	}
+	await practiceList.reload();
 }
 
 async function fetchExamSummary() {
@@ -491,10 +519,7 @@ async function fetchExamSummary() {
 	}
 }
 
-async function openTaskDetail(
-	row: CourseLearningTaskRecord,
-	type: 'recite' | 'practice'
-) {
+async function openTaskDetail(row: CourseLearningTaskRecord, type: 'recite' | 'practice') {
 	detailVisible.value = true;
 	detailLoading.value = true;
 	try {
@@ -507,10 +532,7 @@ async function openTaskDetail(
 	}
 }
 
-async function openTaskSubmit(
-	row: CourseLearningTaskRecord,
-	type: 'recite' | 'practice'
-) {
+async function openTaskSubmit(row: CourseLearningTaskRecord, type: 'recite' | 'practice') {
 	submitVisible.value = true;
 	submitLoading.value = false;
 	submissionText.value = '';
@@ -538,11 +560,11 @@ async function submitCurrentTask() {
 				? await performanceCourseReciteService.submitTask({
 						id: submitTask.value.id,
 						submissionText: submissionText.value
-				  })
+					})
 				: await performanceCoursePracticeService.submitTask({
 						id: submitTask.value.id,
 						submissionText: submissionText.value
-				  });
+					});
 		submitTask.value = result;
 		submitVisible.value = false;
 		ElMessage.success('提交成功');
@@ -553,145 +575,113 @@ async function submitCurrentTask() {
 }
 
 function changeRecitePage(page: number) {
-	recitePagination.value.page = page;
-	void fetchReciteTasks();
+	void reciteList.goToPage(page);
 }
 
 function changePracticePage(page: number) {
-	practicePagination.value.page = page;
-	void fetchPracticeTasks();
+	void practiceList.goToPage(page);
 }
 
 function taskStatusLabel(status: CourseLearningTaskStatus) {
-	return (
-		{
-			pending: '待完成',
-			submitted: '已提交',
-			evaluated: '已评估'
-		}[status] || status
-	);
+	return dict.getLabel(COURSE_LEARNING_TASK_STATUS_DICT_KEY, status) || status;
 }
 
 function taskStatusTag(status: CourseLearningTaskStatus): TagType {
-	return TASK_STATUS_TAG_MAP[status];
-}
-
-function examStatusLabel(status: CourseExamSummaryRecord['resultStatus']) {
 	return (
-		{
-			locked: '未解锁',
-			pending: '待生成',
-			passed: '已通过',
-			failed: '未通过'
-		}[status] || status
+		(dict.getMeta(COURSE_LEARNING_TASK_STATUS_DICT_KEY, status)?.tone as TagType | undefined) ||
+		'info'
 	);
 }
 
-function examStatusTag(status: CourseExamSummaryRecord['resultStatus']): TagType {
-	return EXAM_STATUS_TAG_MAP[status];
+function examStatusLabel(status: CourseExamSummaryRecord['resultStatus']) {
+	return dict.getLabel(COURSE_LEARNING_EXAM_STATUS_DICT_KEY, status) || status;
 }
 
-onMounted(() => {
+function examStatusTag(status: CourseExamSummaryRecord['resultStatus']): TagType {
+	return (
+		(dict.getMeta(COURSE_LEARNING_EXAM_STATUS_DICT_KEY, status)?.tone as TagType | undefined) ||
+		'info'
+	);
+}
+
+onMounted(async () => {
+	await dict.refresh([
+		COURSE_LEARNING_TASK_STATUS_DICT_KEY,
+		COURSE_LEARNING_EXAM_STATUS_DICT_KEY
+	]);
+
 	if (courseId.value) {
 		void reloadCurrentCourse();
 	}
 });
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@use '../../../../styles/patterns.metadata-workspace.scss' as metadataWorkspace;
+
 .course-learning-page {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-}
+	@include metadataWorkspace.metadata-workspace-shell(980px);
 
-.course-learning-page__hero {
-	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: 16px;
-}
-
-.course-learning-page__hero h2,
-.course-learning-page__header h3 {
-	margin: 0;
-}
-
-.course-learning-page__hero p,
-.course-learning-page__header p {
-	margin: 8px 0 0;
-	color: var(--el-text-color-secondary);
-}
-
-.course-learning-page__eyebrow {
-	margin-bottom: 8px;
-	color: var(--el-color-primary);
-	font-size: 13px;
-	font-weight: 600;
-	letter-spacing: 0.08em;
-	text-transform: uppercase;
-}
-
-.course-learning-page__entry {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: 12px;
-	margin-top: 20px;
-}
-
-.course-learning-page__hint {
-	color: var(--el-text-color-secondary);
-	font-size: 13px;
-}
-
-.course-learning-page__stat {
-	height: 100%;
-}
-
-.course-learning-page__stat-label {
-	color: var(--el-text-color-secondary);
-	font-size: 13px;
-}
-
-.course-learning-page__stat-value {
-	margin-top: 10px;
-	font-size: 28px;
-	font-weight: 700;
-}
-
-.course-learning-page__header {
-	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: 16px;
-}
-
-.course-learning-page__toolbar {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	margin-bottom: 16px;
-}
-
-.course-learning-page__pagination {
-	display: flex;
-	justify-content: flex-end;
-	margin-top: 16px;
-}
-
-.course-learning-page__submit-form {
-	margin-top: 16px;
-}
-
-@media (max-width: 768px) {
-	.course-learning-page__hero,
-	.course-learning-page__header {
-		flex-direction: column;
+	&__hero,
+	&__entry {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--app-space-3);
 	}
 
-	.course-learning-page__pagination {
-		justify-content: flex-start;
+	&__hero {
+		align-items: flex-start;
+		justify-content: space-between;
+	}
+
+	&__hero h2 {
+		margin: 0;
+		color: var(--app-text-primary);
+	}
+
+	&__hero p {
+		margin: 8px 0 0;
+		color: var(--app-text-secondary);
+		line-height: 1.6;
+	}
+
+	&__eyebrow {
+		margin-bottom: var(--app-space-2);
+		color: var(--app-text-tertiary);
+		font-size: var(--app-font-size-caption);
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	&__entry {
+		align-items: center;
+		margin-top: var(--app-space-5);
+	}
+
+	&__hint {
+		color: var(--app-text-secondary);
+		font-size: var(--app-font-size-caption);
+	}
+
+	&__stat {
+		height: 100%;
+	}
+
+	&__submit-form {
+		margin-top: var(--app-space-4);
+	}
+
+	@media (max-width: 768px) {
+		&__hero,
+		&__entry {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		:deep(.el-input-number) {
+			width: 100%;
+		}
 	}
 }
 </style>

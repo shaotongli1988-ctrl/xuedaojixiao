@@ -1,0 +1,306 @@
+{
+  "meta": {
+    "name": "detail-action-links-gui",
+    "description": "详情内动作入口最小 GUI 点测"
+  },
+  "defaults": {
+    "uiBaseUrl": "http://127.0.0.1:9007",
+    "apiBaseUrl": "http://127.0.0.1:8006",
+    "chromeDebugUrl": "http://127.0.0.1:9222",
+    "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/detail-action-links",
+    "password": "123456",
+    "viewport": {
+      "width": 1440,
+      "height": 1100,
+      "deviceScaleFactor": 1,
+      "mobile": false
+    }
+  },
+  "scenarios": [
+    {
+      "name": "hr-detail-actions",
+      "username": "hr_admin",
+      "route": "/performance/initiated",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "已发起考核",
+            "详情"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "clickText",
+          "text": "详情",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "评估单详情",
+            "发起环评",
+            "发起 PIP",
+            "发起晋升"
+          ],
+          "timeoutMs": 8000
+        },
+        {
+          "type": "screenshot",
+          "file": "detail-action-hr-assessment-actions.png"
+        },
+        {
+          "type": "clickText",
+          "text": "发起环评",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "360 环评任务",
+            "发起环评任务",
+            "来源评估单",
+            "被评价人"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "detail-action-hr-feedback-create.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/initiated",
+          "waitAfterMs": 2200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "已发起考核",
+            "详情"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "clickText",
+          "text": "详情",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "评估单详情",
+            "发起 PIP"
+          ],
+          "timeoutMs": 8000
+        },
+        {
+          "type": "clickText",
+          "text": "发起 PIP",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "PIP 追踪",
+            "新建 PIP",
+            "当前为评估单来源创建",
+            "来源评估单"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "detail-action-hr-pip-create.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/initiated",
+          "waitAfterMs": 2200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "已发起考核",
+            "详情"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "clickText",
+          "text": "详情",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "评估单详情",
+            "发起晋升"
+          ],
+          "timeoutMs": 8000
+        },
+        {
+          "type": "clickText",
+          "text": "发起晋升",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "晋升管理",
+            "新建晋升单",
+            "来源评估单ID",
+            "所属员工"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "detail-action-hr-promotion-create.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/meeting",
+          "waitAfterMs": 2200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "会议管理",
+            "签到"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "clickText",
+          "text": "签到",
+          "index": 0,
+          "waitAfterMs": 1000
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "会议签到",
+            "执行会议级签到",
+            "不记录逐参会人签到明细"
+          ],
+          "timeoutMs": 8000
+        },
+        {
+          "type": "screenshot",
+          "file": "detail-action-hr-meeting-checkin-confirm.png"
+        }
+      ]
+    },
+    {
+      "name": "manager-detail-actions-restricted",
+      "username": "manager_rd",
+      "route": "/performance/pending",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "待我审批",
+            "详情"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "clickText",
+          "text": "详情",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "评估单详情",
+            "关闭"
+          ],
+          "timeoutMs": 8000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "评估单详情",
+            "关闭"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "detail-action-manager-assessment-restricted.png"
+        }
+      ]
+    },
+    {
+      "name": "employee-detail-actions-no-entry",
+      "username": "employee_platform",
+      "route": "/performance/my-assessment",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "我的考核",
+            "详情"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "clickText",
+          "text": "详情",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "评估单详情",
+            "关闭"
+          ],
+          "timeoutMs": 8000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "评估单详情",
+            "关闭"
+          ],
+          "excludes": [
+            "发起环评",
+            "发起 PIP",
+            "发起晋升"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "detail-action-employee-assessment-restricted.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/pip",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "assertBodyText",
+          "includes": [
+            "404",
+            "找不到您要查找的页面"
+          ],
+          "excludes": [
+            "PIP 管理"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "detail-action-employee-pip-404.png"
+        }
+      ]
+    }
+  ]
+}

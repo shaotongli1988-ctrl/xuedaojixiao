@@ -1,0 +1,309 @@
+{
+  "name": "business-mainline-core-gui",
+  "description": "核心业务主链最小 GUI 点测",
+  "configPath": "/Users/shaotongli/Documents/xuedao/performance-management-system/test/gui/scenarios/business-mainline-core.json",
+  "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/business-mainline-core",
+  "uiBaseUrl": "http://127.0.0.1:9007",
+  "apiBaseUrl": "http://127.0.0.1:8006",
+  "chromeDebugUrl": "http://127.0.0.1:9222",
+  "generatedAt": "2026-04-18T16:29:07.610Z",
+  "scenarios": [
+    {
+      "name": "hr-business-mainline",
+      "username": "hr_admin",
+      "route": "/performance/indicator-library",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "指标库",
+            "新建指标"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/business-mainline-core/business-mainline-hr-indicator.png"
+        },
+        {
+          "index": 3,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/feedback"
+        },
+        {
+          "index": 4,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "360 环评任务",
+            "发起环评任务"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 5,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/business-mainline-core/business-mainline-hr-feedback.png"
+        },
+        {
+          "index": 6,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/pip"
+        },
+        {
+          "index": 7,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "PIP 追踪",
+            "新建 PIP"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 8,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/business-mainline-core/business-mainline-hr-pip.png"
+        },
+        {
+          "index": 9,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/promotion"
+        },
+        {
+          "index": 10,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "晋升管理",
+            "新建晋升单"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 11,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/business-mainline-core/business-mainline-hr-promotion.png"
+        },
+        {
+          "index": 12,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/salary"
+        },
+        {
+          "index": 13,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "薪资管理",
+            "仅 HR 可见"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 14,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/business-mainline-core/business-mainline-hr-salary.png"
+        }
+      ]
+    },
+    {
+      "name": "manager-business-mainline",
+      "username": "manager_rd",
+      "route": "/performance/pending",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "待我审批"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/business-mainline-core/business-mainline-manager-pending.png"
+        },
+        {
+          "index": 3,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/course"
+        },
+        {
+          "index": 4,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "培训课程管理",
+            "经理只读"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 5,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/business-mainline-core/business-mainline-manager-course.png"
+        },
+        {
+          "index": 6,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/supplier"
+        },
+        {
+          "index": 7,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "供应商管理",
+            "经理只读"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 8,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/business-mainline-core/business-mainline-manager-supplier.png"
+        },
+        {
+          "index": 9,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/salary"
+        },
+        {
+          "index": 10,
+          "type": "assertBodyText",
+          "status": "passed",
+          "includes": [
+            "404",
+            "找不到您要查找的页面"
+          ],
+          "excludes": [
+            "薪资管理"
+          ]
+        },
+        {
+          "index": 11,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/business-mainline-core/business-mainline-manager-salary-404.png"
+        }
+      ]
+    },
+    {
+      "name": "employee-business-mainline",
+      "username": "employee_platform",
+      "route": "/performance/my-assessment",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/business-mainline-core/business-mainline-employee-assessment.png"
+        },
+        {
+          "index": 3,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/goals"
+        },
+        {
+          "index": 4,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "目标地图"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 5,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/business-mainline-core/business-mainline-employee-goals.png"
+        },
+        {
+          "index": 6,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/course-learning"
+        },
+        {
+          "index": 7,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "培训学习与考试增强",
+            "员工自助"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 8,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/business-mainline-core/business-mainline-employee-learning.png"
+        },
+        {
+          "index": 9,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/promotion"
+        },
+        {
+          "index": 10,
+          "type": "assertBodyText",
+          "status": "passed",
+          "includes": [
+            "404",
+            "找不到您要查找的页面"
+          ],
+          "excludes": [
+            "晋升管理"
+          ]
+        },
+        {
+          "index": 11,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/business-mainline-core/business-mainline-employee-promotion-404.png"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "pass": 3,
+    "fail": 0
+  }
+}

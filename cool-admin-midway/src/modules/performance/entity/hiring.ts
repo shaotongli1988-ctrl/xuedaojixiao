@@ -30,15 +30,12 @@ export class PerformanceHiringEntity extends BaseEntity {
   @Column({ comment: '来源主键 ID', nullable: true })
   sourceId: number | null;
 
-  @Index()
   @Column({ comment: '面试 ID', nullable: true })
   interviewId: number | null;
 
-  @Index()
   @Column({ comment: '简历池 ID', nullable: true })
   resumePoolId: number | null;
 
-  @Index()
   @Column({ comment: '招聘计划 ID', nullable: true })
   recruitPlanId: number | null;
 
@@ -78,15 +75,19 @@ export class PerformanceHiringEntity extends BaseEntity {
   @Column({ comment: '录用状态', length: 20, default: 'offered' })
   status: string;
 
+  @Index()
   @Column({ comment: '发出录用时间', type: 'varchar', length: 19, nullable: true })
   offeredAt: string | null;
 
+  @Index()
   @Column({ comment: '接受录用时间', type: 'varchar', length: 19, nullable: true })
   acceptedAt: string | null;
 
+  @Index()
   @Column({ comment: '拒绝录用时间', type: 'varchar', length: 19, nullable: true })
   rejectedAt: string | null;
 
+  @Index()
   @Column({ comment: '关闭录用时间', type: 'varchar', length: 19, nullable: true })
   closedAt: string | null;
 

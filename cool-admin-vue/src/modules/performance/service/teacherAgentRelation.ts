@@ -3,34 +3,54 @@
  * 这里只封装主题19 V0.2 冻结的 teacherAgentRelation 接口，不负责主体档案、归因或审计请求。
  */
 import { BaseService } from '/@/cool';
-import type { TeacherAgentRelationPageResult, TeacherAgentRelationRecord } from '../types';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeTeacherAgentRelationPageResult,
+	decodeTeacherAgentRelationRecord
+} from './teacher-contract';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import type {
+	TeacherAgentRelationCreatePayload,
+	TeacherAgentRelationPageQuery,
+	TeacherAgentRelationPageResult,
+	TeacherAgentRelationRecord,
+	TeacherAgentRelationRemovePayload,
+	TeacherAgentRelationUpdatePayload
+} from '../types';
 
 export default class PerformanceTeacherAgentRelationService extends BaseService {
-	permission = {
-		page: 'performance:teacherAgentRelation:page',
-		add: 'performance:teacherAgentRelation:add',
-		update: 'performance:teacherAgentRelation:update',
-		delete: 'performance:teacherAgentRelation:delete'
-	};
+	permission = PERMISSIONS.performance.teacherAgentRelation;
 
 	constructor() {
 		super('admin/performance/teacherAgentRelation');
 	}
 
-	fetchPage(data: any) {
-		return super.page(data) as unknown as Promise<TeacherAgentRelationPageResult>;
+	fetchPage(data: TeacherAgentRelationPageQuery) {
+		return asPerformanceServicePromise<TeacherAgentRelationPageResult>(
+			super.page(data),
+			decodeTeacherAgentRelationPageResult
+		);
 	}
 
-	createTeacherAgentRelation(data: Partial<TeacherAgentRelationRecord>) {
-		return super.add(data) as unknown as Promise<TeacherAgentRelationRecord>;
+	createTeacherAgentRelation(data: TeacherAgentRelationCreatePayload) {
+		return asPerformanceServicePromise<TeacherAgentRelationRecord>(
+			super.add(data),
+			decodeTeacherAgentRelationRecord
+		);
 	}
 
-	updateTeacherAgentRelation(data: Partial<TeacherAgentRelationRecord> & { id: number }) {
-		return super.update(data) as unknown as Promise<TeacherAgentRelationRecord>;
+	updateTeacherAgentRelation(data: TeacherAgentRelationUpdatePayload) {
+		return asPerformanceServicePromise<TeacherAgentRelationRecord>(
+			super.update(data),
+			decodeTeacherAgentRelationRecord
+		);
 	}
 
-	removeTeacherAgentRelation(data: { id: number }) {
-		return super.delete(data) as unknown as Promise<TeacherAgentRelationRecord>;
+	removeTeacherAgentRelation(data: TeacherAgentRelationRemovePayload) {
+		return asPerformanceServicePromise<TeacherAgentRelationRecord>(
+			super.delete(data),
+			decodeTeacherAgentRelationRecord
+		);
 	}
 }
 

@@ -124,7 +124,7 @@ export default defineComponent({
 			uni.createSelectorQuery()
 				.in(instance?.proxy)
 				.select(".cl-footer__inner")
-				.boundingClientRect((rect) => {
+				.boundingClientRect((rect: any) => {
 					if (rect) {
 						height.value = Math.floor(rect.height || 0) + "px";
 					}

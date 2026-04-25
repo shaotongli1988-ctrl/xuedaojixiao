@@ -15,6 +15,7 @@ import * as pathUtil from 'path';
 import { BaseSysRoleMenuEntity } from '../../entity/sys/role_menu';
 import { BaseSysUserRoleEntity } from '../../entity/sys/user_role';
 import { BaseSysRoleEntity } from '../../entity/sys/role';
+import { resolveUserAdminRuntimeContext } from '../../../user/domain';
 
 /**
  * 菜单
@@ -50,11 +51,9 @@ export class BaseSysMenuService extends BaseService {
    * 获得所有菜单
    */
   async list() {
-    const isAdmin = await this.baseSysPermsService.isAdmin(this.ctx.admin.roleIds);
-    const menus = await this.getMenus(
-      this.ctx.admin.roleIds,
-      isAdmin
-    );
+    const currentAdmin = resolveUserAdminRuntimeContext(this.ctx.admin);
+    const isAdmin = await this.baseSysPermsService.isAdmin(currentAdmin.roleIds);
+    const menus = await this.getMenus(currentAdmin.roleIds, isAdmin);
     if (!_.isEmpty(menus)) {
       menus.forEach((e: any) => {
         const parentMenu = menus.filter(m => {
@@ -181,7 +180,7 @@ export class BaseSysMenuService extends BaseService {
     find.where('a.menuId = :menuId', { menuId: menuId });
     find.select('b.userId', 'userId');
     const users = await find.getRawMany();
-    const adminRoles = await this.baseSysRoleEntity.findBy({ label: 'admin' });
+    const adminRoles = await this.baseSysRoleEntity.findBy({ isSuperAdmin: true });
     if (!_.isEmpty(adminRoles)) {
       const adminRoleIds = adminRoles.map(role => role.id);
       const adminUsers = await this.baseSysUserRoleEntity.findBy({

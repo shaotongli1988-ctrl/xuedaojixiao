@@ -9,8 +9,8 @@ html.dark {
 	}
 
 	.app-slider {
-		--slider-bg-color: var(--el-bg-color);
-		--slider-text-color: var(--el-text-color-primary);
+		--slider-bg-color: var(--app-nav-surface);
+		--slider-text-color: var(--app-nav-text);
 	}
 
 	.cl-crud {

@@ -46,6 +46,13 @@ export class BaseSysUserEntity extends BaseEntity {
   @Column({ comment: '备注', nullable: true })
   remark: string;
 
+  @Column({
+    comment: '绩效域当前视角偏好',
+    nullable: true,
+    length: 64,
+  })
+  activePerformancePersonaKey: string | null;
+
   @Column({ comment: '状态 0-禁用 1-启用', default: 1 })
   status: number;
   // 部门名称

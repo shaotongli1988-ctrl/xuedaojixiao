@@ -2,6 +2,7 @@ import { ALL, Body, Inject, Post, Provide } from '@midwayjs/core';
 import { CoolController, BaseController } from '@cool-midway/core';
 import { BaseSysDepartmentEntity } from '../../../entity/sys/department';
 import { BaseSysDepartmentService } from '../../../service/sys/department';
+import { resolveUserAdminRuntimeContext } from '../../../../user/domain';
 
 /**
  * 部门
@@ -12,8 +13,9 @@ import { BaseSysDepartmentService } from '../../../service/sys/department';
   entity: BaseSysDepartmentEntity,
   service: BaseSysDepartmentService,
   insertParam: ctx => {
+    const currentAdmin = resolveUserAdminRuntimeContext(ctx.admin);
     return {
-      userId: ctx.admin.userId,
+      userId: currentAdmin.userId,
     };
   },
 })

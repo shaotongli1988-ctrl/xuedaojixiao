@@ -93,6 +93,162 @@
 					"style": {
 						"navigationBarTitleText": "查看汇总"
 					}
+				},
+				{
+					"path": "course-learning/index",
+					"style": {
+						"navigationBarTitleText": "课程学习"
+					}
+				},
+				{
+					"path": "course-learning/detail",
+					"style": {
+						"navigationBarTitleText": "任务详情"
+					}
+				},
+				{
+					"path": "course-learning/submit",
+					"style": {
+						"navigationBarTitleText": "提交学习任务"
+					}
+				},
+				{
+					"path": "teacher-channel/todo",
+					"style": {
+						"navigationBarTitleText": "班主任待办"
+					}
+				},
+				{
+					"path": "teacher-channel/detail",
+					"style": {
+						"navigationBarTitleText": "班主任详情"
+					}
+				},
+				{
+					"path": "dashboard/index",
+					"style": {
+						"navigationBarTitleText": "绩效驾驶舱"
+					}
+				},
+				{
+					"path": "work-plan/index",
+					"style": {
+						"navigationBarTitleText": "工作计划"
+					}
+				},
+				{
+					"path": "teacher-channel/dashboard",
+					"style": {
+						"navigationBarTitleText": "班主任看板"
+					}
+				},
+				{
+					"path": "teacher-channel/teacher",
+					"style": {
+						"navigationBarTitleText": "班主任资源"
+					}
+				},
+				{
+					"path": "teacher-channel/class",
+					"style": {
+						"navigationBarTitleText": "合作班级"
+					}
+				},
+				{
+					"path": "assessment/initiated",
+					"style": {
+						"navigationBarTitleText": "已发起考核"
+					}
+				},
+				{
+					"path": "course/index",
+					"style": {
+						"navigationBarTitleText": "课程管理"
+					}
+				},
+				{
+					"path": "meeting/index",
+					"style": {
+						"navigationBarTitleText": "会议管理"
+					}
+				},
+				{
+					"path": "suggestion/index",
+					"style": {
+						"navigationBarTitleText": "自动建议"
+					}
+				},
+				{
+					"path": "capability/index",
+					"style": {
+						"navigationBarTitleText": "能力地图"
+					}
+				},
+				{
+					"path": "certificate/index",
+					"style": {
+						"navigationBarTitleText": "证书管理"
+					}
+				},
+				{
+					"path": "contract/index",
+					"style": {
+						"navigationBarTitleText": "合同管理"
+					}
+				},
+				{
+					"path": "job-standard/index",
+					"style": {
+						"navigationBarTitleText": "职位标准"
+					}
+				},
+				{
+					"path": "indicator-library/index",
+					"style": {
+						"navigationBarTitleText": "指标库"
+					}
+				},
+				{
+					"path": "salary/index",
+					"style": {
+						"navigationBarTitleText": "薪资管理"
+					}
+				},
+				{
+					"path": "supplier/index",
+					"style": {
+						"navigationBarTitleText": "供应商管理"
+					}
+				},
+				{
+					"path": "pip/index",
+					"style": {
+						"navigationBarTitleText": "PIP 追踪"
+					}
+				},
+				{
+					"path": "promotion/index",
+					"style": {
+						"navigationBarTitleText": "晋升管理"
+					}
+				},
+				{
+					"path": "talent-asset/index",
+					"style": {
+						"navigationBarTitleText": "人才资产"
+					}
+				},
+				{
+					"path": "recruit-plan/index",
+					"style": {
+						"navigationBarTitleText": "招聘计划"
+					}
+				},
+				{
+					"path": "resume-pool/index",
+					"style": {
+						"navigationBarTitleText": "简历池"
+					}
 				}
 			]
 		}

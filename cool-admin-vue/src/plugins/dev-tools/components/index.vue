@@ -205,7 +205,7 @@ onMounted(() => {
 			justify-content: center;
 			height: 34px;
 			width: 34px;
-			background-color: #2c3142;
+			background-color: var(--app-nav-surface);
 			border-radius: 8px;
 			margin-bottom: 8px;
 
@@ -263,8 +263,8 @@ onMounted(() => {
 		bottom: 20px;
 		z-index: 10;
 		border-radius: 20px;
-		background-color: #2c3142;
-		color: #fff;
+		background-color: var(--app-nav-surface);
+		color: var(--app-nav-title);
 		cursor: pointer;
 		height: 30px;
 		width: 30px;

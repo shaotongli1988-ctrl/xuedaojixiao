@@ -1,0 +1,153 @@
+{
+  "meta": {
+    "name": "recruit-mainline-loop-gui",
+    "description": "招聘闭环最小 GUI 点测"
+  },
+  "defaults": {
+    "uiBaseUrl": "http://127.0.0.1:9007",
+    "apiBaseUrl": "http://127.0.0.1:8006",
+    "chromeDebugUrl": "http://127.0.0.1:9222",
+    "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/recruit-mainline-loop",
+    "password": "123456",
+    "viewport": {
+      "width": 1440,
+      "height": 1100,
+      "deviceScaleFactor": 1,
+      "mobile": false
+    }
+  },
+  "scenarios": [
+    {
+      "name": "hr-recruit-loop",
+      "username": "hr_admin",
+      "route": "/performance/talentAsset",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "招聘人才资产",
+            "新建人才资产"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "recruit-loop-hr-talent.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/resumePool",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "招聘简历池管理",
+            "转人才资产",
+            "发起面试"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "recruit-loop-hr-resume.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/interview",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "招聘面试管理",
+            "新建面试"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "recruit-loop-hr-interview.png"
+        }
+      ]
+    },
+    {
+      "name": "manager-recruit-loop",
+      "username": "manager_rd",
+      "route": "/performance/resumePool",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "招聘简历池管理",
+            "新建简历"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "新建简历"
+          ],
+          "excludes": [
+            "导出"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "recruit-loop-manager-resume.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/interview",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "招聘面试管理",
+            "新建面试"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "recruit-loop-manager-interview.png"
+        }
+      ]
+    },
+    {
+      "name": "employee-recruit-no-entry",
+      "username": "employee_platform",
+      "route": "/",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "我的考核"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": [
+            "招聘中心",
+            "招聘人才资产",
+            "招聘简历池",
+            "招聘面试"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "recruit-loop-employee-no-entry.png"
+        }
+      ]
+    }
+  ]
+}

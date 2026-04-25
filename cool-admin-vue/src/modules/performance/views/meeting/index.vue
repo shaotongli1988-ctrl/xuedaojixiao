@@ -75,7 +75,11 @@
 				<el-card shadow="never">
 					<div class="meeting-page__stat-label">已结束/已取消</div>
 					<div class="meeting-page__stat-value">
-						{{ rows.filter(item => ['completed', 'cancelled'].includes(item.status || '')).length }}
+						{{
+							rows.filter(item =>
+								['completed', 'cancelled'].includes(item.status || '')
+							).length
+						}}
 					</div>
 				</el-card>
 			</el-col>
@@ -126,13 +130,17 @@
 				</el-table-column>
 				<el-table-column prop="status" label="状态" width="110">
 					<template #default="{ row }">
-						<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+						<el-tag :type="statusTagType(row.status)">{{
+							statusLabel(row.status)
+						}}</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
 				<el-table-column label="操作" fixed="right" min-width="220">
 					<template #default="{ row }">
-						<el-button v-if="showInfoButton" text @click="openDetail(row)">详情</el-button>
+						<el-button v-if="showInfoButton" text @click="openDetail(row)"
+							>详情</el-button
+						>
 						<el-button v-if="canEdit(row)" text type="primary" @click="openEdit(row)">
 							编辑
 						</el-button>
@@ -200,25 +208,36 @@ defineOptions({
 });
 
 import { computed, onMounted, reactive, ref } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
+import { useDict } from '/$/dict';
 import { service } from '/@/cool';
 import { useBase } from '/$/base';
+import { useListPage } from '../../composables/use-list-page.js';
 import MeetingDetailDrawer from '../../components/meeting-detail-drawer.vue';
 import MeetingForm from '../../components/meeting-form.vue';
 import { performanceMeetingService } from '../../service/meeting';
+import { confirmElementAction, runTrackedElementAction } from '../shared/action-feedback';
+import {
+	createElementWarningFromErrorHandler,
+	isUserCancelledError,
+	showElementErrorFromError
+} from '../shared/error-message';
+import { loadUserOptions } from '../../utils/lookup-options.js';
 import {
 	type MeetingRecord,
+	type MeetingSaveRequest,
 	type MeetingStatus,
 	type UserOption,
 	createEmptyMeeting
 } from '../../types';
 
-const { user } = useBase();
+const MEETING_STATUS_DICT_KEY = 'performance.meeting.status';
 
-const rows = ref<MeetingRecord[]>([]);
+const { user } = useBase();
+const { dict } = useDict();
+
 const userOptions = ref<UserOption[]>([]);
-const tableLoading = ref(false);
 const submitLoading = ref(false);
 const formVisible = ref(false);
 const detailVisible = ref(false);
@@ -226,116 +245,101 @@ const editingMeeting = ref<MeetingRecord | null>(null);
 const detailMeeting = ref<MeetingRecord | null>(null);
 const editParticipantIdsProvided = ref(false);
 const participantSelectionTouched = ref(false);
-
-const filters = reactive({
-	keyword: '',
-	status: '' as '' | MeetingStatus,
-	startDate: '',
-	endDate: ''
-});
-
-const pagination = reactive({
-	page: 1,
-	size: 10,
-	total: 0
-});
-
 const form = reactive<MeetingRecord>(createEmptyMeeting(resolveCurrentUserId()));
 
-const filterStatusOptions: Array<{ label: string; value: MeetingStatus }> = [
-	{ label: '已安排', value: 'scheduled' },
-	{ label: '进行中', value: 'in_progress' },
-	{ label: '已结束', value: 'completed' },
-	{ label: '已取消', value: 'cancelled' }
-];
+const filterStatusOptions = computed<Array<{ label: string; value: MeetingStatus }>>(() =>
+	dict.get(MEETING_STATUS_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as MeetingStatus
+	}))
+);
 
 const canAccess = computed(() => checkPerm(performanceMeetingService.permission.page));
 const showInfoButton = computed(() => checkPerm(performanceMeetingService.permission.info));
 const showAddButton = computed(() => checkPerm(performanceMeetingService.permission.add));
+const meetingList = useListPage({
+	createFilters: () => ({
+		keyword: '',
+		status: '' as '' | MeetingStatus,
+		startDate: '',
+		endDate: ''
+	}),
+	canLoad: () => canAccess.value,
+	fetchPage: async params =>
+		performanceMeetingService.fetchPage({
+			page: params.page,
+			size: params.size,
+			keyword: params.keyword || undefined,
+			status: params.status || undefined,
+			startDate: params.startDate || undefined,
+			endDate: params.endDate || undefined
+		}),
+	onError: (error: unknown) => {
+		showElementErrorFromError(error, '会议列表加载失败');
+	}
+});
+const rows = meetingList.rows;
+const tableLoading = meetingList.loading;
+const filters = meetingList.filters;
+const pagination = meetingList.pager;
 const participantSelectionUnknown = computed(
 	() => Boolean(editingMeeting.value?.id) && !editParticipantIdsProvided.value
 );
-const detailCanCheckIn = computed(() => (detailMeeting.value ? canCheckIn(detailMeeting.value) : false));
+const detailCanCheckIn = computed(() =>
+	detailMeeting.value ? canCheckIn(detailMeeting.value) : false
+);
 const formStatusOptions = computed(() => {
 	const currentStatus = editingMeeting.value?.status || 'scheduled';
+	const createOption = (value: MeetingStatus) => ({
+		label: dict.getLabel(MEETING_STATUS_DICT_KEY, value) || value,
+		value
+	});
 
 	if (!editingMeeting.value?.id) {
-		return [{ label: '已安排', value: 'scheduled' as MeetingStatus }];
+		return [createOption('scheduled')];
 	}
 
 	switch (currentStatus) {
 		case 'scheduled':
 			return [
-				{ label: '已安排', value: 'scheduled' as MeetingStatus },
-				{ label: '进行中', value: 'in_progress' as MeetingStatus },
-				{ label: '已取消', value: 'cancelled' as MeetingStatus }
+				createOption('scheduled'),
+				createOption('in_progress'),
+				createOption('cancelled')
 			];
 		case 'in_progress':
-			return [
-				{ label: '进行中', value: 'in_progress' as MeetingStatus },
-				{ label: '已结束', value: 'completed' as MeetingStatus }
-			];
+			return [createOption('in_progress'), createOption('completed')];
 		case 'completed':
-			return [{ label: '已结束', value: 'completed' as MeetingStatus }];
+			return [createOption('completed')];
 		case 'cancelled':
-			return [{ label: '已取消', value: 'cancelled' as MeetingStatus }];
+			return [createOption('cancelled')];
 		default:
-			return [{ label: '已安排', value: 'scheduled' as MeetingStatus }];
+			return [createOption('scheduled')];
 	}
 });
 
 onMounted(async () => {
+	await dict.refresh([MEETING_STATUS_DICT_KEY]);
 	await loadUsers();
 	await refresh();
 });
 
 async function loadUsers() {
-	try {
-		const result = await service.base.sys.user.page({
-			page: 1,
-			size: 200
-		});
-
-		userOptions.value = (result.list || []).map((item: any) => ({
-			id: Number(item.id),
-			name: item.name,
-			departmentId: item.departmentId,
-			departmentName: item.departmentName
-		}));
-	} catch (error: any) {
-		ElMessage.warning(error.message || '用户选项加载失败');
-	}
+	userOptions.value = await loadUserOptions(
+		() =>
+			service.base.sys.user.page({
+				page: 1,
+				size: 200
+			}),
+		createElementWarningFromErrorHandler('用户选项加载失败')
+	);
 }
 
 async function refresh() {
-	if (!canAccess.value) {
-		return;
-	}
-
-	tableLoading.value = true;
-
-	try {
-		const result = await performanceMeetingService.fetchPage({
-			page: pagination.page,
-			size: pagination.size,
-			keyword: filters.keyword || undefined,
-			status: filters.status || undefined,
-			startDate: filters.startDate || undefined,
-			endDate: filters.endDate || undefined
-		});
-
-		rows.value = result.list || [];
-		pagination.total = result.pagination?.total || 0;
-	} catch (error: any) {
-		ElMessage.error(error.message || '会议列表加载失败');
-	} finally {
-		tableLoading.value = false;
-	}
+	await meetingList.reload();
 }
 
 function changePage(page: number) {
-	pagination.page = page;
-	refresh();
+	void meetingList.goToPage(page);
 }
 
 function openCreate() {
@@ -377,8 +381,8 @@ async function loadDetail(id: number, next: (record: MeetingRecord) => void) {
 	try {
 		const record = await performanceMeetingService.fetchInfo({ id });
 		next(record);
-	} catch (error: any) {
-		ElMessage.error(error.message || '会议详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '会议详情加载失败');
 	}
 }
 
@@ -407,8 +411,8 @@ async function submitForm(payload: MeetingRecord) {
 		ElMessage.success('保存成功');
 		formVisible.value = false;
 		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '保存失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '保存失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -419,43 +423,43 @@ async function handleCheckIn(row: { id: number; title?: string }) {
 		return;
 	}
 
+	let confirmed = false;
 	try {
-		await ElMessageBox.confirm(
+		confirmed = await confirmElementAction(
 			`确认对会议「${row.title || row.id}」执行会议级签到吗？本轮不记录逐参会人签到明细。`,
-			'会议签到',
-			{
-				type: 'warning'
-			}
+			'会议签到'
 		);
-	} catch (error: any) {
-		if (error === 'cancel' || error === 'close') {
-			return;
-		}
-		ElMessage.error(error.message || '签到确认失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '签到确认失败');
 		return;
 	}
 
-	submitLoading.value = true;
-
-	try {
-		await performanceMeetingService.checkIn({ id: row.id });
-		ElMessage.success('签到成功');
-		await refresh();
-
-		if (detailVisible.value && detailMeeting.value?.id === row.id) {
-			await openDetail({
-				id: row.id
-			} as MeetingRecord);
-		}
-	} catch (error: any) {
-		ElMessage.error(error.message || '签到失败');
-	} finally {
-		submitLoading.value = false;
+	if (!confirmed) {
+		return;
 	}
+
+	await runTrackedElementAction({
+		rowId: row.id,
+		actionType: 'checkIn',
+		request: () => performanceMeetingService.checkIn({ id: row.id }),
+		successMessage: '签到成功',
+		errorMessage: '签到失败',
+		setLoading: rowId => {
+			submitLoading.value = Boolean(rowId);
+		},
+		onSuccess: async () => {
+			if (detailVisible.value && detailMeeting.value?.id === row.id) {
+				await openDetail({
+					id: row.id
+				} as MeetingRecord);
+			}
+		},
+		refresh
+	});
 }
 
-function normalizePayload(payload: MeetingRecord) {
-	const nextPayload: Partial<MeetingRecord> = {
+function normalizePayload(payload: MeetingRecord): MeetingSaveRequest {
+	const nextPayload: MeetingSaveRequest = {
 		title: normalizeText(payload.title),
 		code: normalizeOptionalText(payload.code),
 		type: normalizeOptionalText(payload.type),
@@ -463,7 +467,7 @@ function normalizePayload(payload: MeetingRecord) {
 		startDate: payload.startDate,
 		endDate: payload.endDate,
 		location: normalizeOptionalText(payload.location),
-		organizerId: payload.organizerId,
+		organizerId: Number(payload.organizerId || 0),
 		status: payload.status || 'scheduled'
 	};
 
@@ -471,7 +475,11 @@ function normalizePayload(payload: MeetingRecord) {
 		new Set((payload.participantIds || []).map(item => Number(item)).filter(Boolean))
 	);
 
-	if (!editingMeeting.value?.id || editParticipantIdsProvided.value || participantSelectionTouched.value) {
+	if (
+		!editingMeeting.value?.id ||
+		editParticipantIdsProvided.value ||
+		participantSelectionTouched.value
+	) {
 		nextPayload.participantIds = normalizedParticipantIds;
 	}
 
@@ -486,36 +494,15 @@ function canEdit(row: MeetingRecord) {
 }
 
 function canCheckIn(row: MeetingRecord) {
-	return (
-		checkPerm(performanceMeetingService.permission.checkIn) &&
-		row.status === 'in_progress'
-	);
+	return checkPerm(performanceMeetingService.permission.checkIn) && row.status === 'in_progress';
 }
 
 function statusLabel(status?: MeetingStatus) {
-	switch (status) {
-		case 'in_progress':
-			return '进行中';
-		case 'completed':
-			return '已结束';
-		case 'cancelled':
-			return '已取消';
-		default:
-			return '已安排';
-	}
+	return dict.getLabel(MEETING_STATUS_DICT_KEY, status) || status || '已安排';
 }
 
 function statusTagType(status?: MeetingStatus) {
-	switch (status) {
-		case 'in_progress':
-			return 'warning';
-		case 'completed':
-			return 'success';
-		case 'cancelled':
-			return 'info';
-		default:
-			return undefined;
-	}
+	return dict.getMeta(MEETING_STATUS_DICT_KEY, status)?.tone;
 }
 
 function resolveCurrentUserId() {
@@ -534,55 +521,9 @@ function normalizeOptionalText(value?: string | null) {
 </script>
 
 <style lang="scss" scoped>
+@use '../../../../styles/patterns.management-workspace.scss' as managementWorkspace;
+
 .meeting-page {
-	display: grid;
-	gap: 16px;
-
-	&__toolbar {
-		display: flex;
-		justify-content: space-between;
-		gap: 16px;
-		flex-wrap: wrap;
-	}
-
-	&__toolbar-left,
-	&__toolbar-right {
-		display: flex;
-		gap: 12px;
-		flex-wrap: wrap;
-		align-items: center;
-	}
-
-	&__stat-label {
-		font-size: 13px;
-		color: var(--el-text-color-secondary);
-	}
-
-	&__stat-value {
-		margin-top: 8px;
-		font-size: 24px;
-		font-weight: 600;
-		color: var(--el-text-color-primary);
-	}
-
-	&__header {
-		display: flex;
-		justify-content: space-between;
-		gap: 16px;
-		align-items: center;
-		flex-wrap: wrap;
-	}
-
-	&__header-main {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-	}
-
-	&__pagination {
-		display: flex;
-		justify-content: flex-end;
-		margin-top: 16px;
-	}
+	@include managementWorkspace.management-workspace-shell(1120px);
 }
 </style>

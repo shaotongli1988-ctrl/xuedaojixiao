@@ -1,3 +1,4 @@
+<!-- 文件职责：承载后台主壳顶栏的一级导航、路由定位、工具栏和用户操作；不负责任何业务菜单分组生产，也不处理页面内容区状态；依赖菜单 store、浏览器尺寸判断和现有工具栏注册机制；维护重点是分组导航模式下不要让壳层布局挤压一级导航可用宽度。 -->
 <template>
 	<div class="app-topbar">
 		<div class="cl-comm__icon mr-[10px]" @click="app.fold()">
@@ -5,11 +6,15 @@
 			<cl-svg name="expand" v-else />
 		</div>
 
-		<!-- 路由导航 -->
-		<a-menu v-if="app.info.menu.isGroup" />
-		<route-nav v-else />
+		<div class="app-topbar__nav">
+			<a-menu v-if="app.info.menu.isGroup" />
+			<route-nav v-else />
+		</div>
 
-		<div class="flex1"></div>
+		<route-nav v-if="app.info.menu.isGroup && !browser.isMini" class="app-topbar__route" />
+
+		<div class="app-topbar__spacer" v-if="app.info.menu.isGroup"></div>
+		<div class="flex1" v-else></div>
 
 		<!-- 工具栏 -->
 		<ul class="app-topbar__tools">
@@ -139,17 +144,42 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .app-topbar {
+	--topbar-bg: var(--app-shell-topbar-bg);
+	--topbar-border: var(--app-shell-border);
+	--topbar-hover-bg: var(--app-control-hover-bg);
+
 	display: flex;
 	align-items: center;
 	height: 46px;
 	padding: 0 10px;
-	background-color: var(--el-bg-color);
-	border-bottom: 1px solid var(--el-border-color-extra-light);
+	background: var(--topbar-bg);
+	border-bottom: 1px solid var(--topbar-border);
 	box-sizing: border-box;
 	transition: height 0.2s ease-in-out;
 
+	&__nav {
+		display: flex;
+		align-items: center;
+		min-width: 0;
+		flex: 1;
+	}
+
+	&__route {
+		margin-left: 12px;
+		padding-left: 12px;
+		border-left: 1px solid var(--topbar-border);
+		min-width: 0;
+		overflow: hidden;
+	}
+
+	&__spacer {
+		width: 12px;
+		flex-shrink: 0;
+	}
+
 	.flex1 {
 		flex: 1;
+		min-width: 12px;
 	}
 
 	&__tools {
@@ -177,14 +207,20 @@ onMounted(() => {
 		border-radius: 6px;
 
 		&:hover {
-			background-color: var(--el-fill-color-light);
+			background-color: var(--topbar-hover-bg);
 		}
 	}
 
 	:deep(.cl-comm__icon) {
 		&:hover {
-			border-color: var(--el-color-primary);
+			border-color: var(--app-accent-brand);
 			background-color: transparent;
+		}
+	}
+
+	@media only screen and (max-width: 768px) {
+		&__route {
+			display: none;
 		}
 	}
 }
@@ -202,7 +238,7 @@ onMounted(() => {
 		align-items: center;
 		padding: 10px 10px;
 		width: 200px;
-		border-bottom: 1px solid var(--el-color-info-light-9);
+		border-bottom: 1px solid var(--app-shell-border);
 
 		.det {
 			margin-left: 10px;

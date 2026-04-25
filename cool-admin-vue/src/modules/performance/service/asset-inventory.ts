@@ -4,68 +4,98 @@
  * 不负责扫码、RFID 或外部仓储系统对接。
  */
 import { BaseService } from '/@/cool';
-import type { AssetInventoryPageResult, AssetInventoryRecord } from '../types';
+import { asPerformanceServicePromise } from './service-contract';
+import {
+	decodeAssetInventoryPageResult,
+	decodeAssetInventoryRecord
+} from './asset-inventory-contract';
+import type {
+	AssetInventoryClosePayload,
+	AssetInventoryCompletePayload,
+	AssetInventoryCreatePayload,
+	AssetInventoryInfoQuery,
+	AssetInventoryPageQuery,
+	AssetInventoryPageResult,
+	AssetInventoryRecord,
+	AssetInventoryStartPayload,
+	AssetInventoryUpdatePayload
+} from '../types';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 
 export default class PerformanceAssetInventoryService extends BaseService {
 	permission = {
-		page: 'performance:assetInventory:page',
-		info: 'performance:assetInventory:info',
-		add: 'performance:assetInventory:add',
-		update: 'performance:assetInventory:update',
-		start: 'performance:assetInventory:start',
-		complete: 'performance:assetInventory:complete',
-		close: 'performance:assetInventory:close'
+		page: PERMISSIONS.performance.assetInventory.page,
+		info: PERMISSIONS.performance.assetInventory.info,
+		add: PERMISSIONS.performance.assetInventory.add,
+		update: PERMISSIONS.performance.assetInventory.update,
+		start: PERMISSIONS.performance.assetInventory.start,
+		complete: PERMISSIONS.performance.assetInventory.complete,
+		close: PERMISSIONS.performance.assetInventory.close
 	};
 
 	constructor() {
 		super('admin/performance/assetInventory');
 	}
 
-	fetchPage(data: {
-		page: number;
-		size: number;
-		keyword?: string;
-		status?: AssetInventoryRecord['status'];
-		departmentId?: number;
-		ownerId?: number;
-	}) {
-		return super.page(data) as unknown as Promise<AssetInventoryPageResult>;
+	fetchPage(data: AssetInventoryPageQuery) {
+		return asPerformanceServicePromise<AssetInventoryPageResult>(
+			super.page(data),
+			decodeAssetInventoryPageResult
+		);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<AssetInventoryRecord>;
+	fetchInfo(params: AssetInventoryInfoQuery) {
+		return asPerformanceServicePromise<AssetInventoryRecord>(
+			super.info(params),
+			decodeAssetInventoryRecord
+		);
 	}
 
-	createInventory(data: Partial<AssetInventoryRecord>) {
-		return super.add(data) as unknown as Promise<AssetInventoryRecord>;
+	createInventory(data: AssetInventoryCreatePayload) {
+		return asPerformanceServicePromise<AssetInventoryRecord>(
+			super.add(data),
+			decodeAssetInventoryRecord
+		);
 	}
 
-	updateInventory(data: Partial<AssetInventoryRecord> & { id: number }) {
-		return super.update(data) as unknown as Promise<AssetInventoryRecord>;
+	updateInventory(data: AssetInventoryUpdatePayload) {
+		return asPerformanceServicePromise<AssetInventoryRecord>(
+			super.update(data),
+			decodeAssetInventoryRecord
+		);
 	}
 
-	startInventory(data: { id: number }) {
-		return this.request({
-			url: '/start',
-			method: 'POST',
-			data
-		}) as unknown as Promise<AssetInventoryRecord>;
+	startInventory(data: AssetInventoryStartPayload) {
+		return asPerformanceServicePromise<AssetInventoryRecord>(
+			this.request({
+				url: '/start',
+				method: 'POST',
+				data
+			}),
+			decodeAssetInventoryRecord
+		);
 	}
 
-	completeInventory(data: { id: number; completedDate?: string }) {
-		return this.request({
-			url: '/complete',
-			method: 'POST',
-			data
-		}) as unknown as Promise<AssetInventoryRecord>;
+	completeInventory(data: AssetInventoryCompletePayload) {
+		return asPerformanceServicePromise<AssetInventoryRecord>(
+			this.request({
+				url: '/complete',
+				method: 'POST',
+				data
+			}),
+			decodeAssetInventoryRecord
+		);
 	}
 
-	closeInventory(data: { id: number; remark?: string }) {
-		return this.request({
-			url: '/close',
-			method: 'POST',
-			data
-		}) as unknown as Promise<AssetInventoryRecord>;
+	closeInventory(data: AssetInventoryClosePayload) {
+		return asPerformanceServicePromise<AssetInventoryRecord>(
+			this.request({
+				url: '/close',
+				method: 'POST',
+				data
+			}),
+			decodeAssetInventoryRecord
+		);
 	}
 }
 

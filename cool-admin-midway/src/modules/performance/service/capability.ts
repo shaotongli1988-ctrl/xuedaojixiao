@@ -4,11 +4,6 @@
  * 维护重点是经理只能查看定义与部门树范围内画像摘要，员工无入口，且返回字段必须保持摘要裁剪。
  */
 import {
-  App,
-  ASYNC_CONTEXT_KEY,
-  ASYNC_CONTEXT_MANAGER_KEY,
-  AsyncContextManager,
-  IMidwayApplication,
   Inject,
   Provide,
   Scope,
@@ -17,32 +12,37 @@ import {
 import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Brackets, In, Repository } from 'typeorm';
-import * as jwt from 'jsonwebtoken';
 import { BaseSysDepartmentEntity } from '../../base/entity/sys/department';
 import { BaseSysUserEntity } from '../../base/entity/sys/user';
 import { BaseSysMenuService } from '../../base/service/sys/menu';
-import { BaseSysPermsService } from '../../base/service/sys/perms';
 import { PerformanceCapabilityItemEntity } from '../entity/capability-item';
 import { PerformanceCapabilityModelEntity } from '../entity/capability-model';
 import { PerformanceCapabilityPortraitEntity } from '../entity/capability-portrait';
 import { PerformanceCertificateRecordEntity } from '../entity/certificate-record';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
 import {
   assertCapabilityModelTransition,
   normalizeCapabilityArray,
   normalizeCapabilityModelPayload,
 } from './capability-helper';
-
-const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
-  return require('../../base/config').default({
-    app,
-    env: app?.getEnv?.(),
-  }).jwt;
-};
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
 
 const normalizePagination = (value: any, fallback: number) => {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 };
+const PERFORMANCE_EMPLOYEE_ID_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.employeeIdInvalid
+  );
 
 @Provide()
 @Scope(ScopeEnum.Request, { allowDowngrade: true })
@@ -69,53 +69,25 @@ export class PerformanceCapabilityService extends BaseService {
   baseSysMenuService: BaseSysMenuService;
 
   @Inject()
-  baseSysPermsService: BaseSysPermsService;
-
-  @Inject()
-  ctx;
-
-  @App()
-  app: IMidwayApplication;
+  performanceAccessContextService: PerformanceAccessContextService;
 
   private readonly perms = {
-    modelPage: 'performance:capabilityModel:page',
-    modelInfo: 'performance:capabilityModel:info',
-    modelAdd: 'performance:capabilityModel:add',
-    modelUpdate: 'performance:capabilityModel:update',
-    itemInfo: 'performance:capabilityItem:info',
-    portraitInfo: 'performance:capabilityPortrait:info',
+    modelPage: PERMISSIONS.performance.capabilityModel.page,
+    modelInfo: PERMISSIONS.performance.capabilityModel.info,
+    modelAdd: PERMISSIONS.performance.capabilityModel.add,
+    modelUpdate: PERMISSIONS.performance.capabilityModel.update,
+    itemInfo: PERMISSIONS.performance.capabilityItem.info,
+    portraitInfo: PERMISSIONS.performance.capabilityPortrait.info,
   };
 
-  private get currentCtx() {
-    if (this.ctx?.admin) {
-      return this.ctx;
-    }
-    try {
-      const contextManager: AsyncContextManager = this.app
-        .getApplicationContext()
-        .get(ASYNC_CONTEXT_MANAGER_KEY);
-      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as any;
-    } catch (error) {
-      return this.ctx;
-    }
-  }
-
-  private get currentAdmin() {
-    if (this.currentCtx?.admin) {
-      return this.currentCtx.admin;
-    }
-    const token =
-      this.currentCtx?.get?.('Authorization') ||
-      this.currentCtx?.headers?.authorization;
-    if (!token) {
-      return undefined;
-    }
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
-  }
+  private readonly capabilityByPerm: Record<string, PerformanceCapabilityKey> = {
+    [PERMISSIONS.performance.capabilityModel.page]: 'capability.model.read',
+    [PERMISSIONS.performance.capabilityModel.info]: 'capability.model.read',
+    [PERMISSIONS.performance.capabilityModel.add]: 'capability.model.create',
+    [PERMISSIONS.performance.capabilityModel.update]: 'capability.model.update',
+    [PERMISSIONS.performance.capabilityItem.info]: 'capability.item.read',
+    [PERMISSIONS.performance.capabilityPortrait.info]: 'capability.portrait.read',
+  };
 
   async modelPage(query: any) {
     const perms = await this.currentPerms();
@@ -238,7 +210,7 @@ export class PerformanceCapabilityService extends BaseService {
     const normalizedEmployeeId = Number(employeeId || 0);
 
     if (!Number.isInteger(normalizedEmployeeId) || normalizedEmployeeId <= 0) {
-      throw new CoolCommException('员工 ID 不合法');
+      throw new CoolCommException(PERFORMANCE_EMPLOYEE_ID_INVALID_MESSAGE);
     }
 
     const portrait = await this.performanceCapabilityPortraitEntity.findOneBy({
@@ -283,17 +255,31 @@ export class PerformanceCapabilityService extends BaseService {
   }
 
   private async currentPerms() {
-    const admin = this.currentAdmin;
-
-    if (!admin?.roleIds) {
-      throw new CoolCommException('登录状态已失效');
-    }
-
-    return this.baseSysMenuService.getPerms(admin.roleIds);
+    return this.performanceAccessContextService.resolveAccessContext(undefined, {
+      allowEmptyRoleIds: false,
+      missingAuthMessage: '登录状态已失效',
+    });
   }
 
-  private assertPerm(perms: string[], perm: string, message: string) {
-    if (!perms.includes(perm)) {
+  private resolveCapabilityKey(perm: string): PerformanceCapabilityKey {
+    const capabilityKey = this.capabilityByPerm[perm];
+    if (!capabilityKey) {
+      throw new CoolCommException(`未映射的能力地图权限: ${perm}`);
+    }
+    return capabilityKey;
+  }
+
+  private assertPerm(
+    access: PerformanceResolvedAccessContext,
+    perm: string,
+    message: string
+  ) {
+    if (
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        this.resolveCapabilityKey(perm)
+      )
+    ) {
       throw new CoolCommException(message);
     }
   }
@@ -376,36 +362,39 @@ export class PerformanceCapabilityService extends BaseService {
     };
   }
 
-  private hasHrScope(perms: string[]) {
-    return (
-      perms.includes(this.perms.modelAdd) ||
-      perms.includes(this.perms.modelUpdate) ||
-      Boolean(this.currentAdmin?.isAdmin) ||
-      this.currentAdmin?.username === 'admin'
-    );
+  private hasHrScope(access: PerformanceResolvedAccessContext) {
+    return this.performanceAccessContextService.hasAnyCapability(access, [
+      'capability.model.create',
+      'capability.model.update',
+    ]);
   }
 
-  private async departmentScopeIds(perms: string[]) {
-    if (this.hasHrScope(perms)) {
+  private async departmentScopeIds(access: PerformanceResolvedAccessContext) {
+    if (
+      this.performanceAccessContextService.hasCapabilityInScopes(
+        access,
+        'capability.portrait.read',
+        ['company']
+      )
+    ) {
       return null;
     }
 
-    const userId = Number(this.currentAdmin?.userId || 0);
-
-    if (!userId) {
-      throw new CoolCommException('登录上下文缺失');
-    }
-
-    const ids = await this.baseSysPermsService.departmentIds(userId);
-    return Array.isArray(ids) ? ids.map(item => Number(item)) : [];
+    return Array.from(
+      new Set(
+        (Array.isArray(access.departmentIds) ? access.departmentIds : [])
+          .map(item => Number(item))
+          .filter(item => Number.isInteger(item) && item > 0)
+      )
+    );
   }
 
   private async assertDepartmentScope(
     departmentId: number | null,
-    perms: string[],
+    access: PerformanceResolvedAccessContext,
     message: string
   ) {
-    const scopeIds = await this.departmentScopeIds(perms);
+    const scopeIds = await this.departmentScopeIds(access);
 
     if (scopeIds === null) {
       return;

@@ -4,39 +4,56 @@
  * 不负责班主任资源、跟进或看板请求。
  */
 import { BaseService } from '/@/cool';
-import type { TeacherClassPageResult, TeacherClassRecord } from '../types';
+import { asPerformanceServicePromise } from './service-contract';
+import { decodeTeacherClassPageResult, decodeTeacherClassRecord } from './teacher-contract';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import type {
+	TeacherClassCreatePayload,
+	TeacherClassInfoQuery,
+	TeacherClassPageQuery,
+	TeacherClassPageResult,
+	TeacherClassRecord,
+	TeacherClassRemovePayload,
+	TeacherClassUpdatePayload
+} from '../types';
 
 export default class PerformanceTeacherClassService extends BaseService {
-	permission = {
-		page: 'performance:teacherClass:page',
-		info: 'performance:teacherClass:info',
-		add: 'performance:teacherClass:add',
-		update: 'performance:teacherClass:update',
-		delete: 'performance:teacherClass:delete'
-	};
+	permission = PERMISSIONS.performance.teacherClass;
 
 	constructor() {
 		super('admin/performance/teacherClass');
 	}
 
-	fetchPage(data: any) {
-		return super.page(data) as unknown as Promise<TeacherClassPageResult>;
+	fetchPage(data: TeacherClassPageQuery) {
+		return asPerformanceServicePromise<TeacherClassPageResult>(
+			super.page(data),
+			decodeTeacherClassPageResult
+		);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<TeacherClassRecord>;
+	fetchInfo(params: TeacherClassInfoQuery) {
+		return asPerformanceServicePromise<TeacherClassRecord>(
+			super.info(params),
+			decodeTeacherClassRecord
+		);
 	}
 
-	createTeacherClass(data: Partial<TeacherClassRecord>) {
-		return super.add(data) as unknown as Promise<TeacherClassRecord>;
+	createTeacherClass(data: TeacherClassCreatePayload) {
+		return asPerformanceServicePromise<TeacherClassRecord>(
+			super.add(data),
+			decodeTeacherClassRecord
+		);
 	}
 
-	updateTeacherClass(data: Partial<TeacherClassRecord> & { id: number }) {
-		return super.update(data) as unknown as Promise<TeacherClassRecord>;
+	updateTeacherClass(data: TeacherClassUpdatePayload) {
+		return asPerformanceServicePromise<TeacherClassRecord>(
+			super.update(data),
+			decodeTeacherClassRecord
+		);
 	}
 
-	removeTeacherClass(data: { ids: number[] }) {
-		return super.delete(data) as unknown as Promise<void>;
+	removeTeacherClass(data: TeacherClassRemovePayload) {
+		return asPerformanceServicePromise<void>(super.delete(data));
 	}
 }
 

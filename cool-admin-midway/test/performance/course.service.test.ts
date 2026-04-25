@@ -7,8 +7,32 @@ import {
   assertCourseDeletable,
   buildCourseUpdatePatch,
   normalizeCourseAddPayload,
+  normalizeCoursePayload,
+  normalizeCourseStatus,
 } from '../../src/modules/performance/service/course-helper';
 import { PerformanceCourseService } from '../../src/modules/performance/service/course';
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
+
+function attachAccessContextService(service: any) {
+  if (!service.baseSysMenuService) {
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue([]),
+    };
+  }
+  if (!service.baseSysPermsService) {
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+  }
+  service.performanceAccessContextService = Object.assign(
+    new PerformanceAccessContextService(),
+    {
+      ctx: service.ctx,
+      baseSysMenuService: service.baseSysMenuService,
+      baseSysPermsService: service.baseSysPermsService,
+    }
+  );
+}
 
 describe('performance course helper', () => {
   test('should create draft course by default', () => {
@@ -27,6 +51,19 @@ describe('performance course helper', () => {
       endDate: null,
       status: 'draft',
     });
+  });
+
+  test('should reject invalid course status, empty title, and non-draft creation', () => {
+    expect(() => normalizeCourseStatus('enabled')).toThrow('课程状态不合法');
+    expect(() => normalizeCoursePayload({ title: '   ' })).toThrow(
+      '课程标题不能为空'
+    );
+    expect(() =>
+      normalizeCourseAddPayload({
+        title: '新员工训练营',
+        status: 'published',
+      })
+    ).toThrow('新建课程默认保存为草稿');
   });
 
   test('should only allow description endDate and close on published course', () => {
@@ -83,6 +120,28 @@ describe('performance course helper', () => {
     ).toThrow('已发布课程不允许修改标题');
   });
 
+  test('should reject immutable field changes on published course', () => {
+    const current = {
+      title: '晋升领导力训练营',
+      code: 'LEAD-001',
+      category: '管理培训',
+      description: '旧描述',
+      startDate: '2026-05-01',
+      endDate: '2026-05-10',
+      status: 'published' as const,
+    };
+
+    expect(() =>
+      buildCourseUpdatePatch(current, { ...current, code: 'LEAD-002' })
+    ).toThrow('已发布课程不允许修改编码');
+    expect(() =>
+      buildCourseUpdatePatch(current, { ...current, category: '专项培训' })
+    ).toThrow('已发布课程不允许修改分类');
+    expect(() =>
+      buildCourseUpdatePatch(current, { ...current, startDate: '2026-05-02' })
+    ).toThrow('已发布课程不允许修改开始日期');
+  });
+
   test('should only allow deleting draft course', () => {
     expect(() => assertCourseDeletable('draft')).not.toThrow();
     expect(() => assertCourseDeletable('published')).toThrow(
@@ -108,6 +167,7 @@ describe('performance course service', () => {
         .fn()
         .mockResolvedValue(['performance:course:page', 'performance:course:info']),
     };
+    attachAccessContextService(service);
 
     await expect(
       service.enrollmentPage({ page: 1, size: 20, courseId: 1 })
@@ -125,6 +185,7 @@ describe('performance course service', () => {
     service.baseSysMenuService = {
       getPerms: jest.fn().mockResolvedValue(['performance:course:add']),
     };
+    attachAccessContextService(service);
     service.performanceCourseEntity = {
       findOneBy: jest.fn().mockResolvedValue({ id: 9, code: 'TR-001' }),
     };
@@ -179,6 +240,7 @@ describe('performance course service', () => {
     service.performanceCourseEnrollmentEntity = {
       createQueryBuilder: jest.fn().mockReturnValue(qb),
     };
+    attachAccessContextService(service);
 
     await expect(
       service.enrollmentPage({ page: 1, size: 20, courseId: 8 })

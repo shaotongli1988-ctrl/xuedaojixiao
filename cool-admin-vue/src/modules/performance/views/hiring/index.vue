@@ -91,9 +91,17 @@
 						{{ row.targetPosition || '-' }}
 					</template>
 				</el-table-column>
-				<el-table-column label="来源类型" min-width="120">
+				<el-table-column label="来源类型" min-width="220">
 					<template #default="{ row }">
-						{{ sourceTypeLabel(row.sourceType) }}
+						<div class="hiring-page__source-cell">
+							<span>{{ sourceTypeLabel(row.sourceType) }}</span>
+							<span
+								v-if="hiringSourceSummary(row) !== '-'"
+								class="hiring-page__source-meta"
+							>
+								{{ hiringSourceSummary(row) }}
+							</span>
+						</div>
 					</template>
 				</el-table-column>
 				<el-table-column prop="sourceId" label="来源 ID" width="110">
@@ -101,20 +109,29 @@
 						{{ row.sourceId ?? '-' }}
 					</template>
 				</el-table-column>
-				<el-table-column prop="sourceStatusSnapshot" label="来源状态快照" min-width="180" show-overflow-tooltip>
+				<el-table-column
+					prop="sourceStatusSnapshot"
+					label="来源状态快照"
+					min-width="180"
+					show-overflow-tooltip
+				>
 					<template #default="{ row }">
 						{{ row.sourceStatusSnapshot || '-' }}
 					</template>
 				</el-table-column>
 				<el-table-column prop="status" label="状态" width="110">
 					<template #default="{ row }">
-						<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+						<el-tag :type="statusTagType(row.status)">{{
+							statusLabel(row.status)
+						}}</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
 				<el-table-column label="操作" fixed="right" min-width="300">
 					<template #default="{ row }">
-						<el-button v-if="showInfoButton" text @click="openDetail(row)">详情</el-button>
+						<el-button v-if="showInfoButton" text @click="openDetail(row)"
+							>详情</el-button
+						>
 						<el-button
 							v-if="canAccept(row)"
 							text
@@ -158,12 +175,7 @@
 			</div>
 		</el-card>
 
-		<el-dialog
-			v-model="detailVisible"
-			title="录用详情"
-			width="900px"
-			destroy-on-close
-		>
+		<el-dialog v-model="detailVisible" title="录用详情" width="900px" destroy-on-close>
 			<div v-if="detailRecord" class="hiring-page__detail">
 				<el-alert
 					v-if="detailRecord.status && detailRecord.status !== 'offered'"
@@ -182,7 +194,10 @@
 						</el-tag>
 					</el-descriptions-item>
 					<el-descriptions-item label="目标部门">
-						{{ detailRecord.targetDepartmentName || departmentLabel(detailRecord.targetDepartmentId) }}
+						{{
+							detailRecord.targetDepartmentName ||
+							departmentLabel(detailRecord.targetDepartmentId)
+						}}
 					</el-descriptions-item>
 					<el-descriptions-item label="目标岗位">
 						{{ detailRecord.targetPosition || '-' }}
@@ -196,6 +211,19 @@
 					<el-descriptions-item label="来源状态快照" :span="2">
 						<div class="hiring-page__long-text">
 							{{ detailRecord.sourceStatusSnapshot || '-' }}
+						</div>
+					</el-descriptions-item>
+					<el-descriptions-item label="来源摘要" :span="2">
+						<div class="hiring-page__source-summary">
+							<span>{{ hiringSourceSummary(detailRecord) }}</span>
+							<el-button
+								v-if="detailRecord.sourceSnapshot?.interviewId"
+								text
+								type="primary"
+								@click="goToInterview(detailRecord)"
+							>
+								查看面试
+							</el-button>
 						</div>
 					</el-descriptions-item>
 					<el-descriptions-item label="录用决策" :span="2">
@@ -234,15 +262,17 @@
 			</template>
 		</el-dialog>
 
-		<el-dialog
-			v-model="formVisible"
-			title="新建录用"
-			width="900px"
-			destroy-on-close
-		>
+		<el-dialog v-model="formVisible" title="新建录用" width="900px" destroy-on-close>
 			<el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
 				<el-alert
 					title="新建保存后默认进入 offered；首批不开放正文编辑页面，后续请通过接受/拒绝/关闭推进状态。"
+					type="info"
+					:closable="false"
+					show-icon
+				/>
+				<el-alert
+					v-if="hiringSourceSummary(form) !== '-'"
+					:title="`来源摘要：${hiringSourceSummary(form)}`"
 					type="info"
 					:closable="false"
 					show-icon
@@ -354,49 +384,92 @@ defineOptions({
 	name: 'performance-hiring'
 });
 
-import { computed, nextTick, onMounted, reactive, ref } from 'vue';
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
+import { useDict } from '/$/dict';
 import { service } from '/@/cool';
+import { useRoute, useRouter } from 'vue-router';
+import { useListPage } from '../../composables/use-list-page.js';
+import {
+	confirmElementAction,
+	promptElementAction,
+	runTrackedElementAction
+} from '../shared/action-feedback';
+import {
+	createElementWarningFromErrorHandler,
+	showElementErrorFromError
+} from '../shared/error-message';
 import { loadDepartmentOptions } from '../../utils/lookup-options.js';
 import {
+	consumeRoutePreset,
+	firstQueryValue,
+	normalizeQueryNumber
+} from '../../utils/route-preset.js';
+import {
+	createEmptyHiring,
+	type DepartmentOption,
+	type HiringFormRecord,
 	type HiringRecord,
+	type HiringSaveRequest,
+	type HiringSourceSnapshot,
 	type HiringSourceType,
 	type HiringStatus,
-	createEmptyHiring
+	type InterviewStatus,
+	normalizeHiringDomainRecord
 } from '../../types';
 import { performanceHiringService } from '../../service/hiring';
 
-interface DepartmentOption {
-	id: number;
-	label: string;
-}
+const HIRING_STATUS_DICT_KEY = 'performance.hiring.status';
+const HIRING_SOURCE_TYPE_DICT_KEY = 'performance.hiring.sourceType';
 
-const rows = ref<HiringRecord[]>([]);
+type HiringSourceCarrier = HiringRecord | HiringFormRecord;
+type HiringActionType = 'accept' | 'reject' | 'close';
+const { dict } = useDict();
 const departmentOptions = ref<DepartmentOption[]>([]);
-const tableLoading = ref(false);
 const submitLoading = ref(false);
 const formVisible = ref(false);
 const detailVisible = ref(false);
 const detailRecord = ref<HiringRecord | null>(null);
 const formRef = ref<FormInstance>();
 const actionLoadingId = ref<number | null>(null);
-const actionLoadingType = ref<'accept' | 'reject' | 'close' | null>(null);
+const actionLoadingType = ref<HiringActionType | null>(null);
+const route = useRoute();
+const router = useRouter();
 
-const filters = reactive({
-	keyword: '',
-	targetDepartmentId: undefined as number | undefined,
-	status: '' as HiringStatus | '',
-	sourceType: '' as HiringSourceType | ''
+const hiringList = useListPage({
+	createFilters: () => ({
+		keyword: '',
+		targetDepartmentId: undefined,
+		status: '',
+		sourceType: ''
+	}),
+	canLoad: () => canAccess.value,
+	fetchPage: async params => {
+		const result = await performanceHiringService.fetchPage({
+			page: params.page,
+			size: params.size,
+			keyword: params.keyword || undefined,
+			targetDepartmentId: params.targetDepartmentId || undefined,
+			status: params.status || undefined,
+			sourceType: params.sourceType || undefined
+		});
+
+		return {
+			...result,
+			list: (result.list || []).map(item => normalizeHiringDomainRecord(item))
+		};
+	},
+	onError: (error: unknown) => {
+		showElementErrorFromError(error, '录用列表加载失败');
+	}
 });
+const rows = hiringList.rows;
+const tableLoading = hiringList.loading;
+const filters = hiringList.filters;
+const pagination = hiringList.pager;
 
-const pagination = reactive({
-	page: 1,
-	size: 10,
-	total: 0
-});
-
-const form = reactive<HiringRecord>(createEmptyHiring());
+const form = reactive<HiringFormRecord>(createEmptyHiring());
 
 const rules: FormRules = {
 	candidateName: [
@@ -415,19 +488,19 @@ const rules: FormRules = {
 	]
 };
 
-const statusOptions: Array<{ label: string; value: HiringStatus }> = [
-	{ label: '待候选人反馈', value: 'offered' },
-	{ label: '已接受', value: 'accepted' },
-	{ label: '已拒绝', value: 'rejected' },
-	{ label: '已关闭', value: 'closed' }
-];
+const statusOptions = computed<Array<{ label: string; value: HiringStatus }>>(() =>
+	dict.get(HIRING_STATUS_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as HiringStatus
+	}))
+);
 
-const sourceTypeOptions: Array<{ label: string; value: HiringSourceType }> = [
-	{ label: '手工创建', value: 'manual' },
-	{ label: '简历池', value: 'resumePool' },
-	{ label: '人才资产', value: 'talentAsset' },
-	{ label: '面试', value: 'interview' }
-];
+const sourceTypeOptions = computed<Array<{ label: string; value: HiringSourceType }>>(() =>
+	dict.get(HIRING_SOURCE_TYPE_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as HiringSourceType
+	}))
+);
 
 const canAccess = computed(() => checkPerm(performanceHiringService.permission.page));
 const showInfoButton = computed(() => checkPerm(performanceHiringService.permission.info));
@@ -458,70 +531,44 @@ const formSourceIdModel = computed<number | undefined>({
 });
 
 onMounted(async () => {
+	await dict.refresh([HIRING_STATUS_DICT_KEY, HIRING_SOURCE_TYPE_DICT_KEY]);
 	await loadDepartments();
 	await refresh();
+	await consumeRoutePrefill();
 });
+
+watch(
+	() => route.fullPath,
+	() => {
+		void consumeRoutePrefill();
+	}
+);
 
 async function loadDepartments() {
 	departmentOptions.value = await loadDepartmentOptions(
 		() => service.base.sys.department.list(),
-		(error: any) => {
-			ElMessage.warning(error.message || '部门选项加载失败');
-		}
+		createElementWarningFromErrorHandler('部门选项加载失败')
 	);
 }
 
 async function refresh() {
-	if (!canAccess.value) {
-		return;
-	}
-
-	tableLoading.value = true;
-
-	try {
-		const result = await performanceHiringService.fetchPage({
-			page: pagination.page,
-			size: pagination.size,
-			keyword: filters.keyword || undefined,
-			targetDepartmentId: filters.targetDepartmentId || undefined,
-			status: filters.status || undefined,
-			sourceType: filters.sourceType || undefined
-		});
-
-		rows.value = result.list || [];
-		pagination.total = result.pagination?.total || 0;
-	} catch (error: any) {
-		ElMessage.error(error.message || '录用列表加载失败');
-	} finally {
-		tableLoading.value = false;
-	}
+	await hiringList.reload();
 }
 
 function handleSearch() {
-	pagination.page = 1;
-	refresh();
+	void hiringList.search();
 }
 
 function handleReset() {
-	filters.keyword = '';
-	filters.targetDepartmentId = undefined;
-	filters.status = '';
-	filters.sourceType = '';
-	pagination.page = 1;
-	refresh();
+	void hiringList.reset();
 }
 
 function changePage(page: number) {
-	pagination.page = page;
-	refresh();
+	void hiringList.goToPage(page);
 }
 
 function openCreate() {
-	Object.assign(form, createEmptyHiring());
-	formVisible.value = true;
-	nextTick(() => {
-		formRef.value?.clearValidate();
-	});
+	openCreateWithPrefill();
 }
 
 async function openDetail(row: HiringRecord) {
@@ -537,10 +584,12 @@ async function openDetail(row: HiringRecord) {
 
 async function loadDetail(id: number, next: (record: HiringRecord) => void) {
 	try {
-		const record = await performanceHiringService.fetchInfo({ id });
+		const record = normalizeHiringDomainRecord(
+			await performanceHiringService.fetchInfo({ id })
+		);
 		next(record);
-	} catch (error: any) {
-		ElMessage.error(error.message || '录用详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '录用详情加载失败');
 	}
 }
 
@@ -550,13 +599,17 @@ async function submitForm() {
 	submitLoading.value = true;
 
 	try {
-		const payload: Partial<HiringRecord> = {
+		const payload: HiringSaveRequest = {
 			candidateName: form.candidateName.trim(),
-			targetDepartmentId: form.targetDepartmentId,
+			targetDepartmentId: Number(form.targetDepartmentId),
 			targetPosition: normalizeOptionalText(form.targetPosition),
 			sourceType: normalizeSourceType(form.sourceType),
 			sourceId: form.sourceId ? Number(form.sourceId) : undefined,
 			sourceStatusSnapshot: normalizeOptionalText(form.sourceStatusSnapshot),
+			sourceSnapshot: normalizeHiringSourceSnapshot(form.sourceSnapshot),
+			interviewId: form.interviewId || undefined,
+			resumePoolId: form.resumePoolId || undefined,
+			recruitPlanId: form.recruitPlanId || undefined,
 			hiringDecision: normalizeOptionalText(form.hiringDecision)
 		};
 
@@ -564,8 +617,8 @@ async function submitForm() {
 		ElMessage.success('新建成功');
 		formVisible.value = false;
 		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '新建失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '新建失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -578,32 +631,27 @@ async function handleUpdateStatus(row: HiringRecord, status: 'accepted' | 'rejec
 	}
 
 	const actionLabel = status === 'accepted' ? '接受录用' : '拒绝录用';
+	const confirmed = await confirmElementAction(
+		`确认将录用「${row.candidateName}」更新为${actionLabel}吗？`,
+		'状态确认'
+	);
 
-	try {
-		await ElMessageBox.confirm(
-			`确认将录用「${row.candidateName}」更新为${actionLabel}吗？`,
-			'状态确认',
-			{
-				type: 'warning'
-			}
-		);
-	} catch {
+	if (!confirmed) {
 		return;
 	}
 
-	actionLoadingId.value = row.id;
-	actionLoadingType.value = status === 'accepted' ? 'accept' : 'reject';
-
-	try {
-		await performanceHiringService.updateStatus({ id: row.id, status });
-		ElMessage.success(status === 'accepted' ? '已标记为接受' : '已标记为拒绝');
-		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '状态更新失败');
-	} finally {
-		actionLoadingId.value = null;
-		actionLoadingType.value = null;
-	}
+	await runTrackedElementAction<HiringActionType>({
+		rowId: row.id,
+		actionType: status === 'accepted' ? 'accept' : 'reject',
+		request: () => performanceHiringService.updateStatus({ id: row.id!, status }),
+		successMessage: status === 'accepted' ? '已标记为接受' : '已标记为拒绝',
+		errorMessage: '状态更新失败',
+		setLoading: (rowId, actionType) => {
+			actionLoadingId.value = rowId;
+			actionLoadingType.value = actionType;
+		},
+		refresh
+	});
 }
 
 async function handleClose(row: HiringRecord) {
@@ -612,47 +660,45 @@ async function handleClose(row: HiringRecord) {
 		return;
 	}
 
-	let reason = '';
-	try {
-		const result = await ElMessageBox.prompt(
-			`请输入录用「${row.candidateName}」的关闭原因`,
-			'关闭确认',
-			{
-				type: 'warning',
-				inputType: 'textarea',
-				inputPlaceholder: '关闭原因为必填',
-				inputValidator: value => {
-					if (!String(value || '').trim()) {
-						return '请输入关闭原因';
-					}
-					if (String(value || '').trim().length > 500) {
-						return '关闭原因不能超过 500 字';
-					}
-					return true;
+	const result = await promptElementAction(
+		`请输入录用「${row.candidateName}」的关闭原因`,
+		'关闭确认',
+		{
+			type: 'warning',
+			inputType: 'textarea',
+			inputPlaceholder: '关闭原因为必填',
+			inputValidator: value => {
+				if (!String(value || '').trim()) {
+					return '请输入关闭原因';
 				}
+				if (String(value || '').trim().length > 500) {
+					return '关闭原因不能超过 500 字';
+				}
+				return true;
 			}
-		);
-		reason = String(result.value || '').trim();
-	} catch {
+		}
+	);
+
+	if (!result) {
 		return;
 	}
 
-	actionLoadingId.value = row.id;
-	actionLoadingType.value = 'close';
-
-	try {
-		await performanceHiringService.close({
-			id: row.id,
-			closeReason: reason
-		});
-		ElMessage.success('录用已关闭');
-		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '关闭失败');
-	} finally {
-		actionLoadingId.value = null;
-		actionLoadingType.value = null;
-	}
+	await runTrackedElementAction<HiringActionType>({
+		rowId: row.id,
+		actionType: 'close',
+		request: () =>
+			performanceHiringService.close({
+				id: row.id!,
+				closeReason: String(result.value || '').trim()
+			}),
+		successMessage: '录用已关闭',
+		errorMessage: '关闭失败',
+		setLoading: (rowId, actionType) => {
+			actionLoadingId.value = rowId;
+			actionLoadingType.value = actionType;
+		},
+		refresh
+	});
 }
 
 function canAccept(row: HiringRecord) {
@@ -668,26 +714,15 @@ function canClose(row: HiringRecord) {
 }
 
 function statusLabel(status?: HiringStatus | '') {
-	const item = statusOptions.find(option => option.value === status);
-	return item?.label || status || '-';
+	return dict.getLabel(HIRING_STATUS_DICT_KEY, status) || status || '-';
 }
 
 function statusTagType(status?: HiringStatus | '') {
-	switch (status) {
-		case 'accepted':
-			return 'success';
-		case 'rejected':
-			return 'danger';
-		case 'closed':
-			return 'warning';
-		default:
-			return 'info';
-	}
+	return dict.getMeta(HIRING_STATUS_DICT_KEY, status)?.tone || 'info';
 }
 
 function sourceTypeLabel(value?: HiringSourceType | string | null) {
-	const item = sourceTypeOptions.find(option => option.value === value);
-	return item?.label || value || '-';
+	return dict.getLabel(HIRING_SOURCE_TYPE_DICT_KEY, value) || value || '-';
 }
 
 function departmentLabel(id?: number | null) {
@@ -716,63 +751,182 @@ function normalizeOptionalText(value: string | null | undefined) {
 	return text || undefined;
 }
 
-function normalizeSourceType(value: HiringSourceType | string | null | undefined): HiringSourceType {
-	if (value === 'resumePool' || value === 'talentAsset' || value === 'interview') {
-		return value;
+function normalizeSourceType(
+	value: HiringSourceType | string | null | undefined
+): HiringSourceType {
+	const normalized = String(value || '').trim();
+	const matched = sourceTypeOptions.value.find(item => item.value === normalized)?.value;
+	return matched || 'manual';
+}
+
+function normalizeInterviewStatus(value: string | undefined): InterviewStatus | null {
+	const normalized = String(value || '').trim();
+	return normalized === 'scheduled' || normalized === 'completed' || normalized === 'cancelled'
+		? normalized
+		: null;
+}
+
+function normalizeHiringSourceSnapshot(
+	value?: HiringSourceSnapshot | null
+): HiringSaveRequest['sourceSnapshot'] {
+	if (!value) {
+		return undefined;
 	}
-	return 'manual';
+
+	return {
+		sourceResource: value.sourceResource ?? undefined,
+		interviewId: value.interviewId ?? undefined,
+		resumePoolId: value.resumePoolId ?? undefined,
+		recruitPlanId: value.recruitPlanId ?? undefined,
+		recruitPlanTitle: value.recruitPlanTitle ?? undefined,
+		candidateName: value.candidateName ?? undefined,
+		targetDepartmentId: value.targetDepartmentId ?? undefined,
+		targetDepartmentName: value.targetDepartmentName ?? undefined,
+		targetPosition: value.targetPosition ?? undefined,
+		interviewStatus: value.interviewStatus ?? undefined,
+		sourceStatusSnapshot: value.sourceStatusSnapshot ?? undefined
+	};
+}
+
+async function consumeRoutePrefill() {
+	await consumeRoutePreset({
+		route,
+		router,
+		keys: [
+			'openCreate',
+			'candidate',
+			'candidateName',
+			'departmentId',
+			'targetDepartmentId',
+			'position',
+			'targetPosition',
+			'sourceType',
+			'sourceId',
+			'interviewId',
+			'resumePoolId',
+			'recruitPlanId',
+			'recruitPlanTitle',
+			'interviewStatus'
+		],
+		parse: query => ({
+			shouldOpenCreate: firstQueryValue(query.openCreate) === '1',
+			candidateName:
+				normalizeQueryText(query.candidate) || normalizeQueryText(query.candidateName),
+			targetDepartmentId:
+				normalizeQueryNumber(query.departmentId) ||
+				normalizeQueryNumber(query.targetDepartmentId),
+			targetPosition:
+				normalizeQueryText(query.position) || normalizeQueryText(query.targetPosition),
+			sourceType: normalizeQueryText(query.sourceType),
+			sourceId: normalizeQueryNumber(query.sourceId),
+			interviewId:
+				normalizeQueryNumber(query.interviewId) || normalizeQueryNumber(query.sourceId),
+			resumePoolId: normalizeQueryNumber(query.resumePoolId),
+			recruitPlanId: normalizeQueryNumber(query.recruitPlanId),
+			recruitPlanTitle: normalizeQueryText(query.recruitPlanTitle),
+			interviewStatus: normalizeQueryText(query.interviewStatus)
+		}),
+		shouldConsume: payload => Boolean(payload.shouldOpenCreate),
+		consume: payload => {
+			if (!showAddButton.value) {
+				return;
+			}
+
+			openCreateWithPrefill(payload);
+		}
+	});
+}
+
+function openCreateWithPrefill(prefill?: {
+	candidateName?: string;
+	targetDepartmentId?: number;
+	targetPosition?: string;
+	sourceType?: string;
+	sourceId?: number;
+	interviewId?: number;
+	resumePoolId?: number;
+	recruitPlanId?: number;
+	recruitPlanTitle?: string;
+	interviewStatus?: string;
+}) {
+	Object.assign(form, createEmptyHiring(), {
+		candidateName: prefill?.candidateName || '',
+		targetDepartmentId: prefill?.targetDepartmentId,
+		targetPosition: prefill?.targetPosition || '',
+		sourceType: prefill?.interviewId ? 'interview' : normalizeSourceType(prefill?.sourceType),
+		sourceId: prefill?.interviewId || prefill?.sourceId,
+		interviewId: prefill?.interviewId,
+		resumePoolId: prefill?.resumePoolId,
+		recruitPlanId: prefill?.recruitPlanId,
+		sourceStatusSnapshot: prefill?.interviewStatus || '',
+		sourceSnapshot:
+			prefill?.interviewId || prefill?.resumePoolId || prefill?.recruitPlanId
+				? {
+						sourceResource: 'interview',
+						interviewId: prefill?.interviewId || null,
+						resumePoolId: prefill?.resumePoolId || null,
+						recruitPlanId: prefill?.recruitPlanId || null,
+						recruitPlanTitle: prefill?.recruitPlanTitle || null,
+						candidateName: prefill?.candidateName || null,
+						targetDepartmentId: prefill?.targetDepartmentId || null,
+						targetPosition: prefill?.targetPosition || null,
+						interviewStatus: normalizeInterviewStatus(prefill?.interviewStatus),
+						sourceStatusSnapshot: prefill?.interviewStatus || null
+					}
+				: null
+	});
+	formVisible.value = true;
+	nextTick(() => {
+		formRef.value?.clearValidate();
+	});
+}
+
+function hiringSourceSummary(record?: HiringSourceCarrier | null) {
+	const snapshot = record?.sourceSnapshot;
+	if (!snapshot) {
+		return '-';
+	}
+
+	const summaryParts = [
+		snapshot.interviewId ? `面试 #${snapshot.interviewId}` : null,
+		snapshot.resumePoolId ? `简历 #${snapshot.resumePoolId}` : null,
+		snapshot.recruitPlanId
+			? `${snapshot.recruitPlanTitle || '招聘计划'} #${snapshot.recruitPlanId}`
+			: null
+	].filter(Boolean);
+
+	return summaryParts.length ? summaryParts.join(' / ') : '-';
+}
+
+async function goToInterview(record?: HiringRecord | null) {
+	if (!record?.sourceSnapshot?.interviewId) {
+		return;
+	}
+
+	await router.push({
+		path: '/performance/interview',
+		query: {
+			openDetail: '1',
+			interviewId: String(record.sourceSnapshot.interviewId)
+		}
+	});
+}
+
+function normalizeQueryText(value: unknown) {
+	const text = String(firstQueryValue(value) || '').trim();
+	return text || undefined;
 }
 </script>
 
 <style lang="scss" scoped>
+@use '../../../../styles/patterns.management-workspace.scss' as managementWorkspace;
+
 .hiring-page {
-	display: grid;
-	gap: 16px;
+	@include managementWorkspace.management-workspace-shell(1180px);
 
-	&__toolbar {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 16px;
-	}
-
-	&__toolbar-left,
-	&__toolbar-right {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 12px;
-	}
-
-	&__header {
+	&__source-cell {
 		display: grid;
-		gap: 12px;
-	}
-
-	&__header-main {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-
-		h2 {
-			margin: 0;
-			font-size: 18px;
-		}
-	}
-
-	&__pagination {
-		display: flex;
-		justify-content: flex-end;
-		padding-top: 16px;
-	}
-
-	&__detail {
-		display: grid;
-		gap: 16px;
-	}
-
-	&__long-text {
-		white-space: pre-wrap;
-		line-height: 1.6;
+		gap: 4px;
 	}
 }
 </style>

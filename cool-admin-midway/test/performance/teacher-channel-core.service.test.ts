@@ -4,7 +4,22 @@
  * 这里只验证冻结范围内的权限、脱敏和状态机主链，不覆盖真实数据库、控制器装饰器或联调脚本。
  * 维护重点是跟进前不可合作、partnered 才可建班、closed 班级锁死、只读账号脱敏不可漂移。
  */
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
 import { PerformanceTeacherChannelCoreService } from '../../src/modules/performance/service/teacher-channel-core';
+import { resolvePermissionMask } from '../../src/modules/performance/constants/permission-bits';
+
+function attachAccessContext(service: any) {
+  const accessService = new PerformanceAccessContextService() as any;
+  accessService.ctx = service.ctx;
+  accessService.baseSysMenuService =
+    service.baseSysMenuService || { getPerms: jest.fn().mockResolvedValue([]) };
+  accessService.baseSysPermsService =
+    service.baseSysPermsService || {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+  service.performanceAccessContextService = accessService;
+  return service;
+}
 
 const ADMIN_PERMS = [
   'performance:teacherAgent:page',
@@ -420,6 +435,7 @@ function createService(options?: {
     }),
     create: jest.fn().mockImplementation((payload: any) => payload),
   };
+  attachAccessContext(service);
 
   return {
     service,
@@ -453,6 +469,56 @@ describe('theme19 teacher channel core service', () => {
       service.teacherFollowAdd({
         teacherId: 1,
         content: '只读跟进',
+      })
+    ).rejects.toThrow('无权限新增跟进记录');
+  });
+
+  test('should not escalate empty department scope into global visibility', async () => {
+    const { service } = createService({
+      perms: READONLY_PERMS,
+      admin: {
+        userId: 4,
+        username: 'readonly_teacher',
+        isAdmin: false,
+      },
+      departmentIds: [],
+    });
+
+    const profile = await service.teacherAccessProfile();
+
+    expect(profile?.scopeType).toBe('self');
+    expect(profile?.scopedDepartmentIds).toEqual([]);
+    expect(profile?.scopedTeacherIds).toEqual([]);
+    expect(profile?.scopedClassIds).toEqual([]);
+
+    await expect(service.teacherInfoInfo(1)).rejects.toThrow('无权查看该班主任资源');
+  });
+
+  test('should authorize teacher-domain reads from permissionMask without legacy string perms', async () => {
+    const permissionMask = resolvePermissionMask(
+      ['performance:teacherInfo:info'],
+      { isAdmin: false }
+    );
+    const { service } = createService({
+      perms: [],
+      admin: {
+        userId: 4,
+        username: 'readonly_teacher',
+        isAdmin: false,
+        permissionMask,
+      },
+      departmentIds: [11],
+    });
+
+    const detail = await service.teacherInfoInfo(1);
+    const profile = await service.teacherAccessProfile();
+
+    expect(detail.id).toBe(1);
+    expect(profile?.permissionMask).toBe(permissionMask);
+    await expect(
+      service.teacherFollowAdd({
+        teacherId: 1,
+        content: 'bit-only permission should still reject writes',
       })
     ).rejects.toThrow('无权限新增跟进记录');
   });
@@ -501,6 +567,14 @@ describe('theme19 teacher channel core service', () => {
     expect(teacherClass.status).toBe('draft');
     expect(teacherClass.teacherName).toBe('班主任-1');
 
+    await expect(
+      service.teacherClassUpdate({
+        id: teacherClass.id,
+        className: '草稿态直接关闭',
+        status: 'closed',
+      })
+    ).rejects.toThrow('草稿班级仅允许更新为 draft 或 active');
+
     const activated = await service.teacherClassUpdate({
       id: teacherClass.id,
       className: '主题19联调班',
@@ -518,6 +592,14 @@ describe('theme19 teacher channel core service', () => {
     await expect(
       service.teacherClassUpdate({
         id: teacherClass.id,
+        className: '激活后回退草稿',
+        status: 'draft',
+      })
+    ).rejects.toThrow('已关闭班级不可编辑');
+
+    await expect(
+      service.teacherClassUpdate({
+        id: teacherClass.id,
         className: '关闭后再编辑',
         status: 'active',
       })
@@ -526,6 +608,221 @@ describe('theme19 teacher channel core service', () => {
       '仅草稿班级允许删除'
     );
     expect(classes.has(Number(teacherClass.id))).toBe(true);
+  });
+
+  test('should reject unsupported teacher cooperation transitions with shared semantics', async () => {
+    const { service, teachers } = createService();
+
+    await expect(
+      service.teacherInfoUpdateStatus({
+        id: 1,
+        status: 'negotiating',
+      })
+    ).rejects.toThrow('当前状态不允许推进到洽谈中');
+
+    teachers.set(1, {
+      ...teachers.get(1),
+      cooperationStatus: 'contacted',
+    });
+    await expect(
+      service.teacherInfoUpdateStatus({
+        id: 1,
+        status: 'partnered',
+      })
+    ).rejects.toThrow('当前接口仅支持 negotiating 或 terminated');
+
+    await expect(
+      service.teacherCooperationMark({
+        teacherId: 1,
+      })
+    ).rejects.toThrow('至少存在一条跟进记录后才允许标记合作');
+  });
+
+  test('should reject teacher termination and cooperation mark state misuse with shared semantics', async () => {
+    const { service, teachers } = createService();
+
+    teachers.set(1, {
+      ...teachers.get(1),
+      cooperationStatus: 'contacted',
+    });
+    await expect(
+      service.teacherInfoUpdateStatus({
+        id: 1,
+        status: 'terminated',
+      })
+    ).rejects.toThrow('仅已合作班主任可终止合作');
+
+    const employeeScopedService = createService({
+      perms: ['performance:teacherInfo:updateStatus'],
+      admin: {
+        userId: 3,
+        username: 'employee_platform',
+        isAdmin: false,
+      },
+      departmentIds: [11],
+    }).service;
+    await expect(
+      employeeScopedService.teacherInfoUpdateStatus({
+        id: 2,
+        status: 'terminated',
+      })
+    ).rejects.toThrow('仅管理层或部门负责人可终止合作');
+
+    teachers.set(3, {
+      ...teachers.get(3),
+      cooperationStatus: 'partnered',
+    });
+    await service.teacherFollowAdd({
+      teacherId: 3,
+      content: '先联系但不推进合作',
+    });
+    await expect(
+      service.teacherCooperationMark({
+        teacherId: 3,
+      })
+    ).rejects.toThrow('当前合作状态不允许标记为已合作');
+  });
+
+  test('should reject class creation for terminated teacher with shared semantics', async () => {
+    const { service, teachers } = createService();
+
+    teachers.set(1, {
+      ...teachers.get(1),
+      cooperationStatus: 'terminated',
+    });
+    await expect(
+      service.teacherClassAdd({
+        teacherId: 1,
+        className: '终止合作建班',
+      })
+    ).rejects.toThrow('已终止合作的班主任不可新建班级');
+  });
+
+  test('should reject invalid teacher, class, agent, and attribution status semantics', async () => {
+    const { service } = createService();
+
+    await expect(
+      service.teacherInfoUpdateStatus({
+        id: 1,
+        status: 'paused',
+      })
+    ).rejects.toThrow('班主任合作状态不合法');
+    await service.teacherFollowAdd({
+      teacherId: 1,
+      content: '为非法班级状态测试准备合作数据',
+    });
+    await service.teacherInfoUpdateStatus({
+      id: 1,
+      status: 'negotiating',
+    });
+    await service.teacherCooperationMark({
+      teacherId: 1,
+    });
+    const teacherClass = await service.teacherClassAdd({
+      teacherId: 1,
+      className: '非法状态班级',
+    });
+    await expect(
+      service.teacherClassUpdate({
+        id: teacherClass.id,
+        className: '非法状态班级',
+        status: 'paused',
+      })
+    ).rejects.toThrow('班级状态不合法');
+    await expect(
+      service.teacherAgentPage({ page: 1, size: 10, status: 'paused' })
+    ).rejects.toThrow('代理主体状态不合法');
+    await expect(
+      service.teacherAgentAdd({
+        name: '非法黑名单状态代理',
+        agentType: 'institution',
+        blacklistStatus: 'blocked',
+      })
+    ).rejects.toThrow('代理主体黑名单状态不合法');
+    await expect(
+      service.teacherAgentRelationAdd({
+        parentAgentId: 1,
+        childAgentId: 2,
+        status: 'paused',
+      })
+    ).rejects.toThrow('代理关系状态不合法');
+
+    await service.teacherAttributionAssign({
+      teacherId: 1,
+      agentId: 2,
+      sourceRemark: '准备测试冲突处理结果',
+    });
+    await service.teacherAttributionChange({
+      teacherId: 1,
+      agentId: 1,
+      sourceRemark: '制造冲突',
+    });
+    await expect(
+      service.teacherAttributionPage({ page: 1, size: 10, status: 'paused' })
+    ).rejects.toThrow('归因状态不合法');
+    await expect(
+      service.teacherAttributionConflictPage({ page: 1, size: 10, status: 'paused' })
+    ).rejects.toThrow('归因冲突状态不合法');
+    const conflictPage = await service.teacherAttributionConflictPage({
+      page: 1,
+      size: 10,
+    });
+    const conflictId = conflictPage.list[0]?.id;
+
+    await expect(
+      service.teacherAttributionConflictResolve({
+        id: conflictId,
+        resolution: 'ignored',
+      })
+    ).rejects.toThrow('归因冲突处理结果不合法');
+  });
+
+  test('should reject preset teacher cooperation status on add', async () => {
+    const { service } = createService();
+
+    await expect(
+      service.teacherInfoAdd({
+        teacherName: '预设合作状态班主任',
+        cooperationStatus: 'partnered',
+      })
+    ).rejects.toThrow('新增或编辑班主任资源不可直接指定合作状态');
+  });
+
+  test('should reject illegal active class transition before closing', async () => {
+    const { service } = createService();
+
+    const follow = await service.teacherFollowAdd({
+      teacherId: 1,
+      content: '建立合作并建班',
+      nextFollowTime: '2026-04-20 09:00:00',
+    });
+    expect(follow.followContent).toBe('建立合作并建班');
+    await service.teacherInfoUpdateStatus({
+      id: 1,
+      status: 'negotiating',
+    });
+    await service.teacherCooperationMark({
+      teacherId: 1,
+    });
+
+    const teacherClass = await service.teacherClassAdd({
+      teacherId: 1,
+      className: '非法流转班级',
+      studentCount: 12,
+    });
+    await service.teacherClassUpdate({
+      id: teacherClass.id,
+      className: '非法流转班级',
+      status: 'active',
+    });
+
+    await expect(
+      service.teacherClassUpdate({
+        id: teacherClass.id,
+        className: '活跃态回退草稿',
+        status: 'draft',
+      })
+    ).rejects.toThrow('当前班级状态不允许执行该操作');
   });
 
   test('should limit manager assignment to department tree', async () => {
@@ -551,6 +848,25 @@ describe('theme19 teacher channel core service', () => {
         ownerEmployeeId: 6,
       })
     ).rejects.toThrow('无权分配到目标归属部门');
+  });
+
+  test('should reject teacher assignment without assign capability', async () => {
+    const { service } = createService({
+      perms: [],
+      admin: {
+        userId: 3,
+        username: 'employee_platform',
+        isAdmin: false,
+      },
+      departmentIds: [11],
+    });
+
+    await expect(
+      service.teacherInfoAssign({
+        id: 1,
+        ownerEmployeeId: 3,
+      })
+    ).rejects.toThrow('无权限分配班主任资源');
   });
 
   test('should support agent main flow, prevent cycles, and keep audit records', async () => {
@@ -584,6 +900,106 @@ describe('theme19 teacher channel core service', () => {
 
     expect(agents.get(2)?.blacklistStatus).toBe('blacklisted');
     expect(audits.size).toBeGreaterThan(0);
+  });
+
+  test('should reject closing active class without manager role', async () => {
+    const { service } = createService({
+      perms: [
+        'performance:teacherFollow:add',
+        'performance:teacherInfo:info',
+        'performance:teacherInfo:updateStatus',
+        'performance:teacherCooperation:mark',
+        'performance:teacherClass:add',
+        'performance:teacherClass:update',
+        'performance:teacherClass:info',
+      ],
+      admin: {
+        userId: 3,
+        username: 'employee_platform',
+        isAdmin: false,
+      },
+      departmentIds: [11],
+    });
+
+    await service.teacherFollowAdd({
+      teacherId: 2,
+      content: '准备创建班级并测试关闭权限',
+    });
+    await service.teacherInfoUpdateStatus({
+      id: 2,
+      status: 'negotiating',
+    });
+    await service.teacherCooperationMark({
+      teacherId: 2,
+    });
+    const teacherClass = await service.teacherClassAdd({
+      teacherId: 2,
+      className: '关闭权限校验班级',
+    });
+    await service.teacherClassUpdate({
+      id: teacherClass.id,
+      className: '关闭权限校验班级',
+      status: 'active',
+    });
+
+    await expect(
+      service.teacherClassUpdate({
+        id: teacherClass.id,
+        className: '关闭权限校验班级',
+        status: 'closed',
+      })
+    ).rejects.toThrow('仅管理层或部门负责人可关闭班级');
+  });
+
+  test('should reject viewing agent audit outside self scope', async () => {
+    const { service, audits } = createService({
+      perms: ['performance:teacherAgentAudit:info'],
+      admin: {
+        userId: 3,
+        username: 'employee_platform',
+        isAdmin: false,
+      },
+      departmentIds: [],
+    });
+
+    audits.set(701, {
+      id: 701,
+      resourceType: 'teacherAgent',
+      resourceId: 1,
+      action: 'update',
+      operatorId: 2,
+      operatorName: '部门负责人',
+      beforeSnapshot: { ownerDepartmentId: 11 },
+      afterSnapshot: { ownerDepartmentId: 11 },
+      createTime: '2026-04-20 10:00:00',
+      updateTime: '2026-04-20 10:00:00',
+    });
+
+    await expect(service.teacherAgentAuditInfo(701)).rejects.toThrow(
+      '无权查看该代理审计'
+    );
+  });
+
+  test('should reject inactive agents as relation targets', async () => {
+    const { service } = createService();
+
+    await expect(
+      service.teacherAgentRelationAdd({
+        parentAgentId: 3,
+        childAgentId: 2,
+      })
+    ).rejects.toThrow('停用代理不能作为新的关系目标');
+  });
+
+  test('should reject self-loop agent relations', async () => {
+    const { service } = createService();
+
+    await expect(
+      service.teacherAgentRelationAdd({
+        parentAgentId: 1,
+        childAgentId: 1,
+      })
+    ).rejects.toThrow('代理关系不允许指向自身');
   });
 
   test('should enforce attribution uniqueness, create conflict and resolve it', async () => {
@@ -624,6 +1040,91 @@ describe('theme19 teacher channel core service', () => {
     expect(attributionInfo.currentAttribution.agentId).toBe(1);
     expect(attributionInfo.openConflictCount).toBe(0);
     expect(audits.size).toBeGreaterThan(1);
+  });
+
+  test('should reject inactive agents for attribution assignment', async () => {
+    const { service } = createService();
+
+    await expect(
+      service.teacherAttributionAssign({
+        teacherId: 1,
+        agentId: 3,
+      })
+    ).rejects.toThrow('停用代理不可新增归因');
+  });
+
+  test('should reject attribution assignment for terminated teachers and duplicate assign flow', async () => {
+    const { service, teachers } = createService();
+
+    teachers.set(1, {
+      ...teachers.get(1),
+      cooperationStatus: 'terminated',
+    });
+    await expect(
+      service.teacherAttributionAssign({
+        teacherId: 1,
+        agentId: 2,
+      })
+    ).rejects.toThrow('已终止合作班主任不可新建代理归因');
+
+    teachers.set(1, {
+      ...teachers.get(1),
+      cooperationStatus: 'uncontacted',
+    });
+    await service.teacherAttributionAssign({
+      teacherId: 1,
+      agentId: 2,
+      sourceRemark: '首次归因',
+    });
+
+    await expect(
+      service.teacherAttributionAssign({
+        teacherId: 1,
+        agentId: 1,
+        sourceRemark: '重复建立归因',
+      })
+    ).rejects.toThrow('当前班主任已存在有效归因，请使用归因调整或冲突处理');
+  });
+
+  test('should reject resolving a closed attribution conflict', async () => {
+    const { service, conflicts } = createService();
+
+    await service.teacherAttributionAssign({
+      teacherId: 1,
+      agentId: 2,
+      sourceRemark: '首次归因',
+    });
+    await service.teacherAttributionChange({
+      teacherId: 1,
+      agentId: 1,
+      sourceRemark: '切换直营',
+    });
+
+    const conflictId = Array.from(conflicts.keys())[0];
+    await service.teacherAttributionConflictResolve({
+      id: conflictId,
+      resolution: 'cancelled',
+      resolutionRemark: '人工关闭',
+    });
+
+    await expect(
+      service.teacherAttributionConflictResolve({
+        id: conflictId,
+        resolution: 'resolved',
+        agentId: 1,
+        resolutionRemark: '重复处理',
+      })
+    ).rejects.toThrow('当前归因冲突已关闭');
+  });
+
+  test('should reject removing attribution when current attribution is missing', async () => {
+    const { service } = createService();
+
+    await expect(
+      service.teacherAttributionRemove({
+        teacherId: 1,
+      })
+    ).rejects.toThrow('当前班主任不存在有效归因');
   });
 
   test('should reject readonly writes and mask attribution info visibility by scope', async () => {

@@ -5,11 +5,6 @@
  * 维护重点是权限边界、部门树范围和资产主状态回写必须始终收敛到这一处，避免子流程各自改状态造成漂移。
  */
 import {
-  App,
-  ASYNC_CONTEXT_KEY,
-  ASYNC_CONTEXT_MANAGER_KEY,
-  AsyncContextManager,
-  IMidwayApplication,
   Inject,
   Provide,
   Scope,
@@ -17,13 +12,12 @@ import {
 } from '@midwayjs/core';
 import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
-import * as jwt from 'jsonwebtoken';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { BaseSysDepartmentEntity } from '../../base/entity/sys/department';
 import { BaseSysUserEntity } from '../../base/entity/sys/user';
 import { BaseSysMenuService } from '../../base/service/sys/menu';
-import { BaseSysPermsService } from '../../base/service/sys/perms';
 import { PerformanceAssetAssignmentEntity } from '../entity/assetAssignment';
+import { PerformanceAssetAssignmentRequestEntity } from '../entity/assetAssignmentRequest';
 import { PerformanceAssetDepreciationEntity } from '../entity/assetDepreciation';
 import { PerformanceAssetDisposalEntity } from '../entity/assetDisposal';
 import { PerformanceAssetInfoEntity } from '../entity/assetInfo';
@@ -33,6 +27,17 @@ import { PerformanceAssetProcurementEntity } from '../entity/assetProcurement';
 import { PerformanceAssetTransferEntity } from '../entity/assetTransfer';
 import { PerformancePurchaseOrderEntity } from '../entity/purchase-order';
 import { PerformanceSupplierEntity } from '../entity/supplier';
+import { PerformanceApprovalFlowService } from './approval-flow';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain';
 
 type AssetStatus =
   | 'pendingInbound'
@@ -44,6 +49,16 @@ type AssetStatus =
   | 'scrapped'
   | 'lost';
 type AssignmentStatus = 'assigned' | 'returned' | 'lost';
+type AssignmentRequestStatus =
+  | 'draft'
+  | 'inApproval'
+  | 'rejected'
+  | 'withdrawn'
+  | 'approvedPendingAssignment'
+  | 'issuing'
+  | 'issued'
+  | 'cancelled'
+  | 'manualPending';
 type MaintenanceStatus = 'scheduled' | 'inProgress' | 'completed' | 'cancelled';
 type ProcurementStatus = 'draft' | 'submitted' | 'received' | 'cancelled';
 type TransferStatus = 'draft' | 'submitted' | 'inTransit' | 'completed' | 'cancelled';
@@ -61,6 +76,108 @@ const ASSET_STATUSES: AssetStatus[] = [
   'lost',
 ];
 const ASSIGNMENT_STATUSES: AssignmentStatus[] = ['assigned', 'returned', 'lost'];
+const ASSIGNMENT_REQUEST_STATUSES: AssignmentRequestStatus[] = [
+  'draft',
+  'inApproval',
+  'rejected',
+  'withdrawn',
+  'approvedPendingAssignment',
+  'issuing',
+  'issued',
+  'cancelled',
+  'manualPending',
+];
+const PERFORMANCE_SUPPLIER_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.supplierNotFound
+  );
+const PERFORMANCE_ASSET_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.assetNotFound
+  );
+const PERFORMANCE_ORIGINAL_ASSET_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.assetNotFound,
+    '原资产不存在'
+  );
+const PERFORMANCE_PURCHASE_ORDER_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.purchaseOrderNotFound
+  );
+const PERFORMANCE_ASSIGNMENT_REQUEST_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.assetAssignmentRequestNotFound
+  );
+const PERFORMANCE_ASSIGNMENT_RECORD_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.assetAssignmentRecordNotFound
+  );
+const PERFORMANCE_ORIGINAL_ASSIGNMENT_RECORD_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.assetAssignmentRecordNotFound,
+    '原领用记录不存在'
+  );
+const PERFORMANCE_MAINTENANCE_RECORD_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.assetMaintenanceRecordNotFound
+  );
+const PERFORMANCE_APPLICANT_DEPARTMENT_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.employeeDepartmentNotFound,
+    '申请人部门不存在'
+  );
+const PERFORMANCE_ASSET_PROCUREMENT_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.assetProcurementNotFound
+  );
+const PERFORMANCE_ASSET_TRANSFER_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.assetTransferNotFound
+  );
+const PERFORMANCE_ASSET_INVENTORY_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.assetInventoryNotFound
+  );
+const PERFORMANCE_ASSET_DISPOSAL_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.assetDisposalNotFound
+  );
+const PERFORMANCE_STATE_EDIT_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateEditNotAllowed
+  );
+const PERFORMANCE_STATE_DRAFT_EDIT_ONLY_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateDraftEditOnly
+  );
+const PERFORMANCE_STATE_DRAFT_SUBMIT_ONLY_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateDraftSubmitOnly
+  );
+const PERFORMANCE_STATE_CANCEL_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateCancelNotAllowed
+  );
+const PERFORMANCE_STATE_SUBMITTED_RECEIVE_ONLY_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateSubmittedReceiveOnly
+  );
+const PERFORMANCE_STATE_SUBMITTED_APPROVE_ONLY_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateSubmittedApproveOnly
+  );
+const PERFORMANCE_STATE_APPROVED_EXECUTE_ONLY_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateApprovedExecuteOnly
+  );
+const PERFORMANCE_TARGET_DEPARTMENT_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.targetDepartmentRequired
+  );
+const PERFORMANCE_ASSET_NO_DUPLICATE_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.assetNoDuplicate
+  );
 const MAINTENANCE_STATUSES: MaintenanceStatus[] = [
   'scheduled',
   'inProgress',
@@ -93,13 +210,21 @@ const DISPOSAL_STATUSES: DisposalStatus[] = [
   'scrapped',
   'cancelled',
 ];
-
-const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
-  return require('../../base/config').default({
-    app,
-    env: app?.getEnv?.(),
-  }).jwt;
-};
+const ASSIGNMENT_REQUEST_TYPES = [
+  'standard',
+  'crossDepartmentBorrow',
+  'lostReplacement',
+  'abnormalReissue',
+  'scrapReplacement',
+] as const;
+const ASSIGNMENT_REQUEST_L1_CATEGORIES = ['笔记本', '手机', '平板', '显示器'];
+const ASSIGNMENT_REQUEST_SENSITIVE_CATEGORIES = [
+  '笔记本',
+  '手机',
+  '平板',
+  '高配工作站',
+  '涉密终端',
+];
 
 function normalizePageNumber(value: any, fallback: number) {
   const parsed = Number(value);
@@ -181,6 +306,60 @@ function nowTime() {
   return new Date().toISOString().slice(0, 19).replace('T', ' ');
 }
 
+function formatDateTimeText(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+    date.getDate()
+  ).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(
+    date.getMinutes()
+  ).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
+}
+
+function normalizeDateTimeText(value: any) {
+  if (!value) {
+    return '';
+  }
+  if (value instanceof Date) {
+    return formatDateTimeText(value);
+  }
+  const text = String(value).trim();
+  if (!text) {
+    return '';
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+    return `${text} 00:00:00`;
+  }
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(text)) {
+    return `${text}:00`;
+  }
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(text)) {
+    return text.slice(0, 19);
+  }
+  const parsed = new Date(text.replace(' ', 'T'));
+  return Number.isFinite(parsed.getTime()) ? formatDateTimeText(parsed) : '';
+}
+
+function startOfTodayValue(now: Date) {
+  const next = new Date(now);
+  next.setHours(0, 0, 0, 0);
+  return formatDateTimeText(next);
+}
+
+function startOfWeekValue(now: Date) {
+  const next = new Date(now);
+  const day = next.getDay();
+  const offset = day === 0 ? 6 : day - 1;
+  next.setDate(next.getDate() - offset);
+  next.setHours(0, 0, 0, 0);
+  return formatDateTimeText(next);
+}
+
+function startOfMonthValue(now: Date) {
+  const next = new Date(now);
+  next.setDate(1);
+  next.setHours(0, 0, 0, 0);
+  return formatDateTimeText(next);
+}
+
 function monthValue(value?: string | null) {
   const raw = String(value || '').trim();
   if (/^\d{4}-\d{2}$/.test(raw)) {
@@ -208,6 +387,9 @@ export class PerformanceAssetDomainService extends BaseService {
 
   @InjectEntityModel(PerformanceAssetAssignmentEntity)
   performanceAssetAssignmentEntity: Repository<PerformanceAssetAssignmentEntity>;
+
+  @InjectEntityModel(PerformanceAssetAssignmentRequestEntity)
+  performanceAssetAssignmentRequestEntity: Repository<PerformanceAssetAssignmentRequestEntity>;
 
   @InjectEntityModel(PerformanceAssetMaintenanceEntity)
   performanceAssetMaintenanceEntity: Repository<PerformanceAssetMaintenanceEntity>;
@@ -243,93 +425,166 @@ export class PerformanceAssetDomainService extends BaseService {
   baseSysMenuService: BaseSysMenuService;
 
   @Inject()
-  baseSysPermsService: BaseSysPermsService;
+  performanceAccessContextService: PerformanceAccessContextService;
+
+  @Inject()
+  performanceApprovalFlowService: PerformanceApprovalFlowService;
 
   @Inject()
   ctx;
 
-  @App()
-  app: IMidwayApplication;
-
   private get currentCtx() {
-    if (this.ctx?.admin) {
-      return this.ctx;
-    }
-
-    try {
-      const contextManager: AsyncContextManager = this.app
-        .getApplicationContext()
-        .get(ASYNC_CONTEXT_MANAGER_KEY);
-      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as any;
-    } catch (error) {
-      return this.ctx;
-    }
+    return this.ctx || {};
   }
 
   private get currentAdmin() {
-    if (this.currentCtx?.admin) {
-      return this.currentCtx.admin;
-    }
-
-    const token =
-      this.currentCtx?.get?.('Authorization') ||
-      this.currentCtx?.headers?.authorization;
-
-    if (!token) {
-      return undefined;
-    }
-
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
+    return this.currentCtx.admin || {};
   }
+
+  private readonly capabilityByPerm: Record<string, PerformanceCapabilityKey> = {
+    [PERMISSIONS.performance.assetInfo.page]: 'asset_info.read',
+    [PERMISSIONS.performance.assetInfo.info]: 'asset_info.read',
+    [PERMISSIONS.performance.assetInfo.add]: 'asset_info.create',
+    [PERMISSIONS.performance.assetInfo.update]: 'asset_info.update',
+    [PERMISSIONS.performance.assetInfo.delete]: 'asset_info.delete',
+    [PERMISSIONS.performance.assetInfo.updateStatus]: 'asset_info.update_status',
+    [PERMISSIONS.performance.assetAssignment.page]: 'asset_assignment.read',
+    [PERMISSIONS.performance.assetAssignment.add]: 'asset_assignment.create',
+    [PERMISSIONS.performance.assetAssignment.update]: 'asset_assignment.update',
+    [PERMISSIONS.performance.assetAssignment.delete]: 'asset_assignment.delete',
+    [PERMISSIONS.performance.assetAssignment.return]: 'asset_assignment.return',
+    [PERMISSIONS.performance.assetAssignment.markLost]:
+      'asset_assignment.mark_lost',
+    [PERMISSIONS.performance.assetAssignmentRequest.page]:
+      'asset_assignment_request.read',
+    [PERMISSIONS.performance.assetAssignmentRequest.info]:
+      'asset_assignment_request.read',
+    [PERMISSIONS.performance.assetAssignmentRequest.add]:
+      'asset_assignment_request.create',
+    [PERMISSIONS.performance.assetAssignmentRequest.update]:
+      'asset_assignment_request.update',
+    [PERMISSIONS.performance.assetAssignmentRequest.submit]:
+      'asset_assignment_request.submit',
+    [PERMISSIONS.performance.assetAssignmentRequest.withdraw]:
+      'asset_assignment_request.withdraw',
+    [PERMISSIONS.performance.assetAssignmentRequest.assign]:
+      'asset_assignment_request.assign',
+    [PERMISSIONS.performance.assetAssignmentRequest.cancel]:
+      'asset_assignment_request.cancel',
+    [PERMISSIONS.performance.assetDashboard.summary]: 'asset_dashboard.summary',
+    [PERMISSIONS.performance.assetDepreciation.page]: 'asset_depreciation.read',
+    [PERMISSIONS.performance.assetDepreciation.summary]:
+      'asset_depreciation.summary',
+    [PERMISSIONS.performance.assetDepreciation.recalculate]:
+      'asset_depreciation.recalculate',
+    [PERMISSIONS.performance.assetDisposal.page]: 'asset_disposal.read',
+    [PERMISSIONS.performance.assetDisposal.info]: 'asset_disposal.read',
+    [PERMISSIONS.performance.assetDisposal.add]: 'asset_disposal.create',
+    [PERMISSIONS.performance.assetDisposal.update]: 'asset_disposal.update',
+    [PERMISSIONS.performance.assetDisposal.submit]: 'asset_disposal.submit',
+    [PERMISSIONS.performance.assetDisposal.approve]: 'asset_disposal.approve',
+    [PERMISSIONS.performance.assetDisposal.execute]: 'asset_disposal.execute',
+    [PERMISSIONS.performance.assetDisposal.cancel]: 'asset_disposal.cancel',
+    [PERMISSIONS.performance.assetInventory.page]: 'asset_inventory.read',
+    [PERMISSIONS.performance.assetInventory.info]: 'asset_inventory.read',
+    [PERMISSIONS.performance.assetInventory.add]: 'asset_inventory.create',
+    [PERMISSIONS.performance.assetInventory.update]: 'asset_inventory.update',
+    [PERMISSIONS.performance.assetInventory.start]: 'asset_inventory.start',
+    [PERMISSIONS.performance.assetInventory.complete]:
+      'asset_inventory.complete',
+    [PERMISSIONS.performance.assetInventory.close]: 'asset_inventory.close',
+    [PERMISSIONS.performance.assetMaintenance.page]: 'asset_maintenance.read',
+    [PERMISSIONS.performance.assetMaintenance.add]: 'asset_maintenance.create',
+    [PERMISSIONS.performance.assetMaintenance.update]: 'asset_maintenance.update',
+    [PERMISSIONS.performance.assetMaintenance.complete]:
+      'asset_maintenance.complete',
+    [PERMISSIONS.performance.assetMaintenance.cancel]: 'asset_maintenance.cancel',
+    [PERMISSIONS.performance.assetMaintenance.delete]: 'asset_maintenance.delete',
+    [PERMISSIONS.performance.assetProcurement.page]: 'asset_procurement.read',
+    [PERMISSIONS.performance.assetProcurement.info]: 'asset_procurement.read',
+    [PERMISSIONS.performance.assetProcurement.add]: 'asset_procurement.create',
+    [PERMISSIONS.performance.assetProcurement.update]: 'asset_procurement.update',
+    [PERMISSIONS.performance.assetProcurement.submit]:
+      'asset_procurement.submit',
+    [PERMISSIONS.performance.assetProcurement.receive]:
+      'asset_procurement.receive',
+    [PERMISSIONS.performance.assetProcurement.cancel]: 'asset_procurement.cancel',
+    [PERMISSIONS.performance.assetReport.page]: 'asset_report.read',
+    [PERMISSIONS.performance.assetReport.summary]: 'asset_report.summary',
+    [PERMISSIONS.performance.assetReport.export]: 'asset_report.export',
+    [PERMISSIONS.performance.assetTransfer.page]: 'asset_transfer.read',
+    [PERMISSIONS.performance.assetTransfer.info]: 'asset_transfer.read',
+    [PERMISSIONS.performance.assetTransfer.add]: 'asset_transfer.create',
+    [PERMISSIONS.performance.assetTransfer.update]: 'asset_transfer.update',
+    [PERMISSIONS.performance.assetTransfer.submit]: 'asset_transfer.submit',
+    [PERMISSIONS.performance.assetTransfer.complete]: 'asset_transfer.complete',
+    [PERMISSIONS.performance.assetTransfer.cancel]: 'asset_transfer.cancel',
+  };
 
   private async currentPerms() {
-    const admin = this.currentAdmin;
-    if (!admin?.roleIds) {
-      throw new CoolCommException('登录状态已失效');
+    const access = await this.performanceAccessContextService.resolveAccessContext(
+      undefined,
+      {
+        allowEmptyRoleIds: false,
+        missingAuthMessage: '登录状态已失效',
+      }
+    );
+    if (!this.currentCtx.admin) {
+      this.currentCtx.admin = { userId: access.userId };
+    } else if (!this.currentCtx.admin.userId) {
+      this.currentCtx.admin.userId = access.userId;
     }
-    return this.baseSysMenuService.getPerms(admin.roleIds);
+    return access;
   }
 
-  private hasPerm(perms: string[], perm: string) {
-    return perms.includes(perm);
+  private resolveCapabilityKey(perm: string): PerformanceCapabilityKey {
+    const capabilityKey = this.capabilityByPerm[perm];
+    if (!capabilityKey) {
+      throw new CoolCommException(`未映射的资产权限: ${perm}`);
+    }
+    return capabilityKey;
   }
 
-  private assertPerm(perms: string[], perm: string, message: string) {
-    if (!this.hasPerm(perms, perm)) {
+  private hasPerm(access: PerformanceResolvedAccessContext, perm: string) {
+    return this.performanceAccessContextService.hasCapability(
+      access,
+      this.resolveCapabilityKey(perm)
+    );
+  }
+
+  private assertPerm(
+    access: PerformanceResolvedAccessContext,
+    perm: string,
+    message: string
+  ) {
+    if (!this.hasPerm(access, perm)) {
       throw new CoolCommException(message);
     }
   }
 
-  private async departmentScopeIds(perms: string[]) {
+  private async departmentScopeIds(access: PerformanceResolvedAccessContext) {
     if (
-      this.currentAdmin?.isAdmin === true ||
-      this.currentAdmin?.username === 'admin' ||
-      this.hasPerm(perms, 'performance:assetInfo:add') ||
-      this.hasPerm(perms, 'performance:assetProcurement:receive') ||
-      this.hasPerm(perms, 'performance:assetDepreciation:recalculate')
+      this.performanceAccessContextService.hasAnyCapabilityInScopes(
+        access,
+        [
+          'asset_info.create',
+          'asset_procurement.receive',
+          'asset_depreciation.recalculate',
+        ],
+        ['company']
+      )
     ) {
       return null;
     }
-
-    const userId = Number(this.currentAdmin?.userId || 0);
-    if (!userId) {
-      throw new CoolCommException('登录上下文缺失');
-    }
-
-    const ids = await this.baseSysPermsService.departmentIds(userId);
-    return uniqueNumberList(ids);
+    return uniqueNumberList(access.departmentIds);
   }
 
   private async assertDepartmentInScope(
     departmentId: number | null | undefined,
-    perms: string[],
+    access: PerformanceResolvedAccessContext,
     message: string
   ) {
-    const scopeIds = await this.departmentScopeIds(perms);
+    const scopeIds = await this.departmentScopeIds(access);
     if (scopeIds === null) {
       return;
     }
@@ -340,10 +595,10 @@ export class PerformanceAssetDomainService extends BaseService {
 
   private async scopeRows<T>(
     rows: T[],
-    perms: string[],
+    access: PerformanceResolvedAccessContext,
     getter: (row: T) => number | null | undefined
   ) {
-    const scopeIds = await this.departmentScopeIds(perms);
+    const scopeIds = await this.departmentScopeIds(access);
     if (scopeIds === null) {
       return rows;
     }
@@ -381,12 +636,273 @@ export class PerformanceAssetDomainService extends BaseService {
     return new Map(rows.map(item => [Number(item.id), item]));
   }
 
-  private async loadAsset(assetId: number, message = '资产不存在') {
+  private async loadAsset(assetId: number, message = PERFORMANCE_ASSET_NOT_FOUND_MESSAGE) {
     const asset = await this.performanceAssetInfoEntity.findOneBy({ id: assetId });
     if (!asset) {
       throw new CoolCommException(message);
     }
     return asset;
+  }
+
+  private normalizeAssignmentRequestType(value: any) {
+    const requestType = String(value || '').trim() as (typeof ASSIGNMENT_REQUEST_TYPES)[number];
+    if (!ASSIGNMENT_REQUEST_TYPES.includes(requestType)) {
+      throw new CoolCommException('领用申请类型不合法');
+    }
+    return requestType;
+  }
+
+  private normalizeAssignmentRequestStatus(value: any, message = '领用申请状态不合法') {
+    return ensureStatus(value, ASSIGNMENT_REQUEST_STATUSES, message);
+  }
+
+  private currentUserId() {
+    const userId = Number(this.currentAdmin?.userId || 0);
+    if (!userId) {
+      throw new CoolCommException(
+        resolvePerformanceDomainErrorMessage(
+          PERFORMANCE_DOMAIN_ERROR_CODES.authContextMissing
+        )
+      );
+    }
+    return userId;
+  }
+
+  private nextAssignmentRequestNo() {
+    const now = new Date();
+    const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(
+      now.getDate()
+    ).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(
+      now.getMinutes()
+    ).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+    const random = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+    return `ASR-${stamp}-${random}`;
+  }
+
+  private computeAssignmentRequestRules(payload: {
+    requestType: string;
+    assetCategory: string;
+    unitPriceEstimate: number;
+  }) {
+    const rules: string[] = [];
+    const price = Number(payload.unitPriceEstimate || 0);
+    const category = String(payload.assetCategory || '').trim();
+    const requestType = payload.requestType;
+    const isSensitive = ASSIGNMENT_REQUEST_SENSITIVE_CATEGORIES.includes(category);
+    const isL1Category = ASSIGNMENT_REQUEST_L1_CATEGORIES.includes(category);
+
+    if (price >= 5000) {
+      rules.push('highAmount');
+    } else if (price >= 1000) {
+      rules.push('midAmount');
+    }
+
+    if (isSensitive) {
+      rules.push('sensitiveAsset');
+    } else if (isL1Category) {
+      rules.push('l1Category');
+    }
+
+    if (requestType === 'crossDepartmentBorrow') {
+      rules.push('crossDepartmentBorrow');
+    }
+    if (requestType === 'lostReplacement') {
+      rules.push('lostReplacement');
+    }
+    if (requestType === 'abnormalReissue') {
+      rules.push('abnormalReissue');
+    }
+    if (requestType === 'scrapReplacement') {
+      rules.push('scrapReplacement');
+    }
+
+    const isL2 =
+      rules.includes('highAmount') ||
+      rules.includes('sensitiveAsset') ||
+      rules.includes('crossDepartmentBorrow') ||
+      rules.includes('lostReplacement') ||
+      rules.includes('abnormalReissue') ||
+      rules.includes('scrapReplacement');
+
+    const requestLevel = isL2
+      ? 'L2'
+      : rules.includes('midAmount') || rules.includes('l1Category')
+        ? 'L1'
+        : 'L1';
+
+    return {
+      requestLevel,
+      rules,
+    };
+  }
+
+  private assertDirectAssignmentEligible(
+    asset: PerformanceAssetInfoEntity,
+    departmentId: number
+  ) {
+    const assetCategory = String(asset.category || '').trim();
+    const isSensitive = ASSIGNMENT_REQUEST_SENSITIVE_CATEGORIES.includes(assetCategory);
+    const unitPrice = Number(asset.purchaseCost || 0);
+    const isCrossDepartment = Number(asset.ownerDepartmentId || 0) !== Number(departmentId || 0);
+
+    const isL0Eligible = unitPrice < 1000 && !isSensitive && !isCrossDepartment;
+
+    if (!isL0Eligible) {
+      throw new CoolCommException(
+        '当前领用场景需先走领用申请审批流程，请改用领用申请入口'
+      );
+    }
+  }
+
+  private shouldApplicantSelfScopeRequest(
+    perms: PerformanceResolvedAccessContext
+  ) {
+    return (
+      !this.hasPerm(perms, PERMISSIONS.performance.assetAssignmentRequest.assign) &&
+      !this.hasPerm(perms, PERMISSIONS.performance.assetAssignmentRequest.cancel)
+    );
+  }
+
+  private async requireAssignmentRequest(
+    id: number,
+    message = PERFORMANCE_ASSIGNMENT_REQUEST_NOT_FOUND_MESSAGE
+  ) {
+    const request = await this.performanceAssetAssignmentRequestEntity.findOneBy({ id });
+    if (!request) {
+      throw new CoolCommException(message);
+    }
+    return request;
+  }
+
+  private async assertAssignmentRequestAccess(
+    request: PerformanceAssetAssignmentRequestEntity,
+    perms: PerformanceResolvedAccessContext,
+    message: string
+  ) {
+    if (this.shouldApplicantSelfScopeRequest(perms)) {
+      if (Number(request.applicantId) !== this.currentUserId()) {
+        throw new CoolCommException(message);
+      }
+      return;
+    }
+    await this.assertDepartmentInScope(request.applicantDepartmentId, perms, message);
+  }
+
+  private parseTriggeredRules(value: string | null | undefined) {
+    if (!value) {
+      return [];
+    }
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  private async buildAssignmentRequestRow(
+    item: PerformanceAssetAssignmentRequestEntity,
+    maps: {
+      departments: Map<number, any>;
+      users: Map<number, any>;
+      assets: Map<number, any>;
+      assignments: Map<number, any>;
+    }
+  ) {
+    const applicant = maps.users.get(Number(item.applicantId));
+    const approver = maps.users.get(Number(item.currentApproverId || 0));
+    const assignedAsset = maps.assets.get(Number(item.assignedAssetId || 0));
+    const assignment = maps.assignments.get(Number(item.assignmentRecordId || 0));
+    return {
+      id: item.id,
+      requestNo: item.requestNo,
+      requestLevel: item.requestLevel,
+      requestType: item.requestType,
+      applicantId: item.applicantId,
+      applicantName: applicant?.name || '',
+      applicantDepartmentId: item.applicantDepartmentId,
+      applicantDepartmentName:
+        maps.departments.get(Number(item.applicantDepartmentId || 0))?.name || '',
+      assetCategory: item.assetCategory,
+      assetModelRequest: item.assetModelRequest || '',
+      quantity: Number(item.quantity || 0),
+      unitPriceEstimate: Number(item.unitPriceEstimate || 0),
+      usageReason: item.usageReason || '',
+      expectedUseStartDate: item.expectedUseStartDate || '',
+      targetDepartmentId: item.targetDepartmentId,
+      targetDepartmentName:
+        maps.departments.get(Number(item.targetDepartmentId || 0))?.name || '',
+      exceptionReason: item.exceptionReason || '',
+      originalAssetId: item.originalAssetId,
+      originalAssetNo: maps.assets.get(Number(item.originalAssetId || 0))?.assetNo || '',
+      originalAssignmentId: item.originalAssignmentId,
+      approvalInstanceId: item.approvalInstanceId,
+      approvalStatus: item.approvalStatus || '',
+      currentApproverId: item.currentApproverId,
+      currentApproverName: approver?.name || '',
+      approvalTriggeredRules: this.parseTriggeredRules(item.approvalTriggeredRules),
+      assignedAssetId: item.assignedAssetId,
+      assignedAssetNo: assignedAsset?.assetNo || '',
+      assignedAssetName: assignedAsset?.assetName || '',
+      assignmentRecordId: item.assignmentRecordId,
+      assignmentStatus: assignment?.status || '',
+      assignedBy: item.assignedBy,
+      assignedByName: maps.users.get(Number(item.assignedBy || 0))?.name || '',
+      assignedAt: item.assignedAt || '',
+      status: item.status,
+      submitTime: item.submitTime || '',
+      withdrawTime: item.withdrawTime || '',
+      cancelReason: item.cancelReason || '',
+      createTime: item.createTime,
+      updateTime: item.updateTime,
+    };
+  }
+
+  private async executeAssetAssignmentCreate(
+    payload: {
+      assetId: number;
+      assigneeId: number;
+      departmentId: number;
+      assignDate?: string | null;
+      actualReturnDate?: string | null;
+      purpose?: string | null;
+      returnRemark?: string | null;
+    },
+    perms: PerformanceResolvedAccessContext,
+    manager?: EntityManager
+  ) {
+    const assetRepo = manager
+      ? manager.getRepository(PerformanceAssetInfoEntity)
+      : this.performanceAssetInfoEntity;
+    const assignmentRepo = manager
+      ? manager.getRepository(PerformanceAssetAssignmentEntity)
+      : this.performanceAssetAssignmentEntity;
+    const asset = await assetRepo.findOneBy({ id: payload.assetId });
+    if (!asset) {
+      throw new CoolCommException(PERFORMANCE_ASSET_NOT_FOUND_MESSAGE);
+    }
+    await this.assertDepartmentInScope(asset.ownerDepartmentId, perms, '无权操作该资产');
+    if (asset.status !== 'available') {
+      throw new CoolCommException('仅 available 资产允许发起领用');
+    }
+    await this.assertDepartmentInScope(payload.departmentId, perms, '无权操作该领用记录');
+    const saved = await assignmentRepo.save(
+      assignmentRepo.create({
+        assetId: payload.assetId,
+        assigneeId: payload.assigneeId,
+        departmentId: payload.departmentId,
+        assignDate: normalizeDate(payload.assignDate, 10) || nowTime().slice(0, 10),
+        returnDate: normalizeDate(payload.actualReturnDate, 10),
+        status: 'assigned',
+        purpose: normalizeOptionalText(payload.purpose, 2000, '领用用途长度不能超过 2000'),
+        returnNote: normalizeOptionalText(payload.returnRemark, 2000, '归还说明长度不能超过 2000'),
+      })
+    );
+    await assetRepo.update(
+      { id: payload.assetId },
+      { status: 'assigned' }
+    );
+    return saved;
   }
 
   private normalizeAssetRow(
@@ -428,9 +944,31 @@ export class PerformanceAssetDomainService extends BaseService {
     };
   }
 
+  private summarizeActionWindow(
+    actions: Array<{
+      occurredAt?: string | Date | null;
+      assetId?: number | null;
+      documentKey?: string | null;
+    }>,
+    startTime: string
+  ) {
+    const filtered = actions.filter(item => {
+      const timestamp = normalizeDateTimeText(item.occurredAt);
+      return Boolean(timestamp) && timestamp >= startTime;
+    });
+
+    return {
+      actionCount: filtered.length,
+      assetCount: uniqueNumberList(filtered.map(item => item.assetId)).length,
+      documentCount: Array.from(
+        new Set(filtered.map(item => String(item.documentKey || '').trim()).filter(Boolean))
+      ).length,
+    };
+  }
+
   async assetDashboardSummary(query: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetDashboard:summary', '无权限查看资产首页');
+    this.assertPerm(perms, PERMISSIONS.performance.assetDashboard.summary, '无权限查看资产首页');
 
     let assets = await this.performanceAssetInfoEntity.find();
     assets = await this.scopeRows(assets, perms, item => item.ownerDepartmentId);
@@ -476,57 +1014,298 @@ export class PerformanceAssetDomainService extends BaseService {
       }, new Map<string, any>()).values()
     );
 
-    const recentActivities = [
-      ...(await this.performanceAssetAssignmentEntity.find()).map(item => ({
-        id: item.id,
-        module: 'assetAssignment',
-        title: `领用归还 #${item.id}`,
-        status: item.status,
-        occurredAt: item.updateTime,
-      })),
-      ...(await this.performanceAssetMaintenanceEntity.find()).map(item => ({
-        id: item.id,
-        module: 'assetMaintenance',
-        title: `维护保养 #${item.id}`,
-        status: item.status,
-        occurredAt: item.updateTime,
-      })),
-      ...(await this.performanceAssetProcurementEntity.find()).map(item => ({
-        id: item.id,
-        module: 'assetProcurement',
-        title: item.title,
-        status: item.status,
-        occurredAt: item.updateTime,
-      })),
-      ...(await this.performanceAssetTransferEntity.find()).map(item => ({
-        id: item.id,
-        module: 'assetTransfer',
-        title: item.transferNo,
-        status: item.status,
-        occurredAt: item.updateTime,
-      })),
-      ...(await this.performanceAssetInventoryEntity.find()).map(item => ({
-        id: item.id,
-        module: 'assetInventory',
-        title: item.inventoryNo,
-        status: item.status,
-        occurredAt: item.updateTime,
-      })),
-      ...(await this.performanceAssetDisposalEntity.find()).map(item => ({
-        id: item.id,
-        module: 'assetDisposal',
-        title: item.disposalNo,
-        status: item.status,
-        occurredAt: item.updateTime,
-      })),
-    ]
-      .sort((a, b) => String(b.occurredAt || '').localeCompare(String(a.occurredAt || '')))
-      .slice(0, 10);
-
     const today = new Date();
     const deadline = new Date(today.getTime() + 30 * 24 * 3600 * 1000)
       .toISOString()
       .slice(0, 10);
+    const assignmentRows = (await this.performanceAssetAssignmentEntity.find()).filter(item =>
+      assetMapForSummary.has(Number(item.assetId))
+    );
+    const maintenanceRows = (await this.performanceAssetMaintenanceEntity.find()).filter(item =>
+      assetMapForSummary.has(Number(item.assetId))
+    );
+    const procurementRows = await this.scopeRows(
+      await this.performanceAssetProcurementEntity.find(),
+      perms,
+      item => item.ownerDepartmentId
+    );
+    const transferRows = (await this.performanceAssetTransferEntity.find()).filter(item =>
+      assetMapForSummary.has(Number(item.assetId))
+    );
+    const inventoryRows = await this.scopeRows(
+      await this.performanceAssetInventoryEntity.find(),
+      perms,
+      item => item.ownerDepartmentId
+    );
+    const departmentMap = await this.departmentMap(
+      uniqueNumberList([
+        ...assets.map(item => item.ownerDepartmentId),
+        ...disposalRows.map(item => item.ownerDepartmentId),
+        ...assignmentRows.map(item => item.departmentId),
+        ...maintenanceRows.map(item => item.departmentId),
+        ...procurementRows.map(item => item.ownerDepartmentId),
+        ...transferRows.map(item => item.fromDepartmentId),
+        ...inventoryRows.map(item => item.ownerDepartmentId),
+      ])
+    );
+    const userMap = await this.userMap(
+      uniqueNumberList([
+        ...assets.map(item => item.managerId),
+        ...disposalRows.flatMap(item => [item.approvedById, item.executedById]),
+        ...assignmentRows.map(item => item.assigneeId),
+        ...procurementRows.map(item => item.managerId),
+        ...transferRows.map(item => item.toManagerId),
+      ])
+    );
+
+    const assetActions = assets.map(item => {
+      const isNew = String(item.createTime || '') === String(item.updateTime || '');
+      return {
+        id: item.id,
+        module: 'assetInfo',
+        actionLabel: isNew ? '新增资产' : '台账维护',
+        title: item.assetName || item.assetNo || `资产 #${item.id}`,
+        objectNo: item.assetNo,
+        objectName: item.assetName,
+        status: item.status,
+        resultStatus: item.status,
+        assetId: item.id,
+        departmentId: item.ownerDepartmentId,
+        departmentName: departmentMap.get(Number(item.ownerDepartmentId))?.name || '',
+        operatorName: userMap.get(Number(item.managerId || 0))?.name || '',
+        occurredAt: item.updateTime || item.createTime || '',
+        documentKey: null,
+      };
+    });
+    const assignmentActions = assignmentRows.map(item => {
+      const asset = assetMapForSummary.get(Number(item.assetId));
+      const actionLabel =
+        item.status === 'returned' ? '归还资产' : item.status === 'lost' ? '标记丢失' : '领用资产';
+      return {
+        id: item.id,
+        module: 'assetAssignment',
+        actionLabel,
+        title: asset?.assetName || `领用归还 #${item.id}`,
+        objectNo: asset?.assetNo || `ASSIGN-${item.id}`,
+        objectName: asset?.assetName || '资产领用记录',
+        status: item.status,
+        resultStatus: item.status,
+        assetId: item.assetId,
+        departmentId: item.departmentId,
+        departmentName: departmentMap.get(Number(item.departmentId))?.name || '',
+        operatorName: userMap.get(Number(item.assigneeId || 0))?.name || '',
+        occurredAt: item.returnDate || item.assignDate || item.updateTime || item.createTime || '',
+        documentKey: `assetAssignment:${item.id}`,
+      };
+    });
+    const maintenanceActions = maintenanceRows.map(item => {
+      const asset = assetMapForSummary.get(Number(item.assetId));
+      const actionLabel =
+        item.status === 'completed'
+          ? '完成维护'
+          : item.status === 'cancelled'
+            ? '取消维护'
+            : item.status === 'inProgress'
+              ? '开始维护'
+              : '新增维护';
+      return {
+        id: item.id,
+        module: 'assetMaintenance',
+        actionLabel,
+        title: asset?.assetName || `维护保养 #${item.id}`,
+        objectNo: asset?.assetNo || `MAINT-${item.id}`,
+        objectName: asset?.assetName || '资产维护记录',
+        status: item.status,
+        resultStatus: item.status,
+        assetId: item.assetId,
+        departmentId: item.departmentId,
+        departmentName: departmentMap.get(Number(item.departmentId))?.name || '',
+        operatorName: asset?.managerId ? userMap.get(Number(asset.managerId))?.name || '' : '',
+        occurredAt:
+          item.completedDate || item.startDate || item.updateTime || item.createTime || '',
+        documentKey: `assetMaintenance:${item.id}`,
+      };
+    });
+    const procurementActions = procurementRows
+      .filter(item =>
+        query?.category ? item.category === String(query.category).trim() : true
+      )
+      .map(item => {
+      const actionLabel =
+        item.status === 'received'
+          ? '确认入库'
+          : item.status === 'submitted'
+            ? '提交入库'
+            : item.status === 'cancelled'
+              ? '取消入库'
+              : '新增入库单';
+      return {
+        id: item.id,
+        module: 'assetProcurement',
+        actionLabel,
+        title: item.title || item.procurementNo,
+        objectNo: item.procurementNo,
+        objectName: item.title || item.assetName,
+        status: item.status,
+        resultStatus: item.status,
+        assetId:
+          Array.isArray(item.receivedAssetIds) && item.receivedAssetIds.length
+            ? Number(item.receivedAssetIds[0])
+            : null,
+        departmentId: item.ownerDepartmentId,
+        departmentName: departmentMap.get(Number(item.ownerDepartmentId))?.name || '',
+        operatorName: userMap.get(Number(item.managerId || 0))?.name || '',
+        occurredAt:
+          item.receivedAt || item.submittedAt || item.updateTime || item.createTime || '',
+        documentKey: `assetProcurement:${item.id}`,
+      };
+      });
+    const transferActions = transferRows.map(item => {
+      const asset = assetMapForSummary.get(Number(item.assetId));
+      const actionLabel =
+        item.status === 'completed'
+          ? '完成调拨'
+          : item.status === 'submitted' || item.status === 'inTransit'
+            ? '提交调拨'
+            : item.status === 'cancelled'
+              ? '取消调拨'
+              : '新增调拨单';
+      return {
+        id: item.id,
+        module: 'assetTransfer',
+        actionLabel,
+        title: item.transferNo,
+        objectNo: item.transferNo,
+        objectName: asset?.assetName || '资产调拨单',
+        status: item.status,
+        resultStatus: item.status,
+        assetId: item.assetId,
+        departmentId: item.fromDepartmentId,
+        departmentName: departmentMap.get(Number(item.fromDepartmentId))?.name || '',
+        operatorName: userMap.get(Number(item.toManagerId || 0))?.name || '',
+        occurredAt:
+          item.completedAt || item.submittedAt || item.updateTime || item.createTime || '',
+        documentKey: `assetTransfer:${item.id}`,
+      };
+    });
+    const inventoryActions = inventoryRows.map(item => {
+      const asset = assetMapForSummary.get(Number(item.assetId));
+      const actionLabel =
+        item.status === 'closed'
+          ? '关闭盘点'
+          : item.status === 'completed'
+            ? '完成盘点'
+            : item.status === 'counting'
+              ? '开始盘点'
+              : '新增盘点单';
+      return {
+        id: item.id,
+        module: 'assetInventory',
+        actionLabel,
+        title: item.inventoryNo,
+        objectNo: item.inventoryNo,
+        objectName: asset?.assetName || '资产盘点单',
+        status: item.status,
+        resultStatus: item.status,
+        assetId: item.assetId,
+        departmentId: item.ownerDepartmentId,
+        departmentName: departmentMap.get(Number(item.ownerDepartmentId))?.name || '',
+        operatorName: asset?.managerId ? userMap.get(Number(asset.managerId))?.name || '' : '',
+        occurredAt:
+          item.closedAt ||
+          item.completedAt ||
+          item.startedAt ||
+          item.updateTime ||
+          item.createTime ||
+          '',
+        documentKey: `assetInventory:${item.id}`,
+      };
+    });
+    const disposalActions = disposalRows.map(item => {
+      const asset = assetMapForSummary.get(Number(item.assetId));
+      const actionLabel =
+        item.status === 'scrapped'
+          ? '执行报废'
+          : item.status === 'approved'
+            ? '审批报废'
+            : item.status === 'submitted'
+              ? '提交报废'
+              : item.status === 'cancelled'
+                ? '取消报废'
+                : '新增报废单';
+      const operatorId =
+        item.status === 'scrapped'
+          ? item.executedById
+          : item.status === 'approved'
+            ? item.approvedById
+            : asset?.managerId || null;
+      return {
+        id: item.id,
+        module: 'assetDisposal',
+        actionLabel,
+        title: item.disposalNo,
+        objectNo: item.disposalNo,
+        objectName: asset?.assetName || '资产报废单',
+        status: item.status,
+        resultStatus: item.status,
+        assetId: item.assetId,
+        departmentId: item.ownerDepartmentId,
+        departmentName: departmentMap.get(Number(item.ownerDepartmentId))?.name || '',
+        operatorName: userMap.get(Number(operatorId || 0))?.name || '',
+        occurredAt:
+          item.executedAt ||
+          item.approvedAt ||
+          item.submittedAt ||
+          item.updateTime ||
+          item.createTime ||
+          '',
+        documentKey: `assetDisposal:${item.id}`,
+      };
+    });
+    const depreciationActions = depreciationRows
+      .filter(item => item.recalculatedAt)
+      .map(item => {
+        const asset = assetMapForSummary.get(Number(item.assetId));
+        return {
+          id: item.id,
+          module: 'assetDepreciation',
+          actionLabel: '重算折旧',
+          title: asset?.assetName || `折旧快照 #${item.id}`,
+          objectNo: asset?.assetNo || item.periodValue,
+          objectName: asset?.assetName || `${item.periodValue} 折旧`,
+          status: item.periodValue,
+          resultStatus: item.periodValue,
+          assetId: item.assetId,
+          departmentId: asset?.ownerDepartmentId || null,
+          departmentName: departmentMap.get(Number(asset?.ownerDepartmentId || 0))?.name || '',
+          operatorName: asset?.managerId ? userMap.get(Number(asset.managerId))?.name || '' : '',
+          occurredAt: item.recalculatedAt || item.updateTime || item.createTime || '',
+          documentKey: `assetDepreciation:${item.id}`,
+        };
+      });
+
+    const activityTimeline = [
+      ...assetActions,
+      ...assignmentActions,
+      ...maintenanceActions,
+      ...procurementActions,
+      ...transferActions,
+      ...inventoryActions,
+      ...disposalActions,
+      ...depreciationActions,
+    ]
+      .map(item => ({
+        ...item,
+        occurredAt: normalizeDateTimeText(item.occurredAt),
+      }))
+      .filter(item => item.occurredAt)
+      .sort((a, b) => String(b.occurredAt || '').localeCompare(String(a.occurredAt || '')));
+    const recentActivities = activityTimeline.slice(0, 10);
+    const actionOverview = {
+      today: this.summarizeActionWindow(activityTimeline, startOfTodayValue(today)),
+      thisWeek: this.summarizeActionWindow(activityTimeline, startOfWeekValue(today)),
+      thisMonth: this.summarizeActionWindow(activityTimeline, startOfMonthValue(today)),
+    };
 
     return {
       totalAssetCount: assets.length,
@@ -545,6 +1324,8 @@ export class PerformanceAssetDomainService extends BaseService {
       ).length,
       statusDistribution,
       categoryDistribution,
+      actionOverview,
+      actionTimeline: recentActivities,
       recentActivities,
       updatedAt: nowTime(),
     };
@@ -552,7 +1333,7 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetInfoPage(query: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetInfo:page', '无权限查看资产台账');
+    this.assertPerm(perms, PERMISSIONS.performance.assetInfo.page, '无权限查看资产台账');
     const page = normalizePageNumber(query.page, 1);
     const size = normalizePageNumber(query.size, 20);
     let assets = await this.performanceAssetInfoEntity.find();
@@ -598,7 +1379,7 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetInfoDetail(id: number) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetInfo:info', '无权限查看资产详情');
+    this.assertPerm(perms, PERMISSIONS.performance.assetInfo.info, '无权限查看资产详情');
     const asset = await this.loadAsset(Number(id));
     await this.assertDepartmentInScope(asset.ownerDepartmentId, perms, '无权查看该资产');
     const maps = {
@@ -611,7 +1392,7 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetInfoAdd(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetInfo:add', '无权限新增资产');
+    this.assertPerm(perms, PERMISSIONS.performance.assetInfo.add, '无权限新增资产');
     const ownerDepartmentId = normalizeRequiredPositiveInt(
       payload.departmentId ?? payload.ownerDepartmentId,
       '所属部门不能为空'
@@ -621,7 +1402,7 @@ export class PerformanceAssetDomainService extends BaseService {
     const assetNo = normalizeRequiredText(payload.assetNo, 50, '资产编号不能为空且长度不能超过 50');
     const exists = await this.performanceAssetInfoEntity.findOneBy({ assetNo });
     if (exists) {
-      throw new CoolCommException('资产编号已存在');
+      throw new CoolCommException(PERFORMANCE_ASSET_NO_DUPLICATE_MESSAGE);
     }
 
     const saved = await this.performanceAssetInfoEntity.save(
@@ -645,8 +1426,14 @@ export class PerformanceAssetDomainService extends BaseService {
         managerId: normalizeOptionalPositiveInt(payload.managerId, '管理人不合法'),
         purchaseDate: normalizeDate(payload.purchaseDate, 10),
         purchaseCost: normalizeMoney(payload.purchaseAmount ?? payload.purchaseCost, 0),
-        supplierId: normalizeOptionalPositiveInt(payload.supplierId, '供应商不存在'),
-        purchaseOrderId: normalizeOptionalPositiveInt(payload.purchaseOrderId, '采购订单不存在'),
+        supplierId: normalizeOptionalPositiveInt(
+          payload.supplierId,
+          PERFORMANCE_SUPPLIER_NOT_FOUND_MESSAGE
+        ),
+        purchaseOrderId: normalizeOptionalPositiveInt(
+          payload.purchaseOrderId,
+          PERFORMANCE_PURCHASE_ORDER_NOT_FOUND_MESSAGE
+        ),
         warrantyExpiry: normalizeDate(payload.warrantyExpiry, 10),
         depreciationMonths: Number(payload.depreciationMonths || 0),
         depreciatedAmount: 0,
@@ -661,8 +1448,11 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetInfoUpdate(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetInfo:update', '无权限修改资产');
-    const id = normalizeRequiredPositiveInt(payload.id, '资产不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetInfo.update, '无权限修改资产');
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSET_NOT_FOUND_MESSAGE
+    );
     const asset = await this.loadAsset(id);
     await this.assertDepartmentInScope(asset.ownerDepartmentId, perms, '无权操作该资产');
 
@@ -678,7 +1468,7 @@ export class PerformanceAssetDomainService extends BaseService {
     );
     const duplicated = await this.performanceAssetInfoEntity.findOneBy({ assetNo: nextAssetNo });
     if (duplicated && Number(duplicated.id) !== id) {
-      throw new CoolCommException('资产编号已存在');
+      throw new CoolCommException(PERFORMANCE_ASSET_NO_DUPLICATE_MESSAGE);
     }
 
     await this.performanceAssetInfoEntity.update(
@@ -703,10 +1493,13 @@ export class PerformanceAssetDomainService extends BaseService {
         ),
         purchaseDate: normalizeDate(payload.purchaseDate ?? asset.purchaseDate, 10),
         purchaseCost: normalizeMoney(payload.purchaseAmount ?? payload.purchaseCost ?? asset.purchaseCost, 0),
-        supplierId: normalizeOptionalPositiveInt(payload.supplierId ?? asset.supplierId, '供应商不存在'),
+        supplierId: normalizeOptionalPositiveInt(
+          payload.supplierId ?? asset.supplierId,
+          PERFORMANCE_SUPPLIER_NOT_FOUND_MESSAGE
+        ),
         purchaseOrderId: normalizeOptionalPositiveInt(
           payload.purchaseOrderId ?? asset.purchaseOrderId,
-          '采购订单不存在'
+          PERFORMANCE_PURCHASE_ORDER_NOT_FOUND_MESSAGE
         ),
         warrantyExpiry: normalizeDate(payload.warrantyExpiry ?? asset.warrantyExpiry, 10),
         depreciationMonths: Number(payload.depreciationMonths ?? asset.depreciationMonths ?? 0),
@@ -723,10 +1516,13 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetInfoDelete(ids: number[]) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetInfo:delete', '无权限删除资产');
+    this.assertPerm(perms, PERMISSIONS.performance.assetInfo.delete, '无权限删除资产');
 
     for (const rawId of ids) {
-      const id = normalizeRequiredPositiveInt(rawId, '资产不存在');
+      const id = normalizeRequiredPositiveInt(
+        rawId,
+        PERFORMANCE_ASSET_NOT_FOUND_MESSAGE
+      );
       const asset = await this.loadAsset(id);
       await this.assertDepartmentInScope(asset.ownerDepartmentId, perms, '无权删除该资产');
       if (['assigned', 'maintenance', 'inTransfer', 'inventorying', 'scrapped', 'lost'].includes(asset.status)) {
@@ -747,8 +1543,11 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetInfoUpdateStatus(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetInfo:updateStatus', '无权限更新资产状态');
-    const id = normalizeRequiredPositiveInt(payload.id, '资产不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetInfo.updateStatus, '无权限更新资产状态');
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSET_NOT_FOUND_MESSAGE
+    );
     const asset = await this.loadAsset(id);
     await this.assertDepartmentInScope(asset.ownerDepartmentId, perms, '无权操作该资产');
     const targetStatus = ensureStatus(payload.assetStatus, ASSET_STATUSES, '资产状态不合法');
@@ -772,7 +1571,7 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetAssignmentPage(query: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetAssignment:page', '无权限查看领用记录');
+    this.assertPerm(perms, PERMISSIONS.performance.assetAssignment.page, '无权限查看领用记录');
     const page = normalizePageNumber(query.page, 1);
     const size = normalizePageNumber(query.size, 20);
     let rows = await this.performanceAssetAssignmentEntity.find();
@@ -821,45 +1620,493 @@ export class PerformanceAssetDomainService extends BaseService {
     return paginateList(list, page, size);
   }
 
-  async assetAssignmentAdd(payload: any) {
+  async assetAssignmentRequestPage(query: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetAssignment:add', '无权限新增领用记录');
-    const assetId = normalizeRequiredPositiveInt(payload.assetId, '资产不存在');
-    const asset = await this.loadAsset(assetId);
-    await this.assertDepartmentInScope(asset.ownerDepartmentId, perms, '无权操作该资产');
-    if (asset.status !== 'available') {
-      throw new CoolCommException('仅 available 资产允许发起领用');
+    this.assertPerm(
+      perms,
+      PERMISSIONS.performance.assetAssignmentRequest.page,
+      '无权限查看领用申请'
+    );
+    const page = normalizePageNumber(query.page, 1);
+    const size = normalizePageNumber(query.size, 20);
+    let rows = await this.performanceAssetAssignmentRequestEntity.find();
+
+    if (this.shouldApplicantSelfScopeRequest(perms)) {
+      const userId = this.currentUserId();
+      rows = rows.filter(item => Number(item.applicantId) === userId);
+    } else {
+      rows = await this.scopeRows(rows, perms, item => item.applicantDepartmentId);
     }
 
+    if (query.status) {
+      rows = rows.filter(item => item.status === String(query.status).trim());
+    }
+    if (query.requestLevel) {
+      rows = rows.filter(item => item.requestLevel === String(query.requestLevel).trim());
+    }
+    if (query.requestType) {
+      rows = rows.filter(item => item.requestType === String(query.requestType).trim());
+    }
+    if (query.pendingAssignmentOnly) {
+      rows = rows.filter(item => item.status === 'approvedPendingAssignment');
+    }
+
+    const userIds = uniqueNumberList(
+      rows.flatMap(item => [item.applicantId, item.currentApproverId, item.assignedBy])
+    );
+    const departmentIds = uniqueNumberList(
+      rows.flatMap(item => [item.applicantDepartmentId, item.targetDepartmentId])
+    );
+    const assetIds = uniqueNumberList(rows.flatMap(item => [item.originalAssetId, item.assignedAssetId]));
+    const assignmentIds = uniqueNumberList(rows.map(item => item.assignmentRecordId));
+    const [users, departments, assets, assignments] = await Promise.all([
+      this.userMap(userIds),
+      this.departmentMap(departmentIds),
+      assetIds.length
+        ? this.performanceAssetInfoEntity.findBy(assetIds.map(id => ({ id })) as any)
+        : Promise.resolve([] as any[]),
+      assignmentIds.length
+        ? this.performanceAssetAssignmentEntity.findBy(
+            assignmentIds.map(id => ({ id })) as any
+          )
+        : Promise.resolve([] as any[]),
+    ]);
+    const assetMap = new Map(assets.map(item => [Number(item.id), item]));
+    const assignmentMap = new Map(assignments.map(item => [Number(item.id), item]));
+    const list = await Promise.all(
+      rows
+        .sort((a, b) => String(b.updateTime || '').localeCompare(String(a.updateTime || '')))
+        .map(item =>
+          this.buildAssignmentRequestRow(item, {
+            departments,
+            users,
+            assets: assetMap,
+            assignments: assignmentMap,
+          })
+        )
+    );
+    return paginateList(list, page, size);
+  }
+
+  async assetAssignmentRequestInfo(id: number) {
+    const perms = await this.currentPerms();
+    this.assertPerm(
+      perms,
+      PERMISSIONS.performance.assetAssignmentRequest.info,
+      '无权限查看领用申请详情'
+    );
+    const request = await this.requireAssignmentRequest(
+      normalizeRequiredPositiveInt(id, PERFORMANCE_ASSIGNMENT_REQUEST_NOT_FOUND_MESSAGE)
+    );
+    await this.assertAssignmentRequestAccess(request, perms, '无权查看该领用申请');
+    const [users, departments, assets, assignments] = await Promise.all([
+      this.userMap(
+        uniqueNumberList([request.applicantId, request.currentApproverId, request.assignedBy])
+      ),
+      this.departmentMap(
+        uniqueNumberList([request.applicantDepartmentId, request.targetDepartmentId])
+      ),
+      uniqueNumberList([request.originalAssetId, request.assignedAssetId]).length
+        ? this.performanceAssetInfoEntity.findBy(
+            uniqueNumberList([request.originalAssetId, request.assignedAssetId]).map(id => ({ id })) as any
+          )
+        : Promise.resolve([] as any[]),
+      request.assignmentRecordId
+        ? this.performanceAssetAssignmentEntity.findBy([{ id: request.assignmentRecordId }] as any)
+        : Promise.resolve([] as any[]),
+    ]);
+    return this.buildAssignmentRequestRow(request, {
+      departments,
+      users,
+      assets: new Map(assets.map(item => [Number(item.id), item])),
+      assignments: new Map(assignments.map(item => [Number(item.id), item])),
+    });
+  }
+
+  async assetAssignmentRequestAdd(payload: any) {
+    const perms = await this.currentPerms();
+    this.assertPerm(
+      perms,
+      PERMISSIONS.performance.assetAssignmentRequest.add,
+      '无权限新增领用申请'
+    );
+    const applicantId = this.currentUserId();
+    const applicant = await this.baseSysUserEntity.findOneBy({ id: applicantId });
+    const applicantDepartmentId = normalizeRequiredPositiveInt(
+      applicant?.departmentId,
+      PERFORMANCE_APPLICANT_DEPARTMENT_NOT_FOUND_MESSAGE
+    );
+    const requestType = this.normalizeAssignmentRequestType(payload.requestType || 'standard');
+    const unitPriceEstimate = normalizeMoney(payload.unitPriceEstimate, 0);
+    const rules = this.computeAssignmentRequestRules({
+      requestType,
+      assetCategory: normalizeRequiredText(payload.assetCategory, 100, '资产分类不能为空'),
+      unitPriceEstimate,
+    });
+    const targetDepartmentId =
+      requestType === 'crossDepartmentBorrow'
+        ? normalizeRequiredPositiveInt(
+            payload.targetDepartmentId,
+            PERFORMANCE_TARGET_DEPARTMENT_REQUIRED_MESSAGE
+          )
+        : normalizeOptionalPositiveInt(payload.targetDepartmentId, '目标部门不合法');
+    const saved = await this.performanceAssetAssignmentRequestEntity.save(
+      this.performanceAssetAssignmentRequestEntity.create({
+        requestNo: this.nextAssignmentRequestNo(),
+        requestLevel: rules.requestLevel,
+        requestType,
+        applicantId,
+        applicantDepartmentId,
+        assetCategory: normalizeRequiredText(payload.assetCategory, 100, '资产分类不能为空'),
+        assetModelRequest: normalizeOptionalText(payload.assetModelRequest, 200, '型号需求长度不能超过 200'),
+        quantity: Math.max(1, normalizeRequiredPositiveInt(payload.quantity ?? 1, '数量不合法')),
+        unitPriceEstimate,
+        usageReason: normalizeOptionalText(payload.usageReason, 2000, '用途说明长度不能超过 2000'),
+        expectedUseStartDate: normalizeDate(payload.expectedUseStartDate, 10),
+        targetDepartmentId,
+        exceptionReason:
+          requestType === 'lostReplacement' ||
+          requestType === 'abnormalReissue' ||
+          requestType === 'scrapReplacement'
+            ? normalizeRequiredText(payload.exceptionReason, 2000, '异常原因不能为空')
+            : normalizeOptionalText(payload.exceptionReason, 2000, '异常原因长度不能超过 2000'),
+        originalAssetId: normalizeOptionalPositiveInt(
+          payload.originalAssetId,
+          PERFORMANCE_ORIGINAL_ASSET_NOT_FOUND_MESSAGE
+        ),
+        originalAssignmentId: normalizeOptionalPositiveInt(
+          payload.originalAssignmentId,
+          PERFORMANCE_ORIGINAL_ASSIGNMENT_RECORD_NOT_FOUND_MESSAGE
+        ),
+        approvalInstanceId: null,
+        approvalStatus: null,
+        currentApproverId: null,
+        approvalTriggeredRules: JSON.stringify(rules.rules),
+        assignedAssetId: null,
+        assignmentRecordId: null,
+        assignedBy: null,
+        assignedAt: null,
+        status: 'draft',
+        submitTime: null,
+        withdrawTime: null,
+        cancelReason: null,
+      })
+    );
+    return this.assetAssignmentRequestInfo(Number(saved.id));
+  }
+
+  async assetAssignmentRequestUpdate(payload: any) {
+    const perms = await this.currentPerms();
+    this.assertPerm(
+      perms,
+      PERMISSIONS.performance.assetAssignmentRequest.update,
+      '无权限编辑领用申请'
+    );
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSIGNMENT_REQUEST_NOT_FOUND_MESSAGE
+    );
+    const current = await this.requireAssignmentRequest(id);
+    if (Number(current.applicantId) !== this.currentUserId()) {
+      throw new CoolCommException('仅允许申请人编辑草稿');
+    }
+    if (current.status !== 'draft') {
+      throw new CoolCommException(PERFORMANCE_STATE_DRAFT_EDIT_ONLY_MESSAGE);
+    }
+    const requestType = this.normalizeAssignmentRequestType(payload.requestType ?? current.requestType);
+    const assetCategory = normalizeRequiredText(
+      payload.assetCategory ?? current.assetCategory,
+      100,
+      '资产分类不能为空'
+    );
+    const unitPriceEstimate = normalizeMoney(
+      payload.unitPriceEstimate ?? current.unitPriceEstimate,
+      0
+    );
+    const rules = this.computeAssignmentRequestRules({
+      requestType,
+      assetCategory,
+      unitPriceEstimate,
+    });
+    await this.performanceAssetAssignmentRequestEntity.update(
+      { id },
+      {
+        requestLevel: rules.requestLevel,
+        requestType,
+        assetCategory,
+        assetModelRequest: normalizeOptionalText(
+          payload.assetModelRequest ?? current.assetModelRequest,
+          200,
+          '型号需求长度不能超过 200'
+        ),
+        quantity: Math.max(
+          1,
+          normalizeRequiredPositiveInt(payload.quantity ?? current.quantity, '数量不合法')
+        ),
+        unitPriceEstimate,
+        usageReason: normalizeOptionalText(
+          payload.usageReason ?? current.usageReason,
+          2000,
+          '用途说明长度不能超过 2000'
+        ),
+        expectedUseStartDate: normalizeDate(
+          payload.expectedUseStartDate ?? current.expectedUseStartDate,
+          10
+        ),
+        targetDepartmentId:
+          requestType === 'crossDepartmentBorrow'
+            ? normalizeRequiredPositiveInt(
+                payload.targetDepartmentId ?? current.targetDepartmentId,
+                PERFORMANCE_TARGET_DEPARTMENT_REQUIRED_MESSAGE
+              )
+            : normalizeOptionalPositiveInt(
+                payload.targetDepartmentId ?? current.targetDepartmentId,
+                '目标部门不合法'
+              ),
+        exceptionReason:
+          requestType === 'lostReplacement' ||
+          requestType === 'abnormalReissue' ||
+          requestType === 'scrapReplacement'
+            ? normalizeRequiredText(
+                payload.exceptionReason ?? current.exceptionReason,
+                2000,
+                '异常原因不能为空'
+              )
+            : normalizeOptionalText(
+                payload.exceptionReason ?? current.exceptionReason,
+                2000,
+                '异常原因长度不能超过 2000'
+              ),
+        originalAssetId: normalizeOptionalPositiveInt(
+          payload.originalAssetId ?? current.originalAssetId,
+          PERFORMANCE_ORIGINAL_ASSET_NOT_FOUND_MESSAGE
+        ),
+        originalAssignmentId: normalizeOptionalPositiveInt(
+          payload.originalAssignmentId ?? current.originalAssignmentId,
+          PERFORMANCE_ORIGINAL_ASSIGNMENT_RECORD_NOT_FOUND_MESSAGE
+        ),
+        approvalTriggeredRules: JSON.stringify(rules.rules),
+      }
+    );
+    return this.assetAssignmentRequestInfo(id);
+  }
+
+  async assetAssignmentRequestSubmit(payload: any) {
+    const perms = await this.currentPerms();
+    this.assertPerm(
+      perms,
+      PERMISSIONS.performance.assetAssignmentRequest.submit,
+      '无权限提交领用申请'
+    );
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSIGNMENT_REQUEST_NOT_FOUND_MESSAGE
+    );
+    await this.performanceAssetAssignmentRequestEntity.manager.transaction(async manager => {
+      const repo = manager.getRepository(PerformanceAssetAssignmentRequestEntity);
+      const current = await repo.findOne({
+        where: { id },
+        lock: { mode: 'pessimistic_write' },
+      } as any);
+      if (!current) {
+        throw new CoolCommException(PERFORMANCE_ASSIGNMENT_REQUEST_NOT_FOUND_MESSAGE);
+      }
+      if (Number(current.applicantId) !== this.currentUserId()) {
+        throw new CoolCommException('仅允许申请人提交');
+      }
+      if (current.status !== 'draft') {
+        throw new CoolCommException(PERFORMANCE_STATE_DRAFT_SUBMIT_ONLY_MESSAGE);
+      }
+      await repo.update(
+        { id },
+        {
+          status: 'inApproval',
+          approvalStatus: 'launching',
+          submitTime: nowTime(),
+          cancelReason: null,
+          withdrawTime: null,
+        }
+      );
+      const instance = await this.performanceApprovalFlowService.launchForObject(
+        {
+          objectType: 'assetAssignmentRequest',
+          objectId: id,
+          applicantId: Number(current.applicantId),
+          employeeId: Number(current.applicantId),
+          departmentId: Number(current.applicantDepartmentId),
+          tenantId: current.tenantId ?? null,
+        },
+        manager
+      );
+      await repo.update(
+        { id },
+        {
+          approvalInstanceId: Number(instance.id),
+          approvalStatus: String(instance.status || ''),
+          currentApproverId: instance.currentApproverId
+            ? Number(instance.currentApproverId)
+            : null,
+        }
+      );
+    });
+    return this.assetAssignmentRequestInfo(id);
+  }
+
+  async assetAssignmentRequestWithdraw(payload: any) {
+    const perms = await this.currentPerms();
+    this.assertPerm(
+      perms,
+      PERMISSIONS.performance.assetAssignmentRequest.withdraw,
+      '无权限撤回领用申请'
+    );
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSIGNMENT_REQUEST_NOT_FOUND_MESSAGE
+    );
+    const current = await this.requireAssignmentRequest(id);
+    if (Number(current.applicantId) !== this.currentUserId()) {
+      throw new CoolCommException('仅允许申请人撤回');
+    }
+    if (!current.approvalInstanceId) {
+      throw new CoolCommException('当前申请不存在审批实例');
+    }
+    await this.performanceApprovalFlowService.withdraw({
+      instanceId: Number(current.approvalInstanceId),
+      reason: normalizeOptionalText(payload.reason, 500, '撤回原因长度不能超过 500'),
+    });
+    return this.assetAssignmentRequestInfo(id);
+  }
+
+  async assetAssignmentRequestAssign(payload: any) {
+    const perms = await this.currentPerms();
+    this.assertPerm(
+      perms,
+      PERMISSIONS.performance.assetAssignmentRequest.assign,
+      '无权限配发资产'
+    );
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSIGNMENT_REQUEST_NOT_FOUND_MESSAGE
+    );
+    const assetId = normalizeRequiredPositiveInt(
+      payload.assetId,
+      PERFORMANCE_ASSET_NOT_FOUND_MESSAGE
+    );
+    await this.performanceAssetAssignmentRequestEntity.manager.transaction(async manager => {
+      const requestRepo = manager.getRepository(PerformanceAssetAssignmentRequestEntity);
+      const request = await requestRepo.findOne({
+        where: { id },
+        lock: { mode: 'pessimistic_write' },
+      } as any);
+      if (!request) {
+        throw new CoolCommException(PERFORMANCE_ASSIGNMENT_REQUEST_NOT_FOUND_MESSAGE);
+      }
+      await this.assertDepartmentInScope(
+        request.applicantDepartmentId,
+        perms,
+        '无权操作该领用申请'
+      );
+      if (request.status !== 'approvedPendingAssignment') {
+        throw new CoolCommException('当前状态不允许配发');
+      }
+      await requestRepo.update({ id }, { status: 'issuing' });
+      const assignment = await this.executeAssetAssignmentCreate(
+        {
+          assetId,
+          assigneeId: Number(request.applicantId),
+          departmentId: Number(request.targetDepartmentId || request.applicantDepartmentId),
+          assignDate: payload.assignDate,
+          purpose: payload.purpose ?? request.usageReason,
+        },
+        perms,
+        manager
+      );
+      await requestRepo.update(
+        { id },
+        {
+          status: 'issued',
+          assignedAssetId: assetId,
+          assignmentRecordId: Number(assignment.id),
+          assignedBy: this.currentUserId(),
+          assignedAt: nowTime(),
+        }
+      );
+    });
+    return this.assetAssignmentRequestInfo(id);
+  }
+
+  async assetAssignmentRequestCancel(payload: any) {
+    const perms = await this.currentPerms();
+    this.assertPerm(
+      perms,
+      PERMISSIONS.performance.assetAssignmentRequest.cancel,
+      '无权限取消领用申请'
+    );
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSIGNMENT_REQUEST_NOT_FOUND_MESSAGE
+    );
+    const current = await this.requireAssignmentRequest(id);
+    const reason = normalizeOptionalText(payload.reason, 500, '取消原因长度不能超过 500');
+    if (current.approvalInstanceId && ['inApproval', 'manualPending'].includes(current.status)) {
+      await this.performanceApprovalFlowService.terminate({
+        instanceId: Number(current.approvalInstanceId),
+        reason: reason || 'HR 取消领用申请',
+      });
+      return this.assetAssignmentRequestInfo(id);
+    }
+    if (current.status === 'issued') {
+      throw new CoolCommException('已发放的申请单不允许取消');
+    }
+    await this.performanceAssetAssignmentRequestEntity.update(
+      { id },
+      {
+        status: 'cancelled',
+        approvalStatus: 'terminated',
+        currentApproverId: null,
+        cancelReason: reason || 'HR 取消领用申请',
+      }
+    );
+    return this.assetAssignmentRequestInfo(id);
+  }
+
+  async assetAssignmentAdd(payload: any) {
+    const perms = await this.currentPerms();
+    this.assertPerm(perms, PERMISSIONS.performance.assetAssignment.add, '无权限新增领用记录');
+    const assetId = normalizeRequiredPositiveInt(
+      payload.assetId,
+      PERFORMANCE_ASSET_NOT_FOUND_MESSAGE
+    );
+    const asset = await this.loadAsset(assetId);
     const departmentId = normalizeRequiredPositiveInt(
       payload.departmentId ?? asset.ownerDepartmentId,
       '领用部门不能为空'
     );
-    await this.assertDepartmentInScope(departmentId, perms, '无权操作该领用记录');
-
-    const saved = await this.performanceAssetAssignmentEntity.save(
-      this.performanceAssetAssignmentEntity.create({
+    this.assertDirectAssignmentEligible(asset, departmentId);
+    return this.executeAssetAssignmentCreate(
+      {
         assetId,
         assigneeId: normalizeRequiredPositiveInt(payload.assigneeId, '领用人不能为空'),
         departmentId,
-        assignDate: normalizeDate(payload.assignDate, 10) || nowTime().slice(0, 10),
-        returnDate: normalizeDate(payload.actualReturnDate, 10),
-        status: 'assigned',
-        purpose: normalizeOptionalText(payload.purpose, 2000, '领用用途长度不能超过 2000'),
-        returnNote: normalizeOptionalText(payload.returnRemark, 2000, '归还说明长度不能超过 2000'),
-      })
+        assignDate: payload.assignDate,
+        actualReturnDate: payload.actualReturnDate,
+        purpose: payload.purpose,
+        returnRemark: payload.returnRemark,
+      },
+      perms
     );
-    await this.performanceAssetInfoEntity.update({ id: assetId }, { status: 'assigned' });
-    return saved;
   }
 
   async assetAssignmentUpdate(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetAssignment:update', '无权限编辑领用记录');
-    const id = normalizeRequiredPositiveInt(payload.id, '领用记录不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetAssignment.update, '无权限编辑领用记录');
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSIGNMENT_RECORD_NOT_FOUND_MESSAGE
+    );
     const current = await this.performanceAssetAssignmentEntity.findOneBy({ id });
     if (!current) {
-      throw new CoolCommException('领用记录不存在');
+      throw new CoolCommException(PERFORMANCE_ASSIGNMENT_RECORD_NOT_FOUND_MESSAGE);
     }
     await this.assertDepartmentInScope(current.departmentId, perms, '无权操作该领用记录');
     if (current.status !== 'assigned') {
@@ -880,11 +2127,14 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetAssignmentReturn(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetAssignment:return', '无权限归还资产');
-    const id = normalizeRequiredPositiveInt(payload.id, '领用记录不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetAssignment.return, '无权限归还资产');
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSIGNMENT_RECORD_NOT_FOUND_MESSAGE
+    );
     const current = await this.performanceAssetAssignmentEntity.findOneBy({ id });
     if (!current) {
-      throw new CoolCommException('领用记录不存在');
+      throw new CoolCommException(PERFORMANCE_ASSIGNMENT_RECORD_NOT_FOUND_MESSAGE);
     }
     if (current.status !== 'assigned') {
       throw new CoolCommException('当前状态不允许归还');
@@ -904,11 +2154,14 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetAssignmentMarkLost(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetAssignment:markLost', '无权限标记丢失');
-    const id = normalizeRequiredPositiveInt(payload.id, '领用记录不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetAssignment.markLost, '无权限标记丢失');
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSIGNMENT_RECORD_NOT_FOUND_MESSAGE
+    );
     const current = await this.performanceAssetAssignmentEntity.findOneBy({ id });
     if (!current) {
-      throw new CoolCommException('领用记录不存在');
+      throw new CoolCommException(PERFORMANCE_ASSIGNMENT_RECORD_NOT_FOUND_MESSAGE);
     }
     if (current.status !== 'assigned') {
       throw new CoolCommException('当前状态不允许标记丢失');
@@ -927,9 +2180,12 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetAssignmentDelete(ids: number[]) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetAssignment:delete', '无权限删除领用记录');
+    this.assertPerm(perms, PERMISSIONS.performance.assetAssignment.delete, '无权限删除领用记录');
     for (const rawId of ids) {
-      const id = normalizeRequiredPositiveInt(rawId, '领用记录不存在');
+      const id = normalizeRequiredPositiveInt(
+        rawId,
+        PERFORMANCE_ASSIGNMENT_RECORD_NOT_FOUND_MESSAGE
+      );
       const current = await this.performanceAssetAssignmentEntity.findOneBy({ id });
       if (!current) {
         continue;
@@ -944,7 +2200,7 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetMaintenancePage(query: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetMaintenance:page', '无权限查看维护记录');
+    this.assertPerm(perms, PERMISSIONS.performance.assetMaintenance.page, '无权限查看维护记录');
     const page = normalizePageNumber(query.page, 1);
     const size = normalizePageNumber(query.size, 20);
     let rows = await this.performanceAssetMaintenanceEntity.find();
@@ -985,8 +2241,11 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetMaintenanceAdd(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetMaintenance:add', '无权限新增维护记录');
-    const assetId = normalizeRequiredPositiveInt(payload.assetId, '资产不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetMaintenance.add, '无权限新增维护记录');
+    const assetId = normalizeRequiredPositiveInt(
+      payload.assetId,
+      PERFORMANCE_ASSET_NOT_FOUND_MESSAGE
+    );
     const asset = await this.loadAsset(assetId);
     await this.assertDepartmentInScope(asset.ownerDepartmentId, perms, '无权操作该资产');
     if (!['available', 'assigned'].includes(asset.status)) {
@@ -1012,15 +2271,18 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetMaintenanceUpdate(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetMaintenance:update', '无权限编辑维护记录');
-    const id = normalizeRequiredPositiveInt(payload.id, '维护记录不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetMaintenance.update, '无权限编辑维护记录');
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_MAINTENANCE_RECORD_NOT_FOUND_MESSAGE
+    );
     const current = await this.performanceAssetMaintenanceEntity.findOneBy({ id });
     if (!current) {
-      throw new CoolCommException('维护记录不存在');
+      throw new CoolCommException(PERFORMANCE_MAINTENANCE_RECORD_NOT_FOUND_MESSAGE);
     }
     await this.assertDepartmentInScope(current.departmentId, perms, '无权操作该维护记录');
     if (!['scheduled', 'inProgress'].includes(current.status)) {
-      throw new CoolCommException('当前状态不允许编辑');
+      throw new CoolCommException(PERFORMANCE_STATE_EDIT_NOT_ALLOWED_MESSAGE);
     }
     await this.performanceAssetMaintenanceEntity.update(
       { id },
@@ -1038,11 +2300,14 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetMaintenanceComplete(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetMaintenance:complete', '无权限完成维护');
-    const id = normalizeRequiredPositiveInt(payload.id, '维护记录不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetMaintenance.complete, '无权限完成维护');
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_MAINTENANCE_RECORD_NOT_FOUND_MESSAGE
+    );
     const current = await this.performanceAssetMaintenanceEntity.findOneBy({ id });
     if (!current) {
-      throw new CoolCommException('维护记录不存在');
+      throw new CoolCommException(PERFORMANCE_MAINTENANCE_RECORD_NOT_FOUND_MESSAGE);
     }
     await this.assertDepartmentInScope(current.departmentId, perms, '无权操作该维护记录');
     if (!['scheduled', 'inProgress'].includes(current.status)) {
@@ -1062,11 +2327,14 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetMaintenanceCancel(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetMaintenance:cancel', '无权限取消维护');
-    const id = normalizeRequiredPositiveInt(payload.id, '维护记录不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetMaintenance.cancel, '无权限取消维护');
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_MAINTENANCE_RECORD_NOT_FOUND_MESSAGE
+    );
     const current = await this.performanceAssetMaintenanceEntity.findOneBy({ id });
     if (!current) {
-      throw new CoolCommException('维护记录不存在');
+      throw new CoolCommException(PERFORMANCE_MAINTENANCE_RECORD_NOT_FOUND_MESSAGE);
     }
     await this.assertDepartmentInScope(current.departmentId, perms, '无权操作该维护记录');
     if (!['scheduled', 'inProgress'].includes(current.status)) {
@@ -1085,9 +2353,12 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetMaintenanceDelete(ids: number[]) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetMaintenance:delete', '无权限删除维护记录');
+    this.assertPerm(perms, PERMISSIONS.performance.assetMaintenance.delete, '无权限删除维护记录');
     for (const rawId of ids) {
-      const id = normalizeRequiredPositiveInt(rawId, '维护记录不存在');
+      const id = normalizeRequiredPositiveInt(
+        rawId,
+        PERFORMANCE_MAINTENANCE_RECORD_NOT_FOUND_MESSAGE
+      );
       const current = await this.performanceAssetMaintenanceEntity.findOneBy({ id });
       if (!current) {
         continue;
@@ -1103,7 +2374,7 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetProcurementPage(query: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetProcurement:page', '无权限查看采购入库单');
+    this.assertPerm(perms, PERMISSIONS.performance.assetProcurement.page, '无权限查看采购入库单');
     const page = normalizePageNumber(query.page, 1);
     const size = normalizePageNumber(query.size, 20);
     let rows = await this.performanceAssetProcurementEntity.find();
@@ -1153,10 +2424,10 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetProcurementInfo(id: number) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetProcurement:info', '无权限查看采购入库详情');
+    this.assertPerm(perms, PERMISSIONS.performance.assetProcurement.info, '无权限查看采购入库详情');
     const item = await this.performanceAssetProcurementEntity.findOneBy({ id: Number(id) });
     if (!item) {
-      throw new CoolCommException('采购入库单不存在');
+      throw new CoolCommException(PERFORMANCE_ASSET_PROCUREMENT_NOT_FOUND_MESSAGE);
     }
     await this.assertDepartmentInScope(item.ownerDepartmentId, perms, '无权查看该采购入库单');
     const page = await this.assetProcurementPage({ page: 1, size: 9999 });
@@ -1165,7 +2436,7 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetProcurementAdd(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetProcurement:add', '无权限新增采购入库单');
+    this.assertPerm(perms, PERMISSIONS.performance.assetProcurement.add, '无权限新增采购入库单');
     const ownerDepartmentId = normalizeRequiredPositiveInt(payload.departmentId ?? payload.ownerDepartmentId, '所属部门不能为空');
     await this.assertDepartmentInScope(ownerDepartmentId, perms, '无权操作该采购入库单');
     const procurementNo = normalizeRequiredText(
@@ -1181,8 +2452,14 @@ export class PerformanceAssetDomainService extends BaseService {
       this.performanceAssetProcurementEntity.create({
         procurementNo,
         title: normalizeRequiredText(payload.title, 200, '标题不能为空且长度不能超过 200'),
-        purchaseOrderId: normalizeOptionalPositiveInt(payload.purchaseOrderId, '采购订单不存在'),
-        supplierId: normalizeOptionalPositiveInt(payload.supplierId, '供应商不存在'),
+        purchaseOrderId: normalizeOptionalPositiveInt(
+          payload.purchaseOrderId,
+          PERFORMANCE_PURCHASE_ORDER_NOT_FOUND_MESSAGE
+        ),
+        supplierId: normalizeOptionalPositiveInt(
+          payload.supplierId,
+          PERFORMANCE_SUPPLIER_NOT_FOUND_MESSAGE
+        ),
         ownerDepartmentId,
         managerId: normalizeOptionalPositiveInt(payload.requesterId ?? payload.managerId, '申请人不合法'),
         assetName: normalizeRequiredText(payload.assetName ?? payload.title, 200, '资产名称不能为空且长度不能超过 200'),
@@ -1215,22 +2492,31 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetProcurementUpdate(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetProcurement:update', '无权限编辑采购入库单');
-    const id = normalizeRequiredPositiveInt(payload.id, '采购入库单不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetProcurement.update, '无权限编辑采购入库单');
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSET_PROCUREMENT_NOT_FOUND_MESSAGE
+    );
     const current = await this.performanceAssetProcurementEntity.findOneBy({ id });
     if (!current) {
-      throw new CoolCommException('采购入库单不存在');
+      throw new CoolCommException(PERFORMANCE_ASSET_PROCUREMENT_NOT_FOUND_MESSAGE);
     }
     await this.assertDepartmentInScope(current.ownerDepartmentId, perms, '无权操作该采购入库单');
     if (current.status !== 'draft') {
-      throw new CoolCommException('仅 draft 状态允许编辑');
+      throw new CoolCommException(PERFORMANCE_STATE_DRAFT_EDIT_ONLY_MESSAGE);
     }
     await this.performanceAssetProcurementEntity.update(
       { id },
       {
         title: normalizeRequiredText(payload.title ?? current.title, 200, '标题不能为空且长度不能超过 200'),
-        purchaseOrderId: normalizeOptionalPositiveInt(payload.purchaseOrderId ?? current.purchaseOrderId, '采购订单不存在'),
-        supplierId: normalizeOptionalPositiveInt(payload.supplierId ?? current.supplierId, '供应商不存在'),
+        purchaseOrderId: normalizeOptionalPositiveInt(
+          payload.purchaseOrderId ?? current.purchaseOrderId,
+          PERFORMANCE_PURCHASE_ORDER_NOT_FOUND_MESSAGE
+        ),
+        supplierId: normalizeOptionalPositiveInt(
+          payload.supplierId ?? current.supplierId,
+          PERFORMANCE_SUPPLIER_NOT_FOUND_MESSAGE
+        ),
         managerId: normalizeOptionalPositiveInt(payload.requesterId ?? payload.managerId ?? current.managerId, '申请人不合法'),
         assetName: normalizeRequiredText(payload.assetName ?? current.assetName, 200, '资产名称不能为空且长度不能超过 200'),
         category: normalizeOptionalText(payload.assetCategory ?? payload.category ?? current.category, 100, '资产分类长度不能超过 100'),
@@ -1244,15 +2530,18 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetProcurementSubmit(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetProcurement:submit', '无权限提交采购入库单');
-    const id = normalizeRequiredPositiveInt(payload.id, '采购入库单不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetProcurement.submit, '无权限提交采购入库单');
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSET_PROCUREMENT_NOT_FOUND_MESSAGE
+    );
     const current = await this.performanceAssetProcurementEntity.findOneBy({ id });
     if (!current) {
-      throw new CoolCommException('采购入库单不存在');
+      throw new CoolCommException(PERFORMANCE_ASSET_PROCUREMENT_NOT_FOUND_MESSAGE);
     }
     await this.assertDepartmentInScope(current.ownerDepartmentId, perms, '无权操作该采购入库单');
     if (current.status !== 'draft') {
-      throw new CoolCommException('仅 draft 状态允许提交');
+      throw new CoolCommException(PERFORMANCE_STATE_DRAFT_SUBMIT_ONLY_MESSAGE);
     }
     await this.performanceAssetProcurementEntity.update(
       { id },
@@ -1266,15 +2555,18 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetProcurementReceive(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetProcurement:receive', '无权限确认入库');
-    const id = normalizeRequiredPositiveInt(payload.id, '采购入库单不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetProcurement.receive, '无权限确认入库');
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSET_PROCUREMENT_NOT_FOUND_MESSAGE
+    );
     const current = await this.performanceAssetProcurementEntity.findOneBy({ id });
     if (!current) {
-      throw new CoolCommException('采购入库单不存在');
+      throw new CoolCommException(PERFORMANCE_ASSET_PROCUREMENT_NOT_FOUND_MESSAGE);
     }
     await this.assertDepartmentInScope(current.ownerDepartmentId, perms, '无权操作该采购入库单');
     if (current.status !== 'submitted') {
-      throw new CoolCommException('仅 submitted 状态允许确认入库');
+      throw new CoolCommException(PERFORMANCE_STATE_SUBMITTED_RECEIVE_ONLY_MESSAGE);
     }
 
     const existingCount = (await this.performanceAssetInfoEntity.find()).length;
@@ -1323,15 +2615,18 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetProcurementCancel(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetProcurement:cancel', '无权限取消采购入库单');
-    const id = normalizeRequiredPositiveInt(payload.id, '采购入库单不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetProcurement.cancel, '无权限取消采购入库单');
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSET_PROCUREMENT_NOT_FOUND_MESSAGE
+    );
     const current = await this.performanceAssetProcurementEntity.findOneBy({ id });
     if (!current) {
-      throw new CoolCommException('采购入库单不存在');
+      throw new CoolCommException(PERFORMANCE_ASSET_PROCUREMENT_NOT_FOUND_MESSAGE);
     }
     await this.assertDepartmentInScope(current.ownerDepartmentId, perms, '无权操作该采购入库单');
     if (!['draft', 'submitted'].includes(current.status)) {
-      throw new CoolCommException('当前状态不允许取消');
+      throw new CoolCommException(PERFORMANCE_STATE_CANCEL_NOT_ALLOWED_MESSAGE);
     }
     await this.performanceAssetProcurementEntity.update(
       { id },
@@ -1345,7 +2640,7 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetTransferPage(query: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetTransfer:page', '无权限查看资产调拨');
+    this.assertPerm(perms, PERMISSIONS.performance.assetTransfer.page, '无权限查看资产调拨');
     const page = normalizePageNumber(query.page, 1);
     const size = normalizePageNumber(query.size, 20);
     let rows = await this.performanceAssetTransferEntity.find();
@@ -1397,25 +2692,31 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetTransferInfo(id: number) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetTransfer:info', '无权限查看资产调拨详情');
+    this.assertPerm(perms, PERMISSIONS.performance.assetTransfer.info, '无权限查看资产调拨详情');
     const list = await this.assetTransferPage({ page: 1, size: 9999 });
     const row = list.list.find(item => Number(item.id) === Number(id));
     if (!row) {
-      throw new CoolCommException('调拨单不存在');
+      throw new CoolCommException(PERFORMANCE_ASSET_TRANSFER_NOT_FOUND_MESSAGE);
     }
     return row;
   }
 
   async assetTransferAdd(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetTransfer:add', '无权限新增调拨单');
-    const assetId = normalizeRequiredPositiveInt(payload.assetId, '资产不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetTransfer.add, '无权限新增调拨单');
+    const assetId = normalizeRequiredPositiveInt(
+      payload.assetId,
+      PERFORMANCE_ASSET_NOT_FOUND_MESSAGE
+    );
     const asset = await this.loadAsset(assetId);
     await this.assertDepartmentInScope(asset.ownerDepartmentId, perms, '无权操作该调拨单');
     if (asset.status !== 'available') {
       throw new CoolCommException('仅 available 资产允许发起调拨');
     }
-    const toDepartmentId = normalizeRequiredPositiveInt(payload.toDepartmentId, '目标部门不能为空');
+    const toDepartmentId = normalizeRequiredPositiveInt(
+      payload.toDepartmentId,
+      PERFORMANCE_TARGET_DEPARTMENT_REQUIRED_MESSAGE
+    );
     const transferNo = normalizeRequiredText(
       payload.transferNo || `ASSET-TR-${Date.now()}`,
       50,
@@ -1445,20 +2746,26 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetTransferUpdate(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetTransfer:update', '无权限编辑调拨单');
-    const id = normalizeRequiredPositiveInt(payload.id, '调拨单不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetTransfer.update, '无权限编辑调拨单');
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSET_TRANSFER_NOT_FOUND_MESSAGE
+    );
     const current = await this.performanceAssetTransferEntity.findOneBy({ id });
     if (!current) {
-      throw new CoolCommException('调拨单不存在');
+      throw new CoolCommException(PERFORMANCE_ASSET_TRANSFER_NOT_FOUND_MESSAGE);
     }
     await this.assertDepartmentInScope(current.fromDepartmentId, perms, '无权操作该调拨单');
     if (current.status !== 'draft') {
-      throw new CoolCommException('仅 draft 状态允许编辑');
+      throw new CoolCommException(PERFORMANCE_STATE_DRAFT_EDIT_ONLY_MESSAGE);
     }
     await this.performanceAssetTransferEntity.update(
       { id },
       {
-        toDepartmentId: normalizeRequiredPositiveInt(payload.toDepartmentId ?? current.toDepartmentId, '目标部门不能为空'),
+        toDepartmentId: normalizeRequiredPositiveInt(
+          payload.toDepartmentId ?? current.toDepartmentId,
+          PERFORMANCE_TARGET_DEPARTMENT_REQUIRED_MESSAGE
+        ),
         toManagerId: normalizeOptionalPositiveInt(payload.applicantId ?? payload.toManagerId ?? current.toManagerId, '目标管理人不合法'),
         toLocation: normalizeOptionalText(payload.toLocation ?? current.toLocation, 200, '目标位置长度不能超过 200'),
         reason: normalizeOptionalText(payload.remark ?? payload.reason ?? current.reason, 2000, '调拨原因长度不能超过 2000'),
@@ -1469,15 +2776,18 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetTransferSubmit(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetTransfer:submit', '无权限提交调拨单');
-    const id = normalizeRequiredPositiveInt(payload.id, '调拨单不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetTransfer.submit, '无权限提交调拨单');
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSET_TRANSFER_NOT_FOUND_MESSAGE
+    );
     const current = await this.performanceAssetTransferEntity.findOneBy({ id });
     if (!current) {
-      throw new CoolCommException('调拨单不存在');
+      throw new CoolCommException(PERFORMANCE_ASSET_TRANSFER_NOT_FOUND_MESSAGE);
     }
     await this.assertDepartmentInScope(current.fromDepartmentId, perms, '无权操作该调拨单');
     if (current.status !== 'draft') {
-      throw new CoolCommException('仅 draft 状态允许提交');
+      throw new CoolCommException(PERFORMANCE_STATE_DRAFT_SUBMIT_ONLY_MESSAGE);
     }
     await this.performanceAssetTransferEntity.update(
       { id },
@@ -1492,11 +2802,14 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetTransferComplete(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetTransfer:complete', '无权限完成调拨');
-    const id = normalizeRequiredPositiveInt(payload.id, '调拨单不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetTransfer.complete, '无权限完成调拨');
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSET_TRANSFER_NOT_FOUND_MESSAGE
+    );
     const current = await this.performanceAssetTransferEntity.findOneBy({ id });
     if (!current) {
-      throw new CoolCommException('调拨单不存在');
+      throw new CoolCommException(PERFORMANCE_ASSET_TRANSFER_NOT_FOUND_MESSAGE);
     }
     await this.assertDepartmentInScope(current.fromDepartmentId, perms, '无权操作该调拨单');
     if (current.status !== 'inTransit') {
@@ -1523,15 +2836,18 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetTransferCancel(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetTransfer:cancel', '无权限取消调拨单');
-    const id = normalizeRequiredPositiveInt(payload.id, '调拨单不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetTransfer.cancel, '无权限取消调拨单');
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSET_TRANSFER_NOT_FOUND_MESSAGE
+    );
     const current = await this.performanceAssetTransferEntity.findOneBy({ id });
     if (!current) {
-      throw new CoolCommException('调拨单不存在');
+      throw new CoolCommException(PERFORMANCE_ASSET_TRANSFER_NOT_FOUND_MESSAGE);
     }
     await this.assertDepartmentInScope(current.fromDepartmentId, perms, '无权操作该调拨单');
     if (!['draft', 'submitted', 'inTransit'].includes(current.status)) {
-      throw new CoolCommException('当前状态不允许取消');
+      throw new CoolCommException(PERFORMANCE_STATE_CANCEL_NOT_ALLOWED_MESSAGE);
     }
     await this.performanceAssetTransferEntity.update(
       { id },
@@ -1546,7 +2862,7 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetInventoryPage(query: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetInventory:page', '无权限查看资产盘点');
+    this.assertPerm(perms, PERMISSIONS.performance.assetInventory.page, '无权限查看资产盘点');
     const page = normalizePageNumber(query.page, 1);
     const size = normalizePageNumber(query.size, 20);
     let rows = await this.performanceAssetInventoryEntity.find();
@@ -1585,19 +2901,22 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetInventoryInfo(id: number) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetInventory:info', '无权限查看盘点详情');
+    this.assertPerm(perms, PERMISSIONS.performance.assetInventory.info, '无权限查看盘点详情');
     const list = await this.assetInventoryPage({ page: 1, size: 9999 });
     const row = list.list.find(item => Number(item.id) === Number(id));
     if (!row) {
-      throw new CoolCommException('盘点单不存在');
+      throw new CoolCommException(PERFORMANCE_ASSET_INVENTORY_NOT_FOUND_MESSAGE);
     }
     return row;
   }
 
   async assetInventoryAdd(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetInventory:add', '无权限新增盘点单');
-    const assetId = normalizeRequiredPositiveInt(payload.assetId, '资产不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetInventory.add, '无权限新增盘点单');
+    const assetId = normalizeRequiredPositiveInt(
+      payload.assetId,
+      PERFORMANCE_ASSET_NOT_FOUND_MESSAGE
+    );
     const asset = await this.loadAsset(assetId);
     await this.assertDepartmentInScope(asset.ownerDepartmentId, perms, '无权操作该盘点单');
     if (asset.status !== 'available') {
@@ -1631,15 +2950,18 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetInventoryUpdate(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetInventory:update', '无权限编辑盘点单');
-    const id = normalizeRequiredPositiveInt(payload.id, '盘点单不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetInventory.update, '无权限编辑盘点单');
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSET_INVENTORY_NOT_FOUND_MESSAGE
+    );
     const current = await this.performanceAssetInventoryEntity.findOneBy({ id });
     if (!current) {
-      throw new CoolCommException('盘点单不存在');
+      throw new CoolCommException(PERFORMANCE_ASSET_INVENTORY_NOT_FOUND_MESSAGE);
     }
     await this.assertDepartmentInScope(current.ownerDepartmentId, perms, '无权操作该盘点单');
     if (current.status !== 'draft') {
-      throw new CoolCommException('仅 draft 状态允许编辑');
+      throw new CoolCommException(PERFORMANCE_STATE_DRAFT_EDIT_ONLY_MESSAGE);
     }
     await this.performanceAssetInventoryEntity.update(
       { id },
@@ -1653,11 +2975,14 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetInventoryStart(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetInventory:start', '无权限开始盘点');
-    const id = normalizeRequiredPositiveInt(payload.id, '盘点单不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetInventory.start, '无权限开始盘点');
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSET_INVENTORY_NOT_FOUND_MESSAGE
+    );
     const current = await this.performanceAssetInventoryEntity.findOneBy({ id });
     if (!current) {
-      throw new CoolCommException('盘点单不存在');
+      throw new CoolCommException(PERFORMANCE_ASSET_INVENTORY_NOT_FOUND_MESSAGE);
     }
     await this.assertDepartmentInScope(current.ownerDepartmentId, perms, '无权操作该盘点单');
     if (current.status !== 'draft') {
@@ -1676,11 +3001,14 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetInventoryComplete(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetInventory:complete', '无权限完成盘点');
-    const id = normalizeRequiredPositiveInt(payload.id, '盘点单不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetInventory.complete, '无权限完成盘点');
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSET_INVENTORY_NOT_FOUND_MESSAGE
+    );
     const current = await this.performanceAssetInventoryEntity.findOneBy({ id });
     if (!current) {
-      throw new CoolCommException('盘点单不存在');
+      throw new CoolCommException(PERFORMANCE_ASSET_INVENTORY_NOT_FOUND_MESSAGE);
     }
     await this.assertDepartmentInScope(current.ownerDepartmentId, perms, '无权操作该盘点单');
     if (current.status !== 'counting') {
@@ -1704,11 +3032,14 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetInventoryClose(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetInventory:close', '无权限关闭盘点');
-    const id = normalizeRequiredPositiveInt(payload.id, '盘点单不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetInventory.close, '无权限关闭盘点');
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSET_INVENTORY_NOT_FOUND_MESSAGE
+    );
     const current = await this.performanceAssetInventoryEntity.findOneBy({ id });
     if (!current) {
-      throw new CoolCommException('盘点单不存在');
+      throw new CoolCommException(PERFORMANCE_ASSET_INVENTORY_NOT_FOUND_MESSAGE);
     }
     await this.assertDepartmentInScope(current.ownerDepartmentId, perms, '无权操作该盘点单');
     if (current.status !== 'completed') {
@@ -1727,7 +3058,7 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetDepreciationPage(query: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetDepreciation:page', '无权限查看折旧列表');
+    this.assertPerm(perms, PERMISSIONS.performance.assetDepreciation.page, '无权限查看折旧列表');
     const page = normalizePageNumber(query.page, 1);
     const size = normalizePageNumber(query.size, 20);
     const month = monthValue(query.depreciationMonth);
@@ -1777,7 +3108,7 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetDepreciationSummary(query: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetDepreciation:summary', '无权限查看折旧汇总');
+    this.assertPerm(perms, PERMISSIONS.performance.assetDepreciation.summary, '无权限查看折旧汇总');
     const month = monthValue(query.depreciationMonth);
     const page = await this.assetDepreciationPage({ page: 1, size: 10000, depreciationMonth: month, departmentId: query.departmentId, keyword: query.keyword });
     const list = page.list || [];
@@ -1794,7 +3125,7 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetDepreciationRecalculate(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetDepreciation:recalculate', '无权限重算折旧');
+    this.assertPerm(perms, PERMISSIONS.performance.assetDepreciation.recalculate, '无权限重算折旧');
     const month = monthValue(payload.depreciationMonth);
     const assets = await this.scopeRows(await this.performanceAssetInfoEntity.find(), perms, item => item.ownerDepartmentId);
     const targetAssets = payload.departmentId
@@ -1849,7 +3180,7 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetDisposalPage(query: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetDisposal:page', '无权限查看报废单');
+    this.assertPerm(perms, PERMISSIONS.performance.assetDisposal.page, '无权限查看报废单');
     const page = normalizePageNumber(query.page, 1);
     const size = normalizePageNumber(query.size, 20);
     let rows = await this.performanceAssetDisposalEntity.find();
@@ -1897,19 +3228,22 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetDisposalInfo(id: number) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetDisposal:info', '无权限查看报废详情');
+    this.assertPerm(perms, PERMISSIONS.performance.assetDisposal.info, '无权限查看报废详情');
     const list = await this.assetDisposalPage({ page: 1, size: 9999 });
     const row = list.list.find(item => Number(item.id) === Number(id));
     if (!row) {
-      throw new CoolCommException('报废单不存在');
+      throw new CoolCommException(PERFORMANCE_ASSET_DISPOSAL_NOT_FOUND_MESSAGE);
     }
     return row;
   }
 
   async assetDisposalAdd(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetDisposal:add', '无权限新增报废单');
-    const assetId = normalizeRequiredPositiveInt(payload.assetId, '资产不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetDisposal.add, '无权限新增报废单');
+    const assetId = normalizeRequiredPositiveInt(
+      payload.assetId,
+      PERFORMANCE_ASSET_NOT_FOUND_MESSAGE
+    );
     const asset = await this.loadAsset(assetId);
     await this.assertDepartmentInScope(asset.ownerDepartmentId, perms, '无权操作该报废单');
     const disposalNo = normalizeRequiredText(
@@ -1941,15 +3275,18 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetDisposalUpdate(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetDisposal:update', '无权限编辑报废单');
-    const id = normalizeRequiredPositiveInt(payload.id, '报废单不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetDisposal.update, '无权限编辑报废单');
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSET_DISPOSAL_NOT_FOUND_MESSAGE
+    );
     const current = await this.performanceAssetDisposalEntity.findOneBy({ id });
     if (!current) {
-      throw new CoolCommException('报废单不存在');
+      throw new CoolCommException(PERFORMANCE_ASSET_DISPOSAL_NOT_FOUND_MESSAGE);
     }
     await this.assertDepartmentInScope(current.ownerDepartmentId, perms, '无权操作该报废单');
     if (current.status !== 'draft') {
-      throw new CoolCommException('仅 draft 状态允许编辑');
+      throw new CoolCommException(PERFORMANCE_STATE_DRAFT_EDIT_ONLY_MESSAGE);
     }
     await this.performanceAssetDisposalEntity.update(
       { id },
@@ -1963,15 +3300,18 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetDisposalSubmit(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetDisposal:submit', '无权限提交报废单');
-    const id = normalizeRequiredPositiveInt(payload.id, '报废单不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetDisposal.submit, '无权限提交报废单');
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSET_DISPOSAL_NOT_FOUND_MESSAGE
+    );
     const current = await this.performanceAssetDisposalEntity.findOneBy({ id });
     if (!current) {
-      throw new CoolCommException('报废单不存在');
+      throw new CoolCommException(PERFORMANCE_ASSET_DISPOSAL_NOT_FOUND_MESSAGE);
     }
     await this.assertDepartmentInScope(current.ownerDepartmentId, perms, '无权操作该报废单');
     if (current.status !== 'draft') {
-      throw new CoolCommException('仅 draft 状态允许提交');
+      throw new CoolCommException(PERFORMANCE_STATE_DRAFT_SUBMIT_ONLY_MESSAGE);
     }
     await this.performanceAssetDisposalEntity.update(
       { id },
@@ -1985,15 +3325,18 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetDisposalApprove(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetDisposal:approve', '无权限审批报废单');
-    const id = normalizeRequiredPositiveInt(payload.id, '报废单不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetDisposal.approve, '无权限审批报废单');
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSET_DISPOSAL_NOT_FOUND_MESSAGE
+    );
     const current = await this.performanceAssetDisposalEntity.findOneBy({ id });
     if (!current) {
-      throw new CoolCommException('报废单不存在');
+      throw new CoolCommException(PERFORMANCE_ASSET_DISPOSAL_NOT_FOUND_MESSAGE);
     }
     await this.assertDepartmentInScope(current.ownerDepartmentId, perms, '无权操作该报废单');
     if (current.status !== 'submitted') {
-      throw new CoolCommException('仅 submitted 状态允许审批');
+      throw new CoolCommException(PERFORMANCE_STATE_SUBMITTED_APPROVE_ONLY_MESSAGE);
     }
     await this.performanceAssetDisposalEntity.update(
       { id },
@@ -2009,15 +3352,18 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetDisposalExecute(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetDisposal:execute', '无权限执行报废');
-    const id = normalizeRequiredPositiveInt(payload.id, '报废单不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetDisposal.execute, '无权限执行报废');
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSET_DISPOSAL_NOT_FOUND_MESSAGE
+    );
     const current = await this.performanceAssetDisposalEntity.findOneBy({ id });
     if (!current) {
-      throw new CoolCommException('报废单不存在');
+      throw new CoolCommException(PERFORMANCE_ASSET_DISPOSAL_NOT_FOUND_MESSAGE);
     }
     await this.assertDepartmentInScope(current.ownerDepartmentId, perms, '无权操作该报废单');
     if (current.status !== 'approved') {
-      throw new CoolCommException('仅 approved 状态允许执行报废');
+      throw new CoolCommException(PERFORMANCE_STATE_APPROVED_EXECUTE_ONLY_MESSAGE);
     }
     await this.performanceAssetDisposalEntity.update(
       { id },
@@ -2033,15 +3379,18 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetDisposalCancel(payload: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetDisposal:cancel', '无权限取消报废单');
-    const id = normalizeRequiredPositiveInt(payload.id, '报废单不存在');
+    this.assertPerm(perms, PERMISSIONS.performance.assetDisposal.cancel, '无权限取消报废单');
+    const id = normalizeRequiredPositiveInt(
+      payload.id,
+      PERFORMANCE_ASSET_DISPOSAL_NOT_FOUND_MESSAGE
+    );
     const current = await this.performanceAssetDisposalEntity.findOneBy({ id });
     if (!current) {
-      throw new CoolCommException('报废单不存在');
+      throw new CoolCommException(PERFORMANCE_ASSET_DISPOSAL_NOT_FOUND_MESSAGE);
     }
     await this.assertDepartmentInScope(current.ownerDepartmentId, perms, '无权操作该报废单');
     if (!['draft', 'submitted', 'approved'].includes(current.status)) {
-      throw new CoolCommException('当前状态不允许取消');
+      throw new CoolCommException(PERFORMANCE_STATE_CANCEL_NOT_ALLOWED_MESSAGE);
     }
     await this.performanceAssetDisposalEntity.update(
       { id },
@@ -2055,7 +3404,7 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetReportSummary(query: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetReport:summary', '无权限查看资产报表汇总');
+    this.assertPerm(perms, PERMISSIONS.performance.assetReport.summary, '无权限查看资产报表汇总');
     const page = await this.assetReportPage({
       page: 1,
       size: 10000,
@@ -2079,7 +3428,7 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetReportPage(query: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetReport:page', '无权限查看资产报表');
+    this.assertPerm(perms, PERMISSIONS.performance.assetReport.page, '无权限查看资产报表');
     const page = normalizePageNumber(query.page, 1);
     const size = normalizePageNumber(query.size, 20);
     let assets = await this.performanceAssetInfoEntity.find();
@@ -2138,7 +3487,7 @@ export class PerformanceAssetDomainService extends BaseService {
 
   async assetReportExport(query: any) {
     const perms = await this.currentPerms();
-    this.assertPerm(perms, 'performance:assetReport:export', '无权限导出资产报表');
+    this.assertPerm(perms, PERMISSIONS.performance.assetReport.export, '无权限导出资产报表');
     const page = await this.assetReportPage({ ...query, page: 1, size: 10000 });
     return page.list;
   }

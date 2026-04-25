@@ -1,0 +1,451 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Theme 8 Interview Management",
+    "version": "2026-04-21"
+  },
+  "paths": {
+    "/admin/performance/interview/page": {
+      "post": {
+        "summary": "面试分页"
+      }
+    },
+    "/admin/performance/interview/info": {
+      "get": {
+        "summary": "面试详情"
+      }
+    },
+    "/admin/performance/interview/add": {
+      "post": {
+        "summary": "新增面试"
+      }
+    },
+    "/admin/performance/interview/update": {
+      "post": {
+        "summary": "修改面试"
+      }
+    },
+    "/admin/performance/interview/delete": {
+      "post": {
+        "summary": "删除面试"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PagePagination": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "page",
+          "size",
+          "total"
+        ]
+      },
+      "DeleteIdsRequest": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
+        },
+        "required": [
+          "ids"
+        ]
+      },
+      "InterviewStatus": {
+        "type": "string",
+        "enum": [
+          "scheduled",
+          "completed",
+          "cancelled"
+        ]
+      },
+      "InterviewType": {
+        "type": "string",
+        "enum": [
+          "technical",
+          "behavioral",
+          "manager",
+          "hr"
+        ]
+      },
+      "InterviewSourceResource": {
+        "type": "string",
+        "enum": [
+          "jobStandard",
+          "recruitPlan",
+          "resumePool",
+          "interview",
+          "talentAsset"
+        ]
+      },
+      "RecruitPlanStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "active",
+          "voided",
+          "closed"
+        ]
+      },
+      "ResumePoolStatus": {
+        "type": "string",
+        "enum": [
+          "new",
+          "screening",
+          "interviewing",
+          "archived"
+        ]
+      },
+      "InterviewSourceSnapshot": {
+        "type": "object",
+        "properties": {
+          "sourceResource": {
+            "$ref": "#/components/schemas/InterviewSourceResource",
+            "nullable": true
+          },
+          "talentAssetId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "jobStandardId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "jobStandardPositionName": {
+            "type": "string",
+            "nullable": true
+          },
+          "jobStandardRequirementSummary": {
+            "type": "string",
+            "nullable": true
+          },
+          "recruitPlanId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "recruitPlanTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "recruitPlanStatus": {
+            "$ref": "#/components/schemas/RecruitPlanStatus",
+            "nullable": true
+          },
+          "resumePoolId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "interviewId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "candidateName": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetDepartmentId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "targetDepartmentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetPosition": {
+            "type": "string",
+            "nullable": true
+          },
+          "interviewStatus": {
+            "$ref": "#/components/schemas/InterviewStatus",
+            "nullable": true
+          },
+          "sourceStatusSnapshot": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "InterviewResumePoolSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "candidateName": {
+            "type": "string"
+          },
+          "targetDepartmentId": {
+            "type": "integer"
+          },
+          "targetDepartmentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetPosition": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/ResumePoolStatus"
+          },
+          "recruitPlanId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "jobStandardId": {
+            "type": "integer",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "candidateName",
+          "targetDepartmentId",
+          "status"
+        ]
+      },
+      "InterviewRecruitPlanSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "positionName": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetDepartmentId": {
+            "type": "integer"
+          },
+          "targetDepartmentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "headcount": {
+            "type": "integer",
+            "nullable": true
+          },
+          "startDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "endDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/RecruitPlanStatus",
+            "nullable": true
+          },
+          "jobStandardId": {
+            "type": "integer",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "targetDepartmentId"
+        ]
+      },
+      "InterviewPageQuery": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "candidateName": {
+            "type": "string"
+          },
+          "position": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/InterviewStatus"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "page",
+          "size"
+        ]
+      },
+      "InterviewRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "candidateName": {
+            "type": "string"
+          },
+          "position": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "interviewerId": {
+            "type": "integer"
+          },
+          "interviewerName": {
+            "type": "string"
+          },
+          "interviewDate": {
+            "type": "string"
+          },
+          "interviewType": {
+            "$ref": "#/components/schemas/InterviewType",
+            "nullable": true
+          },
+          "score": {
+            "type": "number",
+            "nullable": true
+          },
+          "resumePoolId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "recruitPlanId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "sourceSnapshot": {
+            "$ref": "#/components/schemas/InterviewSourceSnapshot",
+            "nullable": true
+          },
+          "resumePoolSummary": {
+            "$ref": "#/components/schemas/InterviewResumePoolSummary",
+            "nullable": true
+          },
+          "resumePoolSnapshot": {
+            "$ref": "#/components/schemas/InterviewResumePoolSummary",
+            "nullable": true
+          },
+          "recruitPlanSummary": {
+            "$ref": "#/components/schemas/InterviewRecruitPlanSummary",
+            "nullable": true
+          },
+          "recruitPlanSnapshot": {
+            "$ref": "#/components/schemas/InterviewRecruitPlanSummary",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/InterviewStatus"
+          },
+          "createTime": {
+            "type": "string"
+          },
+          "updateTime": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "candidateName",
+          "position",
+          "interviewerId",
+          "interviewDate",
+          "status"
+        ]
+      },
+      "InterviewSaveRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "candidateName": {
+            "type": "string"
+          },
+          "position": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "interviewerId": {
+            "type": "integer"
+          },
+          "interviewDate": {
+            "type": "string"
+          },
+          "interviewType": {
+            "$ref": "#/components/schemas/InterviewType",
+            "nullable": true
+          },
+          "score": {
+            "type": "number",
+            "nullable": true
+          },
+          "resumePoolId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "recruitPlanId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "sourceSnapshot": {
+            "$ref": "#/components/schemas/InterviewSourceSnapshot",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/InterviewStatus"
+          }
+        },
+        "required": [
+          "candidateName",
+          "position",
+          "interviewerId",
+          "interviewDate"
+        ]
+      },
+      "InterviewPageResult": {
+        "type": "object",
+        "properties": {
+          "list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InterviewRecord"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PagePagination"
+          }
+        },
+        "required": [
+          "list",
+          "pagination"
+        ]
+      }
+    }
+  }
+}

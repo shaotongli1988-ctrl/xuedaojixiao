@@ -16,7 +16,7 @@ import { reactive, ref } from 'vue';
  *     pagination?: { total?: number | null } | null
  *   }>,
  *   canLoad?: () => boolean,
- *   onError?: (error: any) => void,
+ *   onError?: (error: unknown) => void,
  *   initialPageSize?: number
  * }} options
  */

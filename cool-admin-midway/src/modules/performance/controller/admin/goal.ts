@@ -1,6 +1,7 @@
 import { ALL, Body, Get, Inject, Post, Provide, Query } from '@midwayjs/core';
 import { BaseController, CoolController } from '@cool-midway/core';
 import { PerformanceGoalService } from '../../service/goal';
+import { PerformanceGoalOperationsService } from '../../service/goal-operations';
 
 /**
  * 目标地图控制器。
@@ -11,6 +12,9 @@ import { PerformanceGoalService } from '../../service/goal';
 export class AdminPerformanceGoalController extends BaseController {
   @Inject()
   performanceGoalService: PerformanceGoalService;
+
+  @Inject()
+  performanceGoalOperationsService: PerformanceGoalOperationsService;
 
   @Post('/page', { summary: '目标分页' })
   async pageList(@Body(ALL) query: any) {
@@ -53,5 +57,94 @@ export class AdminPerformanceGoalController extends BaseController {
   async export(@Body(ALL) query: any) {
     await this.performanceGoalService.initGoalScope();
     return this.ok(await this.performanceGoalService.export(query));
+  }
+
+  @Get('/opsDepartmentConfig', { summary: '目标运营台部门配置' })
+  async opsDepartmentConfig(@Query(ALL) query: any) {
+    await this.performanceGoalOperationsService.initGoalScope();
+    return this.ok(await this.performanceGoalOperationsService.getDepartmentConfig(query));
+  }
+
+  @Get('/opsAccessProfile', { summary: '目标运营台权限画像' })
+  async opsAccessProfile(@Query(ALL) query: any) {
+    await this.performanceGoalOperationsService.initGoalScope();
+    return this.ok(await this.performanceGoalOperationsService.accessProfile(query));
+  }
+
+  @Post('/opsDepartmentConfigSave', { summary: '保存目标运营台部门配置' })
+  async opsDepartmentConfigSave(@Body(ALL) payload: any) {
+    await this.performanceGoalOperationsService.initGoalScope();
+    return this.ok(
+      await this.performanceGoalOperationsService.saveDepartmentConfig(payload)
+    );
+  }
+
+  @Post('/opsPlanPage', { summary: '目标运营台计划分页' })
+  async opsPlanPage(@Body(ALL) query: any) {
+    await this.performanceGoalOperationsService.initGoalScope();
+    return this.ok(await this.performanceGoalOperationsService.pagePlans(query));
+  }
+
+  @Get('/opsPlanInfo', { summary: '目标运营台计划详情' })
+  async opsPlanInfo(@Query('id') id: number) {
+    await this.performanceGoalOperationsService.initGoalScope();
+    return this.ok(await this.performanceGoalOperationsService.infoPlan(Number(id)));
+  }
+
+  @Post('/opsPlanSave', { summary: '保存目标运营台计划' })
+  async opsPlanSave(@Body(ALL) payload: any) {
+    await this.performanceGoalOperationsService.initGoalScope();
+    return this.ok(await this.performanceGoalOperationsService.savePlan(payload));
+  }
+
+  @Post('/opsPlanDelete', { summary: '删除目标运营台计划' })
+  async opsPlanDelete(@Body('ids') ids: number[]) {
+    await this.performanceGoalOperationsService.initGoalScope();
+    await this.performanceGoalOperationsService.deletePlans(ids || []);
+    return this.ok();
+  }
+
+  @Post('/opsDailySubmit', { summary: '目标运营台日结果填报' })
+  async opsDailySubmit(@Body(ALL) payload: any) {
+    await this.performanceGoalOperationsService.initGoalScope();
+    return this.ok(
+      await this.performanceGoalOperationsService.submitDailyResults(payload)
+    );
+  }
+
+  @Post('/opsDailyFinalize', { summary: '目标运营台日结果自动补零' })
+  async opsDailyFinalize(@Body(ALL) payload: any) {
+    await this.performanceGoalOperationsService.initGoalScope();
+    return this.ok(
+      await this.performanceGoalOperationsService.finalizeDailyMissing(payload)
+    );
+  }
+
+  @Post('/opsOverview', { summary: '目标运营台总览' })
+  async opsOverview(@Body(ALL) query: any) {
+    await this.performanceGoalOperationsService.initGoalScope();
+    return this.ok(await this.performanceGoalOperationsService.overview(query));
+  }
+
+  @Get('/opsReportInfo', { summary: '目标运营台日报详情' })
+  async opsReportInfo(@Query(ALL) query: any) {
+    await this.performanceGoalOperationsService.initGoalScope();
+    return this.ok(await this.performanceGoalOperationsService.reportInfo(query));
+  }
+
+  @Post('/opsReportGenerate', { summary: '生成目标运营台日报' })
+  async opsReportGenerate(@Body(ALL) payload: any) {
+    await this.performanceGoalOperationsService.initGoalScope();
+    return this.ok(
+      await this.performanceGoalOperationsService.generateDailyReport(payload)
+    );
+  }
+
+  @Post('/opsReportStatusUpdate', { summary: '更新目标运营台日报状态' })
+  async opsReportStatusUpdate(@Body(ALL) payload: any) {
+    await this.performanceGoalOperationsService.initGoalScope();
+    return this.ok(
+      await this.performanceGoalOperationsService.updateReportStatus(payload)
+    );
   }
 }

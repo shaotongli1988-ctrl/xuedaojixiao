@@ -4,11 +4,6 @@
  * 维护重点是 offered/accepted/rejected/closed 状态机、部门树范围和字段边界必须由服务端硬兜底。
  */
 import {
-  App,
-  ASYNC_CONTEXT_KEY,
-  ASYNC_CONTEXT_MANAGER_KEY,
-  AsyncContextManager,
-  IMidwayApplication,
   Inject,
   Provide,
   Scope,
@@ -18,31 +13,45 @@ import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Brackets, In, Repository } from 'typeorm';
 import { BaseSysDepartmentEntity } from '../../base/entity/sys/department';
-import { BaseSysRoleEntity } from '../../base/entity/sys/role';
-import { BaseSysMenuService } from '../../base/service/sys/menu';
-import { BaseSysPermsService } from '../../base/service/sys/perms';
+import { BaseSysUserEntity } from '../../base/entity/sys/user';
 import { PerformanceHiringEntity } from '../entity/hiring';
-import * as jwt from 'jsonwebtoken';
+import { PerformanceInterviewEntity } from '../entity/interview';
+import { PerformanceResumePoolEntity } from '../entity/resumePool';
+import { PerformanceRecruitPlanEntity } from '../entity/recruit-plan';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import {
+  HIRING_SOURCE_TYPE_VALUES,
+  HIRING_STATUS_VALUES,
+} from './hiring-dict';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
 
-type HiringStatus = 'offered' | 'accepted' | 'rejected' | 'closed';
-type HiringSourceType = 'manual' | 'resumePool' | 'talentAsset' | 'interview';
-
-const HIRING_STATUS: HiringStatus[] = ['offered', 'accepted', 'rejected', 'closed'];
-const HIRING_SOURCE_TYPES: HiringSourceType[] = [
-  'manual',
-  'resumePool',
-  'talentAsset',
-  'interview',
-];
-const HR_ROLE_HINTS = ['hr', 'human', '人力', '人事'];
+type HiringStatus = (typeof HIRING_STATUS_VALUES)[number];
+type HiringSourceType = (typeof HIRING_SOURCE_TYPE_VALUES)[number];
 const SOURCE_STATUS_SNAPSHOT_MAX_LENGTH = 4000;
-
-const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
-  return require('../../base/config').default({
-    app,
-    env: app?.getEnv?.(),
-  }).jwt;
-};
+const PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resourceNotFound
+  );
+const PERFORMANCE_RESUME_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resumeNotFound
+  );
+const PERFORMANCE_RECRUIT_PLAN_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.recruitPlanNotFound
+  );
+const PERFORMANCE_TARGET_DEPARTMENT_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.targetDepartmentRequired
+  );
 
 function normalizePageNumber(value: any, fallback: number) {
   const parsed = Number(value);
@@ -84,6 +93,23 @@ function normalizeOptionalPositiveInt(value: any, message: string) {
   return parsed;
 }
 
+function normalizeJsonObject(value: any) {
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  return typeof value === 'object' ? value : null;
+}
+
 function formatDateTime(input: Date) {
   const pad = (value: number) => String(value).padStart(2, '0');
   return [
@@ -107,75 +133,48 @@ export class PerformanceHiringService extends BaseService {
   @InjectEntityModel(PerformanceHiringEntity)
   performanceHiringEntity: Repository<PerformanceHiringEntity>;
 
+  @InjectEntityModel(PerformanceInterviewEntity)
+  performanceInterviewEntity: Repository<PerformanceInterviewEntity>;
+
+  @InjectEntityModel(PerformanceResumePoolEntity)
+  performanceResumePoolEntity: Repository<PerformanceResumePoolEntity>;
+
+  @InjectEntityModel(PerformanceRecruitPlanEntity)
+  performanceRecruitPlanEntity: Repository<PerformanceRecruitPlanEntity>;
+
   @InjectEntityModel(BaseSysDepartmentEntity)
   baseSysDepartmentEntity: Repository<BaseSysDepartmentEntity>;
 
-  @InjectEntityModel(BaseSysRoleEntity)
-  baseSysRoleEntity: Repository<BaseSysRoleEntity>;
+  @InjectEntityModel(BaseSysUserEntity)
+  baseSysUserEntity: Repository<BaseSysUserEntity>;
 
   @Inject()
-  baseSysMenuService: BaseSysMenuService;
-
-  @Inject()
-  baseSysPermsService: BaseSysPermsService;
-
-  @Inject()
-  ctx;
-
-  @App()
-  app: IMidwayApplication;
+  performanceAccessContextService: PerformanceAccessContextService;
 
   private readonly perms = {
-    page: 'performance:hiring:page',
-    info: 'performance:hiring:info',
-    add: 'performance:hiring:add',
-    updateStatus: 'performance:hiring:updateStatus',
-    close: 'performance:hiring:close',
-    hrScope: 'performance:salary:page',
-    hrAll: 'performance:hiring:all',
+    page: PERMISSIONS.performance.hiring.page,
+    info: PERMISSIONS.performance.hiring.info,
+    add: PERMISSIONS.performance.hiring.add,
+    updateStatus: PERMISSIONS.performance.hiring.updateStatus,
+    close: PERMISSIONS.performance.hiring.close,
+    hrAll: PERMISSIONS.performance.hiring.all,
   };
 
-  private get currentCtx() {
-    if (this.ctx?.admin) {
-      return this.ctx;
-    }
-
-    try {
-      const contextManager: AsyncContextManager = this.app
-        .getApplicationContext()
-        .get(ASYNC_CONTEXT_MANAGER_KEY);
-      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as any;
-    } catch (error) {
-      return this.ctx;
-    }
-  }
-
-  private get currentAdmin() {
-    if (this.currentCtx?.admin) {
-      return this.currentCtx.admin;
-    }
-
-    const token =
-      this.currentCtx?.get?.('Authorization') ||
-      this.currentCtx?.headers?.authorization;
-    if (!token) {
-      return undefined;
-    }
-
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
-  }
+  private readonly capabilityByPerm: Record<string, PerformanceCapabilityKey> = {
+    [PERMISSIONS.performance.hiring.page]: 'hiring.read',
+    [PERMISSIONS.performance.hiring.info]: 'hiring.read',
+    [PERMISSIONS.performance.hiring.add]: 'hiring.create',
+    [PERMISSIONS.performance.hiring.updateStatus]: 'hiring.update_status',
+    [PERMISSIONS.performance.hiring.close]: 'hiring.close',
+  };
 
   async page(query: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.page, '无权限查看录用列表');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.page, '无权限查看录用列表');
 
     const page = normalizePageNumber(query.page, 1);
     const size = normalizePageNumber(query.size, 20);
-    const departmentIds = await this.departmentScopeIds(perms);
+    const departmentIds = await this.departmentScopeIds(access, 'hiring.read');
     const qb = this.performanceHiringEntity
       .createQueryBuilder('hiring')
       .leftJoin(
@@ -193,6 +192,12 @@ export class PerformanceHiringService extends BaseService {
         'hiring.sourceType as sourceType',
         'hiring.sourceId as sourceId',
         'hiring.sourceSnapshot as sourceSnapshot',
+        'hiring.interviewId as interviewId',
+        'hiring.resumePoolId as resumePoolId',
+        'hiring.recruitPlanId as recruitPlanId',
+        'hiring.interviewSnapshot as interviewSnapshot',
+        'hiring.resumePoolSnapshot as resumePoolSnapshot',
+        'hiring.recruitPlanSnapshot as recruitPlanSnapshot',
         'hiring.status as status',
         'hiring.offeredAt as offeredAt',
         'hiring.acceptedAt as acceptedAt',
@@ -224,19 +229,24 @@ export class PerformanceHiringService extends BaseService {
   }
 
   async info(id: number) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.info, '无权限查看录用详情');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.info, '无权限查看录用详情');
 
     const hiring = await this.requireHiring(id);
-    await this.assertHiringInScope(hiring, perms, '无权访问该录用单');
+    await this.assertHiringInScope(
+      hiring,
+      access,
+      'hiring.read',
+      '无权访问该录用单'
+    );
     return this.buildHiringDetail(hiring);
   }
 
   async add(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.add, '无权限新增录用单');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.add, '无权限新增录用单');
 
-    const normalized = await this.normalizePayload(payload, perms);
+    const normalized = await this.normalizePayload(payload, access, 'hiring.create');
     const now = formatDateTime(new Date());
     const saved = await this.performanceHiringEntity.save(
       this.performanceHiringEntity.create({
@@ -254,13 +264,18 @@ export class PerformanceHiringService extends BaseService {
   }
 
   async updateStatus(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.updateStatus, '无权限更新录用状态');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.updateStatus, '无权限更新录用状态');
 
     const id = normalizeRequiredPositiveInt(payload.id, '录用单 ID 不合法');
     const targetStatus = this.normalizeUpdatableStatus(payload.status);
     const hiring = await this.requireHiring(id);
-    await this.assertHiringInScope(hiring, perms, '无权操作该录用单');
+    await this.assertHiringInScope(
+      hiring,
+      access,
+      'hiring.update_status',
+      '无权操作该录用单'
+    );
 
     if (hiring.status !== 'offered') {
       throw new CoolCommException('当前状态不允许更新录用状态');
@@ -280,8 +295,8 @@ export class PerformanceHiringService extends BaseService {
   }
 
   async close(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.close, '无权限关闭录用单');
+    const access = await this.currentPerms();
+    this.assertPerm(access, this.perms.close, '无权限关闭录用单');
 
     const id = normalizeRequiredPositiveInt(payload.id, '录用单 ID 不合法');
     const closeReason = normalizeRequiredText(
@@ -290,7 +305,12 @@ export class PerformanceHiringService extends BaseService {
       '关闭原因不能为空且长度不能超过 2000'
     );
     const hiring = await this.requireHiring(id);
-    await this.assertHiringInScope(hiring, perms, '无权操作该录用单');
+    await this.assertHiringInScope(
+      hiring,
+      access,
+      'hiring.close',
+      '无权操作该录用单'
+    );
 
     if (hiring.status !== 'offered') {
       throw new CoolCommException('当前状态不允许关闭录用单');
@@ -308,25 +328,53 @@ export class PerformanceHiringService extends BaseService {
     return this.info(hiring.id);
   }
 
-  private async normalizePayload(payload: any, perms: string[]) {
+  private async normalizePayload(
+    payload: any,
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
+  ) {
     const candidateName = normalizeRequiredText(payload.candidateName, 100, '候选人姓名不能为空');
     const targetDepartmentId = normalizeRequiredPositiveInt(
       payload.targetDepartmentId,
-      '目标部门不能为空'
+      PERFORMANCE_TARGET_DEPARTMENT_REQUIRED_MESSAGE
     );
     const targetPosition = normalizeOptionalText(payload.targetPosition, 100);
     const decisionContent = normalizeOptionalText(
       payload.hiringDecision ?? payload.decisionContent,
       10000
     );
-    const sourceType = this.normalizeOptionalSourceType(payload.sourceType);
-    const sourceId = normalizeOptionalPositiveInt(payload.sourceId, 'sourceId 不合法');
-    const sourceSnapshot = this.normalizeSourceSnapshotInput(
-      payload.sourceStatusSnapshot,
-      payload.sourceSnapshot
+    const interviewId = normalizeOptionalPositiveInt(
+      payload.interviewId,
+      'interviewId 不合法'
     );
+    const interviewRecord = interviewId
+      ? await this.performanceInterviewEntity.findOneBy({ id: interviewId })
+      : null;
+    const resumePoolIdInput = normalizeOptionalPositiveInt(
+      payload.resumePoolId,
+      'resumePoolId 不合法'
+    );
+    const resumePoolId =
+      resumePoolIdInput ?? this.normalizeNullableNumber(interviewRecord?.resumePoolId);
+    const resumeRecord = resumePoolId
+      ? await this.performanceResumePoolEntity.findOneBy({ id: resumePoolId })
+      : null;
+    const recruitPlanIdInput = normalizeOptionalPositiveInt(
+      payload.recruitPlanId,
+      'recruitPlanId 不合法'
+    );
+    const recruitPlanId =
+      recruitPlanIdInput ??
+      this.normalizeNullableNumber(interviewRecord?.recruitPlanId) ??
+      this.normalizeNullableNumber(resumeRecord?.recruitPlanId);
+    const recruitPlanRecord = recruitPlanId
+      ? await this.performanceRecruitPlanEntity.findOneBy({ id: recruitPlanId })
+      : null;
+    const sourceTypeInput = this.normalizeOptionalSourceType(payload.sourceType);
+    const sourceType =
+      sourceTypeInput || this.resolveDerivedSourceType(interviewId, resumePoolId);
 
-    await this.assertCanManageDepartment(targetDepartmentId, perms);
+    await this.assertCanManageDepartment(targetDepartmentId, access, capabilityKey);
 
     if (payload.status !== undefined && payload.status !== null && payload.status !== '') {
       const status = this.normalizeStatus(payload.status);
@@ -335,9 +383,83 @@ export class PerformanceHiringService extends BaseService {
       }
     }
 
+    if (interviewId && !interviewRecord) {
+      throw new CoolCommException('面试不存在');
+    }
+
+    if (resumePoolId && !resumeRecord) {
+      throw new CoolCommException(PERFORMANCE_RESUME_NOT_FOUND_MESSAGE);
+    }
+
+    if (recruitPlanId && !recruitPlanRecord) {
+      throw new CoolCommException(PERFORMANCE_RECRUIT_PLAN_NOT_FOUND_MESSAGE);
+    }
+
+    if (
+      interviewRecord?.resumePoolId &&
+      resumePoolId &&
+      Number(interviewRecord.resumePoolId) !== Number(resumePoolId)
+    ) {
+      throw new CoolCommException('录用单引用的面试与简历不一致');
+    }
+
+    if (
+      interviewRecord?.recruitPlanId &&
+      recruitPlanId &&
+      Number(interviewRecord.recruitPlanId) !== Number(recruitPlanId)
+    ) {
+      throw new CoolCommException('录用单引用的面试与招聘计划不一致');
+    }
+
+    if (
+      resumeRecord?.recruitPlanId &&
+      recruitPlanId &&
+      Number(resumeRecord.recruitPlanId) !== Number(recruitPlanId)
+    ) {
+      throw new CoolCommException('录用单引用的简历与招聘计划不一致');
+    }
+
+    if (
+      interviewRecord?.departmentId &&
+      Number(interviewRecord.departmentId || 0) !== Number(targetDepartmentId)
+    ) {
+      throw new CoolCommException('录用单目标部门与面试归属部门不一致');
+    }
+
+    if (
+      resumeRecord?.targetDepartmentId &&
+      Number(resumeRecord.targetDepartmentId || 0) !== Number(targetDepartmentId)
+    ) {
+      throw new CoolCommException('录用单目标部门与简历目标部门不一致');
+    }
+
+    if (
+      recruitPlanRecord?.targetDepartmentId &&
+      Number(recruitPlanRecord.targetDepartmentId || 0) !== Number(targetDepartmentId)
+    ) {
+      throw new CoolCommException('录用单目标部门与招聘计划目标部门不一致');
+    }
+
+    const sourceId = normalizeOptionalPositiveInt(
+      payload.sourceId ??
+        (sourceType === 'interview'
+          ? interviewId
+          : sourceType === 'resumePool'
+            ? resumePoolId
+            : null),
+      'sourceId 不合法'
+    );
     if (!sourceType && sourceId) {
       throw new CoolCommException('存在 sourceId 时必须提供 sourceType');
     }
+    const interviewSnapshot = await this.buildInterviewSnapshot(interviewRecord);
+    const resumePoolSnapshot = await this.buildResumePoolSnapshot(resumeRecord);
+    const recruitPlanSnapshot = await this.buildRecruitPlanSnapshot(recruitPlanRecord);
+    const sourceSnapshot =
+      this.normalizeSourceSnapshotInput(
+        payload.sourceStatusSnapshot,
+        payload.sourceSnapshot
+      ) || interviewSnapshot || resumePoolSnapshot || null;
 
     return {
       candidateName,
@@ -347,6 +469,12 @@ export class PerformanceHiringService extends BaseService {
       sourceType: sourceType || 'manual',
       sourceId,
       sourceSnapshot,
+      interviewId,
+      resumePoolId,
+      recruitPlanId,
+      interviewSnapshot,
+      resumePoolSnapshot,
+      recruitPlanSnapshot,
     };
   }
 
@@ -387,7 +515,7 @@ export class PerformanceHiringService extends BaseService {
 
   private normalizeStatus(value: any) {
     const status = String(value || '').trim() as HiringStatus;
-    if (!HIRING_STATUS.includes(status)) {
+    if (!HIRING_STATUS_VALUES.includes(status)) {
       throw new CoolCommException('录用状态不合法');
     }
     return status;
@@ -406,7 +534,7 @@ export class PerformanceHiringService extends BaseService {
     if (!sourceType) {
       return null;
     }
-    if (!HIRING_SOURCE_TYPES.includes(sourceType)) {
+    if (!HIRING_SOURCE_TYPE_VALUES.includes(sourceType)) {
       throw new CoolCommException('sourceType 不合法');
     }
     return sourceType;
@@ -512,6 +640,11 @@ export class PerformanceHiringService extends BaseService {
   private normalizeHiringRow(item: any) {
     const hiringDecision = normalizeOptionalText(item.decisionContent, 10000);
     const sourceSnapshot = this.normalizeSourceSnapshotResponse(item.sourceSnapshot);
+    const interviewSnapshot = this.normalizeInterviewSnapshot(item.interviewSnapshot);
+    const resumePoolSnapshot = this.normalizeResumePoolSnapshot(item.resumePoolSnapshot);
+    const recruitPlanSnapshot = this.normalizeRecruitPlanSnapshot(
+      item.recruitPlanSnapshot
+    );
 
     return {
       id: Number(item.id),
@@ -525,6 +658,18 @@ export class PerformanceHiringService extends BaseService {
       sourceId: normalizeOptionalPositiveInt(item.sourceId, 'sourceId 不合法'),
       sourceStatusSnapshot: this.extractSourceStatusSnapshot(sourceSnapshot),
       sourceSnapshot,
+      interviewId: normalizeOptionalPositiveInt(item.interviewId, 'interviewId 不合法'),
+      resumePoolId: normalizeOptionalPositiveInt(item.resumePoolId, 'resumePoolId 不合法'),
+      recruitPlanId: normalizeOptionalPositiveInt(
+        item.recruitPlanId,
+        'recruitPlanId 不合法'
+      ),
+      interviewSummary: interviewSnapshot,
+      interviewSnapshot,
+      resumePoolSummary: resumePoolSnapshot,
+      resumePoolSnapshot,
+      recruitPlanSummary: recruitPlanSnapshot,
+      recruitPlanSnapshot,
       status: item.status || 'offered',
       offeredAt: item.offeredAt || null,
       acceptedAt: item.acceptedAt || null,
@@ -554,89 +699,57 @@ export class PerformanceHiringService extends BaseService {
     const hiring = await this.performanceHiringEntity.findOneBy({ id: validId });
 
     if (!hiring) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     return hiring;
   }
 
   private async currentPerms() {
-    const admin = this.currentAdmin;
+    return this.performanceAccessContextService.resolveAccessContext(undefined, {
+      allowEmptyRoleIds: false,
+      missingAuthMessage: '登录状态已失效',
+    });
+  }
 
-    if (!admin?.roleIds) {
-      throw new CoolCommException('登录状态已失效');
+  private resolveCapabilityKey(perm: string): PerformanceCapabilityKey {
+    const capabilityKey = this.capabilityByPerm[perm];
+    if (!capabilityKey) {
+      throw new CoolCommException(`未映射的录用权限: ${perm}`);
     }
-
-    return this.baseSysMenuService.getPerms(admin.roleIds);
+    return capabilityKey;
   }
 
-  private hasPerm(perms: string[], perm: string) {
-    return perms.includes(perm);
-  }
-
-  private assertPerm(perms: string[], perm: string, message: string) {
-    if (!this.hasPerm(perms, perm)) {
+  private assertPerm(
+    access: PerformanceResolvedAccessContext,
+    perm: string,
+    message: string
+  ) {
+    if (
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        this.resolveCapabilityKey(perm)
+      )
+    ) {
       throw new CoolCommException(message);
     }
   }
 
-  private async isHr(perms: string[]) {
-    const cached = this.currentCtx?.hiringIsHr;
-    if (typeof cached === 'boolean') {
-      return cached;
-    }
-
-    let isHr =
-      this.currentAdmin?.isAdmin === true ||
-      this.currentAdmin?.username === 'admin' ||
-      this.hasPerm(perms, this.perms.hrScope) ||
-      this.hasPerm(perms, this.perms.hrAll);
-
-    if (!isHr) {
-      const roleIds = Array.from(
-        new Set(
-          (Array.isArray(this.currentAdmin?.roleIds) ? this.currentAdmin.roleIds : [])
-            .map(item => Number(item))
-            .filter(item => Number.isInteger(item) && item > 0)
-        )
-      );
-
-      if (roleIds.length && this.baseSysRoleEntity?.findBy) {
-        const roles = await this.baseSysRoleEntity.findBy({
-          id: In(roleIds),
-        });
-        isHr = roles.some(role => this.isHrRole(role));
-      }
-    }
-
-    if (this.currentCtx) {
-      this.currentCtx.hiringIsHr = isHr;
-    }
-
-    return isHr;
-  }
-
-  private isHrRole(role: BaseSysRoleEntity) {
-    const raw = `${role?.name || ''} ${role?.label || ''}`.trim();
-    if (!raw) {
-      return false;
-    }
-
-    const normalized = raw.toLowerCase();
-    return HR_ROLE_HINTS.some(keyword => normalized.includes(keyword.toLowerCase()));
-  }
-
-  private async departmentScopeIds(perms: string[]) {
-    if (await this.isHr(perms)) {
+  private async departmentScopeIds(
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
+  ) {
+    if (
+      this.performanceAccessContextService.hasCapabilityInScopes(
+        access,
+        capabilityKey,
+        ['company']
+      )
+    ) {
       return null;
     }
 
-    const userId = Number(this.currentAdmin?.userId || 0);
-    if (!userId) {
-      throw new CoolCommException('登录上下文缺失');
-    }
-
-    const ids = await this.baseSysPermsService.departmentIds(userId);
+    const ids = access.departmentIds;
     return Array.from(
       new Set(
         (Array.isArray(ids) ? ids : [])
@@ -663,29 +776,196 @@ export class PerformanceHiringService extends BaseService {
 
   private async assertHiringInScope(
     hiring: PerformanceHiringEntity,
-    perms: string[],
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey,
     message: string
   ) {
-    if (await this.isHr(perms)) {
-      return;
-    }
-
-    const departmentIds = await this.departmentScopeIds(perms);
     const targetDepartmentId = Number(hiring.targetDepartmentId || 0);
 
-    if (!targetDepartmentId || !departmentIds?.includes(targetDepartmentId)) {
+    if (
+      !targetDepartmentId ||
+      !this.performanceAccessContextService.matchesScope(
+        access,
+        this.performanceAccessContextService.capabilityScopes(access, capabilityKey),
+        {
+          departmentId: targetDepartmentId,
+        }
+      )
+    ) {
       throw new CoolCommException(message);
     }
   }
 
-  private async assertCanManageDepartment(targetDepartmentId: number, perms: string[]) {
-    if (await this.isHr(perms)) {
-      return;
-    }
-
-    const departmentIds = await this.departmentScopeIds(perms);
-    if (!departmentIds?.includes(targetDepartmentId)) {
+  private async assertCanManageDepartment(
+    targetDepartmentId: number,
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
+  ) {
+    if (
+      !this.performanceAccessContextService.matchesScope(
+        access,
+        this.performanceAccessContextService.capabilityScopes(access, capabilityKey),
+        {
+          departmentId: targetDepartmentId,
+        }
+      )
+    ) {
       throw new CoolCommException('无权操作该录用单');
     }
+  }
+
+  private normalizeNullableNumber(value: any) {
+    if (value === undefined || value === null || value === '') {
+      return null;
+    }
+
+    const parsed = Number(value);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+  }
+
+  private resolveDerivedSourceType(
+    interviewId: number | null,
+    resumePoolId: number | null
+  ): HiringSourceType | null {
+    if (interviewId) {
+      return 'interview';
+    }
+
+    if (resumePoolId) {
+      return 'resumePool';
+    }
+
+    return null;
+  }
+
+  private normalizeInterviewSnapshot(value: any) {
+    const snapshot = normalizeJsonObject(value);
+    if (!snapshot) {
+      return null;
+    }
+
+    return {
+      id: this.normalizeNullableNumber(snapshot.id),
+      candidateName: snapshot.candidateName || '',
+      position: snapshot.position || '',
+      departmentId: this.normalizeNullableNumber(snapshot.departmentId),
+      interviewDate: snapshot.interviewDate || null,
+      interviewType: snapshot.interviewType || null,
+      interviewerId: this.normalizeNullableNumber(snapshot.interviewerId),
+      interviewerName: snapshot.interviewerName || null,
+      score: snapshot.score == null ? null : Number(snapshot.score),
+      status: snapshot.status || null,
+      resumePoolId: this.normalizeNullableNumber(snapshot.resumePoolId),
+      recruitPlanId: this.normalizeNullableNumber(snapshot.recruitPlanId),
+    };
+  }
+
+  private normalizeResumePoolSnapshot(value: any) {
+    const snapshot = normalizeJsonObject(value);
+    if (!snapshot) {
+      return null;
+    }
+
+    return {
+      id: this.normalizeNullableNumber(snapshot.id),
+      candidateName: snapshot.candidateName || '',
+      targetDepartmentId: this.normalizeNullableNumber(snapshot.targetDepartmentId),
+      targetDepartmentName: snapshot.targetDepartmentName || null,
+      targetPosition: snapshot.targetPosition || null,
+      status: snapshot.status || null,
+      recruitPlanId: this.normalizeNullableNumber(snapshot.recruitPlanId),
+      jobStandardId: this.normalizeNullableNumber(snapshot.jobStandardId),
+    };
+  }
+
+  private normalizeRecruitPlanSnapshot(value: any) {
+    const snapshot = normalizeJsonObject(value);
+    if (!snapshot) {
+      return null;
+    }
+
+    return {
+      id: this.normalizeNullableNumber(snapshot.id),
+      title: snapshot.title || '',
+      positionName: snapshot.positionName || null,
+      targetDepartmentId: this.normalizeNullableNumber(snapshot.targetDepartmentId),
+      targetDepartmentName: snapshot.targetDepartmentName || null,
+      headcount: this.normalizeNullableNumber(snapshot.headcount),
+      startDate: snapshot.startDate || null,
+      endDate: snapshot.endDate || null,
+      status: snapshot.status || null,
+      jobStandardId: this.normalizeNullableNumber(snapshot.jobStandardId),
+    };
+  }
+
+  private async buildInterviewSnapshot(interview: PerformanceInterviewEntity | null) {
+    if (!interview) {
+      return null;
+    }
+
+    const interviewer = interview.interviewerId
+      ? await this.baseSysUserEntity.findOneBy({
+          id: Number(interview.interviewerId),
+        })
+      : null;
+
+    return {
+      id: Number(interview.id),
+      candidateName: interview.candidateName || '',
+      position: interview.position || '',
+      departmentId: this.normalizeNullableNumber(interview.departmentId),
+      interviewDate: interview.interviewDate || null,
+      interviewType: interview.interviewType || null,
+      interviewerId: this.normalizeNullableNumber(interview.interviewerId),
+      interviewerName: interviewer?.name || null,
+      score: interview.score == null ? null : Number(interview.score),
+      status: interview.status || null,
+      resumePoolId: this.normalizeNullableNumber(interview.resumePoolId),
+      recruitPlanId: this.normalizeNullableNumber(interview.recruitPlanId),
+    };
+  }
+
+  private async buildResumePoolSnapshot(resume: PerformanceResumePoolEntity | null) {
+    if (!resume) {
+      return null;
+    }
+
+    const department = await this.baseSysDepartmentEntity.findOneBy({
+      id: Number(resume.targetDepartmentId),
+    });
+
+    return {
+      id: Number(resume.id),
+      candidateName: resume.candidateName || '',
+      targetDepartmentId: Number(resume.targetDepartmentId || 0),
+      targetDepartmentName: department?.name || null,
+      targetPosition: resume.targetPosition || null,
+      status: resume.status || 'new',
+      recruitPlanId: this.normalizeNullableNumber(resume.recruitPlanId),
+      jobStandardId: this.normalizeNullableNumber(resume.jobStandardId),
+    };
+  }
+
+  private async buildRecruitPlanSnapshot(recruitPlan: PerformanceRecruitPlanEntity | null) {
+    if (!recruitPlan) {
+      return null;
+    }
+
+    const department = await this.baseSysDepartmentEntity.findOneBy({
+      id: Number(recruitPlan.targetDepartmentId),
+    });
+
+    return {
+      id: Number(recruitPlan.id),
+      title: recruitPlan.title || '',
+      positionName: recruitPlan.positionName || null,
+      targetDepartmentId: Number(recruitPlan.targetDepartmentId || 0),
+      targetDepartmentName: department?.name || null,
+      headcount: this.normalizeNullableNumber(recruitPlan.headcount),
+      startDate: recruitPlan.startDate || null,
+      endDate: recruitPlan.endDate || null,
+      status: recruitPlan.status || null,
+      jobStandardId: this.normalizeNullableNumber(recruitPlan.jobStandardId),
+    };
   }
 }

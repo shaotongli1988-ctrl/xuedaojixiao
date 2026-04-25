@@ -3,28 +3,42 @@
  * 这里负责建议触发、状态流转和撤销审计校验，不处理数据库、权限上下文或正式单据创建。
  */
 import { CoolCommException } from '@cool-midway/core';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  SUGGESTION_REVOKE_REASON_CODE_VALUES,
+  SUGGESTION_STATUS_VALUES,
+  SUGGESTION_TYPE_VALUES,
+} from './suggestion-dict';
 
-export type SuggestionType = 'pip' | 'promotion';
-export type SuggestionStatus =
-  | 'pending'
-  | 'accepted'
-  | 'ignored'
-  | 'rejected'
-  | 'revoked';
+export type SuggestionType = (typeof SUGGESTION_TYPE_VALUES)[number];
+export type SuggestionStatus = (typeof SUGGESTION_STATUS_VALUES)[number];
 export type SuggestionAction = 'accept' | 'ignore' | 'reject' | 'revoke';
+const [SUGGESTION_TYPE_PIP, SUGGESTION_TYPE_PROMOTION] = SUGGESTION_TYPE_VALUES;
+const [SUGGESTION_PENDING_STATUS, SUGGESTION_ACCEPTED_STATUS] =
+  SUGGESTION_STATUS_VALUES;
 export const SUGGESTION_ACTIVE_STATUSES: SuggestionStatus[] = [
-  'pending',
-  'accepted',
+  SUGGESTION_PENDING_STATUS,
+  SUGGESTION_ACCEPTED_STATUS,
 ];
 
 export const SUGGESTION_RULE_VERSION = 'suggestion-rule-v1';
 
-const REVOKE_REASON_CODES = [
-  'thresholdError',
-  'assessmentCorrected',
-  'scopeError',
-  'duplicateSuggestion',
-] as const;
+const REVOKE_REASON_CODES = SUGGESTION_REVOKE_REASON_CODE_VALUES;
+const PERFORMANCE_STATE_ACTION_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateActionNotAllowed
+  );
+const PERFORMANCE_SUGGESTION_ACTION_UNSUPPORTED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.suggestionActionUnsupported
+  );
+const PERFORMANCE_SUGGESTION_REVOKE_HR_ONLY_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.suggestionRevokeHrOnly
+  );
 
 export type RevokeReasonCode = (typeof REVOKE_REASON_CODES)[number];
 
@@ -67,7 +81,7 @@ export function deriveSuggestionCandidate(
 
   if (grade === 'C' && score !== null && score < 70) {
     return {
-      suggestionType: 'pip',
+      suggestionType: SUGGESTION_TYPE_PIP,
       triggerLabel: '命中 PIP 建议规则',
       triggerGrade: grade,
       triggerScore: score,
@@ -76,7 +90,7 @@ export function deriveSuggestionCandidate(
 
   if ((grade === 'S' || grade === 'A') && score !== null && score >= 80) {
     return {
-      suggestionType: 'promotion',
+      suggestionType: SUGGESTION_TYPE_PROMOTION,
       triggerLabel: '命中晋升建议规则',
       triggerGrade: grade,
       triggerScore: score,
@@ -101,20 +115,25 @@ export function assertSuggestionTransition(
     case 'accept':
     case 'ignore':
     case 'reject':
-      if (currentStatus !== 'pending') {
-        throw new CoolCommException('当前状态不允许执行该操作');
+      if (currentStatus !== SUGGESTION_PENDING_STATUS) {
+        throw new CoolCommException(PERFORMANCE_STATE_ACTION_NOT_ALLOWED_MESSAGE);
       }
       return;
     case 'revoke':
       if (!isHr) {
-        throw new CoolCommException('只有 HR 可以撤销建议');
+        throw new CoolCommException(PERFORMANCE_SUGGESTION_REVOKE_HR_ONLY_MESSAGE);
       }
-      if (currentStatus !== 'pending' && currentStatus !== 'accepted') {
-        throw new CoolCommException('当前状态不允许执行该操作');
+      if (
+        currentStatus !== SUGGESTION_PENDING_STATUS &&
+        currentStatus !== SUGGESTION_ACCEPTED_STATUS
+      ) {
+        throw new CoolCommException(PERFORMANCE_STATE_ACTION_NOT_ALLOWED_MESSAGE);
       }
       return;
     default:
-      throw new CoolCommException('不支持的建议动作');
+      throw new CoolCommException(
+        PERFORMANCE_SUGGESTION_ACTION_UNSUPPORTED_MESSAGE
+      );
   }
 }
 
@@ -123,15 +142,17 @@ export function nextSuggestionStatus(
 ): SuggestionStatus {
   switch (action) {
     case 'accept':
-      return 'accepted';
+      return SUGGESTION_STATUS_VALUES[1];
     case 'ignore':
-      return 'ignored';
+      return SUGGESTION_STATUS_VALUES[2];
     case 'reject':
-      return 'rejected';
+      return SUGGESTION_STATUS_VALUES[3];
     case 'revoke':
-      return 'revoked';
+      return SUGGESTION_STATUS_VALUES[4];
     default:
-      throw new CoolCommException('不支持的建议动作');
+      throw new CoolCommException(
+        PERFORMANCE_SUGGESTION_ACTION_UNSUPPORTED_MESSAGE
+      );
   }
 }
 

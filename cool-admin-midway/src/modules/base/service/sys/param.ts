@@ -78,7 +78,7 @@ export class BaseSysParamService extends BaseService {
     try {
       info.data = JSON.parse(info.data.replace(/{/g, '[').replace(/}/g, ']'));
     } catch (error) {
-      info.data = info.data;
+      // Keep the original raw value when legacy payloads are not JSON-parsable.
     }
     return info;
   }

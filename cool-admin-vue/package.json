@@ -8,6 +8,9 @@
 		"build-static": "vite build --mode static",
 		"build-demo": "vite build --mode demo",
 		"preview": "vite preview",
+		"permissions:generate": "node ../scripts/generate-permissions.mjs",
+		"permissions:check": "node ../scripts/check-permissions.mjs",
+		"test:gui:material": "node ./test/material-gui-smoke.mjs",
 		"type-check": "vue-tsc --build --force",
 		"lint": "eslint . --fix",
 		"format": "prettier --write src/"

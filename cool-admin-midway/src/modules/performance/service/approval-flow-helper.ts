@@ -1,22 +1,26 @@
 /**
  * 自动审批流辅助规则。
  * 这里负责主题 5 冻结后的对象白名单、状态集合、配置校验和源业务对象回写口径，不负责数据库访问或权限查询。
- * 维护重点是 assessment / promotion 两对象的审批语义必须唯一，不能扩到其他绩效对象。
+ * 维护重点是已冻结对象的审批语义必须唯一，不能把对象状态错误映射到共享审批实例。
  */
 import { CoolCommException } from '@cool-midway/core';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import {
+  APPROVAL_FLOW_ACTIONS,
+  APPROVAL_FLOW_ALLOWED_ACTIONS_BY_STATUS,
+  APPROVAL_FLOW_INSTANCE_STATUSES,
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain';
 
-export const APPROVAL_OBJECT_TYPES = ['assessment', 'promotion'] as const;
+export const APPROVAL_OBJECT_TYPES = [
+  'assessment',
+  'promotion',
+  'assetAssignmentRequest',
+] as const;
 export type ApprovalObjectType = (typeof APPROVAL_OBJECT_TYPES)[number];
 
-export const APPROVAL_INSTANCE_STATUSES = [
-  'pending_resolution',
-  'in_review',
-  'manual_pending',
-  'approved',
-  'rejected',
-  'withdrawn',
-  'terminated',
-] as const;
+export const APPROVAL_INSTANCE_STATUSES = APPROVAL_FLOW_INSTANCE_STATUSES;
 export type ApprovalInstanceStatus =
   (typeof APPROVAL_INSTANCE_STATUSES)[number];
 
@@ -51,30 +55,24 @@ export const APPROVAL_ACTIVE_STATUSES: ApprovalInstanceStatus[] = [
   'in_review',
   'manual_pending',
 ];
+const PERFORMANCE_NUMERIC_FIELD_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.numericFieldInvalid
+  );
 
-export type ApprovalAction =
-  | 'launch'
-  | 'approve'
-  | 'reject'
-  | 'transfer'
-  | 'withdraw'
-  | 'remind'
-  | 'resolve'
-  | 'fallback'
-  | 'terminate'
-  | 'timeout';
+export type ApprovalAction = (typeof APPROVAL_FLOW_ACTIONS)[number];
 
 export const allowedTransitionsByStatus: Record<
   ApprovalInstanceStatus,
   ApprovalAction[]
 > = {
-  pending_resolution: ['withdraw', 'remind', 'resolve', 'fallback', 'terminate'],
-  in_review: ['approve', 'reject', 'transfer', 'withdraw', 'remind', 'terminate'],
-  manual_pending: ['remind', 'resolve', 'fallback', 'terminate'],
-  approved: [],
-  rejected: [],
-  withdrawn: [],
-  terminated: [],
+  pending_resolution: [...APPROVAL_FLOW_ALLOWED_ACTIONS_BY_STATUS.pending_resolution],
+  in_review: [...APPROVAL_FLOW_ALLOWED_ACTIONS_BY_STATUS.in_review],
+  manual_pending: [...APPROVAL_FLOW_ALLOWED_ACTIONS_BY_STATUS.manual_pending],
+  approved: [...APPROVAL_FLOW_ALLOWED_ACTIONS_BY_STATUS.approved],
+  rejected: [...APPROVAL_FLOW_ALLOWED_ACTIONS_BY_STATUS.rejected],
+  withdrawn: [...APPROVAL_FLOW_ALLOWED_ACTIONS_BY_STATUS.withdrawn],
+  terminated: [...APPROVAL_FLOW_ALLOWED_ACTIONS_BY_STATUS.terminated],
 };
 
 export function isApprovalObjectType(value: string): value is ApprovalObjectType {
@@ -85,7 +83,11 @@ export function normalizeApprovalObjectType(value: any): ApprovalObjectType {
   const objectType = String(value || '').trim() as ApprovalObjectType;
 
   if (!isApprovalObjectType(objectType)) {
-    throw new CoolCommException('审批对象不合法');
+    throw new CoolCommException(
+      resolvePerformanceDomainErrorMessage(
+        PERFORMANCE_DOMAIN_ERROR_CODES.approvalObjectInvalid
+      )
+    );
   }
 
   return objectType;
@@ -133,7 +135,7 @@ export function normalizeOptionalNumber(value: any) {
   const parsed = Number(value);
 
   if (!Number.isFinite(parsed) || parsed <= 0) {
-    throw new CoolCommException('数字字段不合法');
+    throw new CoolCommException(PERFORMANCE_NUMERIC_FIELD_INVALID_MESSAGE);
   }
 
   return parsed;
@@ -234,11 +236,19 @@ export function ensureApprovalConfigNodes(nodes: any[]) {
 }
 
 export function getApprovalSourceStatus(objectType: ApprovalObjectType) {
-  return objectType === 'assessment' ? 'submitted' : 'reviewing';
+  if (objectType === 'assessment') {
+    return 'submitted';
+  }
+  if (objectType === 'promotion') {
+    return 'reviewing';
+  }
+  return 'inApproval';
 }
 
 export function getApprovalSourceApprovedStatus(objectType: ApprovalObjectType) {
-  return 'approved';
+  return objectType === 'assetAssignmentRequest'
+    ? 'approvedPendingAssignment'
+    : 'approved';
 }
 
 export function getApprovalSourceRejectedStatus(objectType: ApprovalObjectType) {
@@ -248,17 +258,21 @@ export function getApprovalSourceRejectedStatus(objectType: ApprovalObjectType) 
 export function getApprovalSourceWithdrawnStatus(
   objectType: ApprovalObjectType
 ) {
-  return 'draft';
+  return objectType === 'assetAssignmentRequest' ? 'withdrawn' : 'draft';
 }
 
 export function getManualReviewPerm(objectType: ApprovalObjectType) {
-  return objectType === 'assessment'
-    ? 'performance:assessment:approve'
-    : 'performance:promotion:review';
+  if (objectType === 'assessment') {
+    return PERMISSIONS.performance.assessment.approve;
+  }
+  if (objectType === 'promotion') {
+    return PERMISSIONS.performance.promotion.review;
+  }
+  return PERMISSIONS.performance.approvalFlow.approve;
 }
 
 export function getApprovalSourceDraftStatus(objectType: ApprovalObjectType) {
-  return objectType === 'assessment' ? 'draft' : 'draft';
+  return objectType === 'assetAssignmentRequest' ? 'withdrawn' : 'draft';
 }
 
 export function canWithdrawInstance(
@@ -284,7 +298,11 @@ export function canWithdrawInstance(
 
 export function assertApprovalActiveStatus(status: string) {
   if (!APPROVAL_ACTIVE_STATUSES.includes(status as ApprovalInstanceStatus)) {
-    throw new CoolCommException('当前审批实例已结束');
+    throw new CoolCommException(
+      resolvePerformanceDomainErrorMessage(
+        PERFORMANCE_DOMAIN_ERROR_CODES.approvalInstanceEnded
+      )
+    );
   }
 }
 
@@ -292,18 +310,12 @@ export function assertApprovalInstanceAction(
   status: ApprovalInstanceStatus,
   action: ApprovalAction
 ) {
-  const allowedActions: Record<ApprovalInstanceStatus, ApprovalAction[]> = {
-    pending_resolution: ['resolve', 'withdraw', 'fallback', 'terminate', 'remind'],
-    in_review: ['approve', 'reject', 'transfer', 'withdraw', 'terminate', 'timeout', 'remind'],
-    manual_pending: ['resolve', 'fallback', 'terminate', 'remind'],
-    approved: [],
-    rejected: [],
-    withdrawn: [],
-    terminated: [],
-  };
-
-  if (!allowedActions[status].includes(action)) {
-    throw new CoolCommException('当前状态不允许执行该操作');
+  if (!allowedTransitionsByStatus[status].includes(action)) {
+    throw new CoolCommException(
+      resolvePerformanceDomainErrorMessage(
+        PERFORMANCE_DOMAIN_ERROR_CODES.approvalInvalidTransition
+      )
+    );
   }
 }
 
@@ -321,6 +333,10 @@ export function assertApprovalInstanceTransition(
   action: ApprovalAction
 ) {
   if (!canTransitionApprovalInstance(status, action)) {
-    throw new CoolCommException('当前状态不允许执行该操作');
+    throw new CoolCommException(
+      resolvePerformanceDomainErrorMessage(
+        PERFORMANCE_DOMAIN_ERROR_CODES.approvalInvalidTransition
+      )
+    );
   }
 }

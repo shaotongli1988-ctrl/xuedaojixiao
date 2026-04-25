@@ -1,7 +1,7 @@
 {
   "contractVersion": "v1",
-  "contractId": "dr-2026-04-18-141653",
-  "generatedAt": "2026-04-18T14:16:53+08:00",
+  "contractId": "dr-2026-04-18-205506",
+  "generatedAt": "2026-04-18T20:55:06+08:00",
   "generatedBy": "software-development-readiness-governance",
   "phase": "development-readiness",
   "mode": "global",
@@ -16,7 +16,7 @@
     "frontendDependencies": []
   },
   "scope": {
-    "businessGoal": "二期主题11 采购与供应商管理 进入实际开发前收口",
+    "businessGoal": "二期主题13 人才发展与认证增强 开发前评审架构方案：基于阶段0冻结与最小契约快照核对开发准入材料",
     "inScopeModules": [
       "user"
     ],
@@ -25,7 +25,7 @@
       "docs"
     ],
     "actors": [],
-    "changedFilesCount": 64
+    "changedFilesCount": 15
   },
   "contracts": {
     "fieldDictionary": {
@@ -69,9 +69,9 @@
     "questionBankModules": []
   },
   "governance": {
-    "readinessStatus": "不建议进入开发",
-    "action": "BLOCK_BEFORE_CODING",
-    "reason": "存在 P0 高风险缺口，当前不满足安全开工条件。",
+    "readinessStatus": "可进入开发",
+    "action": "READY_TO_START",
+    "reason": "未发现阻断进入开发的高风险问题。",
     "subguards": [
       {
         "name": "requirements-freeze-guard",
@@ -102,7 +102,7 @@
         "level": "P0",
         "implemented": true,
         "status": "ran",
-        "returncode": 1,
+        "returncode": 0,
         "scriptPath": "/Users/shaotongli/.codex/skills/api-schema-drift-checker/scripts/schema_drift_guard.py"
       },
       {

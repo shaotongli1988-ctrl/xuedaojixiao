@@ -4,47 +4,73 @@
  * 维护重点是接口前缀、权限键和动作集合必须固定为 page/info/add/updateStatus/close。
  */
 import { BaseService } from '/@/cool';
-import type { HiringPageResult, HiringRecord, HiringStatus } from '../types';
+import { asPerformanceServicePromise } from './service-contract';
+import { decodeHiringPageResult, decodeHiringTransportRecord } from './hiring-contract';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import type {
+	HiringCloseRequest,
+	HiringInfoQuery,
+	HiringPageQuery,
+	HiringSaveRequest,
+	HiringStatusUpdateRequest,
+	HiringPageResult,
+	HiringTransportRecord
+} from '../types';
 
 export default class PerformanceHiringService extends BaseService {
 	permission = {
-		page: 'performance:hiring:page',
-		info: 'performance:hiring:info',
-		add: 'performance:hiring:add',
-		updateStatus: 'performance:hiring:updateStatus',
-		close: 'performance:hiring:close'
+		page: PERMISSIONS.performance.hiring.page,
+		info: PERMISSIONS.performance.hiring.info,
+		add: PERMISSIONS.performance.hiring.add,
+		updateStatus: PERMISSIONS.performance.hiring.updateStatus,
+		close: PERMISSIONS.performance.hiring.close
 	};
 
 	constructor() {
 		super('admin/performance/hiring');
 	}
 
-	fetchPage(data: any) {
-		return super.page(data) as unknown as Promise<HiringPageResult>;
+	fetchPage(data: HiringPageQuery) {
+		return asPerformanceServicePromise<HiringPageResult>(
+			super.page(data),
+			decodeHiringPageResult
+		);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<HiringRecord>;
+	fetchInfo(params: HiringInfoQuery) {
+		return asPerformanceServicePromise<HiringTransportRecord>(
+			super.info(params),
+			decodeHiringTransportRecord
+		);
 	}
 
-	createHiring(data: Partial<HiringRecord>) {
-		return super.add(data) as unknown as Promise<HiringRecord>;
+	createHiring(data: HiringSaveRequest) {
+		return asPerformanceServicePromise<HiringTransportRecord>(
+			super.add(data),
+			decodeHiringTransportRecord
+		);
 	}
 
-	updateStatus(data: { id: number; status: HiringStatus }) {
-		return this.request({
-			url: '/updateStatus',
-			method: 'POST',
-			data
-		}) as unknown as Promise<HiringRecord>;
+	updateStatus(data: HiringStatusUpdateRequest) {
+		return asPerformanceServicePromise<HiringTransportRecord>(
+			this.request({
+				url: '/updateStatus',
+				method: 'POST',
+				data
+			}),
+			decodeHiringTransportRecord
+		);
 	}
 
-	close(data: { id: number; closeReason: string }) {
-		return this.request({
-			url: '/close',
-			method: 'POST',
-			data
-		}) as unknown as Promise<HiringRecord>;
+	close(data: HiringCloseRequest) {
+		return asPerformanceServicePromise<HiringTransportRecord>(
+			this.request({
+				url: '/close',
+				method: 'POST',
+				data
+			}),
+			decodeHiringTransportRecord
+		);
 	}
 }
 

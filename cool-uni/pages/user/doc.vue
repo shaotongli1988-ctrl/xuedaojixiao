@@ -24,7 +24,7 @@ onReady(() => {
 		.param({
 			key,
 		})
-		.then((res) => {
+		.then((res: string) => {
 			content.value = res;
 		});
 });
