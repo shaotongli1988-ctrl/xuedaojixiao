@@ -8,6 +8,7 @@
 import {
   PERFORMANCE_BUSINESS_DICT_BY_KEY,
 } from '../../../performance/domain/dicts/catalog';
+import { getApprovalFlowBusinessDictGroups } from '../../../performance/service/approval-flow-dict';
 import {
   getAssessmentBusinessDictGroups,
 } from '../../../performance/service/assessment-dict';
@@ -16,6 +17,7 @@ import { getCertificateBusinessDictGroups } from '../../../performance/service/c
 import { getContractBusinessDictGroups } from '../../../performance/service/contract-dict';
 import { getCourseBusinessDictGroups } from '../../../performance/service/course-dict';
 import { getCourseLearningBusinessDictGroups } from '../../../performance/service/course-learning-dict';
+import { getDashboardBusinessDictGroups } from '../../../performance/service/dashboard-dict';
 import { getDocumentCenterBusinessDictGroups } from '../../../performance/service/document-center-dict';
 import { getFeedbackBusinessDictGroups } from '../../../performance/service/feedback-dict';
 import { getGoalBusinessDictGroups } from '../../../performance/service/goal-dict';
@@ -38,6 +40,7 @@ import { getSuggestionBusinessDictGroups } from '../../../performance/service/su
 import { getSupplierBusinessDictGroups } from '../../../performance/service/supplier-dict';
 import { getTalentAssetBusinessDictGroups } from '../../../performance/service/talent-asset-dict';
 import { getTeacherChannelBusinessDictGroups } from '../../../performance/service/teacher-channel-dict';
+import { getWorkbenchBusinessDictGroups } from '../../../performance/service/workbench-dict';
 import { getWorkPlanBusinessDictGroups } from '../../../performance/service/work-plan-dict';
 
 export interface DictBusinessDictProviderDefinition {
@@ -54,6 +57,12 @@ export interface DictBusinessDictCatalog {
 }
 
 export const DICT_BUSINESS_DICT_PROVIDERS = [
+  {
+    key: 'performance.approval_flow',
+    owner: 'performance.approval_flow',
+    sourcePaths: ['src/modules/performance/service/approval-flow-dict.ts'],
+    getGroups: getApprovalFlowBusinessDictGroups,
+  },
   {
     key: 'performance.assessment',
     owner: 'performance.assessment',
@@ -89,6 +98,12 @@ export const DICT_BUSINESS_DICT_PROVIDERS = [
     owner: 'performance.course_learning',
     sourcePaths: ['src/modules/performance/service/course-learning-dict.ts'],
     getGroups: getCourseLearningBusinessDictGroups,
+  },
+  {
+    key: 'performance.dashboard',
+    owner: 'performance.dashboard',
+    sourcePaths: ['src/modules/performance/service/dashboard-dict.ts'],
+    getGroups: getDashboardBusinessDictGroups,
   },
   {
     key: 'performance.document_center',
@@ -203,6 +218,12 @@ export const DICT_BUSINESS_DICT_PROVIDERS = [
     owner: 'performance.teacher_channel',
     sourcePaths: ['src/modules/performance/service/teacher-channel-dict.ts'],
     getGroups: getTeacherChannelBusinessDictGroups,
+  },
+  {
+    key: 'performance.workbench',
+    owner: 'performance.workbench',
+    sourcePaths: ['src/modules/performance/service/workbench-dict.ts'],
+    getGroups: getWorkbenchBusinessDictGroups,
   },
   {
     key: 'performance.work_plan',

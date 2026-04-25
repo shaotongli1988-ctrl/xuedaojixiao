@@ -8,6 +8,9 @@
 import { BASE_DOMAIN_REGISTRY } from '../modules/base/domain';
 import { DICT_DOMAIN_REGISTRY } from '../modules/dict/domain';
 import { PERFORMANCE_DOMAIN_REGISTRY } from '../modules/performance/domain';
+import { PLUGIN_DOMAIN_REGISTRY } from '../modules/plugin/domain';
+import { SPACE_DOMAIN_REGISTRY } from '../modules/space/domain';
+import { TASK_DOMAIN_REGISTRY } from '../modules/task/domain';
 import { USER_DOMAIN_REGISTRY } from '../modules/user/domain';
 
 import type {
@@ -262,13 +265,13 @@ export const GLOBAL_SSOT_MODULES: Readonly<
   plugin: {
     key: 'plugin',
     category: 'platform',
-    status: 'planned',
-    summary: '插件模块当前以运行时配置和装配逻辑为主，尚未建立模块级 SSOT 骨架。',
+    status: 'partial',
+    summary: '插件模块已补齐最小 domain registry 入口，但权限、接口和错误目录仍未进入统一主链。',
     surfaces: [
       {
         key: 'domain_registry',
-        status: 'missing',
-        currentSourcePaths: [],
+        status: 'implemented',
+        currentSourcePaths: ['src/modules/plugin/domain/registry/index.ts'],
         targetSourcePath: 'src/modules/plugin/domain/registry/index.ts',
       },
       {
@@ -302,7 +305,8 @@ export const GLOBAL_SSOT_MODULES: Readonly<
         currentSourcePaths: [],
       },
     ],
-    nextMilestone: '先识别插件可配置事实与权限边界，再决定是否需要独立 registry。',
+    nextMilestone: '继续补插件权限、接口和错误语义事实源，避免 registry 只停留在骨架层。',
+    runtimeRegistry: PLUGIN_DOMAIN_REGISTRY,
   },
   recycle: {
     key: 'recycle',
@@ -351,13 +355,13 @@ export const GLOBAL_SSOT_MODULES: Readonly<
   space: {
     key: 'space',
     category: 'platform',
-    status: 'planned',
-    summary: '文件与空间模块尚未整理其配置、权限和接口事实源。',
+    status: 'partial',
+    summary: '文件与空间模块已补齐最小 domain registry 入口，但权限、错误和接口契约仍待继续收口。',
     surfaces: [
       {
         key: 'domain_registry',
-        status: 'missing',
-        currentSourcePaths: [],
+        status: 'implemented',
+        currentSourcePaths: ['src/modules/space/domain/registry/index.ts'],
         targetSourcePath: 'src/modules/space/domain/registry/index.ts',
       },
       {
@@ -391,7 +395,8 @@ export const GLOBAL_SSOT_MODULES: Readonly<
         currentSourcePaths: ['../cool-admin-vue/src/modules/space'],
       },
     ],
-    nextMilestone: '确认 space 模块的权限、错误和接口契约是否需要独立治理。',
+    nextMilestone: '继续补齐 space 模块的权限、错误和接口契约事实源。',
+    runtimeRegistry: SPACE_DOMAIN_REGISTRY,
   },
   swagger: {
     key: 'swagger',
@@ -441,13 +446,13 @@ export const GLOBAL_SSOT_MODULES: Readonly<
   task: {
     key: 'task',
     category: 'platform',
-    status: 'planned',
-    summary: '任务模块当前偏运行时调度，尚未建立结构化事实表。',
+    status: 'partial',
+    summary: '任务模块已补齐最小 domain registry 入口，但权限、错误和接口事实仍主要散落在运行时层。',
     surfaces: [
       {
         key: 'domain_registry',
-        status: 'missing',
-        currentSourcePaths: [],
+        status: 'implemented',
+        currentSourcePaths: ['src/modules/task/domain/registry/index.ts'],
         targetSourcePath: 'src/modules/task/domain/registry/index.ts',
       },
       {
@@ -481,7 +486,8 @@ export const GLOBAL_SSOT_MODULES: Readonly<
         currentSourcePaths: [],
       },
     ],
-    nextMilestone: '先确定 task 模块是否需要业务域契约治理，而不只是运行时装配。',
+    nextMilestone: '继续把 task 模块的权限、错误与接口边界从运行时装配层收口出来。',
+    runtimeRegistry: TASK_DOMAIN_REGISTRY,
   },
   user: {
     key: 'user',

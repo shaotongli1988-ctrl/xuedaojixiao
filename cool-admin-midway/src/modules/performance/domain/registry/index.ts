@@ -49,14 +49,48 @@ import {
   type PerformanceWorkbenchPageId,
 } from '../roles/catalog';
 import { APPROVAL_FLOW_STATE_MACHINE } from '../states/approval-flow';
+import { ASSET_ASSIGNMENT_REQUEST_STATE_MACHINE } from '../states/asset-assignment-request';
+import { ASSET_DISPOSAL_STATE_MACHINE } from '../states/asset-disposal';
+import { ASSET_INVENTORY_STATE_MACHINE } from '../states/asset-inventory';
+import { ASSET_MAINTENANCE_STATE_MACHINE } from '../states/asset-maintenance';
+import { ASSET_PROCUREMENT_STATE_MACHINE } from '../states/asset-procurement';
+import { ASSET_TRANSFER_STATE_MACHINE } from '../states/asset-transfer';
 import { ASSESSMENT_STATE_MACHINE } from '../states/assessment';
+import { FEEDBACK_STATE_MACHINE } from '../states/feedback';
+import { GOAL_STATE_MACHINE } from '../states/goal';
+import { JOB_STANDARD_STATE_MACHINE } from '../states/job-standard';
+import { PIP_STATE_MACHINE } from '../states/pip';
+import { PROMOTION_STATE_MACHINE } from '../states/promotion';
+import { PURCHASE_ORDER_STATE_MACHINE } from '../states/purchase-order';
+import { SALARY_STATE_MACHINE } from '../states/salary';
+import { SUGGESTION_STATE_MACHINE } from '../states/suggestion';
+import { TEACHER_CLASS_STATE_MACHINE } from '../states/teacher-class';
+import { TEACHER_COOPERATION_STATE_MACHINE } from '../states/teacher-cooperation';
 import type { PerformanceStateMachineDefinition } from '../states/types';
+import { WORK_PLAN_STATE_MACHINE } from '../states/work-plan';
 
 export const PERFORMANCE_DOMAIN_REGISTRY_VERSION = 'phase1-v1';
 
 export const PERFORMANCE_STATE_MACHINES = [
+  ASSET_ASSIGNMENT_REQUEST_STATE_MACHINE,
+  ASSET_DISPOSAL_STATE_MACHINE,
+  ASSET_INVENTORY_STATE_MACHINE,
+  ASSET_MAINTENANCE_STATE_MACHINE,
+  ASSET_PROCUREMENT_STATE_MACHINE,
+  ASSET_TRANSFER_STATE_MACHINE,
   ASSESSMENT_STATE_MACHINE,
   APPROVAL_FLOW_STATE_MACHINE,
+  FEEDBACK_STATE_MACHINE,
+  GOAL_STATE_MACHINE,
+  JOB_STANDARD_STATE_MACHINE,
+  PIP_STATE_MACHINE,
+  PROMOTION_STATE_MACHINE,
+  PURCHASE_ORDER_STATE_MACHINE,
+  SALARY_STATE_MACHINE,
+  SUGGESTION_STATE_MACHINE,
+  TEACHER_CLASS_STATE_MACHINE,
+  TEACHER_COOPERATION_STATE_MACHINE,
+  WORK_PLAN_STATE_MACHINE,
 ] as const satisfies readonly PerformanceStateMachineDefinition[];
 
 export interface PerformanceDomainRegistry {
