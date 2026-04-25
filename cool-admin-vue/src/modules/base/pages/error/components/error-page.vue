@@ -70,10 +70,10 @@ function home() {
 </script>
 
 <style lang="scss" scoped>
+@use '../../../../../styles/patterns.auth-shell.scss' as authShell;
+
 .error-page {
-	background-color: #fff;
-	position: relative;
-	height: 100%;
+	@include authShell.auth-page-shell;
 
 	&__wrap {
 		display: flex;
@@ -86,16 +86,11 @@ function home() {
 	}
 
 	&__bg {
-		position: absolute;
-		height: 100%;
+		@include authShell.auth-illustration;
 		width: 50%;
-		pointer-events: none;
-		transform: rotate(180deg) scaleY(-1);
 
 		.cl-svg {
-			height: 100%;
-			width: 100%;
-			fill: #2c3142;
+			opacity: 0.92;
 		}
 
 		&.is-tl {
@@ -114,7 +109,7 @@ function home() {
 	&__code {
 		font-size: 120px;
 		font-weight: normal;
-		color: #6c757d;
+		color: var(--app-auth-error-text);
 		font-family: Consolas;
 		margin-top: -40px;
 		animation: dou 1s infinite linear;
@@ -124,7 +119,7 @@ function home() {
 	&__desc {
 		font-size: 16px;
 		font-weight: 400;
-		color: #6c757d;
+		color: var(--app-auth-error-text);
 		margin-top: 30px;
 	}
 

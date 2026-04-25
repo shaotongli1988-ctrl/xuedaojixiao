@@ -223,11 +223,7 @@ function goFlowStep(step: FlowStep) {
 	--flow-entry-accent-soft: var(--app-accent-brand-soft);
 	--flow-entry-accent-text: var(--app-accent-brand);
 	--flow-entry-step-bg: var(--app-surface-primary);
-	--flow-entry-step-active-bg: color-mix(
-		in srgb,
-		var(--app-accent-brand-soft) 56%,
-		var(--app-surface-card)
-	);
+	--flow-entry-step-active-bg: var(--app-surface-brand-emphasis);
 
 	@include flowEntry.flow-entry-page;
 }

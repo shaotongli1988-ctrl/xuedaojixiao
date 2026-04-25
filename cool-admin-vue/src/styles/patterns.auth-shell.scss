@@ -1,0 +1,23 @@
+/* 文件职责：提供登录页、错误页等认证场景的共享壳层与插画容器样式；不负责表单字段和按钮细节；维护重点是认证页只能消费共享 token，不再局部定义背景和插画色板。 */
+
+@mixin auth-page-shell {
+	position: relative;
+	min-height: 100%;
+	background: var(--app-auth-page-bg);
+	color: var(--app-auth-text-primary);
+}
+
+@mixin auth-illustration {
+	position: absolute;
+	top: 0;
+	height: 100%;
+	width: min(90%, 960px);
+	pointer-events: none;
+	transform: rotate(180deg) scaleY(-1);
+
+	.cl-svg {
+		height: 100%;
+		width: 100%;
+		fill: var(--app-auth-illustration-fill);
+	}
+}

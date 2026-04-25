@@ -507,7 +507,7 @@ onMounted(function () {
 
 :global(html.dark) {
 	.dept-tree {
-		--dept-tree-node-icon-bg: rgba(255, 255, 255, 0.08);
+		--dept-tree-node-icon-bg: var(--app-control-hover-bg);
 		--dept-tree-node-icon-color: var(--el-text-color-primary);
 	}
 }

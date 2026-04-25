@@ -11,12 +11,13 @@
 5. 运行 `node ./scripts/sync-performance-openapi-ssot.mjs --write` 会根据现有 `performance` controller/service/types 补齐仓库级 OpenAPI 主源。
 6. 运行 `node ./scripts/openapi-contract-sync.mjs --write` 会根据主源刷新 `performance` Vue/Uni 生成类型。
 7. 运行 `node ./scripts/sync-eps-openapi-ssot.mjs --write` 会根据主源刷新 `cool-admin-vue` 的 `eps.ssot.d.ts`，让非 `performance` 动态 EPS 消费也受主源驱动。
-8. 运行 `node ./scripts/check-xuedao-ssot-manifest.mjs` 会校验 `contracts/ssot/xuedao-ssot-manifest.yaml` 中声明的 OpenAPI、权限主源、状态机、业务字典、错误目录、环境变量 catalog、schema / migration catalog、菜单拓扑、脚本入口和报告目录是否真实存在。
+8. 运行 `node ./scripts/check-xuedao-ssot-manifest.mjs` 会校验 `contracts/ssot/xuedao-ssot-manifest.yaml` 中声明的 OpenAPI、权限主源、状态机、业务字典、错误目录、环境变量 catalog、schema / migration catalog、菜单拓扑、UI 设计系统主源、脚本入口和报告目录是否真实存在。
 9. 运行 `node ./scripts/check-xuedao-ssot-conformance.mjs` 会按仓库级 SSOT 标准检查当前 `xuedao` 是否具备主源、运行时绑定、文档同步、strict-change 级 change/verification record 和交付证据闭环。
 10. 运行 `node ./scripts/check-environment-config-ssot.mjs` 会校验受治理 runtime/config/automation roots 中的环境变量名是否全部登记到 `contracts/ssot/environment-config.catalog.json`。
 11. 运行 `node ./scripts/check-database-schema-ssot.mjs` 会校验 `contracts/ssot/database-schema.catalog.json` 是否完整覆盖 migration root、entity aggregator 和 schema bootstrap 入口。
 12. 运行 `node ./scripts/check-performance-contract-closure.mjs` 会校验 `performance` backend registry source 是否完整闭合 producer 覆盖、web/uni generated target、shared support adapter 和 uni wrapper 引用链。
 13. `check-xuedao-ssot-conformance.mjs` 默认会把检查结果写到 `reports/delivery/xuedao-ssot-conformance.latest.{md,json}`，供本地和 CI 留痕复用。
+14. 运行 `node ./scripts/check-ui-token-ssot.mjs` 会校验仓库级 UI 设计系统主源登记和样式统一入口；追加 `--file` 时会检查 scoped changed files 的 token 漂移，追加 `--all` 时会扫描 manifest 已登记的全部 UI consumer 范围。
 
 仓库级 SSOT 配套映射见：
 

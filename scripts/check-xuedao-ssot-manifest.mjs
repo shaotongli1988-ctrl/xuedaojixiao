@@ -104,6 +104,11 @@ function getRegisteredMachineSources(manifest) {
 			requiredSourceFields: ['sourceFile']
 		},
 		{
+			label: 'uiDesignSystem',
+			entry: manifest.sourceOfTruth?.uiDesignSystem,
+			requiredSourceFields: ['sourceFiles']
+		},
+		{
 			label: 'businessDictionaries',
 			entry: manifest.sourceOfTruth?.businessDictionaries,
 			requiredSourceFields: ['sourceFile']

@@ -209,7 +209,7 @@ async function checkService() {
 		height: 30px;
 		line-height: 30px;
 		font-size: 14px;
-		color: #fff;
+		color: var(--app-text-on-primary);
 		text-align: center;
 		margin-top: 15px;
 	}
@@ -228,10 +228,10 @@ async function checkService() {
 	height: 36px;
 	width: 36px;
 	border-radius: 8px;
-	color: #fff;
+	color: var(--app-text-on-primary);
 	transition: all 0.3s;
 	font-size: 15px;
-	border: 1px solid rgba(255, 255, 255, 0.2);
+	border: 1px solid var(--app-border-soft);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -239,8 +239,8 @@ async function checkService() {
 	box-sizing: border-box;
 
 	&:hover {
-		background-color: rgba(255, 255, 255, 0.1);
-		border-color: #000;
+		background-color: var(--app-overlay-mask-soft);
+		border-color: var(--app-border-hover);
 	}
 }
 </style>

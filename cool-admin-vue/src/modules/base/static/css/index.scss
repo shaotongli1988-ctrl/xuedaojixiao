@@ -19,7 +19,7 @@ button {
 
 input {
 	&:-webkit-autofill {
-		box-shadow: 0 0 0px 1000px white inset;
+		box-shadow: 0 0 0px 1000px var(--app-auth-input-bg) inset;
 	}
 }
 
@@ -37,22 +37,14 @@ input {
 }
 
 ::-webkit-scrollbar-thumb {
-	background-color: #0003;
+	background-color: var(--app-scrollbar-thumb);
 	border-radius: 10px;
 	transition: all 0.2s ease-in-out;
 }
 
 ::-webkit-scrollbar-thumb:hover {
 	cursor: pointer;
-	background-color: #0000004d;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-	background-color: #fff3;
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-	background-color: #fff6;
+	background-color: var(--app-scrollbar-thumb-hover);
 }
 
 // custom

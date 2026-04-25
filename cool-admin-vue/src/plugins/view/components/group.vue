@@ -537,10 +537,10 @@ defineExpose({
 			width: 40px;
 			border-radius: 100%;
 			background-color: var(--el-color-primary);
-			box-shadow: 0 0 10px 1px rgba(0, 0, 0, 0.3);
+			box-shadow: var(--app-shadow-hover);
 
 			.cl-svg {
-				color: #fff;
+				color: var(--app-text-on-primary);
 				font-size: 18px;
 			}
 		}
@@ -622,7 +622,7 @@ defineExpose({
 
 							&.is-active {
 								background-color: var(--el-color-primary);
-								color: #fff;
+								color: var(--app-text-on-primary);
 							}
 
 							&:hover:not(.is-active) {

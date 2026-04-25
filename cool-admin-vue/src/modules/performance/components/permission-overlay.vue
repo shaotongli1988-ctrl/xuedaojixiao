@@ -127,32 +127,6 @@ async function copyRequestText() {
 	position: relative;
 	min-height: 240px;
 
-	--permission-overlay-mask-bg:
-		linear-gradient(
-			135deg,
-			color-mix(in srgb, var(--app-surface-card) 78%, transparent),
-			color-mix(in srgb, var(--app-surface-muted) 92%, transparent)
-		),
-		radial-gradient(
-			circle at top right,
-			color-mix(in srgb, var(--app-accent-brand-soft) 56%, transparent),
-			transparent 52%
-		);
-	--permission-overlay-panel-border: color-mix(
-		in srgb,
-		var(--app-accent-brand-soft) 48%,
-		var(--app-border-strong)
-	);
-	--permission-overlay-panel-bg: color-mix(in srgb, var(--app-surface-card) 88%, transparent);
-	--permission-overlay-panel-shadow: var(--app-shadow-surface);
-	--permission-overlay-panel-text: var(--app-text-secondary);
-	--permission-overlay-icon-bg: color-mix(
-		in srgb,
-		var(--app-accent-brand-soft) 86%,
-		var(--app-surface-card)
-	);
-	--permission-overlay-icon-color: var(--app-accent-brand);
-
 	&__content {
 		transition:
 			filter 0.2s ease,
@@ -168,7 +142,7 @@ async function copyRequestText() {
 		justify-content: center;
 		padding: var(--app-space-6);
 		border-radius: var(--app-radius-xl);
-		background: var(--permission-overlay-mask-bg);
+		background: var(--app-permission-overlay-mask-bg);
 		backdrop-filter: blur(10px);
 	}
 
@@ -177,10 +151,10 @@ async function copyRequestText() {
 		gap: var(--app-space-3);
 		max-width: 520px;
 		padding: var(--app-space-6);
-		border: 1px solid var(--permission-overlay-panel-border);
+		border: 1px solid var(--app-permission-overlay-panel-border);
 		border-radius: var(--app-radius-xl);
-		background: var(--permission-overlay-panel-bg);
-		box-shadow: var(--permission-overlay-panel-shadow);
+		background: var(--app-permission-overlay-panel-bg);
+		box-shadow: var(--app-shadow-surface);
 		text-align: center;
 
 		h3,
@@ -189,7 +163,7 @@ async function copyRequestText() {
 		}
 
 		p {
-			color: var(--permission-overlay-panel-text);
+			color: var(--app-permission-overlay-panel-text);
 			line-height: 1.6;
 		}
 	}
@@ -202,8 +176,8 @@ async function copyRequestText() {
 		height: 48px;
 		margin: 0 auto;
 		border-radius: calc(var(--app-radius-lg) + 4px);
-		background: var(--permission-overlay-icon-bg);
-		color: var(--permission-overlay-icon-color);
+		background: var(--app-permission-overlay-icon-bg);
+		color: var(--app-permission-overlay-icon-color);
 		font-size: 22px;
 	}
 
@@ -216,7 +190,7 @@ async function copyRequestText() {
 		display: grid;
 		gap: 6px;
 		font-size: var(--app-font-size-caption);
-		color: var(--permission-overlay-panel-text);
+		color: var(--app-permission-overlay-panel-text);
 	}
 
 	&--denied {

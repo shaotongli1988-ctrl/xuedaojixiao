@@ -6,7 +6,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync, execFileSync } from "node:child_process";
@@ -96,6 +96,7 @@ test("normal: local guard scripts exist", () => {
     "check-environment-config-ssot.mjs",
     "check-database-schema-ssot.mjs",
     "check-mobile-shared-contract.mjs",
+    "check-ui-token-ssot.mjs",
     "check-shared-error-semantics.mjs",
     "check-performance-contract-closure.mjs",
     "check-performance-domain-model-ssot.mjs",
@@ -139,6 +140,7 @@ test("normal: repo consistency guard runs ssot sync stages in write mode before 
   const script = readFileSync(`${scriptsRoot}/run-repo-consistency-guards.mjs`, "utf8");
   assert.equal(script.includes("script: 'check-xuedao-ssot-manifest.mjs'"), true);
   assert.equal(script.includes("script: 'check-xuedao-ssot-conformance.mjs'"), true);
+  assert.equal(script.includes("script: 'check-ui-token-ssot.mjs'"), true);
   assert.equal(script.includes("script: 'sync-repo-openapi-ssot.mjs'"), true);
   assert.equal(script.includes("script: 'sync-performance-openapi-ssot.mjs'"), true);
   assert.equal(script.includes("script: 'openapi-contract-sync.mjs'"), true);
@@ -233,6 +235,24 @@ test("normal: xuedao ssot manifest loader resolves repository artifact root and 
   assert.equal(
     manifest.sourceOfTruth.mobileSharedContract.sourceFile,
     "cool-uni/types/performance-mobile.ts"
+  );
+  assert.equal(
+    manifest.sourceOfTruth.uiDesignSystem.sourceFiles.includes(
+      "cool-admin-vue/src/styles/index.scss"
+    ),
+    true
+  );
+  assert.equal(
+    manifest.sourceOfTruth.uiDesignSystem.sourceFiles.includes(
+      "cool-admin-vue/src/styles/patterns.teacher-channel.scss"
+    ),
+    true
+  );
+  assert.equal(
+    manifest.sourceOfTruth.uiDesignSystem.generatedConsumers.includes(
+      "cool-admin-vue/src/modules/performance/"
+    ),
+    true
   );
   assert.equal(
     manifest.sourceOfTruth.environmentConfig.sourceFile,
@@ -418,6 +438,48 @@ test("normal: mobile shared contract script passes with current repository bindi
   const result = run(["node", "./scripts/check-mobile-shared-contract.mjs"]);
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.match(result.stdout, /\[mobile-shared-contract\] PASS/);
+});
+
+test("normal: ui token ssot script passes with current repository bindings", () => {
+  const result = run(["node", "./scripts/check-ui-token-ssot.mjs"]);
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /\[ui-token-ssot\] PASS/);
+});
+
+test("normal: ui token ssot script allows scoped source-of-truth style files", () => {
+  const result = run([
+    "node",
+    "./scripts/check-ui-token-ssot.mjs",
+    "--file",
+    "cool-admin-vue/src/styles/tokens.foundation.scss"
+  ]);
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /\[ui-token-ssot\] PASS/);
+});
+
+test("normal: ui token ssot script blocks scoped consumer raw color drift", () => {
+  const tempRelativePath = "cool-admin-vue/src/modules/helper/views/__ui-token-ssot-temp__.vue";
+
+  writeTempFile(
+    repoRoot,
+    tempRelativePath,
+    `<template><div class="temp-ui-drift" /></template>\n<style scoped>\n.temp-ui-drift { color: rgba(0, 0, 0, 0.5); }\n</style>\n`
+  );
+
+  try {
+    const result = run([
+      "node",
+      "./scripts/check-ui-token-ssot.mjs",
+      "--file",
+      tempRelativePath
+    ]);
+
+    assert.notEqual(result.status, 0, "temporary helper drift should be rejected by ui-token-ssot");
+    assert.match(result.stderr, /\[ui-token-ssot\] FAIL/);
+    assert.match(result.stderr, /未收敛的 .*字面量/);
+  } finally {
+    rmSync(join(repoRoot, tempRelativePath), { force: true });
+  }
 });
 
 test("normal: shared error semantics script passes with current repository bindings", () => {

@@ -60,7 +60,7 @@ const { app } = useBase();
 		position: fixed;
 		left: 0;
 		top: 0;
-		background-color: rgba(0, 0, 0, 0.5);
+		background-color: var(--app-overlay-mask-strong);
 		height: 100%;
 		width: 100%;
 		z-index: 999;

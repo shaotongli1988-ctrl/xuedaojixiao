@@ -34,7 +34,7 @@ function toCode() {
 		top: 50%;
 		left: 0;
 		transform: translateY(-50%);
-		background: linear-gradient(to right, #9f9f9f 0, #fff 10%, #666 20%);
+		background: var(--app-text-shine);
 		background-position: 0;
 		-webkit-background-clip: text;
 		-webkit-text-fill-color: transparent;

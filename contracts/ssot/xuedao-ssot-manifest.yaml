@@ -156,6 +156,31 @@ sourceOfTruth:
       - "cool-uni/pages/performance/"
       - "cool-uni/service/performance/"
 
+  uiDesignSystem:
+    sourceFiles:
+      - "cool-admin-vue/src/styles/index.scss"
+      - "cool-admin-vue/src/styles/tokens.foundation.scss"
+      - "cool-admin-vue/src/styles/tokens.semantic.scss"
+      - "cool-admin-vue/src/styles/adapters.element-plus.scss"
+      - "cool-admin-vue/src/styles/runtime-design.ts"
+      - "cool-admin-vue/src/styles/patterns.page-shell.scss"
+      - "cool-admin-vue/src/styles/patterns.auth-shell.scss"
+      - "cool-admin-vue/src/styles/patterns.management-workspace.scss"
+      - "cool-admin-vue/src/styles/patterns.metadata-workspace.scss"
+      - "cool-admin-vue/src/styles/patterns.flow-entry.scss"
+      - "cool-admin-vue/src/styles/patterns.teacher-channel.scss"
+      - "cool-admin-vue/src/styles/patterns.data-panel.scss"
+      - "cool-admin-vue/src/styles/patterns.chart-surface.scss"
+      - "cool-admin-vue/src/styles/patterns.overlay-responsive.scss"
+    validators:
+      - "node ./scripts/check-ui-token-ssot.mjs"
+    generatedConsumers:
+      - "cool-admin-vue/src/styles/"
+      - "cool-admin-vue/src/modules/base/"
+      - "cool-admin-vue/src/modules/performance/"
+      - "cool-admin-vue/src/modules/helper/"
+      - "cool-admin-vue/src/modules/space/"
+
   stateMachines:
     sourceFiles:
       - "cool-admin-midway/src/modules/performance/domain/states/approval-flow.ts"
@@ -259,6 +284,7 @@ sourceOfTruth:
       - "node ./scripts/check-performance-role-ssot.mjs"
       - "node ./scripts/check-state-machine-coverage-ssot.mjs"
       - "node ./scripts/check-business-dict-binding-ssot.mjs"
+      - "node ./scripts/check-ui-token-ssot.mjs"
       - "node ./scripts/check-rbac-alignment.mjs --phase batch --force"
       - "node ./scripts/check-state-machine-alignment.mjs --phase batch --force"
       - "node ./scripts/check-component-reuse.mjs --phase batch --force"

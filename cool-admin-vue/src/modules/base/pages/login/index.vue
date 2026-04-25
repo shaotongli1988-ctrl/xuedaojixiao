@@ -157,30 +157,22 @@ async function toLogin() {
 </script>
 
 <style lang="scss" scoped>
-$color: #2c3142;
+@use '../../../../styles/patterns.auth-shell.scss' as authShell;
 
 .page-login {
+	@include authShell.auth-page-shell;
 	display: flex;
 	justify-content: center;
 	align-items: center;
 	height: 100%;
 	width: 100%;
-	position: relative;
-	background-color: #fff;
-	color: $color;
 
 	.bg {
-		position: absolute;
+		@include authShell.auth-illustration;
 		left: 0;
-		top: 0;
-		height: 100%;
-		width: 90%;
-		pointer-events: none;
-		transform: rotate(180deg) scaleY(-1);
 
 		.cl-svg {
-			height: 100%;
-			width: 100%;
+			opacity: 0.92;
 		}
 	}
 
@@ -218,7 +210,7 @@ $color: #2c3142;
 				border-radius: 8px;
 				padding: 5px;
 				margin-right: 10px;
-				background-color: $color;
+				background: var(--app-text-emphasis);
 
 				img {
 					height: 36px;
@@ -261,7 +253,7 @@ $color: #2c3142;
 					font-size: 15px;
 					border: 0;
 					border-radius: 0;
-					background-color: #f8f8f8;
+					background-color: var(--app-auth-input-bg);
 					padding: 0 5px;
 					border-radius: 8px;
 					position: relative;
@@ -273,12 +265,12 @@ $color: #2c3142;
 
 					&__inner {
 						height: 45px;
-						color: #333;
+						color: var(--app-auth-input-text);
 					}
 
 					&:-webkit-autofill {
-						-webkit-box-shadow: 0 0 0 1000px #f8f8f8 inset;
-						box-shadow: 0 0 0 1000px #f8f8f8 inset;
+						-webkit-box-shadow: 0 0 0 1000px var(--app-auth-input-bg) inset;
+						box-shadow: 0 0 0 1000px var(--app-auth-input-bg) inset;
 					}
 				}
 			}

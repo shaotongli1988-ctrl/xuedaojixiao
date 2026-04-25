@@ -47,6 +47,7 @@
 12. `base/user/dict` 共享错误语义主源
 13. `performance` 错误目录主源
 14. `performance` API 模块 coverage / consumer target / closure guard 主源：`cool-admin-midway/src/modules/performance/domain/registry/contract-source.{json,mjs}`，并在 `xuedao-ssot-manifest.yaml` 中以 `sourceOfTruth.performanceContractSource` 独立登记
+15. 仓库级 UI 设计系统主源：`cool-admin-vue/src/styles/index.scss` + `tokens.* / adapters.element-plus.scss / patterns.*.scss`，并在 `xuedao-ssot-manifest.yaml` 中以 `sourceOfTruth.uiDesignSystem` 显式登记
 
 全域映射总表见：
 

@@ -6,6 +6,7 @@ import { useDark } from '@vueuse/core';
 import { mix } from '../utils';
 import { assign } from 'lodash-es';
 import { config } from '/@/config';
+import { themeBlendTargets } from '/@/styles/runtime-design';
 
 export const useTheme = defineStore('theme', () => {
 	const { app } = useBase();
@@ -44,10 +45,10 @@ export const useTheme = defineStore('theme', () => {
 		const pre = '--el-color-primary';
 
 		// 白色混合色
-		const mixWhite = '#ffffff';
+		const mixWhite = themeBlendTargets.light;
 
 		// 黑色混合色
-		const mixBlack = '#131313';
+		const mixBlack = themeBlendTargets.dark;
 
 		// 元素
 		const el = document.documentElement;

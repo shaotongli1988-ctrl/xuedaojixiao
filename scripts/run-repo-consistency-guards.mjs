@@ -105,6 +105,11 @@ const guardEntries = [
 		args: []
 	},
 	{
+		script: 'check-ui-token-ssot.mjs',
+		args: [],
+		supportsChangedFiles: true
+	},
+	{
 		script: 'sync-repo-openapi-ssot.mjs',
 		args: ['--write']
 	},

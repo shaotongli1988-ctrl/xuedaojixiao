@@ -14,6 +14,11 @@
 2. 替代 OpenAPI、状态机、权限、错误目录等子域的具体事实源文件
 3. 直接决定业务字段、接口或状态的产品语义
 
+补充说明：
+
+1. 仓库当前以“9 类核心 SSOT”为主表。
+2. UI 设计系统作为仓库级共享基座治理面，单独在“扩展治理面”中登记，不与 9 类核心表混淆。
+
 ## 状态语义
 
 ### 模块状态
@@ -52,6 +57,12 @@
 | 脚本 / 守卫 / CI | `contracts/ssot/xuedao-ssot-manifest.yaml` | repo-governance | `node ./scripts/check-xuedao-ssot-manifest.mjs` | pre-push、CI、reports/delivery | `implemented` |
 | 配置 / 环境变量 | `contracts/ssot/environment-config.catalog.json` | repo-governance | `node ./scripts/check-environment-config-ssot.mjs` | runtime entrypoints、migration/smoke/guard scripts、repo automation | `implemented` |
 | 数据库 schema / migration | `contracts/ssot/database-schema.catalog.json` | repo-governance | `node ./scripts/check-database-schema-ssot.mjs` | migration runner、entities aggregator、local schema bootstrap、repo conformance guards | `implemented` |
+
+## 扩展治理面
+
+| 类别 | 当前 primary source | owner | validator | 主要消费者 | 当前判断 |
+| --- | --- | --- | --- | --- | --- |
+| UI 设计系统 | `cool-admin-vue/src/styles/index.scss` + `tokens.* / adapters.element-plus.scss / patterns.*.scss` | frontend-owner / repo-governance | `node ./scripts/check-ui-token-ssot.mjs` | `cool-admin-vue/src/styles/`、`base/performance/helper/space` 前端模块 | `implemented` |
 
 ## 已完成批次
 
@@ -247,6 +258,12 @@
 1. 升级 `scripts/audit-worktree-split.mjs`，让 `--batch-id <id> --output paths` 除了打印路径，还会默认落盘 `reports/delivery/worktree-split-audit.<batch-id>.latest.paths`。
 2. 把 `README.md` 与 `docs/24-自动化测试策略与脚本规划.md` 的示例命令改成“先跑 worktree split，再把 `.paths` 直接喂给 repo-consistency --files-from”的闭环用法。
 3. 补充 repo guard regression，锁住 `.paths` 产物的默认落盘行为，避免这条拆批到守卫的衔接链路回退。
+
+第三十三批补了以下几件事：
+
+1. 把 `cool-admin-vue/src/styles/index.scss`、`tokens.* / adapters.element-plus.scss / patterns.*.scss` 正式提升为仓库级 UI 设计系统主源，并在 `xuedao-ssot-manifest.yaml` 中新增 `sourceOfTruth.uiDesignSystem`。
+2. 新增 `scripts/check-ui-token-ssot.mjs`，校验统一样式入口拓扑、共享样式文件登记，以及 scoped changed files 或 `--all` 全量 consumer 扫描时是否绕开共享 token 直写原始色值。
+3. 把 UI 设计系统守卫接入 `run-repo-consistency-guards.mjs`、repo guard regression 和 SSOT 文档，避免视觉基座继续停留在“代码存在但无仓库级登记”的状态。
 
 ## 当前已知缺口
 
