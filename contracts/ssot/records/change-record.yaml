@@ -1,10 +1,10 @@
 # xuedao repo-level change record.
-# Captures the thirty-second-batch SSOT governance rollout that closes
-# the worktree-split paths artifact handoff into scoped repo guards.
+# Captures the thirty-third-batch SSOT governance rollout that registers
+# the UI design system as a repository-level source of truth.
 
 recordVersion: "1.0"
-changeId: "XUEDAO-CHG-20260425-028"
-title: "Write worktree-split batch path artifacts for direct repo-consistency guard consumption"
+changeId: "XUEDAO-CHG-20260425-030"
+title: "Register repository-level UI design system governance and closure guard"
 owner: "codex"
 status: "verified"
 reviewers:
@@ -19,102 +19,138 @@ classification:
     - "shared_module"
     - "repo_guard"
     - "documentation_sync"
+    - "design_system"
 
 scope:
-  outcome: "让 worktree split 在按批次导出路径时默认落盘 `.paths` 产物，直接接上 repo-consistency 的 `--files-from` 输入链路。"
+  outcome: "把前端统一样式入口、token、runtime design 和 patterns.* 共享模式正式登记为仓库级 UI 设计系统主源，并用专用守卫把 manifest、消费者范围和 raw color drift 检查连成闭环。"
   nonGoals:
-    - "不改变 batch 分类规则本身。"
-    - "不改变 repo-consistency 或 pre-push 的范围透传语义。"
-    - "不引入新的业务功能、CI 工作流或依赖。"
+    - "不改变业务权限、状态机、API 契约或数据库语义。"
+    - "不重构未命中 manifest consumer 范围之外的页面样式实现。"
+    - "不引入新的生产依赖、构建链路或视觉主题切换机制。"
   affectedModules:
+    - "cool-admin-vue/src/styles"
+    - "cool-admin-vue/src/modules/base"
+    - "cool-admin-vue/src/modules/helper"
+    - "cool-admin-vue/src/modules/performance"
+    - "cool-admin-vue/src/modules/space"
+    - "cool-admin-vue/src/plugins"
     - "scripts"
     - "performance-management-system/test"
     - "performance-management-system/docs"
-    - "README.md"
-    - "contracts/ssot"
+    - "contracts"
 
 sourceOfTruth:
   primaryDocs:
-    - "scripts/audit-worktree-split.mjs"
-    - "README.md"
-    - "performance-management-system/docs/24-自动化测试策略与脚本规划.md"
+    - "contracts/ssot/xuedao-ssot-manifest.yaml"
     - "contracts/ssot/xuedao-ssot-inventory.md"
+    - "contracts/ssot/README.md"
+    - "contracts/README.md"
+    - "cool-admin-vue/src/styles/index.scss"
+    - "cool-admin-vue/src/styles/runtime-design.ts"
   linkedDocs:
     - "contracts/ssot/records/verification-record.yaml"
+    - "performance-management-system/docs/10-路由与菜单映射.md"
+    - "performance-management-system/docs/12-数据权限与脱敏规则.md"
+    - "performance-management-system/docs/24-自动化测试策略与脚本规划.md"
   machineSourcesTouched:
-    - "scripts/audit-worktree-split.mjs"
+    - "contracts/ssot/xuedao-ssot-manifest.yaml"
+    - "cool-admin-vue/src/styles/index.scss"
+    - "cool-admin-vue/src/styles/tokens.foundation.scss"
+    - "cool-admin-vue/src/styles/tokens.semantic.scss"
+    - "cool-admin-vue/src/styles/runtime-design.ts"
+    - "cool-admin-vue/src/styles/patterns.auth-shell.scss"
   generatedConsumers:
-    - "reports/delivery/worktree-split-audit.<batch-id>.latest.paths"
+    - "cool-admin-vue/src/modules/base/"
+    - "cool-admin-vue/src/modules/helper/"
+    - "cool-admin-vue/src/modules/performance/"
+    - "cool-admin-vue/src/modules/space/"
     - "scripts/run-repo-consistency-guards.mjs"
+    - "performance-management-system/test/repo-guard-scripts.test.mjs"
 
 impactSurface:
   code:
-    - "scripts/audit-worktree-split.mjs"
+    - "cool-admin-vue/src/styles/index.scss"
+    - "cool-admin-vue/src/styles/tokens.foundation.scss"
+    - "cool-admin-vue/src/styles/tokens.semantic.scss"
+    - "cool-admin-vue/src/styles/runtime-design.ts"
+    - "cool-admin-vue/src/styles/patterns.auth-shell.scss"
+    - "cool-admin-vue/src/modules/base/"
+    - "cool-admin-vue/src/modules/helper/"
+    - "cool-admin-vue/src/modules/performance/"
+    - "cool-admin-vue/src/modules/space/"
+    - "cool-admin-vue/src/plugins/"
   tests:
     - "performance-management-system/test/repo-guard-scripts.test.mjs"
   docs:
-    - "README.md"
-    - "performance-management-system/docs/24-自动化测试策略与脚本规划.md"
+    - "contracts/README.md"
+    - "contracts/ssot/README.md"
     - "contracts/ssot/xuedao-ssot-inventory.md"
+    - "performance-management-system/docs/10-路由与菜单映射.md"
+    - "performance-management-system/docs/12-数据权限与脱敏规则.md"
+    - "performance-management-system/docs/24-自动化测试策略与脚本规划.md"
     - "contracts/ssot/records/change-record.yaml"
     - "contracts/ssot/records/verification-record.yaml"
   scripts:
-    - "scripts/audit-worktree-split.mjs"
+    - "scripts/check-ui-token-ssot.mjs"
     - "scripts/check-xuedao-ssot-conformance.mjs"
+    - "scripts/check-xuedao-ssot-manifest.mjs"
+    - "scripts/run-repo-consistency-guards.mjs"
   config: []
   migrations: []
 
 acceptance:
   normal:
-    - "运行 `node ./scripts/audit-worktree-split.mjs --batch-id <id> --output paths` 时，终端输出路径清单的同时，默认写出 `reports/delivery/worktree-split-audit.<id>.latest.paths`。"
-    - "README 与自动化测试策略文档必须展示从 worktree split 到 repo-consistency `--files-from` 的闭环命令。"
-    - "repo guard regression 必须验证 `.paths` 产物默认落盘。"
+    - "manifest 必须登记 `sourceOfTruth.uiDesignSystem`，覆盖统一样式入口、token、runtime design 和至少一个 patterns.* 共享模式文件。"
+    - "运行 `node ./scripts/check-ui-token-ssot.mjs --all` 时，必须通过 UI 设计系统主源、消费者范围和 raw color drift 守卫。"
+    - "repo guard regression 必须验证 UI token SSOT 守卫已接入统一入口，并覆盖放行主源文件、拦截消费侧原始色值漂移等行为。"
+    - "contracts / SSOT / 测试策略文档必须同步说明 UI 设计系统主源和守卫入口。"
   error:
-    - "若 `--output paths` 不再写出 `.paths` 产物，repo guard regression 必须 FAIL。"
-    - "若文档示例重新指向不存在的旧 `.paths` 命名，conformance/doc 回写守卫必须 FAIL。"
+    - "若共享样式文件未登记到 `uiDesignSystem.sourceFiles`，`check-ui-token-ssot` 必须 FAIL。"
+    - "若 consumer 范围内出现绕过共享 token 的 raw color drift，`check-ui-token-ssot` 必须 FAIL。"
+    - "若 UI 设计系统守卫未接入 manifest 或 repo consistency 统一入口，repo regression 或 conformance 必须 FAIL。"
   boundary:
-    - "本轮不改变 batch 归类优先级、risk level 或推荐验证命令。"
-    - "本轮不把 worktree split 自动接线到 pre-push。"
+    - "本轮只收口 manifest 登记、守卫和已命中消费者，不扩展到新的前端业务模块。"
+    - "本轮允许在主源文件内保留必要原始色值定义，但 consumer 范围不得回流直写原始色值。"
   permission:
-    - "本次治理不改变业务权限语义。"
+    - "本次治理不改变业务权限语义，只补权限相关页面的共享样式收敛。"
   stateFlow:
-    - "本次治理不改变业务状态流语义。"
+    - "本次治理不改变业务状态流，只调整视觉承载和仓库级登记。"
 
 deliveryEvidenceRequired:
   - "verification_record"
-  - "worktree_split_paths_artifact_pass"
+  - "ui_token_guard_pass"
   - "repo_guard_regression"
   - "manifest_guard_pass"
   - "conformance_guard_pass"
 
 releaseAndRollback:
   rolloutSteps:
-    - "给 audit-worktree-split 增加 `.paths` 默认落盘能力"
-    - "回写 README、自动化测试策略与 inventory"
-    - "补 repo guard regression 并执行 conformance"
+    - "在 manifest 中登记 UI 设计系统主源与 consumer 范围"
+    - "新增 `check-ui-token-ssot` 守卫并接入 repo consistency 统一入口"
+    - "回写 contracts / SSOT / 自动化测试策略文档与 repo regression"
+    - "执行 manifest、ui token、repo regression 与 conformance 校验"
   rollbackPath:
-    - "回退 audit-worktree-split、文档与 repo regression 改动"
-    - "重新执行 manifest、repo guard regression 与 conformance，确认恢复到第三十一批稳定状态"
+    - "回退 UI 设计系统 manifest 登记、守卫脚本、文档和 repo regression 改动"
+    - "重新执行 manifest、repo regression 与 conformance，确认仓库回到第三十二批稳定状态"
   monitoring:
-    - "reports/delivery/worktree-split-audit.<batch-id>.latest.paths"
-    - "scripts/audit-worktree-split.mjs --output paths 输出"
+    - "node ./scripts/check-ui-token-ssot.mjs --all"
+    - "performance-management-system/test/repo-guard-scripts.test.mjs"
     - "reports/delivery/xuedao-ssot-conformance.latest.{md,json}"
 
 waivers: []
 notes:
-  - "本次是第三十二批 repo-level SSOT 治理，目标是把拆批报告和 scoped 守卫真正连成可复用链路。"
-  - "这批仍只补交付闭环，不改变分类算法。"
+  - "本次是第三十三批 repo-level SSOT 治理，目标是把仓库前端视觉基座从“约定俗成”提升为显式 machine source。"
+  - "这批核心是补 manifest 登记、守卫接线和文档/测试留痕，不新增业务语义。"
 
 delivery:
   requiredCommands:
     - "node ./scripts/check-xuedao-ssot-manifest.mjs"
-    - "node ./scripts/audit-worktree-split.mjs --batch-id governance-ssot --output paths"
+    - "node ./scripts/check-ui-token-ssot.mjs --all"
     - "node --test ./performance-management-system/test/repo-guard-scripts.test.mjs"
     - "node ./scripts/check-xuedao-ssot-conformance.mjs"
   expectedArtifacts:
-    - "reports/delivery/worktree-split-audit.governance-ssot.latest.paths"
     - "reports/delivery/xuedao-ssot-conformance.latest.md"
     - "reports/delivery/xuedao-ssot-conformance.latest.json"
 
 residualRisk:
-  - "worktree split 只负责产出批次建议与路径清单，不自动判定批次是否真的可直接合并提交，人工 review 仍是最后一道边界。"
+  - "UI token 守卫当前只覆盖 manifest 声明的 consumer 范围；后续若新增前端模块或样式入口，仍需同步登记，否则会形成治理盲区。"

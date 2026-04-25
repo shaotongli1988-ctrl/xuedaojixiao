@@ -2,10 +2,6 @@
 	<div class="page-login">
 		<div class="box">
 			<div class="logo">
-				<div class="icon">
-					<img src="/logo.png" alt="Logo" />
-				</div>
-
 				<span>{{ app.info.name }}</span>
 			</div>
 
@@ -200,22 +196,12 @@ async function toLogin() {
 		z-index: 9;
 
 		.logo {
-			height: 50px;
+			min-height: 50px;
 			margin-bottom: 20px;
 			display: flex;
 			align-items: center;
+			justify-content: center;
 			user-select: none;
-
-			.icon {
-				border-radius: 8px;
-				padding: 5px;
-				margin-right: 10px;
-				background: var(--app-text-emphasis);
-
-				img {
-					height: 36px;
-				}
-			}
 
 			span {
 				font-size: 38px;

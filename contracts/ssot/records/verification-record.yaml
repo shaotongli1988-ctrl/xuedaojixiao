@@ -1,12 +1,12 @@
 # xuedao repo-level verification record.
-# Captures executed evidence for the thirty-second-batch governance rollout
-# that writes worktree-split paths artifacts for scoped guard handoff.
+# Captures executed evidence for the thirty-third-batch governance rollout
+# that registers the UI design system as a repository-level source of truth.
 
 recordVersion: "1.0"
-verificationId: "XUEDAO-VER-20260425-029"
-changeId: "XUEDAO-CHG-20260425-028"
+verificationId: "XUEDAO-VER-20260425-031"
+changeId: "XUEDAO-CHG-20260425-030"
 owner: "codex"
-executedAt: "2026-04-25T08:30:15+08:00"
+executedAt: "2026-04-25T15:45:42+08:00"
 overallStatus: "passed"
 
 coverage:
@@ -28,25 +28,24 @@ checks:
     status: "passed"
     artifacts: []
 
-  - name: "worktree-split-batch-paths"
+  - name: "ui-token-ssot-all-consumers"
     type: "quality"
-    command: "node ./scripts/audit-worktree-split.mjs --batch-id governance-ssot --output paths"
-    scope: "验证按批次导出路径时既打印结果，也默认写出 `.paths` 产物"
+    command: "node ./scripts/check-ui-token-ssot.mjs --all"
+    scope: "验证 UI 设计系统主源登记、共享模式文件登记和 consumer 范围 raw color drift 守卫"
     status: "passed"
-    artifacts:
-      - "reports/delivery/worktree-split-audit.governance-ssot.latest.paths"
+    artifacts: []
 
   - name: "repo-guard-script-regression"
     type: "test"
     command: "node --test ./performance-management-system/test/repo-guard-scripts.test.mjs"
-    scope: "repo guard regression after worktree-split paths artifact rollout"
+    scope: "repo guard regression after UI design system SSOT manifest and guard rollout"
     status: "passed"
     artifacts: []
 
   - name: "ssot-conformance-check"
     type: "quality"
     command: "node ./scripts/check-xuedao-ssot-conformance.mjs"
-    scope: "repo ssot conformance after docs, records, and worktree-split artifact updates"
+    scope: "repo ssot conformance after UI design system docs, records, and guard updates"
     status: "passed"
     artifacts:
       - "reports/delivery/xuedao-ssot-conformance.latest.md"
@@ -59,7 +58,7 @@ findings:
   followUps: []
 
 residualRisk:
-  - "worktree split 只负责产出批次建议与路径清单，不自动判定批次是否真的可直接合并提交，人工 review 仍是最后一道边界。"
+  - "UI token 守卫当前只覆盖 manifest 声明的 consumer 范围；后续若新增前端模块或样式入口，仍需同步登记，否则会形成治理盲区。"
 
 summary:
   passedChecks: 4

@@ -7,7 +7,6 @@
 		}"
 	>
 		<div class="app-slider__logo">
-			<img src="/logo.png" />
 			<span v-if="!app.isFold || browser.isMini">{{ app.info.name }}</span>
 		</div>
 
@@ -78,22 +77,18 @@ const currentGroupName = computed(() => menu.currentGroup?.meta?.label || '');
 	&__logo {
 		display: flex;
 		align-items: center;
+		justify-content: center;
 		height: 66px;
 		padding: 0 21px;
 		user-select: none;
-
-		img {
-			height: 24px;
-			width: 24px;
-		}
 
 		span {
 			color: var(--slider-title-color);
 			font-weight: bold;
 			font-size: 20px;
-			margin-left: 10px;
 			white-space: nowrap;
 			letter-spacing: 1px;
+			text-align: center;
 		}
 	}
 
