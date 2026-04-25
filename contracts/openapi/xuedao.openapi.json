@@ -5118,7 +5118,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_GeneratedCapabilityModelRecord"
+                  "$ref": "#/components/schemas/ApiResponse_CapabilityModelRecord"
                 }
               }
             }
@@ -5149,7 +5149,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_GeneratedCapabilityModelRecord"
+                  "$ref": "#/components/schemas/ApiResponse_CapabilityModelRecord"
                 }
               }
             }
@@ -5181,7 +5181,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_GeneratedCapabilityModelPageResponse"
+                  "$ref": "#/components/schemas/ApiResponse_CapabilityModelPageResult"
                 }
               }
             }
@@ -5212,7 +5212,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_GeneratedCapabilityModelRecord"
+                  "$ref": "#/components/schemas/ApiResponse_CapabilityModelRecord"
                 }
               }
             }
@@ -17355,6 +17355,98 @@
                 "nullable": false
               },
               "evidenceHint": {
+                "type": "string",
+                "nullable": false
+              },
+              "updateTime": {
+                "type": "string",
+                "nullable": false
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        }
+      },
+      "ApiResponse_CapabilityModelPageResult": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "list": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CapabilityModelRecord"
+                }
+              },
+              "pagination": {
+                "$ref": "#/components/schemas/PagePagination"
+              }
+            },
+            "required": [
+              "list",
+              "pagination"
+            ]
+          }
+        }
+      },
+      "ApiResponse_CapabilityModelRecord": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "number",
+                "nullable": false
+              },
+              "name": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string",
+                "nullable": false
+              },
+              "category": {
+                "type": "string",
+                "nullable": false
+              },
+              "description": {
+                "type": "string",
+                "nullable": false
+              },
+              "status": {
+                "$ref": "#/components/schemas/CapabilityModelStatus"
+              },
+              "itemCount": {
+                "type": "number",
+                "nullable": false
+              },
+              "createTime": {
                 "type": "string",
                 "nullable": false
               },
@@ -31299,6 +31391,66 @@
         "required": [
           "page",
           "size"
+        ]
+      },
+      "CapabilityModelPageResult": {
+        "type": "object",
+        "properties": {
+          "list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CapabilityModelRecord"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PagePagination"
+          }
+        },
+        "required": [
+          "list",
+          "pagination"
+        ]
+      },
+      "CapabilityModelRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "nullable": false
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "nullable": false
+          },
+          "category": {
+            "type": "string",
+            "nullable": false
+          },
+          "description": {
+            "type": "string",
+            "nullable": false
+          },
+          "status": {
+            "$ref": "#/components/schemas/CapabilityModelStatus"
+          },
+          "itemCount": {
+            "type": "number",
+            "nullable": false
+          },
+          "createTime": {
+            "type": "string",
+            "nullable": false
+          },
+          "updateTime": {
+            "type": "string",
+            "nullable": false
+          }
+        },
+        "required": [
+          "name"
         ]
       },
       "CapabilityModelSaveRequest": {

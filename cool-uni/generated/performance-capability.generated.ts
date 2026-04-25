@@ -14,10 +14,20 @@ export interface CapabilityModelSaveRequest {
 
 export type CapabilityModelStatus = "draft" | "active" | "archived";
 
-export interface ApiResponse_GeneratedCapabilityModelRecord {
+export interface ApiResponse_CapabilityModelRecord {
 	code: number;
 	message: string;
-	data: Record<string, unknown>;
+	data: {
+  id?: number;
+  name: string;
+  code?: string;
+  category?: string;
+  description?: string;
+  status?: CapabilityModelStatus;
+  itemCount?: number;
+  createTime?: string;
+  updateTime?: string;
+};
 }
 
 export interface CapabilityModelInfoQuery {
@@ -32,10 +42,40 @@ export interface CapabilityModelPageQuery {
 	status?: CapabilityModelStatus;
 }
 
-export interface ApiResponse_GeneratedCapabilityModelPageResponse {
+export interface ApiResponse_CapabilityModelPageResult {
 	code: number;
 	message: string;
-	data: Record<string, unknown>;
+	data: {
+  list: Array<CapabilityModelRecord>;
+  pagination: PagePagination;
+};
+}
+
+export interface CapabilityModelRecord {
+	id?: number;
+	name: string;
+	code?: string;
+	category?: string;
+	description?: string;
+	status?: CapabilityModelStatus;
+	itemCount?: number;
+	createTime?: string;
+	updateTime?: string;
+}
+
+export interface PagePagination {
+	/**
+	 * 页码
+	 */
+	page: number;
+	/**
+	 * 页大小
+	 */
+	size: number;
+	/**
+	 * 总数
+	 */
+	total: number;
 }
 
 export type CapabilityModelUpdateModelRequest = CapabilityModelSaveRequest & {
