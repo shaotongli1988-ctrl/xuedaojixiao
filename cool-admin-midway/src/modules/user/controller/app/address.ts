@@ -2,6 +2,7 @@ import { Get, Inject, Provide } from '@midwayjs/core';
 import { CoolController, BaseController } from '@cool-midway/core';
 import { UserAddressEntity } from '../../entity/address';
 import { UserAddressService } from '../../service/address';
+import { resolveUserAppRuntimeContext } from '../../domain';
 
 /**
  * 地址
@@ -12,13 +13,15 @@ import { UserAddressService } from '../../service/address';
   entity: UserAddressEntity,
   service: UserAddressService,
   insertParam: ctx => {
+    const currentUser = resolveUserAppRuntimeContext(ctx.user);
     return {
-      userId: ctx.user.id,
+      userId: currentUser.userId,
     };
   },
   pageQueryOp: {
     where: async ctx => {
-      return [['userId =:userId', { userId: ctx.user.id }]];
+      const currentUser = resolveUserAppRuntimeContext(ctx.user);
+      return [['userId =:userId', { userId: currentUser.userId }]];
     },
     addOrderBy: {
       isDefault: 'DESC',
@@ -34,6 +37,7 @@ export class AppUserAddressController extends BaseController {
 
   @Get('/default', { summary: '默认地址' })
   async default() {
-    return this.ok(await this.userAddressService.default(this.ctx.user.id));
+    const currentUser = resolveUserAppRuntimeContext(this.ctx.user);
+    return this.ok(await this.userAddressService.default(currentUser.userId));
   }
 }

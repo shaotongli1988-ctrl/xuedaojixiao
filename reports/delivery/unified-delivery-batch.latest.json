@@ -1,0 +1,10 @@
+[
+  {
+    "severity": "high",
+    "title": "前后端权限键无交集",
+    "detail": "前后端都检测到权限键，但命名体系完全不一致。",
+    "evidence": [],
+    "fix_hint": "统一权限键命名规范（例如 resource:action）并做双端迁移。",
+    "guard": "rbac"
+  }
+]

@@ -1,0 +1,219 @@
+/* 文件职责：提供带概览卡、流程步骤和 tab 切换的统一入口页 mixin；不负责具体业务路由、文案或权限逻辑；维护重点是只消费 app 语义 token，避免业务页继续内联渐变、阴影和强调色字面量。 */
+
+@use './patterns.data-panel.scss' as dataPanel;
+
+@mixin flow-entry-page {
+	@include dataPanel.data-panel-shell;
+
+	--flow-entry-card-bg: var(--app-surface-card);
+	--flow-entry-hero-bg: var(--app-surface-hero);
+	--flow-entry-step-bg: var(--app-surface-neutral-muted);
+	--flow-entry-step-active-bg: var(--app-surface-card);
+	--flow-entry-border: var(--app-border-strong);
+	--flow-entry-divider: var(--app-divider);
+	--flow-entry-text: var(--app-text-primary);
+	--flow-entry-text-secondary: var(--app-text-secondary);
+	--flow-entry-eyebrow: var(--app-text-tertiary);
+	--flow-entry-accent: var(--app-accent-brand);
+	--flow-entry-accent-soft: var(--app-accent-brand-soft);
+	--flow-entry-accent-text: var(--app-text-emphasis);
+
+	:deep(.el-card) {
+		border-color: var(--flow-entry-border);
+		background: var(--flow-entry-card-bg);
+		box-shadow: var(--app-shadow-surface);
+	}
+
+	&__overview {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: var(--app-space-4);
+	}
+
+	&__overview-card {
+		display: flex;
+		flex-direction: column;
+		gap: var(--app-space-2);
+		min-height: 132px;
+
+		p {
+			margin: 0;
+			color: var(--flow-entry-text-secondary);
+			line-height: 1.7;
+		}
+	}
+
+	&__overview-label,
+	&__eyebrow {
+		color: var(--flow-entry-accent-text);
+		font-size: var(--app-font-size-caption);
+		font-weight: 600;
+		letter-spacing: 0.08em;
+	}
+
+	&__overview-title {
+		font-size: var(--app-font-size-title);
+		font-weight: 600;
+		line-height: 1.5;
+		color: var(--flow-entry-text);
+	}
+
+	&__hero {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: var(--app-space-4);
+		padding: 4px;
+		border-radius: var(--app-radius-lg);
+		background: var(--flow-entry-hero-bg);
+
+		h2 {
+			margin: 4px 0 8px;
+			color: var(--flow-entry-text);
+		}
+
+		p {
+			margin: 0;
+			color: var(--flow-entry-text-secondary);
+			line-height: 1.7;
+		}
+	}
+
+	&__tab-head {
+		margin-bottom: var(--app-space-3);
+
+		h3 {
+			margin: 0 0 6px;
+			font-size: 16px;
+			color: var(--flow-entry-text);
+		}
+
+		p {
+			margin: 0;
+			color: var(--flow-entry-text-secondary);
+			line-height: 1.7;
+		}
+	}
+
+	&__flow-head {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: var(--app-space-4);
+		margin-bottom: var(--app-space-4);
+
+		h3 {
+			margin: 0 0 6px;
+			font-size: 16px;
+			color: var(--flow-entry-text);
+		}
+
+		p {
+			margin: 0;
+			color: var(--flow-entry-text-secondary);
+			line-height: 1.7;
+		}
+	}
+
+	&__flow {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: var(--app-space-3);
+	}
+
+	&__flow-step {
+		display: flex;
+		gap: 14px;
+		padding: 18px 16px;
+		border: 1px solid var(--flow-entry-border);
+		border-radius: calc(var(--app-radius-xl) - 2px);
+		background: var(--flow-entry-step-bg);
+		box-shadow: var(--app-shadow-surface);
+		text-align: left;
+		cursor: pointer;
+		transition:
+			transform 0.2s ease,
+			border-color 0.2s ease,
+			box-shadow 0.2s ease,
+			background 0.2s ease;
+
+		&:hover {
+			transform: translateY(-2px);
+			border-color: var(--flow-entry-accent);
+			box-shadow: var(--app-shadow-hover);
+		}
+
+		&.is-active {
+			border-color: var(--flow-entry-accent);
+			background: var(--flow-entry-step-active-bg);
+			box-shadow: var(--app-shadow-hover);
+		}
+	}
+
+	&__flow-index {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 42px;
+		height: 42px;
+		border-radius: 14px;
+		background: var(--flow-entry-accent-soft);
+		color: var(--flow-entry-accent-text);
+		font-size: 13px;
+		font-weight: 700;
+		flex-shrink: 0;
+	}
+
+	&__flow-body {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		min-width: 0;
+	}
+
+	&__flow-title,
+	&__focus-label {
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--flow-entry-text);
+	}
+
+	&__flow-title {
+		font-size: 16px;
+	}
+
+	&__flow-desc,
+	&__focus-text {
+		font-size: 13px;
+		color: var(--flow-entry-text-secondary);
+		line-height: 1.7;
+	}
+
+	&__flow-link {
+		color: var(--flow-entry-accent-text);
+		font-size: 13px;
+		font-weight: 600;
+	}
+
+	&__focus {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 10px;
+		margin-top: var(--app-space-4);
+		padding-top: var(--app-space-4);
+		border-top: 1px dashed var(--flow-entry-divider);
+	}
+
+	@media (max-width: 768px) {
+		&__overview,
+		&__flow {
+			grid-template-columns: 1fr;
+		}
+
+		&__hero,
+		&__flow-head {
+			flex-direction: column;
+		}
+	}
+}

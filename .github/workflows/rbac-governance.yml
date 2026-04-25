@@ -1,0 +1,260 @@
+name: Repository Guard Governance
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+      - "contracts/**"
+      - "scripts/**"
+      - ".githooks/**"
+      - "cool-admin-midway/src/modules/base/**"
+      - "cool-admin-midway/src/modules/demo/**"
+      - "cool-admin-midway/src/modules/dict/**"
+      - "cool-admin-midway/src/modules/performance/**"
+      - "cool-admin-midway/src/modules/plugin/**"
+      - "cool-admin-midway/src/modules/recycle/**"
+      - "cool-admin-midway/src/modules/space/**"
+      - "cool-admin-midway/src/modules/task/**"
+      - "cool-admin-midway/src/modules/user/**"
+      - "cool-admin-midway/test/**"
+      - "cool-admin-vue/build/cool/**"
+      - "cool-admin-vue/src/cool/**"
+      - "cool-admin-vue/src/modules/base/**"
+      - "cool-admin-vue/src/modules/performance/**"
+      - "cool-admin-vue/test/**"
+      - "cool-uni/cool/**"
+      - "cool-uni/generated/**"
+      - "cool-uni/pages/**"
+      - "cool-uni/service/**"
+      - "cool-uni/types/**"
+      - "performance-management-system/docs/**"
+      - "performance-management-system/test/**"
+      - "README.md"
+  push:
+    branches:
+      - main
+      - master
+      - "release/**"
+      - "hotfix/**"
+    paths:
+      - ".github/workflows/**"
+      - "contracts/**"
+      - "scripts/**"
+      - ".githooks/**"
+      - "cool-admin-midway/src/modules/base/**"
+      - "cool-admin-midway/src/modules/demo/**"
+      - "cool-admin-midway/src/modules/dict/**"
+      - "cool-admin-midway/src/modules/performance/**"
+      - "cool-admin-midway/src/modules/plugin/**"
+      - "cool-admin-midway/src/modules/recycle/**"
+      - "cool-admin-midway/src/modules/space/**"
+      - "cool-admin-midway/src/modules/task/**"
+      - "cool-admin-midway/src/modules/user/**"
+      - "cool-admin-midway/test/**"
+      - "cool-admin-vue/build/cool/**"
+      - "cool-admin-vue/src/cool/**"
+      - "cool-admin-vue/src/modules/base/**"
+      - "cool-admin-vue/src/modules/performance/**"
+      - "cool-admin-vue/test/**"
+      - "cool-uni/cool/**"
+      - "cool-uni/generated/**"
+      - "cool-uni/pages/**"
+      - "cool-uni/service/**"
+      - "cool-uni/types/**"
+      - "performance-management-system/docs/**"
+      - "performance-management-system/test/**"
+      - "README.md"
+  workflow_dispatch:
+
+jobs:
+  repo-guard-batch-gate:
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Midway Dependencies
+        working-directory: cool-admin-midway
+        run: npm ci
+
+      - name: Install Vue Dependencies
+        working-directory: cool-admin-vue
+        run: corepack pnpm install --frozen-lockfile
+
+      - name: Install Uni Dependencies
+        working-directory: cool-uni
+        run: corepack pnpm install --frozen-lockfile
+
+      - name: Midway Lint
+        working-directory: cool-admin-midway
+        run: npm run lint
+
+      - name: Midway Build
+        working-directory: cool-admin-midway
+        run: npm run build
+
+      - name: Vue Format Check
+        run: node ./scripts/check-changed-workspace-quality.mjs --workspace cool-admin-vue --tool prettier
+
+      - name: Vue Lint Check
+        run: node ./scripts/check-changed-workspace-quality.mjs --workspace cool-admin-vue --tool eslint
+
+      - name: Vue Type Check
+        working-directory: cool-admin-vue
+        run: corepack pnpm run type-check
+
+      - name: Vue Build
+        working-directory: cool-admin-vue
+        run: corepack pnpm run build
+
+      - name: Uni Format Check
+        run: node ./scripts/check-changed-workspace-quality.mjs --workspace cool-uni --tool prettier
+
+      - name: Uni Lint Check
+        run: node ./scripts/check-changed-workspace-quality.mjs --workspace cool-uni --tool eslint
+
+      - name: Uni Type Check
+        working-directory: cool-uni
+        run: corepack pnpm run type-check
+
+      - name: Generate Permission Artifacts
+        run: node ./scripts/generate-permissions.mjs --check
+
+      - name: Check Permission Alignment
+        run: node ./scripts/check-permissions.mjs
+
+      - name: Run Repository SSOT Conformance
+        run: >
+          node ./scripts/check-xuedao-ssot-conformance.mjs
+          --strict-report-artifacts
+          --report-md reports/delivery/xuedao-ssot-conformance-batch.md
+          --report-json reports/delivery/xuedao-ssot-conformance-batch.json
+
+      - name: Run Repository Guard Batch Gate
+        run: >
+          node ./scripts/check-unified-delivery.mjs
+          --phase batch
+          --all
+          --task "Repository guard batch gate"
+          --report-md reports/delivery/delivery-batch.md
+          --report-json reports/delivery/delivery-batch.json
+
+      - name: Upload Repository Guard Batch Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: delivery-batch-reports
+          path: reports/delivery/
+          if-no-files-found: ignore
+
+  repo-guard-final-gate:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Midway Dependencies
+        working-directory: cool-admin-midway
+        run: npm ci
+
+      - name: Install Vue Dependencies
+        working-directory: cool-admin-vue
+        run: corepack pnpm install --frozen-lockfile
+
+      - name: Install Uni Dependencies
+        working-directory: cool-uni
+        run: corepack pnpm install --frozen-lockfile
+
+      - name: Midway Lint
+        working-directory: cool-admin-midway
+        run: npm run lint
+
+      - name: Midway Build
+        working-directory: cool-admin-midway
+        run: npm run build
+
+      - name: Vue Format Check
+        run: node ./scripts/check-changed-workspace-quality.mjs --workspace cool-admin-vue --tool prettier
+
+      - name: Vue Lint Check
+        run: node ./scripts/check-changed-workspace-quality.mjs --workspace cool-admin-vue --tool eslint
+
+      - name: Vue Type Check
+        working-directory: cool-admin-vue
+        run: corepack pnpm run type-check
+
+      - name: Vue Build
+        working-directory: cool-admin-vue
+        run: corepack pnpm run build
+
+      - name: Uni Format Check
+        run: node ./scripts/check-changed-workspace-quality.mjs --workspace cool-uni --tool prettier
+
+      - name: Uni Lint Check
+        run: node ./scripts/check-changed-workspace-quality.mjs --workspace cool-uni --tool eslint
+
+      - name: Uni Type Check
+        working-directory: cool-uni
+        run: corepack pnpm run type-check
+
+      - name: Generate Permission Artifacts
+        run: node ./scripts/generate-permissions.mjs --check
+
+      - name: Check Permission Alignment
+        run: node ./scripts/check-permissions.mjs
+
+      - name: Run Repository SSOT Conformance
+        run: >
+          node ./scripts/check-xuedao-ssot-conformance.mjs
+          --strict-report-artifacts
+          --report-md reports/delivery/xuedao-ssot-conformance-final.md
+          --report-json reports/delivery/xuedao-ssot-conformance-final.json
+
+      - name: Run Repository Guard Final Gate
+        run: >
+          node ./scripts/check-unified-delivery.mjs
+          --phase final
+          --all
+          --task "Repository guard final gate"
+          --report-md reports/delivery/delivery-final.md
+          --report-json reports/delivery/delivery-final.json
+
+      - name: Upload Repository Guard Final Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: delivery-final-reports
+          path: reports/delivery/
+          if-no-files-found: ignore

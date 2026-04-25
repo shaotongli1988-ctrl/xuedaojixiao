@@ -54,13 +54,7 @@
 					</view>
 				</view>
 
-				<cl-button
-					type="primary"
-					fill
-					:height="88"
-					:loading="loading"
-					@tap="submit"
-				>
+				<cl-button type="primary" fill :height="88" :loading="loading" @tap="submit">
 					登录
 				</cl-button>
 
@@ -143,9 +137,9 @@ async function submit() {
 		await user.get();
 		await user.fetchPermMenu();
 
-		if (!user.workbenchPages.length || user.roleKind === "unsupported") {
+		if (!user.workbenchPages.length) {
 			await user.logout({ remote: false, reLaunch: false });
-			ui.showTips("当前账号不在移动端首批开放范围");
+			ui.showTips("当前账号不在移动端开放范围");
 			await loadCaptcha();
 			return;
 		}

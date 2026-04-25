@@ -22,12 +22,11 @@ import { Repository } from 'typeorm';
 import * as jwt from 'jsonwebtoken';
 import * as md5 from 'md5';
 import { BaseSysDepartmentEntity } from '../../base/entity/sys/department';
-import { BaseSysMenuService } from '../../base/service/sys/menu';
-import { BaseSysPermsService } from '../../base/service/sys/perms';
 import { PerformanceAssessmentEntity } from '../entity/assessment';
 import { PerformanceGoalEntity } from '../entity/goal';
 import { PerformanceIndicatorEntity } from '../entity/indicator';
 import { PerformanceSalaryEntity } from '../entity/salary';
+import { PerformanceAccessContextService } from './access-context';
 
 const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
   return require('../../base/config').default({
@@ -136,23 +135,13 @@ export class PerformanceDashboardService extends BaseService {
   midwayCache: MidwayCache;
 
   @Inject()
-  baseSysMenuService: BaseSysMenuService;
-
-  @Inject()
-  baseSysPermsService: BaseSysPermsService;
+  performanceAccessContextService: PerformanceAccessContextService;
 
   @Inject()
   ctx;
 
   @App()
   app: IMidwayApplication;
-
-  private readonly perms = {
-    summary: 'performance:dashboard:summary',
-    crossSummary: 'performance:dashboard:crossSummary',
-    approve: 'performance:assessment:approve',
-    export: 'performance:assessment:export',
-  };
 
   private get currentCtx() {
     if (this.ctx?.admin) {
@@ -186,13 +175,25 @@ export class PerformanceDashboardService extends BaseService {
   }
 
   async summary(query: DashboardQuery) {
-    const perms = await this.currentPerms();
+    const access = await this.performanceAccessContextService.resolveAccessContext();
 
-    if (!this.hasPerm(perms, this.perms.summary)) {
+    if (
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        'dashboard.summary.read'
+      )
+    ) {
       throw new CoolCommException('无权限查看绩效驾驶舱');
     }
 
-    const scope = await this.resolveScope(query, perms);
+    const scope = await this.resolveScope(
+      query,
+      access,
+      this.performanceAccessContextService.capabilityScopes(
+        access,
+        'dashboard.summary.read'
+      )
+    );
 
     if (scope.emptyScope) {
       return this.createEmptySummary();
@@ -207,7 +208,7 @@ export class PerformanceDashboardService extends BaseService {
       stageProgress,
     ] = await Promise.all([
       this.fetchAverageScore(query, scope),
-      this.fetchPendingApprovalCount(query, scope, perms),
+      this.fetchPendingApprovalCount(query, scope, access),
       this.fetchGoalCompletionRate(query, scope),
       this.fetchDepartmentDistribution(query, scope),
       this.fetchGradeDistribution(query, scope),
@@ -225,14 +226,26 @@ export class PerformanceDashboardService extends BaseService {
   }
 
   async crossSummary(query: DashboardCrossSummaryQuery) {
-    const perms = await this.currentPerms();
+    const access = await this.performanceAccessContextService.resolveAccessContext();
 
-    if (!this.hasPerm(perms, this.perms.crossSummary)) {
+    if (
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        'dashboard.cross_summary.read'
+      )
+    ) {
       throw new CoolCommException('无权限查看跨模块驾驶舱');
     }
 
     const normalizedQuery = this.normalizeCrossSummaryQuery(query);
-    const scope = await this.resolveCrossSummaryScope(normalizedQuery, perms);
+    const scope = await this.resolveCrossSummaryScope(
+      normalizedQuery,
+      access,
+      this.performanceAccessContextService.capabilityScopes(
+        access,
+        'dashboard.cross_summary.read'
+      )
+    );
     const snapshots = this.buildCrossMetricSnapshots(normalizedQuery, scope);
     const cacheKey = this.buildCrossSummaryCacheKey(
       normalizedQuery,
@@ -282,7 +295,7 @@ export class PerformanceDashboardService extends BaseService {
   private async fetchPendingApprovalCount(
     query: DashboardQuery,
     scope: DashboardScope,
-    perms: string[]
+    access: any
   ) {
     const qb = this.performanceAssessmentEntity
       .createQueryBuilder('assessment')
@@ -299,7 +312,12 @@ export class PerformanceDashboardService extends BaseService {
     const userId = Number(this.currentAdmin.userId);
     const departmentIds = scope.departmentIds;
 
-    if (this.hasPerm(perms, this.perms.approve)) {
+    if (
+      this.performanceAccessContextService.hasCapability(
+        access,
+        'assessment.review.approve'
+      )
+    ) {
       if (departmentIds.length) {
         qb.andWhere(
           '(assessment.assessorId = :userId OR assessment.departmentId in (:...departmentIds))',
@@ -555,8 +573,12 @@ export class PerformanceDashboardService extends BaseService {
     };
   }
 
-  private async resolveScope(query: DashboardQuery, perms: string[]) {
-    const isHr = this.isHr(perms);
+  private async resolveScope(
+    query: DashboardQuery,
+    access: any,
+    capabilityScopes: readonly string[]
+  ) {
+    const isHr = capabilityScopes.includes('company');
     const requestedDepartmentId = query.departmentId
       ? Number(query.departmentId)
       : undefined;
@@ -570,7 +592,7 @@ export class PerformanceDashboardService extends BaseService {
       } as DashboardScope;
     }
 
-    const departmentIds = await this.departmentScopeIds();
+    const departmentIds = access.departmentIds;
 
     if (requestedDepartmentId && !departmentIds.includes(requestedDepartmentId)) {
       return {
@@ -815,9 +837,10 @@ export class PerformanceDashboardService extends BaseService {
 
   private async resolveCrossSummaryScope(
     query: DashboardCrossSummaryQuery,
-    perms: string[]
+    access: any,
+    capabilityScopes: readonly string[]
   ): Promise<DashboardCrossSummaryScope> {
-    const isHr = this.isHr(perms);
+    const isHr = capabilityScopes.includes('company');
     const requestedDepartmentId = query.departmentId
       ? Number(query.departmentId)
       : undefined;
@@ -833,7 +856,7 @@ export class PerformanceDashboardService extends BaseService {
       };
     }
 
-    const departmentIds = await this.departmentScopeIds();
+    const departmentIds = access.departmentIds;
 
     if (requestedDepartmentId && !departmentIds.includes(requestedDepartmentId)) {
       throw new CoolCommException('无权查看该部门范围跨模块驾驶舱');
@@ -881,7 +904,7 @@ export class PerformanceDashboardService extends BaseService {
   ) {
     const payload = {
       metricCodes: snapshots.map(item => item.metricCode),
-      roleScope: scope.isHr ? 'hr' : 'manager',
+      roleScope: scope.isHr ? 'company' : 'department',
       scopeType: scope.scopeType,
       requestedDepartmentId: scope.requestedDepartmentId ?? null,
       effectiveDepartmentId: scope.effectiveDepartmentId,
@@ -895,7 +918,7 @@ export class PerformanceDashboardService extends BaseService {
       })),
     };
 
-    return `performance:dashboard:crossSummary:${md5(
+    return `dashboard-cross-summary:${md5(
       JSON.stringify(payload)
     )}`;
   }
@@ -953,25 +976,4 @@ export class PerformanceDashboardService extends BaseService {
       : 0;
   }
 
-  private async currentPerms() {
-    return this.baseSysMenuService.getPerms(this.currentAdmin.roleIds);
-  }
-
-  private hasPerm(perms: string[], perm: string) {
-    return perms.includes(perm);
-  }
-
-  private isHr(perms: string[]) {
-    return (
-      this.currentAdmin?.isAdmin === true ||
-      this.hasPerm(perms, this.perms.export)
-    );
-  }
-
-  private async departmentScopeIds() {
-    const ids = await this.baseSysPermsService.departmentIds(
-      this.currentAdmin.userId
-    );
-    return Array.isArray(ids) ? ids.map(item => Number(item)) : [];
-  }
 }

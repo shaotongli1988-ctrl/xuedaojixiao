@@ -112,7 +112,14 @@ function appendRow() {
 	]);
 }
 
-function updateRow(index: number, field: keyof AssessmentScoreItem, value: any) {
+type EditableAssessmentScoreField = 'indicatorName' | 'score' | 'weight' | 'comment';
+type EditableAssessmentScoreValueMap = Pick<AssessmentScoreItem, EditableAssessmentScoreField>;
+
+function updateRow<K extends keyof EditableAssessmentScoreValueMap>(
+	index: number,
+	field: K,
+	value: EditableAssessmentScoreValueMap[K]
+) {
 	const list = rows.value.map((item, current) => {
 		if (current === index) {
 			return {
@@ -135,7 +142,7 @@ function removeRow(index: number) {
 <style lang="scss" scoped>
 .score-item-table {
 	display: grid;
-	gap: 12px;
+	gap: var(--app-space-3);
 
 	&__actions {
 		display: flex;

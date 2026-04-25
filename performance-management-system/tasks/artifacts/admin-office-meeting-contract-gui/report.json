@@ -1,0 +1,90 @@
+{
+  "name": "admin-office-meeting-contract-gui",
+  "description": "行政协同口径下会议管理与合同管理最小 GUI 点测",
+  "configPath": "/Users/shaotongli/Documents/xuedao/performance-management-system/test/gui/scenarios/admin-office-meeting-contract.json",
+  "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/admin-office-meeting-contract-gui",
+  "uiBaseUrl": "http://127.0.0.1:9007",
+  "apiBaseUrl": "http://127.0.0.1:8006",
+  "chromeDebugUrl": "http://127.0.0.1:9222",
+  "generatedAt": "2026-04-20T02:30:22.313Z",
+  "scenarios": [
+    {
+      "name": "manager-office-meeting-contract-boundary",
+      "username": "manager_rd",
+      "route": "/performance/meeting",
+      "status": "failed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "会议管理",
+            "新建会议"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "会议管理",
+            "新建会议"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 3,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/admin-office-meeting-contract-gui/admin-office-meeting-manager-list.png"
+        },
+        {
+          "index": 4,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/contract"
+        },
+        {
+          "index": 5,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/admin-office-meeting-contract-gui/admin-office-contract-manager-diagnose.png"
+        },
+        {
+          "index": 6,
+          "type": "waitBodyText",
+          "status": "failed",
+          "error": "waitUntil timeout: (() => {\n\t\tconst text = document.body?.innerText || \"\";\n\t\treturn [\"当前账号没有该页面权限\"].every(item => text.includes(item))\n\t\t\t&& [].every(item => !text.includes(item));\n\t})()"
+        }
+      ],
+      "error": "waitUntil timeout: (() => {\n\t\tconst text = document.body?.innerText || \"\";\n\t\treturn [\"当前账号没有该页面权限\"].every(item => text.includes(item))\n\t\t\t&& [].every(item => !text.includes(item));\n\t})()"
+    },
+    {
+      "name": "employee-office-meeting-contract-denied",
+      "username": "employee_platform",
+      "route": "/performance/meeting",
+      "status": "failed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/admin-office-meeting-contract-gui/admin-office-meeting-employee-diagnose.png"
+        },
+        {
+          "index": 2,
+          "type": "waitBodyText",
+          "status": "failed",
+          "error": "waitUntil timeout: (() => {\n\t\tconst text = document.body?.innerText || \"\";\n\t\treturn [\"当前账号没有该页面权限\"].every(item => text.includes(item))\n\t\t\t&& [].every(item => !text.includes(item));\n\t})()"
+        }
+      ],
+      "error": "waitUntil timeout: (() => {\n\t\tconst text = document.body?.innerText || \"\";\n\t\treturn [\"当前账号没有该页面权限\"].every(item => text.includes(item))\n\t\t\t&& [].every(item => !text.includes(item));\n\t})()"
+    }
+  ],
+  "summary": {
+    "pass": 0,
+    "fail": 2
+  }
+}

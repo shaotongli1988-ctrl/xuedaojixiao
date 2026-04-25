@@ -10,11 +10,11 @@ export default {
     dataSource: {
       default: {
         type: 'mysql',
-        host: '127.0.0.1',
-        port: 3306,
-        username: 'root',
-        password: '123456',
-        database: 'cool',
+        host: process.env.LOCAL_DB_HOST || '127.0.0.1',
+        port: Number(process.env.LOCAL_DB_PORT || 3306),
+        username: process.env.LOCAL_DB_USER || 'root',
+        password: process.env.LOCAL_DB_PASSWORD || '123456',
+        database: process.env.LOCAL_DB_NAME || 'cool',
         // 本地联调复用既有库结构，避免历史 schema 漂移导致 dev 启动被 auto-sync 阻塞
         synchronize: false,
         // 打印日志

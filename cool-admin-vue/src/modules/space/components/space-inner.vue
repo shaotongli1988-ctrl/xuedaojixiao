@@ -371,7 +371,7 @@ defineExpose({
 			top: 0;
 			height: 100%;
 			width: 100%;
-			background-color: rgba(0, 0, 0, 0.4);
+			background-color: var(--app-overlay-mask-medium);
 			border-radius: 5px;
 			pointer-events: none;
 
@@ -380,7 +380,7 @@ defineExpose({
 				right: 5px;
 				top: 5px;
 				background-color: var(--el-color-success);
-				color: #fff;
+				color: var(--app-text-on-primary);
 				display: inline-block;
 				height: 20px;
 				width: 20px;
@@ -427,13 +427,13 @@ defineExpose({
 
 			i {
 				font-size: 67px;
-				color: #c0c4cc;
+				color: var(--app-text-tertiary);
 			}
 
 			p {
 				font-size: 14px;
 				margin-top: 15px;
-				color: #999;
+				color: var(--app-text-tertiary);
 			}
 		}
 	}

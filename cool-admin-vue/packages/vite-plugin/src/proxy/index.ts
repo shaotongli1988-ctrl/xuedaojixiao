@@ -27,6 +27,12 @@ export function getProxyTarget(proxy: any) {
 
 		try {
 			const { target, rewrite } = proxy[`/${value}/`];
+			if (!target) {
+				error(
+					`[cool-proxy] Missing target for ${value}. Set COOL_ADMIN_PROXY_TARGET or VITE_DEV_PROXY_TARGET.`
+				);
+				return "";
+			}
 			return target + rewrite(`/${value}`);
 		} catch (err) {
 			error(`[cool-proxy] Error：${value} → ` + getPath());

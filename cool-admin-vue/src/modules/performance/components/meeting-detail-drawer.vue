@@ -52,17 +52,14 @@
 
 			<el-card shadow="never">
 				<template #header>会议描述</template>
-				<div class="meeting-detail-drawer__text">{{ meeting.description || '暂无会议描述' }}</div>
+				<div class="meeting-detail-drawer__text">
+					{{ meeting.description || '暂无会议描述' }}
+				</div>
 			</el-card>
 
 			<div class="meeting-detail-drawer__footer">
 				<el-button @click="$emit('update:modelValue', false)">关闭</el-button>
-				<el-button
-					v-if="canCheckIn"
-					type="primary"
-					:loading="loading"
-					@click="emitCheckIn"
-				>
+				<el-button v-if="canCheckIn" type="primary" :loading="loading" @click="emitCheckIn">
 					会议签到
 				</el-button>
 			</div>
@@ -72,7 +69,10 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue';
+import { useDict } from '/$/dict';
 import type { MeetingRecord } from '../types';
+
+const MEETING_STATUS_DICT_KEY = 'performance.meeting.status';
 
 const props = defineProps<{
 	modelValue: boolean;
@@ -81,36 +81,22 @@ const props = defineProps<{
 	canCheckIn?: boolean;
 }>();
 
+const { dict } = useDict();
 const emit = defineEmits<{
 	(e: 'update:modelValue', value: boolean): void;
 	(e: 'check-in', value: { id: number }): void;
 }>();
 
-const statusLabel = computed(() => {
-	switch (props.meeting?.status) {
-		case 'in_progress':
-			return '进行中';
-		case 'completed':
-			return '已结束';
-		case 'cancelled':
-			return '已取消';
-		default:
-			return '已安排';
-	}
-});
+const statusLabel = computed(
+	() =>
+		dict.getLabel(MEETING_STATUS_DICT_KEY, props.meeting?.status) ||
+		props.meeting?.status ||
+		'已安排'
+);
 
-const statusTagType = computed(() => {
-	switch (props.meeting?.status) {
-		case 'in_progress':
-			return 'warning';
-		case 'completed':
-			return 'success';
-		case 'cancelled':
-			return 'info';
-		default:
-			return undefined;
-	}
-});
+const statusTagType = computed(
+	() => dict.getMeta(MEETING_STATUS_DICT_KEY, props.meeting?.status)?.tone
+);
 
 function emitCheckIn() {
 	if (!props.meeting?.id) {
@@ -124,20 +110,24 @@ function emitCheckIn() {
 </script>
 
 <style lang="scss" scoped>
+@use '../../../styles/patterns.overlay-responsive.scss' as overlayResponsive;
+
 .meeting-detail-drawer {
 	display: grid;
-	gap: 16px;
+	gap: var(--app-space-4);
 
 	&__text {
 		white-space: pre-wrap;
 		line-height: 1.7;
-		color: var(--el-text-color-regular);
+		color: var(--app-text-secondary);
 	}
 
 	&__footer {
 		display: flex;
 		justify-content: flex-end;
-		gap: 12px;
+		gap: var(--app-space-3);
 	}
+
+	@include overlayResponsive.overlay-responsive;
 }
 </style>

@@ -1,0 +1,173 @@
+{
+  "meta": {
+    "name": "performance-mainline-loop-gui",
+    "description": "绩效闭环最小 GUI 点测"
+  },
+  "defaults": {
+    "uiBaseUrl": "http://127.0.0.1:9007",
+    "apiBaseUrl": "http://127.0.0.1:8006",
+    "chromeDebugUrl": "http://127.0.0.1:9222",
+    "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/performance-mainline-loop",
+    "password": "123456",
+    "viewport": {
+      "width": 1440,
+      "height": 1100,
+      "deviceScaleFactor": 1,
+      "mobile": false
+    }
+  },
+  "scenarios": [
+    {
+      "name": "hr-performance-loop",
+      "username": "hr_admin",
+      "route": "/performance/initiated",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "已发起考核",
+            "发起评估"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "performance-loop-hr-initiated.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/goals",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "目标地图",
+            "新建目标"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "performance-loop-hr-goals.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/feedback",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "360 环评任务",
+            "发起环评任务"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "performance-loop-hr-feedback.png"
+        }
+      ]
+    },
+    {
+      "name": "manager-performance-loop",
+      "username": "manager_rd",
+      "route": "/performance/pending",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "待我审批"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "待我审批"
+          ],
+          "excludes": [
+            "发起评估"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "performance-loop-manager-pending.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/goals",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "目标地图"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "performance-loop-manager-goals.png"
+        }
+      ]
+    },
+    {
+      "name": "employee-performance-loop",
+      "username": "employee_platform",
+      "route": "/performance/my-assessment",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "我的考核"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "performance-loop-employee-assessment.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/goals",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "目标地图"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "performance-loop-employee-goals.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/pending",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "assertBodyText",
+          "includes": [
+            "404",
+            "找不到您要查找的页面"
+          ],
+          "excludes": [
+            "待我审批"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "performance-loop-employee-pending-404.png"
+        }
+      ]
+    }
+  ]
+}

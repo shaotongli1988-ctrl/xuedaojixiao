@@ -1,0 +1,385 @@
+{
+  "name": "theme20-asset-management-gui",
+  "description": "Theme20 资产管理全生命周期最小 GUI 点测",
+  "configPath": "/Users/shaotongli/Documents/xuedao/performance-management-system/test/gui/scenarios/theme20-asset-management.json",
+  "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/theme20-asset-management-gui",
+  "uiBaseUrl": "http://127.0.0.1:9007",
+  "apiBaseUrl": "http://127.0.0.1:19136",
+  "chromeDebugUrl": "http://127.0.0.1:9222",
+  "generatedAt": "2026-04-19T12:42:10.282Z",
+  "scenarios": [
+    {
+      "name": "hr-asset-full-lifecycle",
+      "username": "hr_admin",
+      "route": "/performance/asset/dashboard",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "资产首页",
+            "动作总览",
+            "本日动作",
+            "本周动作",
+            "本月动作",
+            "状态分布",
+            "最近动作流水"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme20-asset-management-gui/theme20-asset-hr-dashboard.png"
+        },
+        {
+          "index": 3,
+          "type": "assertBodyText",
+          "status": "passed",
+          "includes": [
+            "动作总览",
+            "本日动作",
+            "本周动作",
+            "本月动作",
+            "最近动作流水"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 4,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/asset/ledger"
+        },
+        {
+          "index": 5,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "资产台账",
+            "新建资产"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 6,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme20-asset-management-gui/theme20-asset-hr-ledger.png"
+        },
+        {
+          "index": 7,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/asset/assignment"
+        },
+        {
+          "index": 8,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "领用归还",
+            "新增领用"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 9,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme20-asset-management-gui/theme20-asset-hr-assignment.png"
+        },
+        {
+          "index": 10,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/asset/maintenance"
+        },
+        {
+          "index": 11,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "维护保养",
+            "新增维护"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 12,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme20-asset-management-gui/theme20-asset-hr-maintenance.png"
+        },
+        {
+          "index": 13,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/asset/report"
+        },
+        {
+          "index": 14,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "资产报表",
+            "报表汇总",
+            "导出"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 15,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme20-asset-management-gui/theme20-asset-hr-report.png"
+        },
+        {
+          "index": 16,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/asset/procurement"
+        },
+        {
+          "index": 17,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "采购入库",
+            "新增入库单"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 18,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme20-asset-management-gui/theme20-asset-hr-procurement.png"
+        },
+        {
+          "index": 19,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/asset/transfer"
+        },
+        {
+          "index": 20,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "资产调拨",
+            "新增调拨"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 21,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme20-asset-management-gui/theme20-asset-hr-transfer.png"
+        },
+        {
+          "index": 22,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/asset/inventory"
+        },
+        {
+          "index": 23,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "资产盘点",
+            "新增盘点"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 24,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme20-asset-management-gui/theme20-asset-hr-inventory.png"
+        },
+        {
+          "index": 25,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/asset/depreciation"
+        },
+        {
+          "index": 26,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "折旧",
+            "汇总",
+            "折旧重算"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 27,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme20-asset-management-gui/theme20-asset-hr-depreciation.png"
+        },
+        {
+          "index": 28,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/asset/disposal"
+        },
+        {
+          "index": 29,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "报废",
+            "新增报废单"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 30,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme20-asset-management-gui/theme20-asset-hr-disposal.png"
+        }
+      ]
+    },
+    {
+      "name": "manager-asset-permission-scope",
+      "username": "manager_rd",
+      "route": "/performance/asset/dashboard",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "资产首页",
+            "动作总览",
+            "状态分布",
+            "最近动作流水"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme20-asset-management-gui/theme20-asset-manager-dashboard.png"
+        },
+        {
+          "index": 3,
+          "type": "assertBodyText",
+          "status": "passed",
+          "includes": [
+            "动作总览",
+            "最近动作流水"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 4,
+          "type": "navigate",
+          "status": "passed",
+          "route": "/performance/asset/report"
+        },
+        {
+          "index": 5,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "资产报表",
+            "报表汇总"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 6,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "资产报表",
+            "报表汇总"
+          ],
+          "excludes": [
+            "导出"
+          ]
+        },
+        {
+          "index": 7,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme20-asset-management-gui/theme20-asset-manager-report.png"
+        },
+        {
+          "index": 8,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "资产报表",
+            "报表汇总"
+          ],
+          "excludes": [
+            "导出",
+            "折旧",
+            "折旧重算"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "employee-asset-no-entry",
+      "username": "employee_platform",
+      "route": "/performance/my-assessment",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": [
+            "资产首页",
+            "资产台账",
+            "领用归还",
+            "维护保养",
+            "资产报表",
+            "采购入库",
+            "资产调拨",
+            "资产盘点",
+            "折旧",
+            "报废"
+          ]
+        },
+        {
+          "index": 3,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme20-asset-management-gui/theme20-asset-employee-no-entry.png"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "pass": 3,
+    "fail": 0
+  }
+}

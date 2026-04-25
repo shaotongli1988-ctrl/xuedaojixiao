@@ -1,0 +1,194 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "theme12 talentAsset contract snapshot",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/admin/performance/talentAsset/page": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TalentAssetPageQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "人才资产分页结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TalentAssetPageResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/talentAsset/info": {
+      "get": {
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "人才资产详情结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TalentAssetRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/talentAsset/add": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TalentAssetSaveRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/talentAsset/update": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TalentAssetSaveRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/talentAsset/delete": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteIdsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "删除人才资产结果"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PagePagination": {
+        "type": "object",
+        "required": ["page", "size", "total"],
+        "properties": {
+          "page": { "type": "integer" },
+          "size": { "type": "integer" },
+          "total": { "type": "integer" }
+        }
+      },
+      "TalentAssetStatus": {
+        "type": "string",
+        "enum": ["new", "tracking", "archived"]
+      },
+      "TalentAssetPageQuery": {
+        "type": "object",
+        "required": ["page", "size"],
+        "properties": {
+          "page": { "type": "integer" },
+          "size": { "type": "integer" },
+          "keyword": { "type": "string" },
+          "targetDepartmentId": { "type": "integer" },
+          "source": { "type": "string" },
+          "tag": { "type": "string" },
+          "status": { "$ref": "#/components/schemas/TalentAssetStatus" }
+        }
+      },
+      "TalentAssetRecord": {
+        "type": "object",
+        "required": ["candidateName", "targetDepartmentId", "source", "status"],
+        "properties": {
+          "id": { "type": "integer" },
+          "candidateName": { "type": "string" },
+          "code": { "type": "string", "nullable": true },
+          "targetDepartmentId": { "type": "integer" },
+          "targetDepartmentName": { "type": "string" },
+          "targetPosition": { "type": "string", "nullable": true },
+          "source": { "type": "string" },
+          "tagList": { "type": "array", "items": { "type": "string" } },
+          "followUpSummary": { "type": "string", "nullable": true },
+          "nextFollowUpDate": { "type": "string", "nullable": true },
+          "status": { "$ref": "#/components/schemas/TalentAssetStatus" },
+          "createTime": { "type": "string" },
+          "updateTime": { "type": "string" }
+        }
+      },
+      "TalentAssetSaveRequest": {
+        "type": "object",
+        "required": ["candidateName", "targetDepartmentId", "source"],
+        "properties": {
+          "id": { "type": "integer" },
+          "candidateName": { "type": "string" },
+          "code": { "type": "string", "nullable": true },
+          "targetDepartmentId": { "type": "integer" },
+          "targetPosition": { "type": "string", "nullable": true },
+          "source": { "type": "string" },
+          "tagList": { "type": "array", "items": { "type": "string" } },
+          "followUpSummary": { "type": "string", "nullable": true },
+          "nextFollowUpDate": { "type": "string", "nullable": true },
+          "status": { "$ref": "#/components/schemas/TalentAssetStatus" }
+        }
+      },
+      "TalentAssetPageResult": {
+        "type": "object",
+        "required": ["list", "pagination"],
+        "properties": {
+          "list": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/TalentAssetRecord" }
+          },
+          "pagination": { "$ref": "#/components/schemas/PagePagination" }
+        }
+      },
+      "DeleteIdsRequest": {
+        "type": "object",
+        "required": ["ids"],
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": { "type": "integer" }
+          }
+        }
+      }
+    }
+  }
+}

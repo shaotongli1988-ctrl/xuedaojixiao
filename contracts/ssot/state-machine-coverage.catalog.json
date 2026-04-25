@@ -1,0 +1,69 @@
+{
+  "version": "1.0",
+  "owner": "repo-governance",
+  "scope": "performance state-machine coverage",
+  "notes": [
+    "This catalog is the repository-level SSOT for performance state-machine coverage boundaries.",
+    "The writable business machine sources remain the individual files under cool-admin-midway/src/modules/performance/domain/states/.",
+    "This file only freezes which aggregates are already machine-sourced, which are planned, and which read-only surfaces are out of scope for standalone state machines."
+  ],
+  "machineSourceFiles": [
+    "cool-admin-midway/src/modules/performance/domain/states/approval-flow.ts",
+    "cool-admin-midway/src/modules/performance/domain/states/asset-assignment-request.ts",
+    "cool-admin-midway/src/modules/performance/domain/states/asset-disposal.ts",
+    "cool-admin-midway/src/modules/performance/domain/states/asset-inventory.ts",
+    "cool-admin-midway/src/modules/performance/domain/states/asset-maintenance.ts",
+    "cool-admin-midway/src/modules/performance/domain/states/asset-procurement.ts",
+    "cool-admin-midway/src/modules/performance/domain/states/asset-transfer.ts",
+    "cool-admin-midway/src/modules/performance/domain/states/assessment.ts",
+    "cool-admin-midway/src/modules/performance/domain/states/feedback.ts",
+    "cool-admin-midway/src/modules/performance/domain/states/goal.ts",
+    "cool-admin-midway/src/modules/performance/domain/states/job-standard.ts",
+    "cool-admin-midway/src/modules/performance/domain/states/pip.ts",
+    "cool-admin-midway/src/modules/performance/domain/states/promotion.ts",
+    "cool-admin-midway/src/modules/performance/domain/states/purchase-order.ts",
+    "cool-admin-midway/src/modules/performance/domain/states/salary.ts",
+    "cool-admin-midway/src/modules/performance/domain/states/suggestion.ts",
+    "cool-admin-midway/src/modules/performance/domain/states/teacher-class.ts",
+    "cool-admin-midway/src/modules/performance/domain/states/teacher-cooperation.ts",
+    "cool-admin-midway/src/modules/performance/domain/states/types.ts",
+    "cool-admin-midway/src/modules/performance/domain/states/work-plan.ts"
+  ],
+  "implementedAggregates": [
+    "approval-flow",
+    "asset-assignment-request",
+    "asset-disposal",
+    "asset-inventory",
+    "asset-maintenance",
+    "asset-procurement",
+    "asset-transfer",
+    "assessment",
+    "feedback",
+    "goal",
+    "job-standard",
+    "pip",
+    "promotion",
+    "purchase-order",
+    "salary",
+    "suggestion",
+    "teacher-class",
+    "teacher-cooperation",
+    "work-plan"
+  ],
+  "plannedAggregates": [],
+  "outOfScopeAggregates": [
+    "dashboard",
+    "purchase-report"
+  ],
+  "supportingGuards": [
+    "scripts/check-state-machine-coverage-ssot.mjs",
+    "scripts/check-state-machine-alignment.mjs"
+  ],
+  "generatedConsumers": [
+    "cool-admin-midway/src/modules/performance/domain/registry/index.ts",
+    "cool-admin-midway/src/modules/performance/service",
+    "cool-admin-vue/src/modules/performance/views",
+    "performance-management-system/docs/05-状态机与流转规则.md",
+    "scripts/run-repo-consistency-guards.mjs"
+  ]
+}

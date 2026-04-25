@@ -13,6 +13,28 @@ import {
   resolveAssessmentGrade,
 } from '../../src/modules/performance/service/assessment-helper';
 import { PerformanceAssessmentService } from '../../src/modules/performance/service/assessment';
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
+
+function attachAccessContextService(service: any) {
+  if (!service.baseSysMenuService) {
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue([]),
+    };
+  }
+  if (!service.baseSysPermsService) {
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+  }
+  service.performanceAccessContextService = Object.assign(
+    new PerformanceAccessContextService(),
+    {
+      ctx: service.ctx,
+      baseSysMenuService: service.baseSysMenuService,
+      baseSysPermsService: service.baseSysPermsService,
+    }
+  );
+}
 
 describe('performance assessment helper', () => {
   test('should calculate weighted total score', () => {
@@ -77,6 +99,7 @@ describe('performance assessment helper', () => {
     service.baseSysPermsService = {
       departmentIds: jest.fn().mockResolvedValue([]),
     };
+    attachAccessContextService(service);
 
     await expect(
       service.page({
@@ -138,6 +161,7 @@ describe('performance assessment helper', () => {
       assertManualReviewAllowed: jest.fn().mockResolvedValue(undefined),
     };
     service.info = jest.fn().mockResolvedValue({ id: 41, status: 'approved' });
+    attachAccessContextService(service);
 
     await expect(service.approve(41, '需要进入改进')).resolves.toEqual({
       id: 41,
@@ -206,6 +230,10 @@ describe('performance assessment helper', () => {
       submitAssessment: jest.fn().mockResolvedValue(undefined),
     };
     service.info = jest.fn().mockResolvedValue({ id: 61, status: 'submitted' });
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+    attachAccessContextService(service);
 
     await expect(service.submit(61)).resolves.toEqual({
       id: 61,
@@ -223,5 +251,119 @@ describe('performance assessment helper', () => {
         grade: 'A',
       })
     );
+  });
+
+  test('should reject submit for another employee assessment even when submit permission exists', async () => {
+    const service = new PerformanceAssessmentService() as any;
+    service.ctx = {
+      admin: {
+        userId: 501,
+        username: 'employee_platform',
+        roleIds: [3],
+      },
+    };
+    service.baseSysMenuService = {
+      getPerms: jest
+        .fn()
+        .mockResolvedValue(['performance:assessment:submit']),
+    };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+    service.performanceAssessmentEntity = {
+      findOneBy: jest.fn().mockResolvedValue({
+        id: 71,
+        employeeId: 502,
+        departmentId: 18,
+        status: 'draft',
+      }),
+    };
+    attachAccessContextService(service);
+
+    await expect(service.submit(71)).rejects.toThrow('仅允许提交本人评估单');
+  });
+
+  test('should reject review when assessment status is not submitted', async () => {
+    const service = new PerformanceAssessmentService() as any;
+    service.ctx = {
+      admin: {
+        userId: 601,
+        username: 'manager_platform',
+        roleIds: [2],
+      },
+    };
+    service.baseSysMenuService = {
+      getPerms: jest
+        .fn()
+        .mockResolvedValue(['performance:assessment:approve']),
+    };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([18]),
+    };
+    service.performanceAssessmentEntity = {
+      findOneBy: jest.fn().mockResolvedValue({
+        id: 81,
+        employeeId: 501,
+        assessorId: 601,
+        departmentId: 18,
+        status: 'draft',
+      }),
+      manager: {
+        transaction: jest.fn(),
+      },
+    };
+    service.performanceApprovalFlowService = {
+      assertManualReviewAllowed: jest.fn().mockResolvedValue(undefined),
+    };
+    attachAccessContextService(service);
+
+    expect.assertions(1);
+    try {
+      await service.approve(81, '状态不对');
+    } catch (error: any) {
+      expect(error.message).toBe('当前状态不允许执行该操作');
+    }
+  });
+
+  test('should reject review when manager is outside assessment scope', async () => {
+    const service = new PerformanceAssessmentService() as any;
+    service.ctx = {
+      admin: {
+        userId: 601,
+        username: 'manager_platform',
+        roleIds: [2],
+      },
+    };
+    service.baseSysMenuService = {
+      getPerms: jest
+        .fn()
+        .mockResolvedValue(['performance:assessment:approve']),
+    };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([11]),
+    };
+    service.performanceAssessmentEntity = {
+      findOneBy: jest.fn().mockResolvedValue({
+        id: 91,
+        employeeId: 501,
+        assessorId: 700,
+        departmentId: 99,
+        status: 'submitted',
+      }),
+      manager: {
+        transaction: jest.fn(),
+      },
+    };
+    service.performanceApprovalFlowService = {
+      assertManualReviewAllowed: jest.fn().mockResolvedValue(undefined),
+    };
+    attachAccessContextService(service);
+
+    expect.assertions(1);
+    try {
+      await service.approve(91, '越权审批');
+    } catch (error: any) {
+      expect(error.message).toBe('无权审批该评估单');
+    }
   });
 });

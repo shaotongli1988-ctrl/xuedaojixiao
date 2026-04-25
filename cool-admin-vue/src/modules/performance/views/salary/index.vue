@@ -1,4 +1,4 @@
-<!-- 文件职责：承载薪资列表、详情、草稿维护、确认归档和调整记录入口；不负责导出、员工端个人薪资页和复杂薪资计算；依赖薪资 service、用户基础服务和调整抽屉组件；维护重点是只有 HR 可以进入且 confirmed 后只能走调整记录。 -->
+<!-- 文件职责：承载薪资列表、详情、草稿维护、确认归档和调整记录入口；不负责导出、员工端个人薪资页和复杂薪资计算；依赖薪资 service、用户基础服务和调整抽屉组件；维护重点是角色展示统一消费 access-context 事实源，页面权限仍限定薪资主链且 confirmed 后只能走调整记录。 -->
 <template>
 	<div v-if="canAccess" class="salary-page">
 		<el-card shadow="never">
@@ -99,7 +99,7 @@
 			<template #header>
 				<div class="salary-page__header">
 					<h2>薪资管理</h2>
-					<el-tag effect="plain">仅 HR 可见</el-tag>
+					<el-tag effect="plain">{{ roleFact.roleLabel }}</el-tag>
 				</div>
 			</template>
 
@@ -110,7 +110,9 @@
 				<el-table-column prop="effectiveDate" label="生效日期" min-width="120" />
 				<el-table-column prop="status" label="状态" width="110">
 					<template #default="{ row }">
-						<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+						<el-tag :type="statusTagType(row.status)">{{
+							statusLabel(row.status)
+						}}</el-tag>
 					</template>
 				</el-table-column>
 				<el-table-column prop="baseSalary" label="基础薪资" min-width="130">
@@ -134,9 +136,17 @@
 					</template>
 				</el-table-column>
 				<el-table-column prop="updateTime" label="更新时间" min-width="170" />
-				<el-table-column label="操作" fixed="right" min-width="280">
+				<el-table-column label="操作" fixed="right" min-width="360">
 					<template #default="{ row }">
 						<el-button text @click="openDetail(row)">详情</el-button>
+						<el-button
+							v-if="canViewSourceAssessment(row)"
+							text
+							type="primary"
+							@click="goSourceAssessment(row.assessmentId!)"
+						>
+							来源评估单
+						</el-button>
 						<el-button v-if="canEdit(row)" text type="primary" @click="openEdit(row)">
 							编辑
 						</el-button>
@@ -296,12 +306,7 @@
 			</template>
 		</el-dialog>
 
-		<el-drawer
-			v-model="detailVisible"
-			title="薪资详情"
-			size="720px"
-			destroy-on-close
-		>
+		<el-drawer v-model="detailVisible" title="薪资详情" size="720px" destroy-on-close>
 			<template v-if="detailSalary">
 				<el-descriptions :column="2" border>
 					<el-descriptions-item label="员工">
@@ -344,6 +349,14 @@
 
 				<div class="salary-page__detail-toolbar">
 					<el-button
+						v-if="showSourceAssessmentButton && detailSalary?.assessmentId"
+						type="primary"
+						plain
+						@click="goSourceAssessment(detailSalary.assessmentId)"
+					>
+						查看来源评估单
+					</el-button>
+					<el-button
 						v-if="canChange(detailSalary)"
 						type="danger"
 						plain
@@ -363,7 +376,11 @@
 						</div>
 					</template>
 
-					<el-table :data="detailSalary.changeRecords || []" border empty-text="暂无调整记录">
+					<el-table
+						:data="detailSalary.changeRecords || []"
+						border
+						empty-text="暂无调整记录"
+					>
 						<el-table-column prop="beforeAmount" label="调整前" min-width="120">
 							<template #default="{ row }">
 								{{ formatAmount(row.beforeAmount) }}
@@ -395,31 +412,43 @@
 		/>
 	</div>
 
-	<el-result
-		v-else
-		icon="warning"
-		title="无权限访问"
-		sub-title="薪资管理仅对 HR 管理员开放。"
-	/>
+	<el-result v-else icon="warning" title="无权限访问" :sub-title="salaryDeniedSubtitle" />
 </template>
 
 <script lang="ts" setup>
 import { computed, onMounted, reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import type { FormInstance, FormRules } from 'element-plus';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage } from 'element-plus';
+import { useDict } from '/$/dict';
 import { service } from '/@/cool';
 import { checkPerm } from '/$/base/utils/permission';
 import SalaryChangeDrawer from '../../components/salary-change-drawer.vue';
+import { useListPage } from '../../composables/use-list-page.js';
+import { performanceAccessContextService } from '../../service/access-context';
+import { performanceAssessmentService } from '../../service/assessment';
+import { resolvePerformanceRoleFact } from '../../service/role-fact';
 import { performanceSalaryService } from '../../service/salary';
+import { loadUserOptions } from '../../utils/lookup-options.js';
+import { confirmElementAction, runTrackedElementAction } from '../shared/action-feedback';
 import {
+	createElementWarningFromErrorHandler,
+	resolveErrorMessage,
+	showElementErrorFromError,
+	showElementWarningFromError
+} from '../shared/error-message';
+import {
+	type PerformanceAccessContext,
 	type SalaryRecord,
 	type UserOption,
 	createEmptySalary
 } from '../../types';
 
-const rows = ref<SalaryRecord[]>([]);
+const SALARY_STATUS_DICT_KEY = 'performance.salary.status';
+
+const router = useRouter();
 const userOptions = ref<UserOption[]>([]);
-const tableLoading = ref(false);
+const { dict } = useDict();
 const submitLoading = ref(false);
 const formVisible = ref(false);
 const detailVisible = ref(false);
@@ -428,21 +457,7 @@ const editingSalary = ref<SalaryRecord | null>(null);
 const detailSalary = ref<SalaryRecord | null>(null);
 const changeTarget = ref<SalaryRecord | null>(null);
 const formRef = ref<FormInstance>();
-
-const filters = reactive({
-	employeeId: undefined as number | undefined,
-	periodValue: '',
-	status: '',
-	effectiveDateStart: '',
-	effectiveDateEnd: ''
-});
-
-const pagination = reactive({
-	page: 1,
-	size: 10,
-	total: 0
-});
-
+const accessContext = ref<PerformanceAccessContext | null>(null);
 const form = reactive<SalaryRecord>(createEmptySalary());
 
 const rules: FormRules = {
@@ -455,68 +470,108 @@ const rules: FormRules = {
 	finalAmount: [{ required: true, message: '请输入最终金额', trigger: 'change' }]
 };
 
-const statusOptions = [
-	{ label: '草稿', value: 'draft' },
-	{ label: '已确认', value: 'confirmed' },
-	{ label: '已归档', value: 'archived' }
-];
+const statusOptions = computed<Array<{ label: string; value: string }>>(() =>
+	dict.get(SALARY_STATUS_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: String(item.value)
+	}))
+);
 
 const canAccess = computed(() => checkPerm(performanceSalaryService.permission.page));
+const roleFact = computed(() =>
+	resolvePerformanceRoleFact({
+		personaKey: accessContext.value?.activePersonaKey || null,
+		roleKind: accessContext.value?.roleKind || null
+	})
+);
+const salaryDeniedSubtitle = computed(
+	() => `当前账号当前为${roleFact.value.roleLabel}，未开通薪资管理页权限。`
+);
 const showAddButton = computed(() => checkPerm(performanceSalaryService.permission.add));
+const showSourceAssessmentButton = computed(() => {
+	return (
+		checkPerm(performanceAssessmentService.permission.info) &&
+		resolveAssessmentPagePath() !== ''
+	);
+});
+const salaryList = useListPage({
+	createFilters: () => ({
+		employeeId: undefined as number | undefined,
+		periodValue: '',
+		status: '',
+		effectiveDateStart: '',
+		effectiveDateEnd: ''
+	}),
+	canLoad: () => canAccess.value,
+	fetchPage: async params =>
+		performanceSalaryService.fetchPage({
+			page: params.page,
+			size: params.size,
+			employeeId: params.employeeId,
+			periodValue: params.periodValue || undefined,
+			status: params.status || undefined,
+			effectiveDateStart: params.effectiveDateStart || undefined,
+			effectiveDateEnd: params.effectiveDateEnd || undefined
+		}),
+	onError: (error: unknown) => {
+		showElementErrorFromError(error, '薪资列表加载失败');
+	}
+});
+const rows = salaryList.rows;
+const tableLoading = salaryList.loading;
+const filters = salaryList.filters;
+const pagination = salaryList.pager;
 
 onMounted(async () => {
+	await Promise.all([dict.refresh([SALARY_STATUS_DICT_KEY]), loadAccessContext()]);
 	await loadUsers();
 	await refresh();
 });
 
-async function loadUsers() {
+async function loadAccessContext() {
 	try {
-		const result = await service.base.sys.user.page({
-			page: 1,
-			size: 200
-		});
-
-		userOptions.value = (result.list || []).map((item: any) => ({
-			id: Number(item.id),
-			name: item.name,
-			departmentId: item.departmentId,
-			departmentName: item.departmentName
-		}));
-	} catch (error: any) {
-		ElMessage.warning(error.message || '用户选项加载失败');
+		accessContext.value = await performanceAccessContextService.fetchContext();
+	} catch (error: unknown) {
+		accessContext.value = null;
+		showElementWarningFromError(error, '角色上下文加载失败，已使用兼容展示视角');
 	}
+}
+
+async function loadUsers() {
+	userOptions.value = await loadUserOptions(
+		() =>
+			service.base.sys.user.page({
+				page: 1,
+				size: 200
+			}),
+		createElementWarningFromErrorHandler('用户选项加载失败')
+	);
 }
 
 async function refresh() {
-	if (!canAccess.value) {
-		return;
-	}
-
-	tableLoading.value = true;
-
-	try {
-		const result = await performanceSalaryService.fetchPage({
-			page: pagination.page,
-			size: pagination.size,
-			employeeId: filters.employeeId,
-			periodValue: filters.periodValue || undefined,
-			status: filters.status || undefined,
-			effectiveDateStart: filters.effectiveDateStart || undefined,
-			effectiveDateEnd: filters.effectiveDateEnd || undefined
-		});
-
-		rows.value = result.list || [];
-		pagination.total = result.pagination?.total || 0;
-	} catch (error: any) {
-		ElMessage.error(error.message || '薪资列表加载失败');
-	} finally {
-		tableLoading.value = false;
-	}
+	await salaryList.reload();
 }
 
 function changePage(page: number) {
-	pagination.page = page;
-	refresh();
+	void salaryList.goToPage(page);
+}
+
+async function goSourceAssessment(assessmentId: number) {
+	const path = resolveAssessmentPagePath();
+
+	if (!path) {
+		return;
+	}
+
+	detailVisible.value = false;
+
+	await router.push({
+		path,
+		query: {
+			openDetail: '1',
+			assessmentId: String(assessmentId)
+		}
+	});
 }
 
 function formatAmount(value?: number) {
@@ -524,19 +579,11 @@ function formatAmount(value?: number) {
 }
 
 function statusLabel(status?: string) {
-	const item = statusOptions.find(option => option.value === status);
-	return item?.label || status || '-';
+	return dict.getLabel(SALARY_STATUS_DICT_KEY, status) || status || '-';
 }
 
 function statusTagType(status?: string) {
-	switch (status) {
-		case 'confirmed':
-			return 'success';
-		case 'archived':
-			return 'info';
-		default:
-			return 'warning';
-	}
+	return dict.getMeta(SALARY_STATUS_DICT_KEY, status)?.tone || 'info';
 }
 
 function openCreate() {
@@ -572,8 +619,8 @@ async function loadDetail(id: number, next: (record: SalaryRecord) => void) {
 	try {
 		const record = await performanceSalaryService.fetchInfo({ id });
 		next(record);
-	} catch (error: any) {
-		ElMessage.error(error.message || '薪资详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '薪资详情加载失败');
 	}
 }
 
@@ -594,43 +641,51 @@ async function submitForm() {
 		ElMessage.success('保存成功');
 		formVisible.value = false;
 		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '保存失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '保存失败');
 	} finally {
 		submitLoading.value = false;
 	}
 }
 
 async function handleConfirm(row: SalaryRecord) {
-	await ElMessageBox.confirm(
+	const confirmed = await confirmElementAction(
 		`确认将「${row.employeeName} / ${row.periodValue}」薪资设为已确认吗？`,
-		'确认薪资',
-		{ type: 'warning' }
+		'确认薪资'
 	);
 
-	try {
-		await performanceSalaryService.confirmSalary({ id: row.id! });
-		ElMessage.success('确认成功');
-		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '确认失败');
+	if (!confirmed) {
+		return;
 	}
+
+	await runTrackedElementAction({
+		rowId: Number(row.id || 0),
+		actionType: 'confirm',
+		request: () => performanceSalaryService.confirmSalary({ id: row.id! }),
+		successMessage: '确认成功',
+		errorMessage: '确认失败',
+		refresh
+	});
 }
 
 async function handleArchive(row: SalaryRecord) {
-	await ElMessageBox.confirm(
+	const confirmed = await confirmElementAction(
 		`确认归档「${row.employeeName} / ${row.periodValue}」薪资吗？`,
-		'归档薪资',
-		{ type: 'warning' }
+		'归档薪资'
 	);
 
-	try {
-		await performanceSalaryService.archiveSalary({ id: row.id! });
-		ElMessage.success('归档成功');
-		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '归档失败');
+	if (!confirmed) {
+		return;
 	}
+
+	await runTrackedElementAction({
+		rowId: Number(row.id || 0),
+		actionType: 'archive',
+		request: () => performanceSalaryService.archiveSalary({ id: row.id! }),
+		successMessage: '归档成功',
+		errorMessage: '归档失败',
+		refresh
+	});
 }
 
 async function submitChange(payload: {
@@ -647,103 +702,81 @@ async function submitChange(payload: {
 		detailSalary.value = record;
 		ElMessage.success('调整记录已保存');
 		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '调整失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '调整失败');
 	} finally {
 		submitLoading.value = false;
 	}
 }
 
 function canEdit(row: SalaryRecord) {
-	return (
-		checkPerm(performanceSalaryService.permission.update) &&
-		row.status === 'draft'
-	);
+	return checkPerm(performanceSalaryService.permission.update) && row.status === 'draft';
 }
 
 function canConfirm(row: SalaryRecord) {
-	return (
-		checkPerm(performanceSalaryService.permission.confirm) &&
-		row.status === 'draft'
-	);
+	return checkPerm(performanceSalaryService.permission.confirm) && row.status === 'draft';
 }
 
 function canArchive(row: SalaryRecord) {
-	return (
-		checkPerm(performanceSalaryService.permission.archive) &&
-		row.status === 'confirmed'
-	);
+	return checkPerm(performanceSalaryService.permission.archive) && row.status === 'confirmed';
 }
 
 function canChange(row: SalaryRecord) {
-	return (
-		checkPerm(performanceSalaryService.permission.changeAdd) &&
-		row.status === 'confirmed'
-	);
+	return checkPerm(performanceSalaryService.permission.changeAdd) && row.status === 'confirmed';
+}
+
+function canViewSourceAssessment(row: SalaryRecord) {
+	return Boolean(row.assessmentId) && resolveAssessmentPagePath() !== '';
+}
+
+function resolveAssessmentPagePath() {
+	if (checkPerm(performanceAssessmentService.permission.page)) {
+		return '/performance/initiated';
+	}
+
+	if (checkPerm(performanceAssessmentService.permission.myPage)) {
+		return '/performance/my-assessment';
+	}
+
+	if (checkPerm(performanceAssessmentService.permission.pendingPage)) {
+		return '/performance/pending';
+	}
+
+	return '';
 }
 </script>
 
 <style lang="scss" scoped>
+@use '../../../../styles/patterns.management-workspace.scss' as managementWorkspace;
+
 .salary-page {
-	display: grid;
-	gap: 16px;
+	@include managementWorkspace.management-workspace-shell(1180px);
 
-	&__toolbar {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 16px;
-	}
-
-	&__toolbar-left,
-	&__toolbar-right {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 12px;
-	}
-
-	&__stat-label {
-		font-size: 12px;
-		color: var(--el-text-color-secondary);
-	}
-
-	&__stat-value {
-		margin-top: 8px;
-		font-size: 28px;
-		font-weight: 600;
-		color: var(--el-text-color-primary);
-	}
-
-	&__header,
 	&__subheader {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 12px;
+		gap: var(--app-space-3);
 
-		h2,
 		h3 {
 			margin: 0;
-			font-size: 18px;
+			font-size: var(--app-font-size-title);
 		}
-	}
-
-	&__pagination {
-		display: flex;
-		justify-content: flex-end;
-		padding-top: 16px;
-	}
-
-	&__dialog-footer {
-		display: flex;
-		justify-content: flex-end;
-		gap: 12px;
 	}
 
 	&__detail-toolbar {
 		display: flex;
 		justify-content: flex-end;
-		padding: 16px 0;
+		gap: var(--app-space-3);
+		padding: var(--app-space-4) 0;
+	}
+
+	@media (max-width: 768px) {
+		&__subheader,
+		&__detail-toolbar {
+			flex-direction: column;
+			align-items: stretch;
+		}
 	}
 }
 </style>

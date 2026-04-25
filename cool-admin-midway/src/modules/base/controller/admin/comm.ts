@@ -17,16 +17,20 @@ import {
   Inject,
   Post,
   Provide,
+  Query,
   Scope,
   ScopeEnum,
 } from '@midwayjs/core';
 import { Context } from '@midwayjs/koa';
-import * as jwt from 'jsonwebtoken';
 import { PluginService } from '../../../plugin/service/info';
 import { BaseSysUserEntity } from '../../entity/sys/user';
 import { BaseSysLoginService } from '../../service/sys/login';
+import { BaseSysDepartmentService } from '../../service/sys/department';
 import { BaseSysPermsService } from '../../service/sys/perms';
 import { BaseSysUserService } from '../../service/sys/user';
+import { PerformanceTeacherChannelCoreService } from '../../../performance/service/teacher-channel-core';
+import { PerformanceAccessContextService } from '../../../performance/service/access-context';
+import { resolveUserAdminRuntimeContext, verifyUserAdminToken } from '../../../user/domain';
 
 const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
   return require('../../config').default({
@@ -51,6 +55,15 @@ export class BaseCommController extends BaseController {
 
   @Inject()
   baseSysLoginService: BaseSysLoginService;
+
+  @Inject()
+  baseSysDepartmentService: BaseSysDepartmentService;
+
+  @Inject()
+  performanceTeacherChannelCoreService: PerformanceTeacherChannelCoreService;
+
+  @Inject()
+  performanceAccessContextService: PerformanceAccessContextService;
 
   @Inject()
   ctx: Context;
@@ -85,11 +98,7 @@ export class BaseCommController extends BaseController {
     if (!token) {
       return undefined;
     }
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
+    return verifyUserAdminToken(token, resolveBaseJwtConfig(this.app).secret);
   }
 
   /**
@@ -97,7 +106,22 @@ export class BaseCommController extends BaseController {
    */
   @Get('/person', { summary: '个人信息' })
   async person() {
-    return this.ok(await this.baseSysUserService.person(this.currentAdmin?.userId));
+    const currentAdmin = resolveUserAdminRuntimeContext(this.currentAdmin);
+    const info = await this.baseSysUserService.person(currentAdmin.userId);
+    const permissionMask = await this.baseSysPermsService.currentPermissionMask(
+      currentAdmin.roleIds
+    );
+    const teacherAccessProfile =
+      (await this.performanceTeacherChannelCoreService.teacherAccessProfile?.()) ||
+      null;
+
+    return this.ok({
+      ...info,
+      permissionMask,
+      teacherAccessProfile,
+      performanceAccessContext:
+        await this.performanceAccessContextService.resolvePublicContext(),
+    });
   }
 
   /**
@@ -114,7 +138,66 @@ export class BaseCommController extends BaseController {
    */
   @Get('/permmenu', { summary: '权限与菜单' })
   async permmenu() {
-    return this.ok(await this.baseSysPermsService.permmenu(this.currentAdmin?.roleIds));
+    const currentAdmin = resolveUserAdminRuntimeContext(this.currentAdmin);
+    const data = await this.baseSysPermsService.permmenu(currentAdmin.roleIds);
+    return this.ok({
+      ...data,
+      performanceAccessContext:
+        await this.performanceAccessContextService.resolvePublicContext(),
+    });
+  }
+
+  @Get('/performanceAccessContext', { summary: '绩效角色访问上下文' })
+  async performanceAccessContext(@Query('activePersonaKey') activePersonaKey?: string) {
+    return this.ok(
+      await this.performanceAccessContextService.resolvePublicContext(
+        String(activePersonaKey || '').trim() || null
+      )
+    );
+  }
+
+  @Post('/performanceAccessContext/activePersona', {
+    summary: '保存绩效当前视角',
+  })
+  async savePerformanceActivePersona(
+    @Body('activePersonaKey') activePersonaKey?: string | null
+  ) {
+    return this.ok(
+      await this.performanceAccessContextService.savePublicContextPreference(
+        String(activePersonaKey || '').trim() || null
+      )
+    );
+  }
+
+  /**
+   * 登录态用户选项。
+   * 只返回业务下拉所需的最小字段，不等同于系统用户管理页能力。
+   */
+  @Get('/userOptions', { summary: '登录态用户选项' })
+  async userOptions(
+    @Query('keyWord') keyWord?: string,
+    @Query('size') size?: number
+  ) {
+    return this.ok({
+      list: await this.baseSysUserService.optionList({ keyWord, size }),
+    });
+  }
+
+  /**
+   * 登录态部门选项。
+   * 只返回业务下拉所需字段，并沿用当前账号部门范围约束。
+   */
+  @Get('/departmentOptions', { summary: '登录态部门选项' })
+  async departmentOptions() {
+    const list = await this.baseSysDepartmentService.list();
+
+    return this.ok(
+      list.map(item => ({
+        id: Number(item.id),
+        parentId: item.parentId == null ? null : Number(item.parentId),
+        name: String(item.name || ''),
+      }))
+    );
   }
 
   /**

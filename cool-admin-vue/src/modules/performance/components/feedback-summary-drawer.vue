@@ -65,10 +65,7 @@
 
 			<el-card shadow="never">
 				<template #header>单条反馈记录</template>
-				<el-empty
-					v-if="!canViewRecords"
-					description="当前角色仅允许查看汇总结果"
-				/>
+				<el-empty v-if="!canViewRecords" description="当前角色仅允许查看汇总结果" />
 				<el-empty
 					v-else-if="!summary?.records?.length"
 					description="暂无可展示的单条反馈记录"
@@ -87,8 +84,8 @@
 					<el-table-column prop="score" label="评分" width="100" />
 					<el-table-column prop="status" label="状态" width="120">
 						<template #default="{ row }">
-							<el-tag :type="row.status === 'submitted' ? 'success' : 'info'">
-								{{ row.status || '-' }}
+							<el-tag :type="recordStatusTagType(row.status)">
+								{{ recordStatusLabel(row.status) }}
 							</el-tag>
 						</template>
 					</el-table-column>
@@ -106,14 +103,34 @@
 					</el-table-column>
 				</el-table>
 			</el-card>
+
+			<div class="feedback-summary-drawer__footer">
+				<el-button @click="$emit('update:modelValue', false)">关闭</el-button>
+				<el-button
+					v-if="showSourceAssessmentButton && task?.assessmentId"
+					type="primary"
+					plain
+					@click="goSourceAssessment(task.assessmentId)"
+				>
+					查看来源评估单
+				</el-button>
+			</div>
 		</div>
 	</el-drawer>
 </template>
 
 <script lang="ts" setup>
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { checkPerm } from '/$/base/utils/permission';
+import { useDict } from '/$/dict';
 import type { FeedbackSummary, FeedbackTaskRecord } from '../types';
+import { performanceAssessmentService } from '../service/assessment';
 
-defineProps<{
+const FEEDBACK_RECORD_STATUS_DICT_KEY = 'performance.feedback.recordStatus';
+const FEEDBACK_RELATION_TYPE_DICT_KEY = 'performance.feedback.relationType';
+
+const props = defineProps<{
 	modelValue: boolean;
 	task: FeedbackTaskRecord | null;
 	summary: FeedbackSummary | null;
@@ -121,47 +138,98 @@ defineProps<{
 	canViewRecords?: boolean;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
 	(e: 'update:modelValue', value: boolean): void;
 }>();
 
+const router = useRouter();
+const { dict } = useDict();
+
+const showSourceAssessmentButton = computed(() => {
+	return (
+		checkPerm(performanceAssessmentService.permission.info) &&
+		resolveAssessmentPagePath() !== ''
+	);
+});
+
 function relationTypeLabel(value?: string) {
-	switch (value) {
-		case '上级':
-			return '上级';
-		case '同级':
-			return '同级';
-		case '下级':
-			return '下级';
-		case '协作人':
-			return '协作人';
-		default:
-			return value || '-';
+	return dict.getLabel(FEEDBACK_RELATION_TYPE_DICT_KEY, value) || value || '-';
+}
+
+function recordStatusLabel(value?: string) {
+	return dict.getLabel(FEEDBACK_RECORD_STATUS_DICT_KEY, value) || value || '-';
+}
+
+function recordStatusTagType(value?: string) {
+	return dict.getMeta(FEEDBACK_RECORD_STATUS_DICT_KEY, value)?.tone || 'info';
+}
+
+async function goSourceAssessment(assessmentId: number) {
+	const path = resolveAssessmentPagePath();
+
+	if (!path) {
+		return;
 	}
+
+	emit('update:modelValue', false);
+
+	await router.push({
+		path,
+		query: {
+			openDetail: '1',
+			assessmentId: String(assessmentId)
+		}
+	});
+}
+
+function resolveAssessmentPagePath() {
+	if (checkPerm(performanceAssessmentService.permission.page)) {
+		return '/performance/initiated';
+	}
+
+	if (checkPerm(performanceAssessmentService.permission.myPage)) {
+		return '/performance/my-assessment';
+	}
+
+	if (checkPerm(performanceAssessmentService.permission.pendingPage)) {
+		return '/performance/pending';
+	}
+
+	return '';
 }
 </script>
 
 <style lang="scss" scoped>
+@use '../../../styles/patterns.overlay-responsive.scss' as overlayResponsive;
+
 .feedback-summary-drawer {
 	display: grid;
-	gap: 16px;
+	gap: var(--app-space-4);
 
 	&__metric-label {
-		font-size: 12px;
-		color: var(--el-text-color-secondary);
+		font-size: var(--app-font-size-caption);
+		color: var(--app-text-tertiary);
 	}
 
 	&__metric-value {
-		margin-top: 8px;
+		margin-top: var(--app-space-2);
 		font-size: 28px;
 		font-weight: 600;
-		color: var(--el-text-color-primary);
+		color: var(--app-text-primary);
 	}
 
 	&__content {
 		white-space: pre-wrap;
 		line-height: 1.7;
-		color: var(--el-text-color-regular);
+		color: var(--app-text-secondary);
 	}
+
+	&__footer {
+		display: flex;
+		justify-content: flex-end;
+		gap: var(--app-space-3);
+	}
+
+	@include overlayResponsive.overlay-responsive;
 }
 </style>

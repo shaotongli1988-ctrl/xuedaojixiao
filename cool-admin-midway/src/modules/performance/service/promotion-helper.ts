@@ -4,10 +4,43 @@
  * 维护重点是所有状态和值必须与唯一事实源固定保持一致。
  */
 import { CoolCommException } from '@cool-midway/core';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import { PROMOTION_STATUS_VALUES } from './promotion-dict';
 
-export type PromotionStatus = 'draft' | 'reviewing' | 'approved' | 'rejected';
+export type PromotionStatus = (typeof PROMOTION_STATUS_VALUES)[number];
 export type PromotionDecision = 'approved' | 'rejected';
 type PromotionAction = 'submit' | PromotionDecision;
+const PERFORMANCE_STATE_ACTION_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateActionNotAllowed
+  );
+const PERFORMANCE_EMPLOYEE_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.employeeRequired
+  );
+const PERFORMANCE_PROMOTION_SPONSOR_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.promotionSponsorRequired
+  );
+const PERFORMANCE_PROMOTION_FROM_POSITION_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.promotionFromPositionRequired
+  );
+const PERFORMANCE_PROMOTION_TO_POSITION_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.promotionToPositionRequired
+  );
+const PERFORMANCE_PROMOTION_INDEPENDENT_REASON_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.promotionIndependentReasonRequired
+  );
+const PERFORMANCE_PROMOTION_DECISION_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.promotionDecisionInvalid
+  );
 
 export interface PromotionPayloadInput {
   assessmentId?: number | null;
@@ -30,30 +63,34 @@ export function assertPromotionTransition(
   };
 
   if (!legalActions[status]?.includes(action)) {
-    throw new CoolCommException('当前状态不允许执行该操作');
+    throw new CoolCommException(PERFORMANCE_STATE_ACTION_NOT_ALLOWED_MESSAGE);
   }
 }
 
 export function validatePromotionPayload(payload: PromotionPayloadInput) {
   if (!Number(payload.employeeId)) {
-    throw new CoolCommException('员工不能为空');
+    throw new CoolCommException(PERFORMANCE_EMPLOYEE_REQUIRED_MESSAGE);
   }
 
   if (!Number(payload.sponsorId)) {
-    throw new CoolCommException('发起人不能为空');
+    throw new CoolCommException(PERFORMANCE_PROMOTION_SPONSOR_REQUIRED_MESSAGE);
   }
 
   if (!String(payload.fromPosition || '').trim()) {
-    throw new CoolCommException('当前岗位不能为空');
+    throw new CoolCommException(
+      PERFORMANCE_PROMOTION_FROM_POSITION_REQUIRED_MESSAGE
+    );
   }
 
   if (!String(payload.toPosition || '').trim()) {
-    throw new CoolCommException('目标岗位不能为空');
+    throw new CoolCommException(PERFORMANCE_PROMOTION_TO_POSITION_REQUIRED_MESSAGE);
   }
 
   if (!normalizeNullableNumber(payload.assessmentId)) {
     if (!String(payload.sourceReason || '').trim()) {
-      throw new CoolCommException('独立创建时必须填写原因说明');
+      throw new CoolCommException(
+        PERFORMANCE_PROMOTION_INDEPENDENT_REASON_REQUIRED_MESSAGE
+      );
     }
   }
 }
@@ -71,5 +108,5 @@ export function normalizePromotionDecision(value: any): PromotionDecision {
   if (value === 'approved' || value === 'rejected') {
     return value;
   }
-  throw new CoolCommException('评审结论不正确');
+  throw new CoolCommException(PERFORMANCE_PROMOTION_DECISION_INVALID_MESSAGE);
 }

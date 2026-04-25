@@ -4,6 +4,7 @@
  * 不负责数据库联通、菜单权限回归或前端页面验证。
  */
 import * as jwt from 'jsonwebtoken';
+import * as md5 from 'md5';
 import { BaseSysUserService } from '../../src/modules/base/service/sys/user';
 
 describe('base user page fallback', () => {
@@ -60,5 +61,61 @@ describe('base user page fallback', () => {
       roleIds: [],
       roleName: '',
     });
+  });
+
+  test('personUpdate should resolve current user from authorization token and refresh password version cache key', async () => {
+    const jwtConfig = require('../../src/modules/base/config').default({
+      app: undefined,
+      env: undefined,
+    }).jwt;
+
+    const service = new BaseSysUserService() as any;
+    service.ctx = {
+      headers: {
+        authorization: jwt.sign(
+          {
+            userId: 2001,
+            username: 'hr_admin',
+            roleIds: [9],
+            isAdmin: false,
+          },
+          jwtConfig.secret,
+          {
+            expiresIn: jwtConfig.token.expire,
+          }
+        ),
+      },
+    };
+    service.baseSysUserEntity = {
+      findOneBy: jest.fn().mockResolvedValue({
+        id: 2001,
+        password: md5('old-pass'),
+        passwordV: 3,
+      }),
+      save: jest.fn().mockResolvedValue(undefined),
+    };
+    service.midwayCache = {
+      set: jest.fn().mockResolvedValue(undefined),
+    };
+
+    await service.personUpdate({
+      password: 'new-pass',
+      oldPassword: 'old-pass',
+      nickName: '平台 HR',
+    });
+
+    expect(service.baseSysUserEntity.findOneBy).toHaveBeenCalledWith({ id: 2001 });
+    expect(service.midwayCache.set).toHaveBeenCalledWith(
+      'admin:passwordVersion:2001',
+      4
+    );
+    expect(service.baseSysUserEntity.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 2001,
+        password: md5('new-pass'),
+        passwordV: 4,
+        nickName: '平台 HR',
+      })
+    );
   });
 });

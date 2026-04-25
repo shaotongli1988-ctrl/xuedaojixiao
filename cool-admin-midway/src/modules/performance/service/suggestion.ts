@@ -19,11 +19,13 @@ import { InjectEntityModel } from '@midwayjs/typeorm';
 import { EntityManager, In, Repository } from 'typeorm';
 import { BaseSysDepartmentEntity } from '../../base/entity/sys/department';
 import { BaseSysUserEntity } from '../../base/entity/sys/user';
-import { BaseSysMenuService } from '../../base/service/sys/menu';
-import { BaseSysPermsService } from '../../base/service/sys/perms';
 import { PerformanceAssessmentEntity } from '../entity/assessment';
 import { PerformanceSuggestionEntity } from '../entity/suggestion';
 import * as jwt from 'jsonwebtoken';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
 import {
   assertSuggestionTransition,
   deriveSuggestionCandidate,
@@ -35,6 +37,27 @@ import {
   type SuggestionStatus,
   validateRevokePayload,
 } from './suggestion-helper';
+import {
+  SUGGESTION_STATUS_VALUES,
+  SUGGESTION_TYPE_VALUES,
+} from './suggestion-dict';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
+const PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resourceNotFound
+  );
+const PERFORMANCE_SUGGESTION_ACTION_UNSUPPORTED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.suggestionActionUnsupported
+  );
+
+const SUGGESTION_PENDING_STATUS = SUGGESTION_STATUS_VALUES[0];
+const SUGGESTION_REVOKED_STATUS = SUGGESTION_STATUS_VALUES[4];
+const SUGGESTION_PIP_TYPE = SUGGESTION_TYPE_VALUES[0];
 
 const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
   return require('../../base/config').default({
@@ -63,28 +86,13 @@ export class PerformanceSuggestionService extends BaseService {
   baseSysDepartmentEntity: Repository<BaseSysDepartmentEntity>;
 
   @Inject()
-  baseSysMenuService: BaseSysMenuService;
-
-  @Inject()
-  baseSysPermsService: BaseSysPermsService;
+  performanceAccessContextService: PerformanceAccessContextService;
 
   @Inject()
   ctx;
 
   @App()
   app: IMidwayApplication;
-
-  private readonly perms = {
-    page: 'performance:suggestion:page',
-    info: 'performance:suggestion:info',
-    accept: 'performance:suggestion:accept',
-    ignore: 'performance:suggestion:ignore',
-    reject: 'performance:suggestion:reject',
-    revoke: 'performance:suggestion:revoke',
-    pipAdd: 'performance:pip:add',
-    promotionAdd: 'performance:promotion:add',
-    hrPage: 'performance:salary:page',
-  };
 
   private get currentCtx() {
     if (this.ctx?.admin) {
@@ -118,17 +126,14 @@ export class PerformanceSuggestionService extends BaseService {
   }
 
   async page(query: any) {
-    const perms = await this.currentPerms();
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    this.assertHasCapability(access, 'suggestion.read', '无权限查看建议列表');
 
-    if (!this.hasPerm(perms, this.perms.page)) {
-      throw new CoolCommException('无权限查看建议列表');
-    }
-
-    await this.ensureSuggestions(query, perms);
+    await this.ensureSuggestions(query, access);
 
     const page = Number(query.page || 1);
     const size = Number(query.size || 20);
-    const where = await this.buildSuggestionWhere(query, perms);
+    const where = await this.buildSuggestionWhere(query, access);
 
     const [list, total] = await this.performanceSuggestionEntity.findAndCount({
       where,
@@ -150,14 +155,11 @@ export class PerformanceSuggestionService extends BaseService {
   }
 
   async info(id: number) {
-    const perms = await this.currentPerms();
-
-    if (!this.hasPerm(perms, this.perms.info)) {
-      throw new CoolCommException('无权限查看建议详情');
-    }
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    this.assertHasCapability(access, 'suggestion.read', '无权限查看建议详情');
 
     const suggestion = await this.requireSuggestion(id);
-    await this.assertSuggestionInScope(suggestion, perms);
+    await this.assertSuggestionInScope(suggestion, access, 'suggestion.read');
     return this.toDetail(suggestion);
   }
 
@@ -220,7 +222,7 @@ export class PerformanceSuggestionService extends BaseService {
 
     const entity = suggestionRepo.create({
       suggestionType: candidate.suggestionType,
-      status: 'pending',
+      status: SUGGESTION_PENDING_STATUS,
       assessmentId: Number(assessment.id),
       employeeId: Number(assessment.employeeId),
       departmentId: Number(assessment.departmentId),
@@ -243,9 +245,13 @@ export class PerformanceSuggestionService extends BaseService {
     return suggestionRepo.save(entity);
   }
 
-  async ensureSuggestions(query: any = {}, perms?: string[]) {
-    const resolvedPerms = perms || (await this.currentPerms());
-    const assessmentWhere = await this.buildAssessmentWhere(query, resolvedPerms);
+  async ensureSuggestions(
+    query: any = {},
+    access?: PerformanceResolvedAccessContext
+  ) {
+    const resolvedAccess =
+      access || (await this.performanceAccessContextService.resolveAccessContext());
+    const assessmentWhere = await this.buildAssessmentWhere(query, resolvedAccess);
 
     if (assessmentWhere === null) {
       return;
@@ -274,27 +280,25 @@ export class PerformanceSuggestionService extends BaseService {
   }
 
   async initSuggestionScope() {
-    this.currentCtx.suggestionDepartmentIds = await this.departmentScopeIds();
+    return;
   }
 
   private async handleAction(action: SuggestionAction, payload: any) {
-    const perms = await this.currentPerms();
+    const access = await this.performanceAccessContextService.resolveAccessContext();
     const id = Number(payload?.id);
     const suggestion = await this.requireSuggestion(id);
+    const capabilityKey = this.permForAction(action);
 
-    if (!this.hasPerm(perms, this.permForAction(action))) {
-      throw new CoolCommException('无权限执行该建议动作');
-    }
-
-    await this.assertSuggestionInScope(suggestion, perms);
+    this.assertHasCapability(access, capabilityKey, '无权限执行该建议动作');
+    await this.assertSuggestionInScope(suggestion, access, capabilityKey);
     assertSuggestionTransition(
       suggestion.status as SuggestionStatus,
       action,
-      this.isHr(resolvedPermsOrEmpty(perms))
+      this.performanceAccessContextService.hasCapability(access, 'suggestion.revoke')
     );
 
     if (action === 'accept') {
-      this.assertCanAcceptSuggestion(suggestion, perms);
+      this.assertCanAcceptSuggestion(suggestion, access);
     }
 
     if (action === 'revoke') {
@@ -331,7 +335,10 @@ export class PerformanceSuggestionService extends BaseService {
     return detail;
   }
 
-  private async buildAssessmentWhere(query: any, perms: string[]) {
+  private async buildAssessmentWhere(
+    query: any,
+    access: PerformanceResolvedAccessContext
+  ) {
     const where: any = {
       status: 'approved',
     };
@@ -348,33 +355,39 @@ export class PerformanceSuggestionService extends BaseService {
       where.periodValue = String(query.periodValue).trim();
     }
 
-    if (this.isHr(perms)) {
+    const scopes = this.performanceAccessContextService.capabilityScopes(
+      access,
+      'suggestion.read'
+    );
+
+    if (scopes.includes('company')) {
       if (query?.departmentId) {
         where.departmentId = Number(query.departmentId);
       }
       return where;
     }
 
-    const departmentIds = await this.resolveScopeDepartmentIds();
-
-    if (!departmentIds.length) {
+    if (!access.departmentIds.length) {
       return null;
     }
 
     if (query?.departmentId) {
       const departmentId = Number(query.departmentId);
-      if (!departmentIds.includes(departmentId)) {
+      if (!access.departmentIds.includes(departmentId)) {
         return null;
       }
       where.departmentId = departmentId;
       return where;
     }
 
-    where.departmentId = In(departmentIds);
+    where.departmentId = In(access.departmentIds);
     return where;
   }
 
-  private async buildSuggestionWhere(query: any, perms: string[]) {
+  private async buildSuggestionWhere(
+    query: any,
+    access: PerformanceResolvedAccessContext
+  ) {
     const where: any = {};
 
     if (query?.suggestionType) {
@@ -397,16 +410,19 @@ export class PerformanceSuggestionService extends BaseService {
       where.periodValue = String(query.periodValue).trim();
     }
 
-    if (this.isHr(perms)) {
+    const scopes = this.performanceAccessContextService.capabilityScopes(
+      access,
+      'suggestion.read'
+    );
+
+    if (scopes.includes('company')) {
       if (query?.departmentId) {
         where.departmentId = Number(query.departmentId);
       }
       return where;
     }
 
-    const departmentIds = await this.resolveScopeDepartmentIds();
-
-    if (!departmentIds.length) {
+    if (!access.departmentIds.length) {
       return {
         departmentId: -1,
       };
@@ -414,7 +430,7 @@ export class PerformanceSuggestionService extends BaseService {
 
     if (query?.departmentId) {
       const departmentId = Number(query.departmentId);
-      if (!departmentIds.includes(departmentId)) {
+      if (!access.departmentIds.includes(departmentId)) {
         return {
           departmentId: -1,
         };
@@ -423,7 +439,7 @@ export class PerformanceSuggestionService extends BaseService {
       return where;
     }
 
-    where.departmentId = In(departmentIds);
+    where.departmentId = In(access.departmentIds);
     return where;
   }
 
@@ -442,7 +458,9 @@ export class PerformanceSuggestionService extends BaseService {
     return {
       ...summary,
       revokeReason:
-        item.status === 'revoked' ? item.revokeReason || '' : undefined,
+        item.status === SUGGESTION_REVOKED_STATUS
+          ? item.revokeReason || ''
+          : undefined,
     };
   }
 
@@ -512,18 +530,20 @@ export class PerformanceSuggestionService extends BaseService {
     return new Map(departments.map(item => [Number(item.id), item]));
   }
 
-  private permForAction(action: SuggestionAction) {
+  private permForAction(action: SuggestionAction): PerformanceCapabilityKey {
     switch (action) {
       case 'accept':
-        return this.perms.accept;
+        return 'suggestion.accept';
       case 'ignore':
-        return this.perms.ignore;
+        return 'suggestion.ignore';
       case 'reject':
-        return this.perms.reject;
+        return 'suggestion.reject';
       case 'revoke':
-        return this.perms.revoke;
+        return 'suggestion.revoke';
       default:
-        throw new CoolCommException('不支持的建议动作');
+        throw new CoolCommException(
+          PERFORMANCE_SUGGESTION_ACTION_UNSUPPORTED_MESSAGE
+        );
     }
   }
 
@@ -531,71 +551,50 @@ export class PerformanceSuggestionService extends BaseService {
     const suggestion = await this.performanceSuggestionEntity.findOneBy({ id });
 
     if (!suggestion) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     return suggestion;
   }
 
-  private async currentPerms() {
-    return this.baseSysMenuService.getPerms(this.currentAdmin.roleIds);
-  }
-
-  private hasPerm(perms: string[], perm: string) {
-    return perms.includes(perm);
-  }
-
-  private isHr(perms: string[]) {
-    return (
-      this.currentAdmin?.isAdmin === true ||
-      this.hasPerm(perms, this.perms.hrPage)
-    );
-  }
-
-  private async departmentScopeIds() {
-    const ids = await this.baseSysPermsService.departmentIds(
-      this.currentAdmin.userId
-    );
-    return Array.isArray(ids) ? ids.map(item => Number(item)) : [];
-  }
-
-  private async resolveScopeDepartmentIds() {
-    const cached = this.currentCtx?.suggestionDepartmentIds;
-
-    if (Array.isArray(cached)) {
-      return cached.map(item => Number(item));
+  private assertHasCapability(
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey,
+    message: string
+  ) {
+    if (!this.performanceAccessContextService.hasCapability(access, capabilityKey)) {
+      throw new CoolCommException(message);
     }
-
-    const departmentIds = await this.departmentScopeIds();
-    this.currentCtx.suggestionDepartmentIds = departmentIds;
-    return departmentIds;
   }
 
   private async assertSuggestionInScope(
     suggestion: PerformanceSuggestionEntity,
-    perms: string[]
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
   ) {
-    if (this.isHr(perms)) {
-      return;
-    }
-
-    const departmentIds = await this.resolveScopeDepartmentIds();
-
-    if (!departmentIds.includes(Number(suggestion.departmentId))) {
+    if (
+      !this.performanceAccessContextService.matchesScope(
+        access,
+        this.performanceAccessContextService.capabilityScopes(access, capabilityKey),
+        {
+          departmentId: Number(suggestion.departmentId),
+        }
+      )
+    ) {
       throw new CoolCommException('无权访问该建议');
     }
   }
 
   private assertCanAcceptSuggestion(
     suggestion: PerformanceSuggestionEntity,
-    perms: string[]
+    access: PerformanceResolvedAccessContext
   ) {
-    const targetPerm =
-      suggestion.suggestionType === 'pip'
-        ? this.perms.pipAdd
-        : this.perms.promotionAdd;
+    const targetCapability: PerformanceCapabilityKey =
+      suggestion.suggestionType === SUGGESTION_PIP_TYPE
+        ? 'pip.create'
+        : 'promotion.create';
 
-    if (!this.hasPerm(perms, targetPerm)) {
+    if (!this.performanceAccessContextService.hasCapability(access, targetCapability)) {
       throw new CoolCommException('无权限采用该建议');
     }
   }
@@ -618,8 +617,4 @@ export class PerformanceSuggestionService extends BaseService {
       lock: { mode: 'pessimistic_write' },
     } as any);
   }
-}
-
-function resolvedPermsOrEmpty(perms: string[]) {
-  return Array.isArray(perms) ? perms : [];
 }

@@ -8,8 +8,11 @@ import https from 'node:https';
 import os from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 
-const projectRoot = process.cwd();
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const cli = parseCliArgs(process.argv.slice(2));
+const projectRoot = cli.projectRoot;
 const sharedRoot = path.join(projectRoot, '.shared-deps', 'js');
 const nodeModulesRoot = path.join(sharedRoot, 'node_modules');
 const binRoot = path.join(nodeModulesRoot, '.bin');
@@ -18,11 +21,186 @@ const packageJsonPath = path.join(projectRoot, 'package.json');
 fs.mkdirSync(nodeModulesRoot, { recursive: true });
 fs.mkdirSync(binRoot, { recursive: true });
 
-const requireFromShared = createRequire(path.join(nodeModulesRoot, '__resolver__.cjs'));
-const semver = requireFromShared('semver');
-const rootPackage = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 const installed = new Map();
 const resolving = new Set();
+let semver;
+
+function parseCliArgs(args) {
+  const parsed = {
+    projectRoot: process.cwd(),
+    compatOnly: false,
+    registryDir: null,
+    packageArgs: [],
+  };
+
+  for (let index = 0; index < args.length; index++) {
+    const currentArg = args[index];
+
+    if (currentArg === '--project-root') {
+      const explicitRoot = args[index + 1];
+      if (!explicitRoot) {
+        throw new Error('Missing value for --project-root');
+      }
+      parsed.projectRoot = path.resolve(explicitRoot);
+      index += 1;
+      continue;
+    }
+
+    if (currentArg === '--compat-only') {
+      parsed.compatOnly = true;
+      continue;
+    }
+
+    if (currentArg === '--registry-dir') {
+      const explicitRegistryDir = args[index + 1];
+      if (!explicitRegistryDir) {
+        throw new Error('Missing value for --registry-dir');
+      }
+      parsed.registryDir = path.resolve(explicitRegistryDir);
+      index += 1;
+      continue;
+    }
+
+    parsed.packageArgs.push(currentArg);
+  }
+
+  return parsed;
+}
+
+function getSemver() {
+  if (!semver) {
+    try {
+      const requireFromShared = createRequire(path.join(nodeModulesRoot, '__resolver__.cjs'));
+      semver = requireFromShared('semver');
+    } catch (_error) {
+      semver = createFallbackSemver();
+    }
+  }
+
+  return semver;
+}
+
+function createFallbackSemver() {
+  function parseVersion(version) {
+    if (typeof version !== 'string') {
+      return null;
+    }
+
+    const normalized = version.trim();
+    if (!normalized) {
+      return null;
+    }
+
+    const mainPart = normalized.split('-')[0];
+    const segments = mainPart.split('.');
+
+    if (segments.length > 3 || segments.some(segment => !/^\d+$/.test(segment))) {
+      return null;
+    }
+
+    while (segments.length < 3) {
+      segments.push('0');
+    }
+
+    return {
+      major: Number(segments[0]),
+      minor: Number(segments[1]),
+      patch: Number(segments[2]),
+      normalized: `${Number(segments[0])}.${Number(segments[1])}.${Number(segments[2])}`,
+    };
+  }
+
+  function compare(versionA, versionB) {
+    const parsedA = parseVersion(versionA);
+    const parsedB = parseVersion(versionB);
+
+    if (!parsedA || !parsedB) {
+      throw new Error(`Cannot compare invalid versions: ${versionA} vs ${versionB}`);
+    }
+
+    for (const key of ['major', 'minor', 'patch']) {
+      if (parsedA[key] > parsedB[key]) {
+        return 1;
+      }
+      if (parsedA[key] < parsedB[key]) {
+        return -1;
+      }
+    }
+
+    return 0;
+  }
+
+  function valid(version) {
+    const parsed = parseVersion(version);
+    return parsed ? parsed.normalized : null;
+  }
+
+  function isWithinRange(version, lowerBound, upperBound) {
+    return compare(version, lowerBound) >= 0 && compare(version, upperBound) < 0;
+  }
+
+  function satisfies(version, rawRange) {
+    if (rawRange === '*' || rawRange === 'latest') {
+      return true;
+    }
+
+    const range = String(rawRange).trim();
+    const parsedVersion = parseVersion(version);
+    if (!parsedVersion) {
+      return false;
+    }
+
+    if (range.startsWith('^')) {
+      const base = parseVersion(range.slice(1));
+      if (!base) {
+        return false;
+      }
+
+      let upperBound;
+      if (base.major > 0) {
+        upperBound = `${base.major + 1}.0.0`;
+      } else if (base.minor > 0) {
+        upperBound = `0.${base.minor + 1}.0`;
+      } else {
+        upperBound = `0.0.${base.patch + 1}`;
+      }
+
+      return isWithinRange(version, base.normalized, upperBound);
+    }
+
+    if (range.startsWith('~')) {
+      const base = parseVersion(range.slice(1));
+      if (!base) {
+        return false;
+      }
+
+      return isWithinRange(version, base.normalized, `${base.major}.${base.minor + 1}.0`);
+    }
+
+    const exact = parseVersion(range);
+    if (exact) {
+      if (/^\d+$/.test(range)) {
+        return parsedVersion.major === exact.major;
+      }
+      if (/^\d+\.\d+$/.test(range)) {
+        return parsedVersion.major === exact.major && parsedVersion.minor === exact.minor;
+      }
+      return compare(version, exact.normalized) === 0;
+    }
+
+    return false;
+  }
+
+  function maxSatisfying(versions, range) {
+    const candidates = versions
+      .filter(version => satisfies(version, range))
+      .sort(compare);
+
+    return candidates.length ? candidates[candidates.length - 1] : null;
+  }
+
+  return { valid, satisfies, maxSatisfying };
+}
 
 function sleep(ms) {
   return new Promise(resolve => {
@@ -35,6 +213,10 @@ function encodePackageName(name) {
 }
 
 function fetchJson(url) {
+  if (cli.registryDir) {
+    return readRegistryJson(url);
+  }
+
   return requestWithRetry(`fetch ${url}`, () => {
     return new Promise((resolve, reject) => {
       https
@@ -78,6 +260,11 @@ function fetchJson(url) {
 }
 
 function downloadFile(url, filePath) {
+  if (url.startsWith('file://')) {
+    fs.copyFileSync(new URL(url), filePath);
+    return Promise.resolve();
+  }
+
   return requestWithRetry(`download ${url}`, () => {
     return new Promise((resolve, reject) => {
       https
@@ -115,6 +302,22 @@ function downloadFile(url, filePath) {
         .on('error', reject);
     });
   });
+}
+
+function readRegistryJson(url) {
+  const registryPrefix = 'https://registry.npmjs.org/';
+  if (!url.startsWith(registryPrefix)) {
+    throw new Error(`Unsupported registry url for local registry mode: ${url}`);
+  }
+
+  const packageName = url.slice(registryPrefix.length);
+  const metadataPath = path.join(cli.registryDir, `${packageName}.json`);
+
+  if (!fs.existsSync(metadataPath)) {
+    throw new Error(`Local registry metadata not found: ${metadataPath}`);
+  }
+
+  return Promise.resolve(JSON.parse(fs.readFileSync(metadataPath, 'utf8')));
 }
 
 async function requestWithRetry(label, fn, retries = 4) {
@@ -157,6 +360,8 @@ function parseSpec(targetName, rawSpec) {
 }
 
 function resolveVersion(metadata, range) {
+  const semverApi = getSemver();
+
   if (metadata['dist-tags']?.[range]) {
     return metadata['dist-tags'][range];
   }
@@ -166,9 +371,9 @@ function resolveVersion(metadata, range) {
   }
 
   const versions = Object.keys(metadata.versions || {}).filter(version =>
-    semver.valid(version)
+    semverApi.valid(version)
   );
-  const resolved = semver.maxSatisfying(versions, range, {
+  const resolved = semverApi.maxSatisfying(versions, range, {
     includePrerelease: false,
   });
 
@@ -231,6 +436,7 @@ function createBinLinks(installedDir, packageJson) {
 }
 
 async function installPackage(targetName, rawSpec) {
+  const semverApi = getSemver();
   const specKey = `${targetName}@${rawSpec}`;
 
   if (resolving.has(specKey)) {
@@ -240,7 +446,7 @@ async function installPackage(targetName, rawSpec) {
   const existingVersion = installed.get(targetName);
   if (existingVersion) {
     const { range } = parseSpec(targetName, rawSpec);
-    if (semver.valid(existingVersion) && semver.satisfies(existingVersion, range)) {
+    if (semverApi.valid(existingVersion) && semverApi.satisfies(existingVersion, range)) {
       return;
     }
   }
@@ -253,8 +459,8 @@ async function installPackage(targetName, rawSpec) {
     const { range } = parseSpec(targetName, rawSpec);
     installed.set(targetName, existingPackage.version);
     if (
-      semver.valid(existingPackage.version) &&
-      semver.satisfies(existingPackage.version, range)
+      semverApi.valid(existingPackage.version) &&
+      semverApi.satisfies(existingPackage.version, range)
     ) {
       return;
     }
@@ -302,12 +508,29 @@ async function installPackage(targetName, rawSpec) {
   resolving.delete(specKey);
 }
 
+function runCompatBootstrap() {
+  execFileSync(
+    process.execPath,
+    [path.join(scriptDir, 'ensure-local-lint-compat.mjs'), '--project-root', projectRoot],
+    {
+      stdio: 'inherit',
+    }
+  );
+}
+
 async function main() {
+  if (cli.compatOnly) {
+    runCompatBootstrap();
+    console.log(`Compatibility bootstrap completed for ${projectRoot}`);
+    return;
+  }
+
+  const rootPackage = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
   const rootPackages = {
     ...(rootPackage.dependencies || {}),
     ...(rootPackage.devDependencies || {}),
   };
-  const packageArgs = process.argv.slice(2);
+  const packageArgs = cli.packageArgs;
   const packages =
     packageArgs.length > 0
       ? Object.fromEntries(
@@ -327,6 +550,8 @@ async function main() {
     }
     await installPackage(name, spec);
   }
+
+  runCompatBootstrap();
 
   console.log(`Installed ${installed.size} packages into ${nodeModulesRoot}`);
 }

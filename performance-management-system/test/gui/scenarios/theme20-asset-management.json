@@ -1,0 +1,316 @@
+{
+  "meta": {
+    "name": "theme20-asset-management-gui",
+    "description": "Theme20 资产管理全生命周期最小 GUI 点测"
+  },
+  "defaults": {
+    "uiBaseUrl": "http://127.0.0.1:9007",
+    "apiBaseUrl": "http://127.0.0.1:8006",
+    "chromeDebugUrl": "http://127.0.0.1:9222",
+    "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/theme20-asset-management-gui",
+    "password": "123456",
+    "viewport": {
+      "width": 1440,
+      "height": 1100,
+      "deviceScaleFactor": 1,
+      "mobile": false
+    }
+  },
+  "scenarios": [
+    {
+      "name": "hr-asset-full-lifecycle",
+      "username": "hr_admin",
+      "route": "/performance/asset/dashboard",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "资产首页",
+            "动作总览",
+            "本日动作",
+            "本周动作",
+            "本月动作",
+            "状态分布",
+            "最近动作流水"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "theme20-asset-hr-dashboard.png"
+        },
+        {
+          "type": "assertBodyText",
+          "includes": [
+            "动作总览",
+            "本日动作",
+            "本周动作",
+            "本月动作",
+            "最近动作流水"
+          ]
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/asset/ledger",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "资产台账",
+            "新建资产"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "theme20-asset-hr-ledger.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/asset/assignment",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "领用归还",
+            "新增领用"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "theme20-asset-hr-assignment.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/asset/maintenance",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "维护保养",
+            "新增维护"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "theme20-asset-hr-maintenance.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/asset/report",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "资产报表",
+            "报表汇总",
+            "导出"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "theme20-asset-hr-report.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/asset/procurement",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "采购入库",
+            "新增入库单"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "theme20-asset-hr-procurement.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/asset/transfer",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "资产调拨",
+            "新增调拨"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "theme20-asset-hr-transfer.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/asset/inventory",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "资产盘点",
+            "新增盘点"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "theme20-asset-hr-inventory.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/asset/depreciation",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "折旧",
+            "汇总",
+            "折旧重算"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "theme20-asset-hr-depreciation.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/asset/disposal",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "报废",
+            "新增报废单"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "theme20-asset-hr-disposal.png"
+        }
+      ]
+    },
+    {
+      "name": "manager-asset-permission-scope",
+      "username": "manager_rd",
+      "route": "/performance/asset/dashboard",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "资产首页",
+            "动作总览",
+            "状态分布",
+            "最近动作流水"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "theme20-asset-manager-dashboard.png"
+        },
+        {
+          "type": "assertBodyText",
+          "includes": [
+            "动作总览",
+            "最近动作流水"
+          ]
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/asset/report",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "资产报表",
+            "报表汇总"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "资产报表",
+            "报表汇总"
+          ],
+          "excludes": [
+            "导出"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme20-asset-manager-report.png"
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "资产报表",
+            "报表汇总"
+          ],
+          "excludes": [
+            "导出",
+            "折旧",
+            "折旧重算"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "employee-asset-no-entry",
+      "username": "employee_platform",
+      "route": "/performance/my-assessment",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "我的考核"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": [
+            "资产首页",
+            "资产台账",
+            "领用归还",
+            "维护保养",
+            "资产报表",
+            "采购入库",
+            "资产调拨",
+            "资产盘点",
+            "折旧",
+            "报废"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme20-asset-employee-no-entry.png"
+        }
+      ]
+    }
+  ]
+}

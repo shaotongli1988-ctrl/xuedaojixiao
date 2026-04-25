@@ -6,7 +6,7 @@ import compression from 'vite-plugin-compression';
 import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite';
 import vueDevTools from 'vite-plugin-vue-devtools';
 import { visualizer } from 'rollup-plugin-visualizer';
-import { proxy } from './src/config/proxy';
+import { hasDevProxyTarget, proxy } from './src/config/proxy';
 import { cool } from '@cool-vue/vite-plugin';
 
 function toPath(dir: string) {
@@ -16,6 +16,12 @@ function toPath(dir: string) {
 // https://vitejs.dev/config
 export default ({ mode }: ConfigEnv): UserConfig => {
 	const isDev = mode === 'development';
+
+	if (isDev && !hasDevProxyTarget) {
+		throw new Error(
+			'Missing dev backend target. Set COOL_ADMIN_PROXY_TARGET or VITE_DEV_PROXY_TARGET before running cool-admin-vue.'
+		);
+	}
 
 	return {
 		plugins: [

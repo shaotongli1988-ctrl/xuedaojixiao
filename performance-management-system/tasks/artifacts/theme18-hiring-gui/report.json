@@ -1,0 +1,167 @@
+{
+  "name": "theme18-hiring-gui",
+  "description": "Theme18 录用管理最小 GUI 点测",
+  "configPath": "/Users/shaotongli/Documents/xuedao/performance-management-system/test/gui/scenarios/theme18-hiring.json",
+  "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/theme18-hiring-gui",
+  "uiBaseUrl": "http://127.0.0.1:9020",
+  "apiBaseUrl": "http://127.0.0.1:8020",
+  "chromeDebugUrl": "http://127.0.0.1:9222",
+  "generatedAt": "2026-04-19T03:02:38.481Z",
+  "scenarios": [
+    {
+      "name": "hr-hiring-mainline",
+      "username": "hr_admin",
+      "route": "/performance/hiring",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "录用管理",
+            "联调-主题18平台录用",
+            "联调-主题18销售录用"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "新建录用",
+            "接受",
+            "拒绝",
+            "关闭"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 3,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme18-hiring-gui/theme18-hiring-hr-list.png"
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "详情"
+        },
+        {
+          "index": 5,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "录用详情",
+            "录用决策",
+            "来源状态快照"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 6,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme18-hiring-gui/theme18-hiring-hr-detail.png"
+        }
+      ]
+    },
+    {
+      "name": "manager-hiring-scope",
+      "username": "manager_rd",
+      "route": "/performance/hiring",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "录用管理",
+            "联调-主题18平台录用"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "assertBodyText",
+          "status": "passed",
+          "includes": [
+            "联调-主题18平台录用"
+          ],
+          "excludes": [
+            "联调-主题18销售录用"
+          ]
+        },
+        {
+          "index": 3,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme18-hiring-gui/theme18-hiring-manager-scope.png"
+        },
+        {
+          "index": 0,
+          "type": "clickText",
+          "status": "passed",
+          "text": "详情"
+        },
+        {
+          "index": 5,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "录用详情",
+            "联调-主题18平台录用"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 6,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme18-hiring-gui/theme18-hiring-manager-detail.png"
+        }
+      ]
+    },
+    {
+      "name": "employee-hiring-no-entry",
+      "username": "employee_platform",
+      "route": "/performance/my-assessment",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": [
+            "录用管理"
+          ]
+        },
+        {
+          "index": 3,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme18-hiring-gui/theme18-hiring-employee-home.png"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "pass": 3,
+    "fail": 0
+  }
+}

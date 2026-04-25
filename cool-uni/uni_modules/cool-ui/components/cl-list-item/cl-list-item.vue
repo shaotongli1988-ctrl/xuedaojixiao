@@ -209,7 +209,7 @@ export default defineComponent({
 
 				query
 					.select(`.cl-list-item__menu-${props.swipe}`)
-					.boundingClientRect((data) => {
+					.boundingClientRect((data: any) => {
 						if (data) {
 							menu.width = data.width || 0;
 							touch.maxX = menu.width * (props.swipe === "right" ? -1 : 1);

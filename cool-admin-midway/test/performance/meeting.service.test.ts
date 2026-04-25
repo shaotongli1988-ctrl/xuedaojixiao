@@ -4,6 +4,7 @@
  * 这里只验证主题 9 的关键权限、范围、状态和摘要字段裁剪，不覆盖真实数据库或运行态菜单导入。
  */
 import { PerformanceMeetingService } from '../../src/modules/performance/service/meeting';
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
 
 const createMeetingQueryBuilder = (rows: any[]) => {
   return {
@@ -14,6 +15,27 @@ const createMeetingQueryBuilder = (rows: any[]) => {
     getRawMany: jest.fn().mockResolvedValue(rows),
   };
 };
+
+function attachAccessContextService(service: any) {
+  if (!service.baseSysMenuService) {
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue([]),
+    };
+  }
+  if (!service.baseSysPermsService) {
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+  }
+  service.performanceAccessContextService = Object.assign(
+    new PerformanceAccessContextService(),
+    {
+      ctx: service.ctx,
+      baseSysMenuService: service.baseSysMenuService,
+      baseSysPermsService: service.baseSysPermsService,
+    }
+  );
+}
 
 describe('performance meeting service', () => {
   test('should reject employee page access', async () => {
@@ -27,6 +49,7 @@ describe('performance meeting service', () => {
     service.baseSysMenuService = {
       getPerms: jest.fn().mockResolvedValue([]),
     };
+    attachAccessContextService(service);
 
     await expect(service.page({ page: 1, size: 10 })).rejects.toThrow(
       '无权限查看会议列表'
@@ -54,6 +77,7 @@ describe('performance meeting service', () => {
         { id: 102, departmentId: 99 },
       ]),
     };
+    attachAccessContextService(service);
 
     await expect(
       service.add({
@@ -99,6 +123,7 @@ describe('performance meeting service', () => {
     service.baseSysUserEntity = {
       findOneBy: jest.fn().mockResolvedValue({ id: 101, name: '组织者A' }),
     };
+    attachAccessContextService(service);
 
     const result = await service.info(1);
 
@@ -175,6 +200,10 @@ describe('performance meeting service', () => {
     service.performanceMeetingEntity = {
       createQueryBuilder: jest.fn().mockReturnValue(qb),
     };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+    attachAccessContextService(service);
 
     const result = await service.page({ page: 1, size: 10 });
 
@@ -210,6 +239,7 @@ describe('performance meeting service', () => {
         status: 'scheduled',
       }),
     };
+    attachAccessContextService(service);
 
     await expect(service.checkIn(1)).rejects.toThrow('当前状态不允许签到');
   });
@@ -257,6 +287,7 @@ describe('performance meeting service', () => {
       status: 'in_progress',
       participantCount: 1,
     });
+    attachAccessContextService(service);
 
     const result = await service.updateMeeting({
       id: 1,
@@ -305,6 +336,7 @@ describe('performance meeting service', () => {
       participantCount: 1,
       status: 'in_progress',
     });
+    attachAccessContextService(service);
 
     const result = await service.checkIn(1);
 
@@ -346,6 +378,7 @@ describe('performance meeting service', () => {
         status: 'completed',
       }),
     };
+    attachAccessContextService(service);
 
     await expect(
       service.updateMeeting({
@@ -380,6 +413,7 @@ describe('performance meeting service', () => {
         },
       ]),
     };
+    attachAccessContextService(service);
 
     await expect(service.delete([1])).rejects.toThrow('当前状态不允许删除');
   });

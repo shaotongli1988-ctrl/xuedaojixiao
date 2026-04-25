@@ -2,10 +2,6 @@
 	<div class="page-login">
 		<div class="box">
 			<div class="logo">
-				<div class="icon">
-					<img src="/logo.png" alt="Logo" />
-				</div>
-
 				<span>{{ app.info.name }}</span>
 			</div>
 
@@ -18,6 +14,7 @@
 							v-model="form.username"
 							:placeholder="$t('请输入用户名')"
 							maxlength="20"
+							data-testid="login-username"
 						/>
 					</el-form-item>
 
@@ -29,6 +26,7 @@
 							maxlength="20"
 							show-password
 							autocomplete="new-password"
+							data-testid="login-password"
 						/>
 					</el-form-item>
 
@@ -37,12 +35,14 @@
 							v-model="form.verifyCode"
 							:placeholder="$t('验证码')"
 							maxlength="4"
+							data-testid="login-verify-code"
 							@keyup.enter="toLogin"
 						>
 							<template #suffix>
 								<pic-captcha
 									:ref="setRefs('picCaptcha')"
 									v-model="form.captchaId"
+									data-testid="login-captcha"
 									@change="
 										() => {
 											form.verifyCode = '';
@@ -54,7 +54,12 @@
 					</el-form-item>
 
 					<div class="op">
-						<el-button type="primary" :loading="saving" @click="toLogin">
+						<el-button
+							type="primary"
+							:loading="saving"
+							data-testid="login-submit"
+							@click="toLogin"
+						>
 							{{ $t('登录') }}
 						</el-button>
 					</div>
@@ -130,8 +135,8 @@ async function toLogin() {
 		// 设置缓存
 		storage.set('username', form.username);
 
-		// 跳转首页
-		router.push('/');
+		// 登录完成后优先进入角色工作台，避免落回旧的列表页首页。
+		router.push('/performance/workbench');
 	} catch (err) {
 		// 刷新验证码
 		refs.picCaptcha.refresh();
@@ -148,30 +153,22 @@ async function toLogin() {
 </script>
 
 <style lang="scss" scoped>
-$color: #2c3142;
+@use '../../../../styles/patterns.auth-shell.scss' as authShell;
 
 .page-login {
+	@include authShell.auth-page-shell;
 	display: flex;
 	justify-content: center;
 	align-items: center;
 	height: 100%;
 	width: 100%;
-	position: relative;
-	background-color: #fff;
-	color: $color;
 
 	.bg {
-		position: absolute;
+		@include authShell.auth-illustration;
 		left: 0;
-		top: 0;
-		height: 100%;
-		width: 90%;
-		pointer-events: none;
-		transform: rotate(180deg) scaleY(-1);
 
 		.cl-svg {
-			height: 100%;
-			width: 100%;
+			opacity: 0.92;
 		}
 	}
 
@@ -199,22 +196,12 @@ $color: #2c3142;
 		z-index: 9;
 
 		.logo {
-			height: 50px;
+			min-height: 50px;
 			margin-bottom: 20px;
 			display: flex;
 			align-items: center;
+			justify-content: center;
 			user-select: none;
-
-			.icon {
-				border-radius: 8px;
-				padding: 5px;
-				margin-right: 10px;
-				background-color: $color;
-
-				img {
-					height: 36px;
-				}
-			}
 
 			span {
 				font-size: 38px;
@@ -252,7 +239,7 @@ $color: #2c3142;
 					font-size: 15px;
 					border: 0;
 					border-radius: 0;
-					background-color: #f8f8f8;
+					background-color: var(--app-auth-input-bg);
 					padding: 0 5px;
 					border-radius: 8px;
 					position: relative;
@@ -264,12 +251,12 @@ $color: #2c3142;
 
 					&__inner {
 						height: 45px;
-						color: #333;
+						color: var(--app-auth-input-text);
 					}
 
 					&:-webkit-autofill {
-						-webkit-box-shadow: 0 0 0 1000px #f8f8f8 inset;
-						box-shadow: 0 0 0 1000px #f8f8f8 inset;
+						-webkit-box-shadow: 0 0 0 1000px var(--app-auth-input-bg) inset;
+						box-shadow: 0 0 0 1000px var(--app-auth-input-bg) inset;
 					}
 				}
 			}

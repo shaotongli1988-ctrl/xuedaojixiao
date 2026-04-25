@@ -1,0 +1,36 @@
+{
+  "name": "theme18-debug-9020",
+  "description": "debug hiring route on 9020->8020",
+  "configPath": "/tmp/theme18-debug-9020.json",
+  "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/theme18-hiring-debug-9020",
+  "uiBaseUrl": "http://127.0.0.1:9020",
+  "apiBaseUrl": "http://127.0.0.1:8020",
+  "chromeDebugUrl": "http://127.0.0.1:9222",
+  "generatedAt": "2026-04-19T02:59:37.861Z",
+  "scenarios": [
+    {
+      "name": "hr-debug-hiring-9020",
+      "username": "hr_admin",
+      "route": "/performance/hiring",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitSelector",
+          "status": "passed",
+          "selector": "body"
+        },
+        {
+          "index": 2,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/theme18-hiring-debug-9020/hr-debug-hiring-9020.png"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "pass": 1,
+    "fail": 0
+  }
+}

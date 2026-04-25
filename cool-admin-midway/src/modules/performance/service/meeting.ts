@@ -5,9 +5,6 @@
  */
 import {
   App,
-  ASYNC_CONTEXT_KEY,
-  ASYNC_CONTEXT_MANAGER_KEY,
-  AsyncContextManager,
   IMidwayApplication,
   Inject,
   Provide,
@@ -17,27 +14,47 @@ import {
 import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { In, Repository } from 'typeorm';
-import * as jwt from 'jsonwebtoken';
 import { BaseSysUserEntity } from '../../base/entity/sys/user';
 import { BaseSysMenuService } from '../../base/service/sys/menu';
 import { BaseSysPermsService } from '../../base/service/sys/perms';
 import { PerformanceMeetingEntity } from '../entity/meeting';
+import { MEETING_STATUS_VALUES } from './meeting-dict';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+  resolvePerformanceRuntimeContext,
+} from './access-context';
 
-type MeetingStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
-
-const MEETING_STATUS: MeetingStatus[] = [
-  'scheduled',
-  'in_progress',
-  'completed',
-  'cancelled',
-];
-
-const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
-  return require('../../base/config').default({
-    app,
-    env: app?.getEnv?.(),
-  }).jwt;
-};
+type MeetingStatus = (typeof MEETING_STATUS_VALUES)[number];
+const PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resourceNotFound
+  );
+const PERFORMANCE_STATE_EDIT_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateEditNotAllowed
+  );
+const PERFORMANCE_STATE_DELETE_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateDeleteNotAllowed
+  );
+const PERFORMANCE_STATE_TARGET_UPDATE_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateTargetUpdateNotAllowed
+  );
+const PERFORMANCE_MEETING_STATUS_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.meetingStatusInvalid
+  );
+const PERFORMANCE_MEETING_CANCEL_ROLE_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.meetingCancelRoleDenied
+  );
 
 const nowString = () => {
   return new Date().toISOString().slice(0, 19).replace('T', ' ');
@@ -113,55 +130,24 @@ export class PerformanceMeetingService extends BaseService {
   baseSysPermsService: BaseSysPermsService;
 
   @Inject()
+  performanceAccessContextService: PerformanceAccessContextService;
+
+  @Inject()
   ctx;
 
   @App()
   app: IMidwayApplication;
 
-  private readonly perms = {
-    page: 'performance:meeting:page',
-    info: 'performance:meeting:info',
-    add: 'performance:meeting:add',
-    update: 'performance:meeting:update',
-    delete: 'performance:meeting:delete',
-    checkIn: 'performance:meeting:checkIn',
-    hrPage: 'performance:salary:page',
-  };
-
   private get currentCtx() {
-    if (this.ctx?.admin) {
-      return this.ctx;
-    }
-    try {
-      const contextManager: AsyncContextManager = this.app
-        .getApplicationContext()
-        .get(ASYNC_CONTEXT_MANAGER_KEY);
-      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as any;
-    } catch (error) {
-      return this.ctx;
-    }
-  }
-
-  private get currentAdmin() {
-    if (this.currentCtx?.admin) {
-      return this.currentCtx.admin;
-    }
-    const token =
-      this.currentCtx?.get?.('Authorization') ||
-      this.currentCtx?.headers?.authorization;
-    if (!token) {
-      return undefined;
-    }
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
+    return resolvePerformanceRuntimeContext({
+      ctx: this.ctx,
+      app: this.app,
+    });
   }
 
   async page(query: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.page, '无权限查看会议列表');
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    this.assertHasCapability(access, 'meeting.page', '无权限查看会议列表');
 
     const page = normalizePagination(query.page, 1);
     const size = normalizePagination(query.size, 20);
@@ -215,7 +201,7 @@ export class PerformanceMeetingService extends BaseService {
     qb.orderBy('meeting.updateTime', 'DESC');
 
     const rows = await qb.getRawMany();
-    const filtered = await this.filterRowsByScope(rows, perms);
+    const filtered = await this.filterRowsByScope(rows, access);
     const list = filtered
       .slice((page - 1) * size, page * size)
       .map(item => this.normalizeMeetingSummary(item));
@@ -231,11 +217,16 @@ export class PerformanceMeetingService extends BaseService {
   }
 
   async info(id: number) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.info, '无权限查看会议详情');
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    this.assertHasCapability(access, 'meeting.read', '无权限查看会议详情');
 
     const meeting = await this.requireMeeting(id);
-    await this.assertMeetingInScope(meeting, perms, '无权限查看会议详情');
+    await this.assertMeetingInScope(
+      meeting,
+      access,
+      'meeting.read',
+      '无权限查看会议详情'
+    );
 
     const organizer = await this.baseSysUserEntity.findOneBy({
       id: Number(meeting.organizerId),
@@ -245,10 +236,15 @@ export class PerformanceMeetingService extends BaseService {
   }
 
   async add(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.add, '无权限新增会议');
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    this.assertHasCapability(access, 'meeting.create', '无权限新增会议');
 
-    const normalized = await this.normalizePayload(payload, null, perms);
+    const normalized = await this.normalizePayload(
+      payload,
+      null,
+      access,
+      'meeting.create'
+    );
     const saved = await this.performanceMeetingEntity.save(
       this.performanceMeetingEntity.create({
         ...normalized,
@@ -261,22 +257,32 @@ export class PerformanceMeetingService extends BaseService {
   }
 
   async updateMeeting(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.update, '无权限修改会议');
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    this.assertHasCapability(access, 'meeting.update', '无权限修改会议');
 
     const id = Number(payload.id || 0);
     const meeting = await this.requireMeeting(id);
-    await this.assertMeetingInScope(meeting, perms, '无权限修改会议');
+    await this.assertMeetingInScope(
+      meeting,
+      access,
+      'meeting.update',
+      '无权限修改会议'
+    );
 
-    const normalized = await this.normalizePayload(payload, meeting, perms);
+    const normalized = await this.normalizePayload(
+      payload,
+      meeting,
+      access,
+      'meeting.update'
+    );
 
     await this.performanceMeetingEntity.update({ id: meeting.id }, normalized);
     return this.info(meeting.id);
   }
 
   async delete(ids: number[]) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.delete, '无权限删除会议');
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    this.assertHasCapability(access, 'meeting.delete', '无权限删除会议');
 
     const validIds = Array.from(
       new Set(
@@ -295,14 +301,19 @@ export class PerformanceMeetingService extends BaseService {
     });
 
     if (meetings.length !== validIds.length) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     for (const meeting of meetings) {
-      await this.assertMeetingInScope(meeting, perms, '无权限删除会议');
+      await this.assertMeetingInScope(
+        meeting,
+        access,
+        'meeting.delete',
+        '无权限删除会议'
+      );
 
       if (meeting.status !== 'scheduled') {
-        throw new CoolCommException('当前状态不允许删除');
+        throw new CoolCommException(PERFORMANCE_STATE_DELETE_NOT_ALLOWED_MESSAGE);
       }
     }
 
@@ -310,11 +321,16 @@ export class PerformanceMeetingService extends BaseService {
   }
 
   async checkIn(id: number) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.checkIn, '无权限执行会议签到');
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    this.assertHasCapability(access, 'meeting.checkin', '无权限执行会议签到');
 
     const meeting = await this.requireMeeting(id);
-    await this.assertMeetingInScope(meeting, perms, '无权限执行会议签到');
+    await this.assertMeetingInScope(
+      meeting,
+      access,
+      'meeting.checkin',
+      '无权限执行会议签到'
+    );
 
     if (meeting.status !== 'in_progress') {
       throw new CoolCommException('当前状态不允许签到');
@@ -331,7 +347,8 @@ export class PerformanceMeetingService extends BaseService {
   private async normalizePayload(
     payload: any,
     existing: PerformanceMeetingEntity | null,
-    perms: string[]
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
   ) {
     const title = normalizeText(payload.title || existing?.title, 200);
     const code = normalizeOptionalText(payload.code ?? existing?.code, 100);
@@ -356,7 +373,7 @@ export class PerformanceMeetingService extends BaseService {
     }
 
     const nextStatus = existing
-      ? this.resolveNextStatus(existing.status as MeetingStatus, payload.status, perms)
+      ? this.resolveNextStatus(existing.status as MeetingStatus, payload.status, access)
       : 'scheduled';
 
     if (!Number.isInteger(organizerId) || organizerId <= 0) {
@@ -365,7 +382,11 @@ export class PerformanceMeetingService extends BaseService {
 
     assertMeetingDateRange(startDate, endDate);
 
-    await this.assertScopedUsers([organizerId, ...participantIds], perms);
+    await this.assertScopedUsers(
+      [organizerId, ...participantIds],
+      access,
+      capabilityKey
+    );
 
     if (existing) {
       this.assertEditableFields(existing, {
@@ -399,28 +420,30 @@ export class PerformanceMeetingService extends BaseService {
   private resolveNextStatus(
     currentStatus: MeetingStatus,
     inputStatus: any,
-    perms: string[]
+    access: PerformanceResolvedAccessContext
   ): MeetingStatus {
     if (currentStatus === 'completed' || currentStatus === 'cancelled') {
-      throw new CoolCommException('当前状态不允许编辑');
+      throw new CoolCommException(PERFORMANCE_STATE_EDIT_NOT_ALLOWED_MESSAGE);
     }
 
     const nextStatus = String(inputStatus || currentStatus).trim() as MeetingStatus;
 
-    if (!MEETING_STATUS.includes(nextStatus)) {
-      throw new CoolCommException('会议状态不合法');
+    if (!MEETING_STATUS_VALUES.includes(nextStatus)) {
+      throw new CoolCommException(PERFORMANCE_MEETING_STATUS_INVALID_MESSAGE);
     }
 
     if (currentStatus === 'scheduled') {
       if (['scheduled', 'in_progress', 'cancelled'].includes(nextStatus)) {
         return nextStatus;
       }
-      throw new CoolCommException('当前状态不允许更新到目标状态');
+      throw new CoolCommException(
+        PERFORMANCE_STATE_TARGET_UPDATE_NOT_ALLOWED_MESSAGE
+      );
     }
 
     if (currentStatus === 'in_progress') {
-      if (nextStatus === 'cancelled' && !this.isHr(perms)) {
-        throw new CoolCommException('当前角色不允许取消进行中的会议');
+      if (nextStatus === 'cancelled' && !this.hasCompanyScope(access, 'meeting.update')) {
+        throw new CoolCommException(PERFORMANCE_MEETING_CANCEL_ROLE_DENIED_MESSAGE);
       }
 
       if (['in_progress', 'completed', 'cancelled'].includes(nextStatus)) {
@@ -428,7 +451,7 @@ export class PerformanceMeetingService extends BaseService {
       }
     }
 
-    throw new CoolCommException('当前状态不允许更新到目标状态');
+    throw new CoolCommException(PERFORMANCE_STATE_TARGET_UPDATE_NOT_ALLOWED_MESSAGE);
   }
 
   private assertEditableFields(
@@ -466,12 +489,15 @@ export class PerformanceMeetingService extends BaseService {
     }
   }
 
-  private async filterRowsByScope(rows: any[], perms: string[]) {
-    if (this.isHr(perms)) {
+  private async filterRowsByScope(
+    rows: any[],
+    access: PerformanceResolvedAccessContext
+  ) {
+    if (this.hasCompanyScope(access, 'meeting.page')) {
       return rows;
     }
 
-    const scopeUserIds = await this.resolveScopeUserIds();
+    const scopeUserIds = await this.resolveScopeUserIds(access);
     const scopeUserIdSet = new Set(scopeUserIds);
 
     return rows.filter(item => {
@@ -529,7 +555,7 @@ export class PerformanceMeetingService extends BaseService {
     const meeting = await this.performanceMeetingEntity.findOneBy({ id });
 
     if (!meeting) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     return meeting;
@@ -537,14 +563,15 @@ export class PerformanceMeetingService extends BaseService {
 
   private async assertMeetingInScope(
     meeting: PerformanceMeetingEntity,
-    perms: string[],
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey,
     message: string
   ) {
-    if (this.isHr(perms)) {
+    if (this.hasCompanyScope(access, capabilityKey)) {
       return;
     }
 
-    const scopeUserIds = new Set(await this.resolveScopeUserIds());
+    const scopeUserIds = new Set(await this.resolveScopeUserIds(access));
     const participantIds = parseParticipantIds(meeting.participantIds);
 
     if (
@@ -555,7 +582,11 @@ export class PerformanceMeetingService extends BaseService {
     }
   }
 
-  private async assertScopedUsers(userIds: number[], perms: string[]) {
+  private async assertScopedUsers(
+    userIds: number[],
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
+  ) {
     const validIds = Array.from(
       new Set(
         (userIds || [])
@@ -574,11 +605,11 @@ export class PerformanceMeetingService extends BaseService {
       throw new CoolCommException('组织者或参与人不存在');
     }
 
-    if (this.isHr(perms)) {
+    if (this.hasCompanyScope(access, capabilityKey)) {
       return;
     }
 
-    const scopeDepartmentIds = new Set(await this.resolveScopeDepartmentIds());
+    const scopeDepartmentIds = new Set(await this.resolveScopeDepartmentIds(access));
 
     const outOfScope = users.some(user => {
       return !scopeDepartmentIds.has(Number(user.departmentId || 0));
@@ -589,17 +620,19 @@ export class PerformanceMeetingService extends BaseService {
     }
   }
 
-  private async resolveScopeUserIds() {
+  private async resolveScopeUserIds(access: PerformanceResolvedAccessContext) {
     const cached = this.currentCtx?.meetingScopeUserIds;
 
     if (Array.isArray(cached)) {
       return cached.map(item => Number(item));
     }
 
-    const departmentIds = await this.resolveScopeDepartmentIds();
+    const departmentIds = await this.resolveScopeDepartmentIds(access);
 
     if (!departmentIds.length) {
-      this.currentCtx.meetingScopeUserIds = [];
+      if (this.currentCtx) {
+        this.currentCtx.meetingScopeUserIds = [];
+      }
       return [];
     }
 
@@ -613,53 +646,45 @@ export class PerformanceMeetingService extends BaseService {
       .map(item => Number(item.id))
       .filter(item => Number.isInteger(item) && item > 0);
 
-    this.currentCtx.meetingScopeUserIds = userIds;
+    if (this.currentCtx) {
+      this.currentCtx.meetingScopeUserIds = userIds;
+    }
     return userIds;
   }
 
-  private async resolveScopeDepartmentIds() {
+  private async resolveScopeDepartmentIds(access: PerformanceResolvedAccessContext) {
     const cached = this.currentCtx?.meetingDepartmentIds;
 
     if (Array.isArray(cached)) {
       return cached.map(item => Number(item));
     }
 
-    const departmentIds = await this.departmentScopeIds();
-    this.currentCtx.meetingDepartmentIds = departmentIds;
+    const departmentIds = Array.isArray(access.departmentIds)
+      ? access.departmentIds.map(item => Number(item))
+      : [];
+    if (this.currentCtx) {
+      this.currentCtx.meetingDepartmentIds = departmentIds;
+    }
     return departmentIds;
   }
 
-  private async currentPerms() {
-    const admin = this.currentAdmin;
-
-    if (!admin?.roleIds) {
-      throw new CoolCommException('登录状态已失效');
-    }
-
-    return this.baseSysMenuService.getPerms(admin.roleIds);
-  }
-
-  private assertPerm(perms: string[], perm: string, message: string) {
-    if (!perms.includes(perm)) {
+  private assertHasCapability(
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey,
+    message: string
+  ) {
+    if (!this.performanceAccessContextService.hasCapability(access, capabilityKey)) {
       throw new CoolCommException(message);
     }
   }
 
-  private hasPerm(perms: string[], perm: string) {
-    return perms.includes(perm);
-  }
-
-  private isHr(perms: string[]) {
-    return (
-      this.currentAdmin?.isAdmin === true ||
-      this.hasPerm(perms, this.perms.hrPage)
-    );
-  }
-
-  private async departmentScopeIds() {
-    const ids = await this.baseSysPermsService.departmentIds(
-      Number(this.currentAdmin?.userId || 0)
-    );
-    return Array.isArray(ids) ? ids.map(item => Number(item)) : [];
+  private hasCompanyScope(
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
+  ) {
+    return this.performanceAccessContextService.capabilityScopes(
+      access,
+      capabilityKey
+    ).includes('company');
   }
 }

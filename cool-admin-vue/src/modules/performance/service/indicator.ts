@@ -1,5 +1,15 @@
 import { BaseService } from '/@/cool';
-import type { IndicatorPageResult, IndicatorRecord } from '../types';
+import { asPerformanceServicePromise } from './service-contract';
+import { decodeIndicatorPageResult, decodeIndicatorRecord } from './indicator-contract';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
+import type {
+	IndicatorInfoQuery,
+	IndicatorPageQuery,
+	IndicatorPageResult,
+	IndicatorRemovePayload,
+	IndicatorRecord,
+	IndicatorSaveRequest
+} from '../types';
 
 /**
  * 指标库前端请求服务。
@@ -7,35 +17,44 @@ import type { IndicatorPageResult, IndicatorRecord } from '../types';
  */
 export default class PerformanceIndicatorService extends BaseService {
 	permission = {
-		page: 'performance:indicator:page',
-		info: 'performance:indicator:info',
-		add: 'performance:indicator:add',
-		update: 'performance:indicator:update',
-		delete: 'performance:indicator:delete'
+		page: PERMISSIONS.performance.indicator.page,
+		info: PERMISSIONS.performance.indicator.info,
+		add: PERMISSIONS.performance.indicator.add,
+		update: PERMISSIONS.performance.indicator.update,
+		delete: PERMISSIONS.performance.indicator.delete
 	};
 
 	constructor() {
 		super('admin/performance/indicator');
 	}
 
-	fetchPage(data: any) {
-		return super.page(data) as unknown as Promise<IndicatorPageResult>;
+	fetchPage(data: IndicatorPageQuery) {
+		return asPerformanceServicePromise<IndicatorPageResult>(
+			super.page(data),
+			decodeIndicatorPageResult
+		);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<IndicatorRecord>;
+	fetchInfo(params: IndicatorInfoQuery) {
+		return asPerformanceServicePromise<IndicatorRecord>(
+			super.info(params),
+			decodeIndicatorRecord
+		);
 	}
 
-	createIndicator(data: IndicatorRecord) {
-		return super.add(data) as unknown as Promise<IndicatorRecord>;
+	createIndicator(data: IndicatorSaveRequest) {
+		return asPerformanceServicePromise<IndicatorRecord>(super.add(data), decodeIndicatorRecord);
 	}
 
-	updateIndicator(data: IndicatorRecord) {
-		return super.update(data) as unknown as Promise<IndicatorRecord>;
+	updateIndicator(data: IndicatorSaveRequest & { id: number }) {
+		return asPerformanceServicePromise<IndicatorRecord>(
+			super.update(data),
+			decodeIndicatorRecord
+		);
 	}
 
-	removeIndicator(data: { ids: number[] }) {
-		return super.delete(data) as unknown as Promise<void>;
+	removeIndicator(data: IndicatorRemovePayload) {
+		return asPerformanceServicePromise<void>(super.delete(data));
 	}
 }
 

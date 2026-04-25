@@ -21,28 +21,38 @@ import * as jwt from 'jsonwebtoken';
 import { BaseSysDepartmentEntity } from '../../base/entity/sys/department';
 import { BaseSysLogEntity } from '../../base/entity/sys/log';
 import { BaseSysUserEntity } from '../../base/entity/sys/user';
-import { BaseSysMenuService } from '../../base/service/sys/menu';
-import { BaseSysPermsService } from '../../base/service/sys/perms';
 import { PerformanceAssessmentEntity } from '../entity/assessment';
 import { PerformanceFeedbackRecordEntity } from '../entity/feedback-record';
 import { PerformanceFeedbackTaskEntity } from '../entity/feedback-task';
+import {
+  FEEDBACK_RECORD_STATUS_VALUES,
+  FEEDBACK_RELATION_TYPE_VALUES,
+  FEEDBACK_TASK_STATUS_VALUES,
+} from './feedback-dict';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
 
-export type FeedbackTaskStatus = 'draft' | 'running' | 'closed';
-export type FeedbackRecordStatus = 'draft' | 'submitted';
-
-type FeedbackRelationType = '同级' | '上级' | '下级' | '协作人';
+type FeedbackTaskStatus = (typeof FEEDBACK_TASK_STATUS_VALUES)[number];
+type FeedbackRecordStatus = (typeof FEEDBACK_RECORD_STATUS_VALUES)[number];
+type FeedbackRelationType = (typeof FEEDBACK_RELATION_TYPE_VALUES)[number];
 
 interface FeedbackRelationMappingItem {
   feedbackUserId: number;
   relationType: FeedbackRelationType;
 }
 
-const FEEDBACK_RELATION_TYPES: FeedbackRelationType[] = [
-  '同级',
-  '上级',
-  '下级',
-  '协作人',
-];
+const [FEEDBACK_TASK_DRAFT_STATUS, FEEDBACK_TASK_RUNNING_STATUS, FEEDBACK_TASK_CLOSED_STATUS] =
+  FEEDBACK_TASK_STATUS_VALUES;
+const [FEEDBACK_RECORD_DRAFT_STATUS, FEEDBACK_RECORD_SUBMITTED_STATUS] =
+  FEEDBACK_RECORD_STATUS_VALUES;
+const FEEDBACK_DEFAULT_RELATION_TYPE = FEEDBACK_RELATION_TYPE_VALUES[3];
 
 const FEEDBACK_EXPORT_LIMIT = 5000;
 const FEEDBACK_EXPORT_ACTION = '/admin/performance/feedback/export';
@@ -52,6 +62,30 @@ const FEEDBACK_EXPORT_ERRORS = {
   noData: '当前筛选条件下无可导出数据',
   overLimit: '导出结果超过上限，请缩小筛选范围后重试',
 } as const;
+const PERFORMANCE_EMPLOYEE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.employeeNotFound
+  );
+const PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resourceNotFound
+  );
+const PERFORMANCE_ASSESSMENT_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.assessmentNotFound
+  );
+const PERFORMANCE_FEEDBACK_TASK_VIEW_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.feedbackTaskViewDenied
+  );
+const PERFORMANCE_FEEDBACK_SUMMARY_DRAFT_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.feedbackSummaryDraftDenied
+  );
+const PERFORMANCE_FEEDBACK_TASK_CLOSED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.feedbackTaskClosed
+  );
 
 const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
   return require('../../base/config').default({
@@ -68,7 +102,7 @@ export function calculateFeedbackAverageScore(
   records: Array<{ status?: string; score?: number | string }>
 ) {
   const submitted = (records || []).filter(
-    item => String(item?.status || '') === 'submitted'
+    item => String(item?.status || '') === FEEDBACK_RECORD_SUBMITTED_STATUS
   );
 
   if (!submitted.length) {
@@ -94,13 +128,16 @@ export function assertFeedbackRecordSubmittable(input: {
   deadline?: string | null;
   now?: string;
 }) {
-  if (String(input.taskStatus || '') === 'closed') {
-    throw new CoolCommException('当前环评任务已关闭');
+  if (String(input.taskStatus || '') === FEEDBACK_TASK_CLOSED_STATUS) {
+    throw new CoolCommException(PERFORMANCE_FEEDBACK_TASK_CLOSED_MESSAGE);
   }
 
   assertFeedbackDeadlineOpen(input.deadline, input.now);
 
-  if (String(input.recordStatus || 'draft') === 'submitted') {
+  if (
+    String(input.recordStatus || FEEDBACK_RECORD_DRAFT_STATUS) ===
+    FEEDBACK_RECORD_SUBMITTED_STATUS
+  ) {
     throw new CoolCommException('同任务同评价人只能提交一次');
   }
 }
@@ -108,7 +145,7 @@ export function assertFeedbackRecordSubmittable(input: {
 function normalizeFeedbackRelationType(value?: string): FeedbackRelationType {
   const relationType = String(value || '').trim() as FeedbackRelationType;
 
-  if (!FEEDBACK_RELATION_TYPES.includes(relationType)) {
+  if (!FEEDBACK_RELATION_TYPE_VALUES.includes(relationType)) {
     throw new CoolCommException('评价关系不合法');
   }
 
@@ -196,26 +233,13 @@ export class PerformanceFeedbackService extends BaseService {
   baseSysLogEntity: Repository<BaseSysLogEntity>;
 
   @Inject()
-  baseSysMenuService: BaseSysMenuService;
-
-  @Inject()
-  baseSysPermsService: BaseSysPermsService;
+  performanceAccessContextService: PerformanceAccessContextService;
 
   @Inject()
   ctx;
 
   @App()
   app: IMidwayApplication;
-
-  private readonly perms = {
-    page: 'performance:feedback:page',
-    info: 'performance:feedback:info',
-    add: 'performance:feedback:add',
-    submit: 'performance:feedback:submit',
-    summary: 'performance:feedback:summary',
-    export: 'performance:feedback:export',
-    hrPage: 'performance:salary:page',
-  };
 
   private get currentCtx() {
     if (this.ctx?.admin) {
@@ -249,11 +273,8 @@ export class PerformanceFeedbackService extends BaseService {
   }
 
   async page(query: any) {
-    const perms = await this.currentPerms();
-
-    if (!this.hasPerm(perms, this.perms.page)) {
-      throw new CoolCommException('无权限查看环评任务');
-    }
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    this.assertHasCapability(access, 'feedback.task.read', '无权限查看环评任务');
 
     const page = normalizePagination(query.page, 1);
     const size = normalizePagination(query.size, 20);
@@ -296,7 +317,7 @@ export class PerformanceFeedbackService extends BaseService {
         'currentRecord.submitTime as currentRecordSubmitTime',
       ]);
 
-    await this.applyTaskScope(qb, perms, userId);
+    await this.applyTaskScope(qb, access, userId);
 
     if (query.assessmentId) {
       qb.andWhere('task.assessmentId = :assessmentId', {
@@ -346,7 +367,7 @@ export class PerformanceFeedbackService extends BaseService {
           deadline: item.deadline || '',
           creatorId: Number(item.creatorId),
           creatorName: item.creatorName || '',
-          status: item.status || 'draft',
+          status: item.status || FEEDBACK_TASK_DRAFT_STATUS,
           submittedCount: stats?.submittedCount || 0,
           totalCount: stats?.totalCount || 0,
           averageScore: stats?.averageScore || 0,
@@ -366,20 +387,17 @@ export class PerformanceFeedbackService extends BaseService {
   }
 
   async info(id: number) {
-    const perms = await this.currentPerms();
-
-    if (!this.hasPerm(perms, this.perms.info)) {
-      throw new CoolCommException('无权限查看环评详情');
-    }
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    this.assertHasCapability(access, 'feedback.task.read', '无权限查看环评详情');
 
     const task = await this.requireTask(id);
-    await this.assertCanViewTask(task, perms);
+    await this.assertCanViewTask(task, access);
 
     const detail = await this.fetchTaskDetailRow(Number(id));
     const statsMap = await this.fetchTaskStatsMap([Number(id)]);
     const stats = statsMap.get(Number(id));
     const records = await this.fetchTaskRecords(Number(id));
-    const canViewRecords = await this.canViewDetailedRecords(task, perms);
+    const canViewRecords = await this.canViewDetailedRecords(task, access);
 
     return {
       id: Number(detail.id),
@@ -392,14 +410,14 @@ export class PerformanceFeedbackService extends BaseService {
       deadline: detail.deadline || '',
       creatorId: Number(detail.creatorId),
       creatorName: detail.creatorName || '',
-      status: detail.status || 'draft',
+      status: detail.status || FEEDBACK_TASK_DRAFT_STATUS,
       submittedCount: stats?.submittedCount || 0,
       totalCount: stats?.totalCount || 0,
       averageScore: stats?.averageScore || 0,
       currentUserRecord: detail.currentRecordId
         ? {
             id: Number(detail.currentRecordId),
-            status: detail.currentRecordStatus || 'draft',
+            status: detail.currentRecordStatus || FEEDBACK_RECORD_DRAFT_STATUS,
             relationType: detail.currentRecordRelationType || '',
             submitTime: detail.currentRecordSubmitTime || '',
           }
@@ -410,7 +428,7 @@ export class PerformanceFeedbackService extends BaseService {
             feedbackUserId: Number(item.feedbackUserId),
             feedbackUserName: item.feedbackUserName || '',
             relationType: item.relationType || '',
-            status: item.status || 'draft',
+            status: item.status || FEEDBACK_RECORD_DRAFT_STATUS,
             submitTime: item.submitTime || '',
           }))
         : [],
@@ -420,11 +438,8 @@ export class PerformanceFeedbackService extends BaseService {
   }
 
   async add(payload: any) {
-    const perms = await this.currentPerms();
-
-    if (!this.hasPerm(perms, this.perms.add)) {
-      throw new CoolCommException('无权限发起环评');
-    }
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    this.assertHasCapability(access, 'feedback.task.create', '无权限发起环评');
 
     const assessmentId = Number(payload.assessmentId);
     const employeeId = Number(payload.employeeId);
@@ -442,8 +457,11 @@ export class PerformanceFeedbackService extends BaseService {
     }
 
     await this.requireAssessment(assessmentId);
-    const employee = await this.requireUser(employeeId, '员工不存在');
-    await this.assertCanManageEmployee(employee, perms);
+    const employee = await this.requireUser(
+      employeeId,
+      PERFORMANCE_EMPLOYEE_NOT_FOUND_MESSAGE
+    );
+    await this.assertCanManageEmployee(employee, access);
 
     const feedbackUsers = await this.baseSysUserEntity.findBy({
       id: In(feedbackUserIds),
@@ -460,7 +478,7 @@ export class PerformanceFeedbackService extends BaseService {
         title,
         deadline: deadline || null,
         creatorId: Number(this.currentAdmin.userId),
-        status: 'running',
+        status: FEEDBACK_TASK_RUNNING_STATUS,
       })
     );
 
@@ -468,10 +486,10 @@ export class PerformanceFeedbackService extends BaseService {
       return this.performanceFeedbackRecordEntity.create({
         taskId: Number(task.id),
         feedbackUserId,
-        relationType: relationTypeMap.get(feedbackUserId) || '协作人',
+        relationType: relationTypeMap.get(feedbackUserId) || FEEDBACK_DEFAULT_RELATION_TYPE,
         score: 0,
         content: '',
-        status: 'draft',
+        status: FEEDBACK_RECORD_DRAFT_STATUS,
         submitTime: null,
       });
     });
@@ -482,11 +500,8 @@ export class PerformanceFeedbackService extends BaseService {
   }
 
   async submit(payload: any) {
-    const perms = await this.currentPerms();
-
-    if (!this.hasPerm(perms, this.perms.submit)) {
-      throw new CoolCommException('无权限提交环评反馈');
-    }
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    this.assertHasCapability(access, 'feedback.record.submit', '无权限提交环评反馈');
 
     const taskId = Number(payload.taskId);
     const relationType = normalizeFeedbackRelationType(payload.relationType);
@@ -520,7 +535,7 @@ export class PerformanceFeedbackService extends BaseService {
         relationType,
         score,
         content,
-        status: 'submitted',
+        status: FEEDBACK_RECORD_SUBMITTED_STATUS,
         submitTime: nowString(),
       }
     );
@@ -528,15 +543,15 @@ export class PerformanceFeedbackService extends BaseService {
     const remainingDraftCount = await this.performanceFeedbackRecordEntity.count({
       where: {
         taskId,
-        status: 'draft',
+        status: FEEDBACK_RECORD_DRAFT_STATUS,
       },
     });
 
-    if (!remainingDraftCount && String(task.status) === 'running') {
+    if (!remainingDraftCount && String(task.status) === FEEDBACK_TASK_RUNNING_STATUS) {
       await this.performanceFeedbackTaskEntity.update(
         { id: taskId },
         {
-          status: 'closed',
+          status: FEEDBACK_TASK_CLOSED_STATUS,
         }
       );
     }
@@ -545,26 +560,24 @@ export class PerformanceFeedbackService extends BaseService {
   }
 
   async summary(id: number) {
-    const perms = await this.currentPerms();
-
-    if (!this.hasPerm(perms, this.perms.summary)) {
-      throw new CoolCommException('无权限查看环评汇总');
-    }
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    this.assertHasCapability(access, 'feedback.summary.read', '无权限查看环评汇总');
 
     const task = await this.requireTask(id);
-    await this.assertCanViewSummary(task, perms);
+    await this.assertCanViewSummary(task, access);
 
-    if (String(task.status) === 'draft') {
-      throw new CoolCommException('草稿状态不允许查看汇总结果');
+    if (String(task.status) === FEEDBACK_TASK_DRAFT_STATUS) {
+      throw new CoolCommException(PERFORMANCE_FEEDBACK_SUMMARY_DRAFT_DENIED_MESSAGE);
     }
 
     const records = await this.fetchTaskRecords(Number(id));
-    const canViewRecords = await this.canViewDetailedRecords(task, perms);
+    const canViewRecords = await this.canViewDetailedRecords(task, access);
 
     return {
       taskId: Number(id),
       averageScore: calculateFeedbackAverageScore(records),
-      submittedCount: records.filter(item => item.status === 'submitted').length,
+      submittedCount: records.filter(item => item.status === FEEDBACK_RECORD_SUBMITTED_STATUS)
+        .length,
       totalCount: records.length,
       records: canViewRecords
         ? records.map(item => ({
@@ -574,7 +587,7 @@ export class PerformanceFeedbackService extends BaseService {
             relationType: item.relationType || '',
             score: Number(item.score || 0),
             content: item.content || '',
-            status: item.status || 'draft',
+            status: item.status || FEEDBACK_RECORD_DRAFT_STATUS,
             submitTime: item.submitTime || '',
           }))
         : [],
@@ -582,14 +595,11 @@ export class PerformanceFeedbackService extends BaseService {
   }
 
   async export(query: any) {
-    let perms: string[] = [];
+    let access: PerformanceResolvedAccessContext | null = null;
 
     try {
-      perms = await this.currentPerms();
-
-      if (!this.hasPerm(perms, this.perms.export)) {
-        throw new CoolCommException(FEEDBACK_EXPORT_ERRORS.denied);
-      }
+      access = await this.performanceAccessContextService.resolveAccessContext();
+      this.assertHasCapability(access, 'feedback.export', FEEDBACK_EXPORT_ERRORS.denied);
 
       const qb = this.performanceFeedbackTaskEntity
         .createQueryBuilder('task')
@@ -607,7 +617,7 @@ export class PerformanceFeedbackService extends BaseService {
           'task.deadline as deadline',
         ]);
 
-      await this.applyTaskExportScope(qb, perms);
+      await this.applyTaskExportScope(qb, access);
 
       if (query.assessmentId) {
         qb.andWhere('task.assessmentId = :assessmentId', {
@@ -663,7 +673,7 @@ export class PerformanceFeedbackService extends BaseService {
       });
 
       await this.recordExportAudit({
-        perms,
+        access,
         query,
         rowCount: result.length,
         resultStatus: 'success',
@@ -672,7 +682,7 @@ export class PerformanceFeedbackService extends BaseService {
       return result;
     } catch (error) {
       await this.recordExportAudit({
-        perms,
+        access,
         query,
         rowCount: 0,
         resultStatus: 'failed',
@@ -726,7 +736,7 @@ export class PerformanceFeedbackService extends BaseService {
       .getRawOne();
 
     if (!row) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     return row;
@@ -751,12 +761,12 @@ export class PerformanceFeedbackService extends BaseService {
       .createQueryBuilder('record')
       .select('record.taskId', 'taskId')
       .addSelect(
-        "SUM(CASE WHEN record.status = 'submitted' THEN 1 ELSE 0 END)",
+        `SUM(CASE WHEN record.status = '${FEEDBACK_RECORD_SUBMITTED_STATUS}' THEN 1 ELSE 0 END)`,
         'submittedCount'
       )
       .addSelect('COUNT(1)', 'totalCount')
       .addSelect(
-        "AVG(CASE WHEN record.status = 'submitted' THEN record.score ELSE NULL END)",
+        `AVG(CASE WHEN record.status = '${FEEDBACK_RECORD_SUBMITTED_STATUS}' THEN record.score ELSE NULL END)`,
         'averageScore'
       )
       .where('record.taskId in (:...taskIds)', { taskIds: validTaskIds })
@@ -798,46 +808,31 @@ export class PerformanceFeedbackService extends BaseService {
       .getRawMany();
   }
 
-  private async currentPerms() {
-    return this.baseSysMenuService.getPerms(this.currentAdmin.roleIds);
-  }
-
-  private hasPerm(perms: string[], perm: string) {
-    return perms.includes(perm);
-  }
-
-  private isHr(perms: string[]) {
-    return (
-      this.currentAdmin.isAdmin === true ||
-      this.hasPerm(perms, this.perms.hrPage)
-    );
-  }
-
-  private async departmentScopeIds() {
-    const ids = await this.baseSysPermsService.departmentIds(
-      this.currentAdmin.userId
-    );
-    return Array.isArray(ids) ? ids.map(item => Number(item)) : [];
-  }
-
-  private async resolveScopeDepartmentIds() {
-    const cached = this.currentCtx?.feedbackDepartmentIds;
-
-    if (Array.isArray(cached)) {
-      return cached.map(item => Number(item));
+  private assertHasCapability(
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey,
+    message: string
+  ) {
+    if (!this.performanceAccessContextService.hasCapability(access, capabilityKey)) {
+      throw new CoolCommException(message);
     }
-
-    const departmentIds = await this.departmentScopeIds();
-    this.currentCtx.feedbackDepartmentIds = departmentIds;
-    return departmentIds;
   }
 
-  private async applyTaskScope(qb: any, perms: string[], userId: number) {
-    if (this.isHr(perms)) {
+  private async applyTaskScope(
+    qb: any,
+    access: PerformanceResolvedAccessContext,
+    userId: number
+  ) {
+    const readScopes = this.performanceAccessContextService.capabilityScopes(
+      access,
+      'feedback.task.read'
+    );
+
+    if (readScopes.includes('company')) {
       return;
     }
 
-    if (!this.hasPerm(perms, this.perms.add)) {
+    if (!this.performanceAccessContextService.hasCapability(access, 'feedback.task.create')) {
       qb.andWhere(
         new Brackets(where => {
           where
@@ -852,13 +847,11 @@ export class PerformanceFeedbackService extends BaseService {
       return;
     }
 
-    const departmentIds = await this.resolveScopeDepartmentIds();
-
     qb.andWhere(
       new Brackets(where => {
-        if (departmentIds.length) {
+        if (access.departmentIds.length) {
           where.where('employee.departmentId in (:...departmentIds)', {
-            departmentIds,
+            departmentIds: access.departmentIds,
           });
           where.orWhere('task.employeeId = :currentUserId', {
             currentUserId: userId,
@@ -879,26 +872,38 @@ export class PerformanceFeedbackService extends BaseService {
     );
   }
 
-  private async applyTaskExportScope(qb: any, perms: string[]) {
-    if (this.isHr(perms)) {
+  private async applyTaskExportScope(
+    qb: any,
+    access: PerformanceResolvedAccessContext | null
+  ) {
+    if (
+      access &&
+      this.performanceAccessContextService
+        .capabilityScopes(access, 'feedback.export')
+        .includes('company')
+    ) {
       return;
     }
 
-    const departmentIds = await this.resolveScopeDepartmentIds();
-
-    if (!departmentIds.length) {
+    if (!access?.departmentIds.length) {
       qb.andWhere('1 = 0');
       return;
     }
 
-    qb.andWhere('employee.departmentId in (:...departmentIds)', { departmentIds });
+    qb.andWhere('employee.departmentId in (:...departmentIds)', {
+      departmentIds: access.departmentIds,
+    });
   }
 
   private async assertCanViewTask(
     task: PerformanceFeedbackTaskEntity,
-    perms: string[]
+    access: PerformanceResolvedAccessContext
   ) {
-    if (this.isHr(perms)) {
+    if (
+      this.performanceAccessContextService
+        .capabilityScopes(access, 'feedback.task.read')
+        .includes('company')
+    ) {
       return;
     }
 
@@ -917,56 +922,86 @@ export class PerformanceFeedbackService extends BaseService {
       return;
     }
 
-    if (!this.hasPerm(perms, this.perms.add)) {
-      throw new CoolCommException('无权查看该环评任务');
+    if (!this.performanceAccessContextService.hasCapability(access, 'feedback.task.create')) {
+      throw new CoolCommException(PERFORMANCE_FEEDBACK_TASK_VIEW_DENIED_MESSAGE);
     }
 
-    const employee = await this.requireUser(Number(task.employeeId), '员工不存在');
-    const departmentIds = await this.resolveScopeDepartmentIds();
+    const employee = await this.requireUser(
+      Number(task.employeeId),
+      PERFORMANCE_EMPLOYEE_NOT_FOUND_MESSAGE
+    );
 
-    if (departmentIds.includes(Number(employee.departmentId))) {
+    if (
+      this.performanceAccessContextService.matchesScope(
+        access,
+        this.performanceAccessContextService.capabilityScopes(
+          access,
+          'feedback.task.create'
+        ),
+        {
+          departmentId: Number(employee.departmentId),
+        }
+      )
+    ) {
       return;
     }
 
-    throw new CoolCommException('无权查看该环评任务');
+    throw new CoolCommException(PERFORMANCE_FEEDBACK_TASK_VIEW_DENIED_MESSAGE);
   }
 
   private async assertCanViewSummary(
     task: PerformanceFeedbackTaskEntity,
-    perms: string[]
+    access: PerformanceResolvedAccessContext
   ) {
-    await this.assertCanViewTask(task, perms);
+    await this.assertCanViewTask(task, access);
   }
 
   private async canViewDetailedRecords(
     task: PerformanceFeedbackTaskEntity,
-    perms: string[]
+    access: PerformanceResolvedAccessContext
   ) {
-    if (this.isHr(perms)) {
+    if (
+      this.performanceAccessContextService
+        .capabilityScopes(access, 'feedback.summary.read')
+        .includes('company')
+    ) {
       return true;
     }
 
-    if (!this.hasPerm(perms, this.perms.add)) {
+    if (!this.performanceAccessContextService.hasCapability(access, 'feedback.task.create')) {
       return false;
     }
 
-    const employee = await this.requireUser(Number(task.employeeId), '员工不存在');
-    const departmentIds = await this.resolveScopeDepartmentIds();
+    const employee = await this.requireUser(
+      Number(task.employeeId),
+      PERFORMANCE_EMPLOYEE_NOT_FOUND_MESSAGE
+    );
 
-    return departmentIds.includes(Number(employee.departmentId));
+    return this.performanceAccessContextService.matchesScope(
+      access,
+      this.performanceAccessContextService.capabilityScopes(access, 'feedback.task.create'),
+      {
+        departmentId: Number(employee.departmentId),
+      }
+    );
   }
 
   private async assertCanManageEmployee(
     employee: BaseSysUserEntity,
-    perms: string[]
+    access: PerformanceResolvedAccessContext
   ) {
-    if (this.isHr(perms)) {
-      return;
-    }
-
-    const departmentIds = await this.resolveScopeDepartmentIds();
-
-    if (!departmentIds.includes(Number(employee.departmentId))) {
+    if (
+      !this.performanceAccessContextService.matchesScope(
+        access,
+        this.performanceAccessContextService.capabilityScopes(
+          access,
+          'feedback.task.create'
+        ),
+        {
+          departmentId: Number(employee.departmentId),
+        }
+      )
+    ) {
       throw new CoolCommException('无权发起该员工环评任务');
     }
   }
@@ -975,7 +1010,7 @@ export class PerformanceFeedbackService extends BaseService {
     const task = await this.performanceFeedbackTaskEntity.findOneBy({ id });
 
     if (!task) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     return task;
@@ -985,7 +1020,7 @@ export class PerformanceFeedbackService extends BaseService {
     const assessment = await this.performanceAssessmentEntity.findOneBy({ id });
 
     if (!assessment) {
-      throw new CoolCommException('评估单不存在');
+      throw new CoolCommException(PERFORMANCE_ASSESSMENT_NOT_FOUND_MESSAGE);
     }
 
     return assessment;
@@ -1016,18 +1051,26 @@ export class PerformanceFeedbackService extends BaseService {
     }
   }
 
-  private resolveExportOperatorRole(perms: string[]) {
+  private resolveExportOperatorRole(access: PerformanceResolvedAccessContext | null) {
     if (this.currentAdmin?.isAdmin === true) {
       return 'admin';
     }
 
-    if (this.isHr(perms)) {
+    if (
+      access &&
+      this.performanceAccessContextService
+        .capabilityScopes(access, 'feedback.export')
+        .includes('company')
+    ) {
       return 'hr';
     }
 
     if (
-      this.hasPerm(perms, this.perms.export) ||
-      this.hasPerm(perms, this.perms.add)
+      access &&
+      this.performanceAccessContextService.hasAnyCapability(access, [
+        'feedback.export',
+        'feedback.task.create',
+      ])
     ) {
       return 'manager';
     }
@@ -1045,7 +1088,7 @@ export class PerformanceFeedbackService extends BaseService {
   }
 
   private async recordExportAudit(input: {
-    perms: string[];
+    access: PerformanceResolvedAccessContext | null;
     query: any;
     rowCount: number;
     resultStatus: 'success' | 'failed';
@@ -1058,7 +1101,7 @@ export class PerformanceFeedbackService extends BaseService {
     const operatorId = Number(this.currentAdmin?.userId || 0) || null;
     const params = {
       operatorId,
-      operatorRole: this.resolveExportOperatorRole(input.perms || []),
+      operatorRole: this.resolveExportOperatorRole(input.access),
       moduleKey: 'feedback',
       filterSummary: this.buildExportFilterSummary(input.query),
       exportFieldVersion: FEEDBACK_EXPORT_FIELD_VERSION,
@@ -1084,6 +1127,6 @@ export class PerformanceFeedbackService extends BaseService {
   }
 
   async initFeedbackScope() {
-    this.currentCtx.feedbackDepartmentIds = await this.departmentScopeIds();
+    return;
   }
 }

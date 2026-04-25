@@ -4,13 +4,18 @@ import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Equal, Repository } from 'typeorm';
 import { UserInfoEntity } from '../entity/info';
 import { UserWxService } from './wx';
-import * as jwt from 'jsonwebtoken';
 import { UserWxEntity } from '../entity/wx';
 import { BaseSysLoginService } from '../../base/service/sys/login';
 import { UserSmsService } from './sms';
 import { v1 as uuid } from 'uuid';
 import * as md5 from 'md5';
 import { PluginService } from '../../plugin/service/info';
+import {
+  buildUserAppTokenPayload,
+  isUserAppRefreshToken,
+  resolveUserAppUserId,
+  verifyUserAppToken,
+} from '../domain';
 
 /**
  * 登录
@@ -242,13 +247,17 @@ export class UserLoginService extends BaseService {
    */
   async refreshToken(refreshToken) {
     try {
-      const info = jwt.verify(refreshToken, this.jwtConfig.secret);
-      if (!info['isRefresh']) {
+      const info = verifyUserAppToken(refreshToken, this.jwtConfig.secret);
+      if (!info || !isUserAppRefreshToken(info)) {
         throw new CoolCommException('token类型非refreshToken');
       }
+      const userId = resolveUserAppUserId(info);
       const userInfo = await this.userInfoEntity.findOneBy({
-        id: info['id'],
+        id: userId,
       });
+      if (!userInfo?.id) {
+        throw new CoolCommException('用户不存在');
+      }
       return this.token({ id: userInfo.id });
     } catch (e) {
       throw new CoolCommException(
@@ -297,12 +306,12 @@ export class UserLoginService extends BaseService {
   async generateToken(info, isRefresh = false) {
     const { expire, refreshExpire, secret } = this.jwtConfig;
     const user = await this.userInfoEntity.findOneBy({ id: Equal(info.id) });
-    const tokenInfo = {
+    const tokenInfo = buildUserAppTokenPayload({
+      id: info.id,
       isRefresh,
-      ...info,
       tenantId: user?.tenantId,
-    };
-    return jwt.sign(tokenInfo, secret, {
+    });
+    return require('jsonwebtoken').sign(tokenInfo, secret, {
       expiresIn: isRefresh ? refreshExpire : expire,
     });
   }

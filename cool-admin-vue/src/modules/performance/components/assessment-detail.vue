@@ -58,12 +58,12 @@ defineProps<{
 <style lang="scss" scoped>
 .assessment-detail {
 	display: grid;
-	gap: 16px;
+	gap: var(--app-space-4);
 
 	&__text {
 		white-space: pre-wrap;
 		line-height: 1.7;
-		color: var(--el-text-color-regular);
+		color: var(--app-text-secondary);
 	}
 }
 </style>

@@ -22,9 +22,8 @@ import { BaseSysDepartmentEntity } from '../../base/entity/sys/department';
 import { BaseSysRoleEntity } from '../../base/entity/sys/role';
 import { BaseSysUserEntity } from '../../base/entity/sys/user';
 import { BaseSysUserRoleEntity } from '../../base/entity/sys/user_role';
-import { BaseSysMenuService } from '../../base/service/sys/menu';
-import { BaseSysPermsService } from '../../base/service/sys/perms';
 import { PerformanceAssessmentEntity } from '../entity/assessment';
+import { PerformanceAssetAssignmentRequestEntity } from '../entity/assetAssignmentRequest';
 import { PerformancePromotionEntity } from '../entity/promotion';
 import { PerformanceSuggestionService } from './suggestion';
 import { PerformanceApprovalActionLogEntity } from '../entity/approval-action-log';
@@ -32,6 +31,14 @@ import { PerformanceApprovalConfigEntity } from '../entity/approval-config';
 import { PerformanceApprovalConfigNodeEntity } from '../entity/approval-config-node';
 import { PerformanceApprovalInstanceEntity } from '../entity/approval-instance';
 import { PerformanceApprovalInstanceNodeEntity } from '../entity/approval-instance-node';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+} from './access-context';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain';
 import {
   APPROVAL_ACTIVE_STATUSES,
   APPROVAL_INSTANCE_STATUSES,
@@ -59,16 +66,24 @@ const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
     env: app?.getEnv?.(),
   }).jwt;
 };
+const PERFORMANCE_ASSIGNMENT_REQUEST_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.assetAssignmentRequestNotFound
+  );
+const PERFORMANCE_APPROVAL_INSTANCE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.approvalInstanceNotFound
+  );
 
 function formatNow() {
   return new Date().toISOString().slice(0, 19).replace('T', ' ');
 }
 
 type ApprovalScope = {
-  perms: string[];
   isHr: boolean;
   departmentIds: number[] | null;
   userId: number;
+  can: (capabilityKey: PerformanceCapabilityKey) => boolean;
 };
 
 type ApprovalContext = {
@@ -102,6 +117,9 @@ export class PerformanceApprovalFlowService extends BaseService {
   @InjectEntityModel(PerformancePromotionEntity)
   performancePromotionEntity: Repository<PerformancePromotionEntity>;
 
+  @InjectEntityModel(PerformanceAssetAssignmentRequestEntity)
+  performanceAssetAssignmentRequestEntity: Repository<PerformanceAssetAssignmentRequestEntity>;
+
   @InjectEntityModel(BaseSysUserEntity)
   baseSysUserEntity: Repository<BaseSysUserEntity>;
 
@@ -115,33 +133,16 @@ export class PerformanceApprovalFlowService extends BaseService {
   baseSysRoleEntity: Repository<BaseSysRoleEntity>;
 
   @Inject()
-  baseSysMenuService: BaseSysMenuService;
-
-  @Inject()
-  baseSysPermsService: BaseSysPermsService;
-
-  @Inject()
   performanceSuggestionService: PerformanceSuggestionService;
+
+  @Inject()
+  performanceAccessContextService: PerformanceAccessContextService;
 
   @Inject()
   ctx;
 
   @App()
   app: IMidwayApplication;
-
-  private readonly perms = {
-    configInfo: 'performance:approvalFlow:configInfo',
-    configSave: 'performance:approvalFlow:configSave',
-    info: 'performance:approvalFlow:info',
-    approve: 'performance:approvalFlow:approve',
-    reject: 'performance:approvalFlow:reject',
-    transfer: 'performance:approvalFlow:transfer',
-    withdraw: 'performance:approvalFlow:withdraw',
-    remind: 'performance:approvalFlow:remind',
-    resolve: 'performance:approvalFlow:resolve',
-    fallback: 'performance:approvalFlow:fallback',
-    terminate: 'performance:approvalFlow:terminate',
-  };
 
   private get currentCtx() {
     if (this.ctx?.admin) {
@@ -176,9 +177,9 @@ export class PerformanceApprovalFlowService extends BaseService {
 
   async configInfo(objectTypeValue: any) {
     const objectType = normalizeApprovalObjectType(objectTypeValue);
-    const perms = await this.currentPerms();
+    const scope = await this.getScope();
 
-    if (!this.hasPerm(perms, this.perms.configInfo)) {
+    if (!scope.can('approval.config.read')) {
       throw new CoolCommException('无权限查看审批流配置');
     }
 
@@ -212,9 +213,9 @@ export class PerformanceApprovalFlowService extends BaseService {
   }
 
   async configSave(payload: any) {
-    const perms = await this.currentPerms();
+    const scope = await this.getScope();
 
-    if (!this.hasPerm(perms, this.perms.configSave)) {
+    if (!scope.can('approval.config.write')) {
       throw new CoolCommException('无权限保存审批流配置');
     }
 
@@ -283,7 +284,7 @@ export class PerformanceApprovalFlowService extends BaseService {
   async info(id: number) {
     const scope = await this.getScope();
 
-    if (!this.hasPerm(scope.perms, this.perms.info)) {
+    if (!scope.can('approval.instance.read')) {
       throw new CoolCommException('无权限查看审批实例');
     }
 
@@ -296,7 +297,7 @@ export class PerformanceApprovalFlowService extends BaseService {
   async approve(payload: any) {
     const scope = await this.getScope();
 
-    if (!this.hasPerm(scope.perms, this.perms.approve)) {
+    if (!scope.can('approval.instance.approve')) {
       throw new CoolCommException('无权限审批');
     }
 
@@ -322,14 +323,20 @@ export class PerformanceApprovalFlowService extends BaseService {
           }
         );
 
-        const nextNode = await manager
-          .getRepository(PerformanceApprovalInstanceNodeEntity)
-          .findOne({
+        const nextNode = (
+          await manager.getRepository(PerformanceApprovalInstanceNodeEntity).find({
             where: {
               instanceId: instance.id,
-              nodeOrder: Number(instance.currentNodeOrder || 0) + 1,
             },
-          });
+            order: {
+              nodeOrder: 'ASC',
+            },
+          })
+        ).find(
+          item =>
+            Number(item.nodeOrder) > Number(instance.currentNodeOrder || 0) &&
+            item.status !== 'cancelled'
+        );
 
         if (!nextNode) {
           await manager.getRepository(PerformanceApprovalInstanceEntity).update(
@@ -398,6 +405,7 @@ export class PerformanceApprovalFlowService extends BaseService {
             currentApproverId: resolution.approverId,
           }
         );
+        await this.syncSourceApprovalRuntime(manager, instance.id);
 
         await this.saveActionLog(manager, {
           instanceId: instance.id,
@@ -418,7 +426,7 @@ export class PerformanceApprovalFlowService extends BaseService {
   async reject(payload: any) {
     const scope = await this.getScope();
 
-    if (!this.hasPerm(scope.perms, this.perms.reject)) {
+    if (!scope.can('approval.instance.reject')) {
       throw new CoolCommException('无权限驳回');
     }
 
@@ -487,7 +495,7 @@ export class PerformanceApprovalFlowService extends BaseService {
   async transfer(payload: any) {
     const scope = await this.getScope();
 
-    if (!this.hasPerm(scope.perms, this.perms.transfer)) {
+    if (!scope.can('approval.instance.transfer')) {
       throw new CoolCommException('无权限转办');
     }
 
@@ -545,6 +553,7 @@ export class PerformanceApprovalFlowService extends BaseService {
             currentApproverId: toUserId,
           }
         );
+        await this.syncSourceApprovalRuntime(manager, instance.id);
         await this.saveActionLog(manager, {
           instanceId: instance.id,
           instanceNodeId: currentNode.id,
@@ -564,7 +573,7 @@ export class PerformanceApprovalFlowService extends BaseService {
   async withdraw(payload: any) {
     const scope = await this.getScope();
 
-    if (!this.hasPerm(scope.perms, this.perms.withdraw)) {
+    if (!scope.can('approval.instance.withdraw')) {
       throw new CoolCommException('无权限撤回');
     }
 
@@ -637,7 +646,7 @@ export class PerformanceApprovalFlowService extends BaseService {
   async remind(payload: any) {
     const scope = await this.getScope();
 
-    if (!this.hasPerm(scope.perms, this.perms.remind)) {
+    if (!scope.can('approval.instance.remind')) {
       throw new CoolCommException('无权限催办');
     }
 
@@ -677,7 +686,7 @@ export class PerformanceApprovalFlowService extends BaseService {
   async resolve(payload: any) {
     const scope = await this.getScope();
 
-    if (!this.hasPerm(scope.perms, this.perms.resolve) || !scope.isHr) {
+    if (!scope.can('approval.instance.resolve') || !scope.isHr) {
       throw new CoolCommException('只有 HR 可以人工恢复审批');
     }
 
@@ -718,6 +727,7 @@ export class PerformanceApprovalFlowService extends BaseService {
             currentApproverId: assigneeUserId,
           }
         );
+        await this.syncSourceApprovalRuntime(manager, instance.id);
         await this.saveActionLog(manager, {
           instanceId: instance.id,
           instanceNodeId: currentNode.id,
@@ -737,7 +747,7 @@ export class PerformanceApprovalFlowService extends BaseService {
   async fallback(payload: any) {
     const scope = await this.getScope();
 
-    if (!this.hasPerm(scope.perms, this.perms.fallback) || !scope.isHr) {
+    if (!scope.can('approval.instance.fallback') || !scope.isHr) {
       throw new CoolCommException('只有 HR 可以回退到手工审批主链');
     }
 
@@ -791,7 +801,7 @@ export class PerformanceApprovalFlowService extends BaseService {
   async terminate(payload: any) {
     const scope = await this.getScope();
 
-    if (!this.hasPerm(scope.perms, this.perms.terminate) || !scope.isHr) {
+    if (!scope.can('approval.instance.terminate') || !scope.isHr) {
       throw new CoolCommException('只有 HR 可以强制终止审批实例');
     }
 
@@ -1078,7 +1088,20 @@ export class PerformanceApprovalFlowService extends BaseService {
       throw new CoolCommException('审批流配置缺少节点');
     }
 
-    const firstNode = configNodes[0];
+    const applicableNodeOrders = await this.resolveApplicableNodeOrders(
+      manager,
+      payload.objectType,
+      payload.objectId,
+      configNodes
+    );
+    const firstNode = configNodes.find(item =>
+      applicableNodeOrders.has(Number(item.nodeOrder))
+    );
+
+    if (!firstNode) {
+      throw new CoolCommException('当前申请未命中可执行审批节点');
+    }
+
     const context: ApprovalContext = {
       objectType: payload.objectType,
       applicantId: payload.applicantId,
@@ -1119,8 +1142,13 @@ export class PerformanceApprovalFlowService extends BaseService {
         resolverValueSnapshot: item.resolverValue || null,
         allowTransfer: Boolean(item.allowTransfer),
         approverId:
-          item.nodeOrder === firstNode.nodeOrder ? resolution.approverId : null,
-        status: 'pending',
+          applicableNodeOrders.has(Number(item.nodeOrder)) &&
+          item.nodeOrder === firstNode.nodeOrder
+            ? resolution.approverId
+            : null,
+        status: applicableNodeOrders.has(Number(item.nodeOrder))
+          ? 'pending'
+          : 'cancelled',
         actionTime: null,
         transferFromUserId: null,
         transferReason: null,
@@ -1224,42 +1252,100 @@ export class PerformanceApprovalFlowService extends BaseService {
       return;
     }
 
+    if (objectType === 'promotion') {
+      switch (payload.finalStatus) {
+        case 'approved':
+          await manager.getRepository(PerformancePromotionEntity).update(
+            { id: objectId },
+            {
+              status: 'approved',
+              reviewTime: payload.now,
+            }
+          );
+          return;
+        case 'rejected':
+          await manager.getRepository(PerformancePromotionEntity).update(
+            { id: objectId },
+            {
+              status: 'rejected',
+              reviewTime: payload.now,
+            }
+          );
+          return;
+        case 'withdrawn':
+          await manager.getRepository(PerformancePromotionEntity).update(
+            { id: objectId },
+            {
+              status: 'draft',
+              reviewTime: null,
+            }
+          );
+          return;
+        case 'fallback':
+        case 'terminated':
+          await manager.getRepository(PerformancePromotionEntity).update(
+            { id: objectId },
+            {
+              status: 'reviewing',
+            }
+          );
+      }
+      return;
+    }
+
     switch (payload.finalStatus) {
       case 'approved':
-        await manager.getRepository(PerformancePromotionEntity).update(
+        await manager.getRepository(PerformanceAssetAssignmentRequestEntity).update(
           { id: objectId },
           {
-            status: 'approved',
-            reviewTime: payload.now,
+            status: 'approvedPendingAssignment',
+            approvalStatus: 'approved',
+            currentApproverId: null,
           }
         );
         return;
       case 'rejected':
-        await manager.getRepository(PerformancePromotionEntity).update(
+        await manager.getRepository(PerformanceAssetAssignmentRequestEntity).update(
           { id: objectId },
           {
             status: 'rejected',
-            reviewTime: payload.now,
+            approvalStatus: 'rejected',
+            currentApproverId: null,
           }
         );
         return;
       case 'withdrawn':
-        await manager.getRepository(PerformancePromotionEntity).update(
+        await manager.getRepository(PerformanceAssetAssignmentRequestEntity).update(
           { id: objectId },
           {
-            status: 'draft',
-            reviewTime: null,
+            status: 'withdrawn',
+            approvalStatus: 'withdrawn',
+            currentApproverId: null,
+            withdrawTime: payload.now,
           }
         );
         return;
       case 'fallback':
-      case 'terminated':
-        await manager.getRepository(PerformancePromotionEntity).update(
+        await manager.getRepository(PerformanceAssetAssignmentRequestEntity).update(
           { id: objectId },
           {
-            status: 'reviewing',
+            status: 'manualPending',
+            approvalStatus: 'manual_pending',
+            currentApproverId: null,
           }
         );
+        return;
+      case 'terminated':
+        await manager.getRepository(PerformanceAssetAssignmentRequestEntity).update(
+          { id: objectId },
+          {
+            status: 'cancelled',
+            approvalStatus: 'terminated',
+            currentApproverId: null,
+            cancelReason: payload.comment || '审批实例已终止',
+          }
+        );
+        return;
     }
   }
 
@@ -1286,6 +1372,91 @@ export class PerformanceApprovalFlowService extends BaseService {
       approverId: candidates[0],
       detail: null,
     };
+  }
+
+  private async resolveApplicableNodeOrders(
+    manager: EntityManager,
+    objectType: ApprovalObjectType,
+    objectId: number,
+    nodes: PerformanceApprovalConfigNodeEntity[]
+  ) {
+    if (objectType !== 'assetAssignmentRequest') {
+      return new Set(nodes.map(item => Number(item.nodeOrder)));
+    }
+
+    const request = await manager
+      .getRepository(PerformanceAssetAssignmentRequestEntity)
+      .findOneBy({ id: objectId });
+
+    if (!request) {
+      throw new CoolCommException(PERFORMANCE_ASSIGNMENT_REQUEST_NOT_FOUND_MESSAGE);
+    }
+
+    const triggeredRules = this.parseAssetAssignmentRequestRules(
+      request.approvalTriggeredRules
+    );
+    const requiresManagementApproval =
+      String(request.requestLevel || '') === 'L2' &&
+      [
+        'highAmount',
+        'sensitiveAsset',
+        'crossDepartmentBorrow',
+        'lostReplacement',
+        'abnormalReissue',
+        'scrapReplacement',
+      ].some(rule => triggeredRules.includes(rule));
+
+    return new Set(
+      nodes
+        .filter(item =>
+          this.isAssetAssignmentRequestNodeApplicable(item.nodeCode, {
+            requestLevel: String(request.requestLevel || ''),
+            requiresManagementApproval,
+          })
+        )
+        .map(item => Number(item.nodeOrder))
+    );
+  }
+
+  private isAssetAssignmentRequestNodeApplicable(
+    nodeCodeValue: string | null | undefined,
+    payload: {
+      requestLevel: string;
+      requiresManagementApproval: boolean;
+    }
+  ) {
+    const nodeCode = String(nodeCodeValue || '').trim();
+
+    if (!nodeCode) {
+      return true;
+    }
+
+    if (nodeCode === 'department-manager-review') {
+      return true;
+    }
+
+    if (nodeCode === 'asset-admin-confirm') {
+      return payload.requestLevel === 'L2';
+    }
+
+    if (nodeCode === 'management-confirm') {
+      return payload.requiresManagementApproval;
+    }
+
+    return true;
+  }
+
+  private parseAssetAssignmentRequestRules(value: string | null | undefined) {
+    if (!value) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed.map(item => String(item)) : [];
+    } catch (error) {
+      return [];
+    }
   }
 
   private async resolveCandidateApproverIds(
@@ -1425,6 +1596,29 @@ export class PerformanceApprovalFlowService extends BaseService {
     return configNode ? Boolean(configNode.allowTransfer) : true;
   }
 
+  private async syncSourceApprovalRuntime(
+    manager: EntityManager,
+    instanceId: number
+  ) {
+    const instance = await manager
+      .getRepository(PerformanceApprovalInstanceEntity)
+      .findOneBy({ id: instanceId });
+
+    if (!instance || instance.objectType !== 'assetAssignmentRequest') {
+      return;
+    }
+
+    await manager.getRepository(PerformanceAssetAssignmentRequestEntity).update(
+      { id: instance.objectId },
+      {
+        approvalStatus: instance.status,
+        currentApproverId: instance.currentApproverId
+          ? Number(instance.currentApproverId)
+          : null,
+      }
+    );
+  }
+
   private async requireEnabledConfig(
     manager: EntityManager,
     objectType: ApprovalObjectType
@@ -1478,7 +1672,9 @@ export class PerformanceApprovalFlowService extends BaseService {
     const entity =
       objectType === 'assessment'
         ? PerformanceAssessmentEntity
-        : PerformancePromotionEntity;
+        : objectType === 'promotion'
+          ? PerformancePromotionEntity
+          : PerformanceAssetAssignmentRequestEntity;
 
     await manager.getRepository(entity).findOne({
       where: { id: objectId },
@@ -1490,7 +1686,7 @@ export class PerformanceApprovalFlowService extends BaseService {
     const instance = await this.performanceApprovalInstanceEntity.findOneBy({ id });
 
     if (!instance) {
-      throw new CoolCommException('审批实例不存在');
+      throw new CoolCommException(PERFORMANCE_APPROVAL_INSTANCE_NOT_FOUND_MESSAGE);
     }
 
     return instance;
@@ -1502,7 +1698,7 @@ export class PerformanceApprovalFlowService extends BaseService {
       .findOneBy({ id });
 
     if (!instance) {
-      throw new CoolCommException('审批实例不存在');
+      throw new CoolCommException(PERFORMANCE_APPROVAL_INSTANCE_NOT_FOUND_MESSAGE);
     }
 
     return instance;
@@ -1597,54 +1793,36 @@ export class PerformanceApprovalFlowService extends BaseService {
   }
 
   private async getScope(): Promise<ApprovalScope> {
-    const perms = await this.currentPerms();
-    const userId = Number(this.currentAdmin?.userId || 0);
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    const userId = Number(access.userId || 0);
 
     if (!userId) {
-      throw new CoolCommException('登录上下文缺失');
+      throw new CoolCommException(
+        resolvePerformanceDomainErrorMessage(
+          PERFORMANCE_DOMAIN_ERROR_CODES.authContextMissing
+        )
+      );
     }
-
-    const isHr =
-      this.currentAdmin?.username === 'admin' ||
-      [
-        this.perms.configSave,
-        this.perms.resolve,
-        this.perms.fallback,
-        this.perms.terminate,
-      ].some(item => perms.includes(item));
+    const isHr = access.availablePersonas.some(item =>
+      ['org.hrbp', 'fn.performance_operator'].includes(item.key)
+    );
 
     if (isHr) {
       return {
-        perms,
         isHr: true,
         departmentIds: null,
         userId,
+        can: capabilityKey =>
+          this.performanceAccessContextService.hasCapability(access, capabilityKey),
       };
     }
-
-    const departmentIds = await this.baseSysPermsService.departmentIds(userId);
     return {
-      perms,
       isHr: false,
-      departmentIds: Array.isArray(departmentIds)
-        ? departmentIds.map(item => Number(item))
-        : [],
+      departmentIds: access.departmentIds,
       userId,
+      can: capabilityKey =>
+        this.performanceAccessContextService.hasCapability(access, capabilityKey),
     };
-  }
-
-  private async currentPerms() {
-    const roleIds = this.currentAdmin?.roleIds;
-
-    if (!Array.isArray(roleIds) || !roleIds.length) {
-      throw new CoolCommException('登录上下文缺失');
-    }
-
-    return this.baseSysMenuService.getPerms(roleIds);
-  }
-
-  private hasPerm(perms: string[], perm: string) {
-    return perms.includes(perm);
   }
 
   private async assertInstanceInScope(
@@ -1708,19 +1886,19 @@ export class PerformanceApprovalFlowService extends BaseService {
       instance.status === 'in_review' &&
       Number(instance.currentApproverId || 0) === scope.userId
     ) {
-      if (this.hasPerm(scope.perms, this.perms.approve)) {
+      if (scope.can('approval.instance.approve')) {
         actions.push('approve');
       }
-      if (this.hasPerm(scope.perms, this.perms.reject)) {
+      if (scope.can('approval.instance.reject')) {
         actions.push('reject');
       }
-      if (this.hasPerm(scope.perms, this.perms.transfer)) {
+      if (scope.can('approval.instance.transfer')) {
         actions.push('transfer');
       }
     }
 
     if (
-      this.hasPerm(scope.perms, this.perms.withdraw) &&
+      scope.can('approval.instance.withdraw') &&
       scope.userId === Number(instance.applicantId) &&
       canWithdrawInstance(
         instance.status as ApprovalInstanceStatus,
@@ -1733,7 +1911,7 @@ export class PerformanceApprovalFlowService extends BaseService {
     }
 
     if (
-      this.hasPerm(scope.perms, this.perms.remind) &&
+      scope.can('approval.instance.remind') &&
       (scope.isHr || scope.userId === Number(instance.applicantId)) &&
       APPROVAL_ACTIVE_STATUSES.includes(instance.status as ApprovalInstanceStatus)
     ) {
@@ -1742,7 +1920,7 @@ export class PerformanceApprovalFlowService extends BaseService {
 
     if (
       scope.isHr &&
-      this.hasPerm(scope.perms, this.perms.resolve) &&
+      scope.can('approval.instance.resolve') &&
       ['pending_resolution', 'manual_pending'].includes(instance.status)
     ) {
       actions.push('resolve');
@@ -1750,7 +1928,7 @@ export class PerformanceApprovalFlowService extends BaseService {
 
     if (
       scope.isHr &&
-      this.hasPerm(scope.perms, this.perms.fallback) &&
+      scope.can('approval.instance.fallback') &&
       ['pending_resolution', 'manual_pending'].includes(instance.status)
     ) {
       actions.push('fallback');
@@ -1758,7 +1936,7 @@ export class PerformanceApprovalFlowService extends BaseService {
 
     if (
       scope.isHr &&
-      this.hasPerm(scope.perms, this.perms.terminate) &&
+      scope.can('approval.instance.terminate') &&
       ['pending_resolution', 'manual_pending', 'in_review'].includes(instance.status)
     ) {
       actions.push('terminate');

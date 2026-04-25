@@ -8,6 +8,10 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import {
+  resolveProjectGitHash,
+  resolveProjectSourceHash,
+} from '../cool-admin-midway/scripts/stage2-runtime-meta.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
@@ -26,29 +30,82 @@ const alwaysBlockedPrefixes = [
   'cool-uni/test-results/',
 ];
 
+const repoContractModuleRoots = [
+  'cool-admin-midway/src/modules/base/',
+  'cool-admin-midway/src/modules/demo/',
+  'cool-admin-midway/src/modules/dict/',
+  'cool-admin-midway/src/modules/plugin/',
+  'cool-admin-midway/src/modules/recycle/',
+  'cool-admin-midway/src/modules/space/',
+  'cool-admin-midway/src/modules/task/',
+  'cool-admin-midway/src/modules/user/',
+];
+const automationGovernanceDocPath = 'performance-management-system/docs/24-自动化测试策略与脚本规划.md';
+
 const commandGroups = [
   {
+    id: 'repo-consistency-guards',
+    description: '仓库一致性守卫（OpenAPI/EPS 类型、目录命名、菜单路由、权限键、文档回写、状态流、实现层收敛）',
+    cwd: '.',
+    command: ['node', './scripts/run-repo-consistency-guards.mjs'],
+    scopeMatchedFiles: true,
+    matches(filePath) {
+      return (
+        filePath.startsWith('contracts/') ||
+        filePath === 'cool-admin-midway/src/modules/base/menu.json' ||
+        filePath === 'cool-admin-vue/src/modules/base/store/menu.ts' ||
+        filePath.startsWith('.github/workflows/') ||
+        repoContractModuleRoots.some(root => filePath.startsWith(root)) ||
+        filePath.startsWith('cool-admin-vue/src/modules/performance/') ||
+        filePath.startsWith('cool-admin-midway/src/modules/performance/') ||
+        filePath.startsWith('scripts/') ||
+        filePath === automationGovernanceDocPath ||
+        filePath.startsWith('performance-management-system/test/') ||
+        filePath.startsWith('cool-admin-midway/test/') ||
+        filePath.startsWith('cool-admin-vue/test/')
+      );
+    },
+  },
+  {
+    id: 'repo-guard-tests',
+    description: '仓库守卫脚本与 CI 门禁回归测试',
+    cwd: '.',
+    command: ['node', '--test', './performance-management-system/test/repo-guard-scripts.test.mjs'],
+    matches(filePath) {
+      return (
+        filePath.startsWith('.github/workflows/') ||
+        filePath.startsWith('scripts/') ||
+        filePath === automationGovernanceDocPath ||
+        filePath.startsWith('performance-management-system/test/')
+      );
+    },
+  },
+  {
+    id: 'midway-build',
+    description: '后端构建校验',
+    cwd: 'cool-admin-midway',
+    command: ['npm', 'run', 'build'],
+    matches(filePath) {
+      return (
+        filePath === 'cool-admin-midway/package.json' ||
+        filePath === 'cool-admin-midway/src/entities.ts' ||
+        filePath.startsWith('cool-admin-midway/src/modules/base/') ||
+        filePath.startsWith('cool-admin-midway/src/modules/performance/') ||
+        filePath.startsWith('cool-admin-midway/test/') ||
+        filePath.startsWith('cool-admin-midway/scripts/')
+      );
+    },
+  },
+  {
     id: 'midway-tests',
-    description: '后端主题 1-9 与跨模块驾驶舱定向回归测试',
+    description: '后端 performance 模块定向回归测试',
     cwd: 'cool-admin-midway',
     command: [
       'npm',
       'run',
       'test',
       '--',
-      'test/performance/assessment.service.test.ts',
-      'test/performance/goal.service.test.ts',
-      'test/performance/dashboard.service.test.ts',
-      'test/performance/feedback.service.test.ts',
-      'test/performance/pip.service.test.ts',
-      'test/performance/promotion.service.test.ts',
-      'test/performance/suggestion.service.test.ts',
-      'test/performance/approval-flow.service.test.ts',
-      'test/performance/approval-flow.contract.test.ts',
-      'test/performance/cross-dashboard-source-adapter.service.test.ts',
-      'test/performance/course.service.test.ts',
-      'test/performance/interview.service.test.ts',
-      'test/performance/meeting.service.test.ts',
+      'test/performance',
     ],
     matches(filePath) {
       return (
@@ -79,6 +136,24 @@ const commandGroups = [
     },
   },
   {
+    id: 'vue-format-check',
+    description: '后台前端变更文件格式检查',
+    cwd: '.',
+    command: ['node', './scripts/check-changed-workspace-quality.mjs', '--workspace', 'cool-admin-vue', '--tool', 'prettier'],
+    matches(filePath) {
+      return filePath.startsWith('cool-admin-vue/') && !filePath.startsWith('cool-admin-vue/build/');
+    },
+  },
+  {
+    id: 'vue-lint-check',
+    description: '后台前端变更文件静态检查',
+    cwd: '.',
+    command: ['node', './scripts/check-changed-workspace-quality.mjs', '--workspace', 'cool-admin-vue', '--tool', 'eslint'],
+    matches(filePath) {
+      return filePath.startsWith('cool-admin-vue/') && !filePath.startsWith('cool-admin-vue/build/');
+    },
+  },
+  {
     id: 'vue-typecheck',
     description: '后台前端类型检查',
     cwd: 'cool-admin-vue',
@@ -97,10 +172,36 @@ const commandGroups = [
     },
   },
   {
+    id: 'uni-format-check',
+    description: 'cool-uni 变更文件格式检查',
+    cwd: '.',
+    command: ['node', './scripts/check-changed-workspace-quality.mjs', '--workspace', 'cool-uni', '--tool', 'prettier'],
+    matches(filePath) {
+      return (
+        filePath.startsWith('cool-uni/') &&
+        !filePath.startsWith('cool-uni/build/') &&
+        !filePath.startsWith('cool-uni/test-results/')
+      );
+    },
+  },
+  {
+    id: 'uni-lint-check',
+    description: 'cool-uni 变更文件静态检查',
+    cwd: '.',
+    command: ['node', './scripts/check-changed-workspace-quality.mjs', '--workspace', 'cool-uni', '--tool', 'eslint'],
+    matches(filePath) {
+      return (
+        filePath.startsWith('cool-uni/') &&
+        !filePath.startsWith('cool-uni/build/') &&
+        !filePath.startsWith('cool-uni/test-results/')
+      );
+    },
+  },
+  {
     id: 'uni-typecheck',
     description: 'cool-uni 最小 TypeScript 校验',
     cwd: 'cool-uni',
-    command: ['corepack', 'pnpm', 'exec', 'tsc', '--noEmit', '-p', 'tsconfig.json'],
+    command: ['corepack', 'pnpm', 'run', 'type-check'],
     matches(filePath) {
       return (
         filePath.startsWith('cool-uni/') &&
@@ -153,7 +254,7 @@ function info(message) {
 
 function runGit(args) {
   try {
-    return execFileSync('git', ['-C', repoRoot, ...args], {
+    return execFileSync('git', ['-C', repoRoot, '-c', 'core.quotePath=false', ...args], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     }).trimEnd();
@@ -163,19 +264,107 @@ function runGit(args) {
   }
 }
 
-function getUpstreamRef() {
+function tryRunGit(args) {
   try {
-    return runGit(['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}']).trim();
+    return execFileSync('git', ['-C', repoRoot, '-c', 'core.quotePath=false', ...args], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trimEnd();
   } catch (error) {
     return '';
   }
 }
 
-function getPendingCommitFiles(upstreamRef) {
-  if (!upstreamRef) {
-    fail('当前分支未配置上游分支，严格门禁无法判定待推送范围。请先设置 upstream。');
+function getUpstreamRef() {
+  return tryRunGit(['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}']).trim();
+}
+
+function getCurrentBranchName() {
+  return tryRunGit(['rev-parse', '--abbrev-ref', 'HEAD']).trim();
+}
+
+function getPreferredRemoteName() {
+  const currentBranch = getCurrentBranchName();
+  const candidates = [
+    currentBranch
+      ? tryRunGit(['config', '--get', `branch.${currentBranch}.pushRemote`]).trim()
+      : '',
+    currentBranch ? tryRunGit(['config', '--get', `branch.${currentBranch}.remote`]).trim() : '',
+    tryRunGit(['config', '--get', 'remote.pushDefault']).trim(),
+  ].filter(Boolean);
+
+  if (candidates.length > 0) {
+    return candidates[0];
   }
-  const output = runGit(['diff', '--name-only', '--diff-filter=ACMR', `${upstreamRef}..HEAD`]);
+
+  const remotes = tryRunGit(['remote']).split('\n').map(item => item.trim()).filter(Boolean);
+  if (remotes.length === 1) {
+    return remotes[0];
+  }
+  if (remotes.includes('origin')) {
+    return 'origin';
+  }
+  if (remotes.includes('xuedaojixiao')) {
+    return 'xuedaojixiao';
+  }
+
+  return remotes[0] || '';
+}
+
+function getDefaultRemoteHeadRef() {
+  const preferredRemote = getPreferredRemoteName();
+  if (preferredRemote) {
+    const preferredHead = tryRunGit([
+      'symbolic-ref',
+      '--quiet',
+      '--short',
+      `refs/remotes/${preferredRemote}/HEAD`,
+    ]).trim();
+    if (preferredHead) {
+      return preferredHead;
+    }
+  }
+
+  const remoteHeadRefs = tryRunGit([
+    'for-each-ref',
+    '--format=%(refname:short)',
+    'refs/remotes/*/HEAD',
+  ])
+    .split('\n')
+    .map(item => item.trim())
+    .filter(Boolean);
+
+  return remoteHeadRefs[0] || '';
+}
+
+function resolveDiffBase(upstreamRef) {
+  if (upstreamRef) {
+    return upstreamRef;
+  }
+
+  const remoteHeadRef = getDefaultRemoteHeadRef();
+  if (remoteHeadRef) {
+    const mergeBase = tryRunGit(['merge-base', 'HEAD', remoteHeadRef]).trim();
+    if (mergeBase) {
+      return mergeBase;
+    }
+  }
+
+  const headParent = tryRunGit(['rev-parse', 'HEAD^']).trim();
+  if (headParent) {
+    return headParent;
+  }
+
+  return '';
+}
+
+function getPendingCommitFiles(diffBaseRef) {
+  if (!diffBaseRef) {
+    const output = tryRunGit(['diff-tree', '--no-commit-id', '--name-only', '-r', '--diff-filter=ACMR', 'HEAD']);
+    return output ? output.split('\n').map(normalizePath).filter(Boolean) : [];
+  }
+
+  const output = runGit(['diff', '--name-only', '--diff-filter=ACMR', `${diffBaseRef}..HEAD`]);
   return output ? output.split('\n').map(normalizePath).filter(Boolean) : [];
 }
 
@@ -228,11 +417,14 @@ function collectChangedFiles(fileOverrides) {
   }
 
   const upstreamRef = getUpstreamRef();
-  const pendingCommitFiles = getPendingCommitFiles(upstreamRef);
+  const diffBaseRef = resolveDiffBase(upstreamRef);
+  const pendingCommitFiles = getPendingCommitFiles(diffBaseRef);
   const worktreeFiles = getWorktreeFiles();
   const changedFiles = [...new Set([...pendingCommitFiles, ...worktreeFiles])];
 
   return {
+    upstreamRef,
+    diffBaseRef,
     pendingCommitFiles,
     worktreeFiles,
     changedFiles,
@@ -260,31 +452,176 @@ function getBlockedMatches(files) {
 }
 
 function getTriggeredCommands(files) {
-  return commandGroups.filter(group => files.some(filePath => group.matches(filePath)));
+  return commandGroups.flatMap(group => {
+    const matchedFiles = files.filter(filePath => group.matches(filePath));
+    if (matchedFiles.length === 0) {
+      return [];
+    }
+    return [{ ...group, matchedFiles: [...new Set(matchedFiles)] }];
+  });
+}
+
+function buildGroupCommand(group) {
+  if (!group.scopeMatchedFiles || !group.matchedFiles?.length) {
+    return [...group.command];
+  }
+
+  return [
+    ...group.command,
+    ...group.matchedFiles.flatMap(filePath => ['--file', filePath]),
+  ];
+}
+
+function tryExec(command, args, options = {}) {
+  try {
+    return execFileSync(command, args, {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      ...options,
+    }).trim();
+  } catch (error) {
+    return '';
+  }
+}
+
+function parsePortFromBaseUrl(baseUrl) {
+  if (!baseUrl) {
+    return null;
+  }
+  try {
+    const port = Number(new URL(baseUrl).port);
+    return Number.isInteger(port) && port > 0 ? port : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function getListeningPorts() {
+  const output = tryExec('lsof', ['-nP', '-iTCP', '-sTCP:LISTEN']);
+  if (!output) {
+    return [];
+  }
+
+  const ports = new Set();
+  const lines = output.split('\n').slice(1);
+  for (const line of lines) {
+    const matched = line.match(/:(\d+)\s+\(LISTEN\)$/);
+    if (!matched) {
+      continue;
+    }
+    const port = Number(matched[1]);
+    if (Number.isInteger(port) && port > 0) {
+      ports.add(port);
+    }
+  }
+  return [...ports];
+}
+
+function isReachableStage2Runtime(baseUrl, expectedRuntime = null) {
+  const output = tryExec('curl', [
+    '-fsS',
+    '--max-time',
+    '2',
+    `${baseUrl}/admin/base/open/runtimeMeta`,
+  ]);
+
+  if (!output) {
+    return false;
+  }
+
+  try {
+    const parsed = JSON.parse(output);
+    const runtimeMeta = parsed?.data || parsed;
+    if (!runtimeMeta?.seedMeta?.version) {
+      return false;
+    }
+    if (!expectedRuntime) {
+      return true;
+    }
+    return (
+      runtimeMeta.gitHash === expectedRuntime.gitHash &&
+      runtimeMeta.sourceHash === expectedRuntime.sourceHash
+    );
+  } catch (error) {
+    return false;
+  }
+}
+
+function resolveStage2SmokeBaseUrl(options = {}) {
+  const { allowRuntimeMismatch = false } = options;
+  if (process.env.STAGE2_SMOKE_BASE_URL) {
+    return process.env.STAGE2_SMOKE_BASE_URL.replace(/\/+$/, '');
+  }
+
+  const candidatePorts = [];
+  const candidateSet = new Set();
+  const pushPort = port => {
+    if (Number.isInteger(port) && port > 0 && !candidateSet.has(port)) {
+      candidateSet.add(port);
+      candidatePorts.push(port);
+    }
+  };
+
+  for (const port of [8065, 8063, 8006, parsePortFromBaseUrl(process.env.THEME19_SMOKE_BASE_URL)]) {
+    pushPort(port);
+  }
+  for (const port of getListeningPorts()) {
+    pushPort(port);
+  }
+
+  const expectedRuntime = {
+    gitHash: resolveProjectGitHash(path.join(repoRoot, 'cool-admin-midway')),
+    sourceHash: resolveProjectSourceHash(path.join(repoRoot, 'cool-admin-midway')),
+  };
+
+  for (const port of candidatePorts) {
+    const baseUrl = `http://127.0.0.1:${port}`;
+    if (isReachableStage2Runtime(baseUrl, allowRuntimeMismatch ? null : expectedRuntime)) {
+      return baseUrl;
+    }
+  }
+
+  fail(
+    allowRuntimeMismatch
+      ? 'midway-smoke 未找到可访问的本地 stage2 后端实例。请先启动后端，或显式设置 STAGE2_SMOKE_BASE_URL。'
+      : 'midway-smoke 未找到与当前代码哈希一致的本地 stage2 后端实例。请先启动/重启当前版本后端，或显式设置 STAGE2_SMOKE_BASE_URL。'
+  );
 }
 
 function runCommandGroup(group, dryRun) {
-  const commandPreview = `${group.command.join(' ')} (cwd=${group.cwd})`;
+  const command = buildGroupCommand(group);
+  const commandPreview = `${command.join(' ')} (cwd=${group.cwd})`;
   if (dryRun) {
     info(`DRY RUN ${group.id}: ${commandPreview}`);
     return;
   }
 
   info(`RUN ${group.id}: ${group.description}`);
-  const result = spawnSync(group.command[0], group.command.slice(1), {
+  const allowRuntimeMismatch =
+    group.id === 'midway-smoke' && process.env.STAGE2_SMOKE_ALLOW_RUNTIME_MISMATCH === '1';
+  const env =
+    group.id === 'midway-smoke'
+      ? {
+          ...process.env,
+          STAGE2_SMOKE_BASE_URL: resolveStage2SmokeBaseUrl({ allowRuntimeMismatch }),
+          ...(allowRuntimeMismatch ? { STAGE2_SMOKE_ALLOW_RUNTIME_MISMATCH: '1' } : {}),
+        }
+      : process.env;
+  const scopedResult = spawnSync(command[0], command.slice(1), {
     cwd: path.join(repoRoot, group.cwd),
     stdio: 'inherit',
-    env: process.env,
+    env,
   });
 
-  if (result.status !== 0) {
+  if (scopedResult.status !== 0) {
     fail(`${group.id} 执行失败，请先修复再推送。`);
   }
 }
 
 function main() {
   const args = parseArgs(process.argv.slice(2));
-  const { pendingCommitFiles, worktreeFiles, changedFiles } = collectChangedFiles(args.files);
+  const { upstreamRef, diffBaseRef, pendingCommitFiles, worktreeFiles, changedFiles } =
+    collectChangedFiles(args.files);
 
   if (changedFiles.length === 0) {
     info('未检测到待推送或工作区变更，跳过门禁。');
@@ -297,6 +634,13 @@ function main() {
   }
   if (worktreeFiles.length > 0) {
     info(`工作区未提交变更数: ${worktreeFiles.length}`);
+  }
+  if (!args.files.length && !upstreamRef) {
+    info(
+      diffBaseRef
+        ? `当前分支未配置 upstream，已退化为基于 ${diffBaseRef.slice(0, 12)}..HEAD 与工作区计算门禁范围。`
+        : '当前分支未配置 upstream，已退化为仅基于 HEAD 最近一次提交与工作区计算门禁范围。'
+    );
   }
 
   const blockedMatches = getBlockedMatches(changedFiles);

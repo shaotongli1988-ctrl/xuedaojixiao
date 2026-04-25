@@ -1,0 +1,5 @@
+/* 文件职责：作为仓库级样式 SSOT 的统一入口，串联 foundation、semantic 与 UI adapter；不负责业务模块局部样式；维护重点是新 token 与适配层必须先接入这里，再允许被页面消费。 */
+
+@use './tokens.foundation.scss' as foundation;
+@use './tokens.semantic.scss' as semantic;
+@use './adapters.element-plus.scss' as adapter;

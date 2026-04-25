@@ -1,81 +1,112 @@
-import { BaseService } from '/@/cool';
-import type { PipExportRow, PipPageResult, PipRecord } from '../types';
-
 /**
  * PIP 前端请求服务。
- * 这里只封装模块 6 所需接口，不依赖自动生成的 EPS 服务。
+ * 这里只封装 PIP 主链接口，不负责详情弹窗、表单预填或导出文件处理。
+ * 维护重点是查询与动作负载统一回收至中心类型，避免服务层继续散落内联 DTO。
  */
+import { BaseService } from '/@/cool';
+import { asPerformanceServicePromise } from './service-contract';
+import { decodePipExportRows, decodePipPageResult, decodePipRecord } from './pip-contract';
+import type {
+	PipClosePayload,
+	PipCompletePayload,
+	PipCreatePayload,
+	PipExportQuery,
+	PipExportRow,
+	PipInfoQuery,
+	PipPageQuery,
+	PipPageResult,
+	PipRecord,
+	PipStartPayload,
+	PipTrackPayload,
+	PipUpdatePayload
+} from '../types';
+import { PERMISSIONS } from '../../base/generated/permissions.generated';
 export default class PerformancePipService extends BaseService {
 	permission = {
-		page: 'performance:pip:page',
-		info: 'performance:pip:info',
-		add: 'performance:pip:add',
-		update: 'performance:pip:update',
-		start: 'performance:pip:start',
-		track: 'performance:pip:track',
-		complete: 'performance:pip:complete',
-		close: 'performance:pip:close',
-		export: 'performance:pip:export'
+		page: PERMISSIONS.performance.pip.page,
+		info: PERMISSIONS.performance.pip.info,
+		add: PERMISSIONS.performance.pip.add,
+		update: PERMISSIONS.performance.pip.update,
+		start: PERMISSIONS.performance.pip.start,
+		track: PERMISSIONS.performance.pip.track,
+		complete: PERMISSIONS.performance.pip.complete,
+		close: PERMISSIONS.performance.pip.close,
+		export: PERMISSIONS.performance.pip.export
 	};
 
 	constructor() {
 		super('admin/performance/pip');
 	}
 
-	fetchPage(data: any) {
-		return super.page(data) as unknown as Promise<PipPageResult>;
+	fetchPage(data: PipPageQuery) {
+		return asPerformanceServicePromise<PipPageResult>(super.page(data), decodePipPageResult);
 	}
 
-	fetchInfo(params: { id: number }) {
-		return super.info(params) as unknown as Promise<PipRecord>;
+	fetchInfo(params: PipInfoQuery) {
+		return asPerformanceServicePromise<PipRecord>(super.info(params), decodePipRecord);
 	}
 
-	createPip(data: PipRecord) {
-		return super.add(data) as unknown as Promise<PipRecord>;
+	createPip(data: PipCreatePayload) {
+		return asPerformanceServicePromise<PipRecord>(super.add(data), decodePipRecord);
 	}
 
-	updatePip(data: PipRecord) {
-		return super.update(data) as unknown as Promise<PipRecord>;
+	updatePip(data: PipUpdatePayload) {
+		return asPerformanceServicePromise<PipRecord>(super.update(data), decodePipRecord);
 	}
 
-	start(data: { id: number }) {
-		return this.request({
-			url: '/start',
-			method: 'POST',
-			data
-		}) as unknown as Promise<PipRecord>;
+	start(data: PipStartPayload) {
+		return asPerformanceServicePromise<PipRecord>(
+			this.request({
+				url: '/start',
+				method: 'POST',
+				data
+			}),
+			decodePipRecord
+		);
 	}
 
-	track(data: { id: number; recordDate: string; progress: string; nextPlan?: string }) {
-		return this.request({
-			url: '/track',
-			method: 'POST',
-			data
-		}) as unknown as Promise<PipRecord>;
+	track(data: PipTrackPayload) {
+		return asPerformanceServicePromise<PipRecord>(
+			this.request({
+				url: '/track',
+				method: 'POST',
+				data
+			}),
+			decodePipRecord
+		);
 	}
 
-	complete(data: { id: number; resultSummary?: string }) {
-		return this.request({
-			url: '/complete',
-			method: 'POST',
-			data
-		}) as unknown as Promise<PipRecord>;
+	complete(data: PipCompletePayload) {
+		return asPerformanceServicePromise<PipRecord>(
+			this.request({
+				url: '/complete',
+				method: 'POST',
+				data
+			}),
+			decodePipRecord
+		);
 	}
 
-	close(data: { id: number; resultSummary?: string }) {
-		return this.request({
-			url: '/close',
-			method: 'POST',
-			data
-		}) as unknown as Promise<PipRecord>;
+	close(data: PipClosePayload) {
+		return asPerformanceServicePromise<PipRecord>(
+			this.request({
+				url: '/close',
+				method: 'POST',
+				data
+			}),
+			decodePipRecord
+		);
 	}
 
-	exportSummary(data: any) {
-		return this.request({
-			url: '/export',
-			method: 'POST',
-			data
-		}) as unknown as Promise<PipExportRow[]>;
+	exportSummary(data: PipExportQuery) {
+		return asPerformanceServicePromise<PipExportRow[]>(
+			this.request({
+				url: '/export',
+				method: 'POST',
+				data
+			}),
+			decodePipExportRows
+		);
 	}
 }
 

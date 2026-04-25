@@ -1,0 +1,145 @@
+{
+  "meta": {
+    "name": "theme18-hiring-gui",
+    "description": "Theme18 录用管理最小 GUI 点测"
+  },
+  "defaults": {
+    "uiBaseUrl": "http://127.0.0.1:9007",
+    "apiBaseUrl": "http://127.0.0.1:8006",
+    "chromeDebugUrl": "http://127.0.0.1:9222",
+    "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/theme18-hiring-gui",
+    "password": "123456",
+    "viewport": {
+      "width": 1440,
+      "height": 1100,
+      "deviceScaleFactor": 1,
+      "mobile": false
+    }
+  },
+  "scenarios": [
+    {
+      "name": "hr-hiring-mainline",
+      "username": "hr_admin",
+      "route": "/performance/hiring",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "录用管理",
+            "联调-主题18平台录用",
+            "联调-主题18销售录用"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "新建录用",
+            "接受",
+            "拒绝",
+            "关闭"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme18-hiring-hr-list.png"
+        },
+        {
+          "type": "clickText",
+          "text": "详情",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "录用详情",
+            "录用决策",
+            "来源状态快照"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "screenshot",
+          "file": "theme18-hiring-hr-detail.png"
+        }
+      ]
+    },
+    {
+      "name": "manager-hiring-scope",
+      "username": "manager_rd",
+      "route": "/performance/hiring",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "录用管理",
+            "联调-主题18平台录用"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertBodyText",
+          "includes": [
+            "联调-主题18平台录用"
+          ],
+          "excludes": [
+            "联调-主题18销售录用"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme18-hiring-manager-scope.png"
+        },
+        {
+          "type": "clickText",
+          "text": "详情",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "录用详情",
+            "联调-主题18平台录用"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "screenshot",
+          "file": "theme18-hiring-manager-detail.png"
+        }
+      ]
+    },
+    {
+      "name": "employee-hiring-no-entry",
+      "username": "employee_platform",
+      "route": "/performance/my-assessment",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "我的考核"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": [
+            "录用管理"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme18-hiring-employee-home.png"
+        }
+      ]
+    }
+  ]
+}

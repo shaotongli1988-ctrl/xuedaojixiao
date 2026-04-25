@@ -6,10 +6,22 @@ import { hmr } from '../hooks';
 import { config } from '/@/config';
 
 // 扫描文件
-const files = import.meta.glob('/src/{modules,plugins}/*/{config.ts,service/**,directives/**}', {
-	eager: true,
-	import: 'default'
-});
+const files = import.meta.glob(
+	[
+		'/src/{modules,plugins}/*/config.ts',
+		'/src/{modules,plugins}/*/service/*.ts',
+		'/src/{modules,plugins}/*/directives/**',
+		'!/src/{modules,plugins}/*/service/*-contract.ts',
+		'!/src/{modules,plugins}/*/service/office-ledger.ts',
+		'!/src/{modules,plugins}/*/service/role-fact.ts',
+		'!/src/{modules,plugins}/*/service/service-contract.ts',
+		'!/src/{modules,plugins}/*/service/workbench-snapshot-config.ts'
+	],
+	{
+		eager: true,
+		import: 'default'
+	}
+);
 
 // 模块列表
 module.list = hmr.getData('modules', []);

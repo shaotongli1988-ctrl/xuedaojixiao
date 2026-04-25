@@ -1,4 +1,11 @@
+/**
+ * Main Midway application entry that wires framework components and runtime config imports.
+ * This file also normalizes cool-admin runtime path detection so module discovery always resolves against the current repo.
+ * Maintenance pitfall: shared-deps installs can shift stack traces into dependency folders, so keep the repo dist/src fallback intact.
+ */
 import * as orm from '@midwayjs/typeorm';
+import * as fs from 'fs';
+import * as path from 'path';
 import {
   Configuration,
   App,
@@ -20,6 +27,36 @@ import * as cool from '@cool-midway/core';
 import * as upload from '@midwayjs/upload';
 // import * as task from '@cool-midway/task';
 // import * as rpc from '@cool-midway/rpc';
+
+const originalGetRunPath = cool.LocationUtil.prototype.getRunPath;
+
+function resolveRepoRuntimePath() {
+  const candidates = [
+    path.join(process.cwd(), 'dist'),
+    path.join(process.cwd(), 'src'),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(path.join(candidate, 'modules'))) {
+      return candidate;
+    }
+  }
+
+  return path.join(process.cwd(), 'dist');
+}
+
+// Shared-deps installs can confuse cool's stack-based runtime path detection.
+// Fall back to the current repo's dist/src folder when the resolved path has no modules.
+cool.LocationUtil.prototype.getRunPath = function getRunPathWithRepoFallback() {
+  try {
+    const resolved = originalGetRunPath.call(this);
+    if (resolved && fs.existsSync(path.join(resolved, 'modules'))) {
+      return resolved;
+    }
+  } catch (error) {}
+
+  return resolveRepoRuntimePath();
+};
 
 @Configuration({
   imports: [

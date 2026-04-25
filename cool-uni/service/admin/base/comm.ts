@@ -6,6 +6,7 @@ import { createServiceRequester } from "/@/cool/service/requester";
 export interface AdminPermMenu {
 	perms: string[];
 	menus: any[];
+	performanceAccessContext?: any;
 }
 
 export default class AdminBaseCommService {
@@ -35,6 +36,28 @@ export default class AdminBaseCommService {
 			url: "/permmenu",
 			method: "GET",
 		}) as Promise<AdminPermMenu>;
+	}
+
+	performanceAccessContext(activePersonaKey?: string | null) {
+		return this.requester.request({
+			url: "/performanceAccessContext",
+			method: "GET",
+			params: activePersonaKey
+				? {
+						activePersonaKey,
+					}
+				: undefined,
+		}) as Promise<any>;
+	}
+
+	savePerformanceActivePersona(activePersonaKey?: string | null) {
+		return this.requester.request({
+			url: "/performanceAccessContext/activePersona",
+			method: "POST",
+			data: {
+				activePersonaKey: activePersonaKey || null,
+			},
+		}) as Promise<any>;
 	}
 
 	logout() {

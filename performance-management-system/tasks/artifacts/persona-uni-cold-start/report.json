@@ -1,0 +1,62 @@
+{
+  "name": "persona-uni-cold-start",
+  "description": "cool-uni 同账号冷启动读取数据库 persona，并补齐页面级 GUI 留痕",
+  "generatedAt": "2026-04-23T10:44:10+08:00",
+  "runtimeMode": "uni --platform h5 --host 127.0.0.1 --port 9943",
+  "status": "passed",
+  "evidence": {
+    "webPersistedPersona": {
+      "username": "hr_admin",
+      "activePersonaKey": "fn.performance_operator",
+      "roleLabel": "绩效运营视角"
+    },
+    "backendReadback": {
+      "username": "hr_admin",
+      "activePersonaKey": "fn.performance_operator",
+      "roleKind": "hr",
+      "workbenchPages": [
+        "initiated",
+        "feedback",
+        "dashboard",
+        "salary",
+        "indicator-library",
+        "recruit-plan"
+      ]
+    },
+    "h5Runtime": {
+      "port": 9943,
+      "mainTsContains": [
+        "import \"/pages-json-js\"",
+        "@dcloudio/uni-h5",
+        "createApp().app.use(__plugin).mount(\"#app\")"
+      ],
+      "pagesJsonLocaleMode": "static-import-patch-for-vite5-dev"
+    },
+    "guiEvidence": {
+      "command": "node /Users/shaotongli/Documents/xuedao/performance-management-system/test/gui/run-cdp-gui-check.mjs --config /Users/shaotongli/Documents/xuedao/performance-management-system/test/gui/scenarios/cool-uni-persona.json --ui-base-url http://127.0.0.1:9943/#",
+      "uiBaseUrl": "http://127.0.0.1:9943/#",
+      "apiBaseUrl": "http://127.0.0.1:8001",
+      "chromeDebugUrl": "http://127.0.0.1:9222",
+      "summary": {
+        "pass": 1,
+        "fail": 0
+      },
+      "assertedTexts": [
+        "当前账号 · 绩效运营视角",
+        "移动工作台",
+        "已发起考核",
+        "薪资管理",
+        "指标库",
+        "招聘计划"
+      ],
+      "screenshot": "tasks/artifacts/persona-uni-cold-start/cool-uni-hr-home-performance-operator.png",
+      "rawReportMd": "tasks/artifacts/persona-uni-cold-start/gui-report.md",
+      "rawReportJson": "tasks/artifacts/persona-uni-cold-start/gui-report.json"
+    },
+    "buildChecks": {
+      "viteBuild": "passed",
+      "uniBuildH5": "passed"
+    }
+  },
+  "blockers": []
+}

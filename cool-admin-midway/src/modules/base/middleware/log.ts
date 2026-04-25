@@ -1,8 +1,8 @@
 import { Middleware } from '@midwayjs/core';
-import * as _ from 'lodash';
 import { NextFunction, Context } from '@midwayjs/koa';
 import { IMiddleware } from '@midwayjs/core';
 import { BaseSysLogService } from '../service/sys/log';
+import { resolveUserAdminUserId } from '../../user/domain';
 
 /**
  * 日志中间件
@@ -18,7 +18,7 @@ export class BaseLogMiddleware implements IMiddleware<Context, NextFunction> {
         ctx,
         ctx.url,
         ctx.req.method === 'GET' ? ctx.request.query : ctx.request.body,
-        ctx.admin ? ctx.admin.userId : null
+        resolveUserAdminUserId(ctx.admin)
       );
       await next();
     };

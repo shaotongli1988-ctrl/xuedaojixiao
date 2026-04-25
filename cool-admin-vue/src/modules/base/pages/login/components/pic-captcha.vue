@@ -21,6 +21,7 @@ import { ElMessageBox } from 'element-plus';
 import { Loading } from '@element-plus/icons-vue';
 import { useCool } from '/@/cool';
 import { useI18n } from 'vue-i18n';
+import { authRuntimePalette } from '/@/styles/runtime-design';
 
 const emit = defineEmits(['update:modelValue', 'change']);
 
@@ -42,7 +43,7 @@ async function refresh() {
 		.captcha({
 			height: 45,
 			width: 150,
-			color: '#2c3142'
+			color: authRuntimePalette.captchaColor
 		})
 		.then(({ captchaId, data }) => {
 			if (data) {

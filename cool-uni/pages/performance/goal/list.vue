@@ -52,7 +52,10 @@
 					<view class="goal-card__actions">
 						<cl-button plain size="mini" @tap="openDetail(item.id)">查看详情</cl-button>
 						<cl-button
-							v-if="canGoalEdit(item) && user.hasPerm('performance:goal:update')"
+							v-if="
+								canGoalEdit(item) &&
+								user.hasPerm(PERMISSIONS.performance.goal.update)
+							"
 							plain
 							size="mini"
 							@tap="openEdit(item.id)"
@@ -60,7 +63,10 @@
 							编辑
 						</cl-button>
 						<cl-button
-							v-if="canGoalProgressUpdate(item) && user.hasPerm('performance:goal:progressUpdate')"
+							v-if="
+								canGoalProgressUpdate(item) &&
+								user.hasPerm(PERMISSIONS.performance.goal.progressUpdate)
+							"
 							type="primary"
 							size="mini"
 							@tap="openProgress(item.id)"
@@ -78,16 +84,15 @@
 import { computed, reactive } from "vue";
 import { onPullDownRefresh, onShow } from "@dcloudio/uni-app";
 import { useCool, useStore } from "/@/cool";
-import {
-	canGoalEdit,
-	canGoalProgressUpdate,
-	type GoalRecord,
-} from "/@/types/performance-goal";
+import { canGoalEdit, canGoalProgressUpdate, type GoalRecord } from "/@/types/performance-goal";
 import PageState from "/@/pages/performance/components/page-state.vue";
 import GoalStatusTag from "./components/goal-status-tag.vue";
+import { PERMISSIONS } from "/@/generated/permissions.generated";
 
 const { service, router } = useCool();
-const { user } = useStore();
+const { user, dict } = useStore();
+
+const GOAL_STATUS_DICT_KEY = "performance.goal.status";
 
 const state = reactive({
 	loading: false,
@@ -106,6 +111,7 @@ async function load() {
 	state.error = "";
 
 	try {
+		await dict.refresh([GOAL_STATUS_DICT_KEY]);
 		const res = await (service as any).performance.goal.fetchPage({
 			page: 1,
 			size: 20,

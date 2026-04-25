@@ -812,11 +812,7 @@ onMounted(() => {
 					inset: 0;
 					height: 500px;
 					width: 500px;
-					background: radial-gradient(
-						closest-side circle,
-						var(--el-text-color-regular),
-						transparent
-					);
+					background: var(--app-atmosphere-neutral);
 					transform: translate(var(--x, 1000px), var(--y, 1000px));
 				}
 

@@ -3,6 +3,7 @@ import { BaseService } from '@cool-midway/core';
 import { Equal, Repository } from 'typeorm';
 import { UserAddressEntity } from '../entity/address';
 import { InjectEntityModel } from '@midwayjs/typeorm';
+import { resolveUserAppUserId } from '../domain';
 
 /**
  * 地址
@@ -25,9 +26,10 @@ export class UserAddressService extends BaseService {
    * 列表信息
    */
   async list() {
+    const currentUserId = resolveUserAppUserId(this.ctx.user);
     return this.userAddressEntity
       .createQueryBuilder()
-      .where('userId = :userId ', { userId: this.ctx.user.id })
+      .where('userId = :userId ', { userId: currentUserId })
       .addOrderBy('isDefault', 'DESC')
       .getMany();
   }
@@ -40,11 +42,12 @@ export class UserAddressService extends BaseService {
   async modifyAfter(data: any, type: 'add' | 'update' | 'delete') {
     if (type == 'add' || type == 'update') {
       if (data.isDefault) {
+        const currentUserId = resolveUserAppUserId(this.ctx.user);
         await this.userAddressEntity
           .createQueryBuilder()
           .update()
           .set({ isDefault: false })
-          .where('userId = :userId ', { userId: this.ctx.user.id })
+          .where('userId = :userId ', { userId: currentUserId })
           .andWhere('id != :id', { id: data.id })
           .execute();
       }

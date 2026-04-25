@@ -17,21 +17,67 @@ import {
 import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { In, Repository } from 'typeorm';
-import { BaseSysMenuService } from '../../base/service/sys/menu';
 import { BaseSysUserEntity } from '../../base/entity/sys/user';
 import { PerformanceAssessmentEntity } from '../entity/assessment';
 import { PerformanceSalaryEntity } from '../entity/salary';
 import { PerformanceSalaryChangeEntity } from '../entity/salary-change';
 import * as jwt from 'jsonwebtoken';
+import { SALARY_STATUS_VALUES } from './salary-dict';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
 
-export type SalaryStatus = 'draft' | 'confirmed' | 'archived';
+export type SalaryStatus = (typeof SALARY_STATUS_VALUES)[number];
+const [SALARY_DRAFT_STATUS, SALARY_CONFIRMED_STATUS] = SALARY_STATUS_VALUES;
+const PERFORMANCE_EMPLOYEE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.employeeNotFound
+  );
+const PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resourceNotFound
+  );
+const PERFORMANCE_ASSESSMENT_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.assessmentNotFound
+  );
+const PERFORMANCE_STATE_ACTION_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateActionNotAllowed
+  );
+const PERFORMANCE_EMPLOYEE_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.employeeRequired
+  );
+const PERFORMANCE_SALARY_CONFIRMED_EDIT_DENIED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.salaryConfirmedEditDenied
+  );
+const PERFORMANCE_SALARY_CHANGE_REASON_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.salaryChangeReasonRequired
+  );
+const PERFORMANCE_SALARY_PERIOD_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.salaryPeriodRequired
+  );
+const PERFORMANCE_SALARY_EFFECTIVE_DATE_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.salaryEffectiveDateRequired
+  );
 
 export const normalizeSalaryAmount = (value: number | string | null | undefined) =>
   Math.round(Number(value || 0) * 100) / 100;
 
 export function assertSalaryDraftEditable(status?: string) {
-  if (status !== 'draft') {
-    throw new CoolCommException('已确认薪资不允许直接修改金额');
+  if (status !== SALARY_DRAFT_STATUS) {
+    throw new CoolCommException(PERFORMANCE_SALARY_CONFIRMED_EDIT_DENIED_MESSAGE);
   }
 }
 
@@ -39,16 +85,16 @@ export function assertSalaryActionAllowed(
   currentStatus: string | undefined,
   action: 'confirm' | 'archive' | 'changeAdd'
 ) {
-  if (action === 'confirm' && currentStatus !== 'draft') {
-    throw new CoolCommException('当前状态不允许执行该操作');
+  if (action === 'confirm' && currentStatus !== SALARY_DRAFT_STATUS) {
+    throw new CoolCommException(PERFORMANCE_STATE_ACTION_NOT_ALLOWED_MESSAGE);
   }
 
-  if (action === 'archive' && currentStatus !== 'confirmed') {
-    throw new CoolCommException('当前状态不允许执行该操作');
+  if (action === 'archive' && currentStatus !== SALARY_CONFIRMED_STATUS) {
+    throw new CoolCommException(PERFORMANCE_STATE_ACTION_NOT_ALLOWED_MESSAGE);
   }
 
-  if (action === 'changeAdd' && currentStatus !== 'confirmed') {
-    throw new CoolCommException('当前状态不允许执行该操作');
+  if (action === 'changeAdd' && currentStatus !== SALARY_CONFIRMED_STATUS) {
+    throw new CoolCommException(PERFORMANCE_STATE_ACTION_NOT_ALLOWED_MESSAGE);
   }
 }
 
@@ -95,23 +141,13 @@ export class PerformanceSalaryService extends BaseService {
   performanceAssessmentEntity: Repository<PerformanceAssessmentEntity>;
 
   @Inject()
-  baseSysMenuService: BaseSysMenuService;
+  performanceAccessContextService: PerformanceAccessContextService;
 
   @Inject()
   ctx;
 
   @App()
   app: IMidwayApplication;
-
-  private readonly perms = {
-    page: 'performance:salary:page',
-    info: 'performance:salary:info',
-    add: 'performance:salary:add',
-    update: 'performance:salary:update',
-    confirm: 'performance:salary:confirm',
-    archive: 'performance:salary:archive',
-    changeAdd: 'performance:salary:changeAdd',
-  };
 
   private get currentCtx() {
     if (this.ctx?.admin) {
@@ -145,8 +181,8 @@ export class PerformanceSalaryService extends BaseService {
   }
 
   async page(query: any) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.page, '无权限查看薪资管理');
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    this.assertHasCapability(access, 'salary.read', '无权限查看薪资管理');
 
     const page = Number(query.page || 1);
     const size = Number(query.size || 20);
@@ -218,22 +254,22 @@ export class PerformanceSalaryService extends BaseService {
   }
 
   async info(id: number) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.info, '无权限查看薪资详情');
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    this.assertHasCapability(access, 'salary.read', '无权限查看薪资详情');
 
     const salary = await this.requireSalary(id);
     return this.buildSalaryDetail(salary);
   }
 
   async add(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.add, '无权限新增薪资');
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    this.assertHasCapability(access, 'salary.create', '无权限新增薪资');
 
     const salaryPayload = await this.resolveSalaryPayload(payload);
     const salary = await this.performanceSalaryEntity.save(
       this.performanceSalaryEntity.create({
         ...salaryPayload,
-        status: 'draft',
+        status: SALARY_DRAFT_STATUS,
       })
     );
 
@@ -241,8 +277,8 @@ export class PerformanceSalaryService extends BaseService {
   }
 
   async updateSalary(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.update, '无权限修改薪资');
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    this.assertHasCapability(access, 'salary.update', '无权限修改薪资');
 
     const salary = await this.requireSalary(Number(payload.id));
     assertSalaryDraftEditable(salary.status);
@@ -254,8 +290,8 @@ export class PerformanceSalaryService extends BaseService {
   }
 
   async confirm(payload: { id: number }) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.confirm, '无权限确认薪资');
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    this.assertHasCapability(access, 'salary.confirm', '无权限确认薪资');
 
     const salary = await this.requireSalary(Number(payload.id));
     assertSalaryActionAllowed(salary.status, 'confirm');
@@ -269,8 +305,8 @@ export class PerformanceSalaryService extends BaseService {
   }
 
   async archive(payload: { id: number }) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.archive, '无权限归档薪资');
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    this.assertHasCapability(access, 'salary.archive', '无权限归档薪资');
 
     const salary = await this.requireSalary(Number(payload.id));
     assertSalaryActionAllowed(salary.status, 'archive');
@@ -284,15 +320,15 @@ export class PerformanceSalaryService extends BaseService {
   }
 
   async changeAdd(payload: { salaryId: number; adjustAmount: number; changeReason: string }) {
-    const perms = await this.currentPerms();
-    this.assertHasPerm(perms, this.perms.changeAdd, '无权限调整薪资');
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    this.assertHasCapability(access, 'salary.change_add', '无权限调整薪资');
 
     const salary = await this.requireSalary(Number(payload.salaryId));
     assertSalaryActionAllowed(salary.status, 'changeAdd');
 
     const changeReason = String(payload.changeReason || '').trim();
     if (!changeReason) {
-      throw new CoolCommException('调整原因不能为空');
+      throw new CoolCommException(PERFORMANCE_SALARY_CHANGE_REASON_REQUIRED_MESSAGE);
     }
 
     const { beforeAmount, delta, nextAdjustAmount, afterAmount } = applySalaryChange(
@@ -400,20 +436,20 @@ export class PerformanceSalaryService extends BaseService {
     ).trim();
 
     if (!employeeId) {
-      throw new CoolCommException('员工不能为空');
+      throw new CoolCommException(PERFORMANCE_EMPLOYEE_REQUIRED_MESSAGE);
     }
 
     if (!periodValue) {
-      throw new CoolCommException('期间不能为空');
+      throw new CoolCommException(PERFORMANCE_SALARY_PERIOD_REQUIRED_MESSAGE);
     }
 
     if (!effectiveDate) {
-      throw new CoolCommException('生效日期不能为空');
+      throw new CoolCommException(PERFORMANCE_SALARY_EFFECTIVE_DATE_REQUIRED_MESSAGE);
     }
 
     const employee = await this.baseSysUserEntity.findOneBy({ id: employeeId });
     if (!employee) {
-      throw new CoolCommException('员工不存在');
+      throw new CoolCommException(PERFORMANCE_EMPLOYEE_NOT_FOUND_MESSAGE);
     }
 
     const assessmentId = this.resolveOptionalNumber(
@@ -428,7 +464,7 @@ export class PerformanceSalaryService extends BaseService {
         id: assessmentId,
       });
       if (!assessment) {
-        throw new CoolCommException('评估单不存在');
+        throw new CoolCommException(PERFORMANCE_ASSESSMENT_NOT_FOUND_MESSAGE);
       }
       if (!grade) {
         grade = assessment.grade || '';
@@ -474,18 +510,18 @@ export class PerformanceSalaryService extends BaseService {
     const salary = await this.performanceSalaryEntity.findOneBy({ id });
 
     if (!salary) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     return salary;
   }
 
-  private async currentPerms() {
-    return this.baseSysMenuService.getPerms(this.currentAdmin.roleIds);
-  }
-
-  private assertHasPerm(perms: string[], perm: string, message: string) {
-    if (!perms.includes(perm)) {
+  private assertHasCapability(
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey,
+    message: string
+  ) {
+    if (!this.performanceAccessContextService.hasCapability(access, capabilityKey)) {
       throw new CoolCommException(message);
     }
   }

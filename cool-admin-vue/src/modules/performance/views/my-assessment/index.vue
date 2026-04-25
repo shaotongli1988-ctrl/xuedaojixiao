@@ -1,5 +1,5 @@
 <template>
-	<assessment-page title="我的考核" mode="my" />
+	<assessment-page class="my-assessment-page" title="我的考核" mode="my" />
 </template>
 
 <script lang="ts" setup>

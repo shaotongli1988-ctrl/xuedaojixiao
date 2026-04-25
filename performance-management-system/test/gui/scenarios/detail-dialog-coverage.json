@@ -1,0 +1,304 @@
+{
+  "meta": {
+    "name": "detail-dialog-coverage-gui",
+    "description": "详情弹窗与抽屉最小 GUI 点测"
+  },
+  "defaults": {
+    "uiBaseUrl": "http://127.0.0.1:9007",
+    "apiBaseUrl": "http://127.0.0.1:8006",
+    "chromeDebugUrl": "http://127.0.0.1:9222",
+    "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/detail-dialog-coverage",
+    "password": "123456",
+    "viewport": {
+      "width": 1440,
+      "height": 1100,
+      "deviceScaleFactor": 1,
+      "mobile": false
+    }
+  },
+  "scenarios": [
+    {
+      "name": "hr-detail-dialogs",
+      "username": "hr_admin",
+      "route": "/performance/initiated",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "已发起考核",
+            "详情"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "clickText",
+          "text": "详情",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "评估单详情",
+            "关闭"
+          ],
+          "timeoutMs": 8000
+        },
+        {
+          "type": "screenshot",
+          "file": "detail-dialog-hr-assessment.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/talentAsset",
+          "waitAfterMs": 2200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "招聘人才资产",
+            "详情"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "clickText",
+          "text": "详情",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "人才资产详情",
+            "候选人",
+            "目标岗位"
+          ],
+          "timeoutMs": 8000
+        },
+        {
+          "type": "screenshot",
+          "file": "detail-dialog-hr-talentAsset.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/course",
+          "waitAfterMs": 2200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "培训课程管理",
+            "详情"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "clickText",
+          "text": "详情",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "课程详情",
+            "课程标题",
+            "报名人数"
+          ],
+          "timeoutMs": 8000
+        },
+        {
+          "type": "screenshot",
+          "file": "detail-dialog-hr-course.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/meeting",
+          "waitAfterMs": 2200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "会议管理",
+            "详情"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "clickText",
+          "text": "详情",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "会议详情",
+            "会议标题",
+            "参与人数"
+          ],
+          "timeoutMs": 8000
+        },
+        {
+          "type": "screenshot",
+          "file": "detail-dialog-hr-meeting.png"
+        }
+      ]
+    },
+    {
+      "name": "manager-detail-dialogs",
+      "username": "manager_rd",
+      "route": "/performance/resumePool",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "招聘简历池管理",
+            "详情"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "clickText",
+          "text": "详情",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "简历详情",
+            "手机号",
+            "简历正文"
+          ],
+          "timeoutMs": 8000
+        },
+        {
+          "type": "screenshot",
+          "file": "detail-dialog-manager-resume.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/capability",
+          "waitAfterMs": 2200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "能力地图",
+            "详情"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "clickText",
+          "text": "详情",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "能力模型详情",
+            "模型名称",
+            "能力项数量"
+          ],
+          "timeoutMs": 8000
+        },
+        {
+          "type": "screenshot",
+          "file": "detail-dialog-manager-capability.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/supplier",
+          "waitAfterMs": 2200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "供应商管理",
+            "详情"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "clickText",
+          "text": "详情",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "供应商详情",
+            "供应商名称",
+            "联系电话",
+            "当前账号为经理只读角色"
+          ],
+          "timeoutMs": 8000
+        },
+        {
+          "type": "screenshot",
+          "file": "detail-dialog-manager-supplier.png"
+        }
+      ]
+    },
+    {
+      "name": "employee-detail-dialogs",
+      "username": "employee_platform",
+      "route": "/performance/my-assessment",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "我的考核",
+            "详情"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "clickText",
+          "text": "详情",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "评估单详情",
+            "关闭"
+          ],
+          "timeoutMs": 8000
+        },
+        {
+          "type": "screenshot",
+          "file": "detail-dialog-employee-assessment.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/salary",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "assertBodyText",
+          "includes": [
+            "404",
+            "找不到您要查找的页面"
+          ],
+          "excludes": [
+            "薪资管理"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "detail-dialog-employee-salary-404.png"
+        }
+      ]
+    }
+  ]
+}

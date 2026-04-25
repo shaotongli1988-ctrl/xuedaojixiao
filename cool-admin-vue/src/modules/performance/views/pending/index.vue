@@ -1,5 +1,5 @@
 <template>
-	<assessment-page title="待我审批" mode="pending" />
+	<assessment-page class="pending-assessment-page" title="待我审批" mode="pending" />
 </template>
 
 <script lang="ts" setup>

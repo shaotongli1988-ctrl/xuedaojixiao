@@ -1,0 +1,105 @@
+[worktree-split-audit] WARN
+
+- cwd: /Users/shaotongli/Documents/xuedao
+- files: 97
+- staged: 0
+- unstaged: 63
+- untracked: 34
+- batches: 9
+
+## Isolation
+- 未跟踪文件需确认是否应纳入版本控制: 34
+  - contracts/ssot/business-dict-binding.catalog.json
+  - contracts/ssot/rbac-domain.catalog.json
+  - contracts/ssot/state-machine-coverage.catalog.json
+  - cool-admin-midway/src/modules/performance/domain/states/asset-assignment-request.ts
+  - cool-admin-midway/src/modules/performance/domain/states/asset-disposal.ts
+  - cool-admin-midway/src/modules/performance/domain/states/asset-inventory.ts
+  - cool-admin-midway/src/modules/performance/domain/states/asset-maintenance.ts
+  - cool-admin-midway/src/modules/performance/domain/states/asset-procurement.ts
+  - ... +26 more
+
+## Suggested Batches
+- governance-ssot | 仓库治理与 SSOT | high | 24
+  - verify: node ./scripts/check-xuedao-ssot-manifest.mjs && node ./scripts/check-xuedao-ssot-conformance.mjs
+  - README.md
+  - contracts/openapi/xuedao.openapi.json
+  - contracts/ssot/README.md
+  - contracts/ssot/database-schema.catalog.json
+  - contracts/ssot/environment-config.catalog.json
+  - contracts/ssot/records/change-record.yaml
+  - contracts/ssot/records/verification-record.yaml
+  - contracts/ssot/xuedao-ssot-inventory.md
+  - ... +16 more
+- backend-performance-themes | 绩效后端主题实现 | medium | 20
+  - verify: cd cool-admin-midway && npm run build，并按主题执行定向 service/controller 测试。
+  - cool-admin-midway/src/modules/performance/entity/goal-ops-plan.ts
+  - cool-admin-midway/src/modules/performance/entity/hiring.ts
+  - cool-admin-midway/src/modules/performance/entity/interview.ts
+  - cool-admin-midway/src/modules/performance/entity/knowledgeQa.ts
+  - cool-admin-midway/src/modules/performance/entity/recruit-plan.ts
+  - cool-admin-midway/src/modules/performance/entity/resumePool.ts
+  - cool-admin-midway/src/modules/performance/entity/teacher-agent-relation.ts
+  - cool-admin-midway/src/modules/performance/service/interview.ts
+  - ... +12 more
+- backend-performance-shared | 绩效后端共享层 | high | 19
+  - verify: cd cool-admin-midway && npm run build && 共享 domain/helper/service 定向回归测试。
+  - cool-admin-midway/src/modules/performance/domain/dicts/catalog.ts
+  - cool-admin-midway/src/modules/performance/domain/registry/index.ts
+  - cool-admin-midway/src/modules/performance/domain/states/asset-assignment-request.ts
+  - cool-admin-midway/src/modules/performance/domain/states/asset-disposal.ts
+  - cool-admin-midway/src/modules/performance/domain/states/asset-inventory.ts
+  - cool-admin-midway/src/modules/performance/domain/states/asset-maintenance.ts
+  - cool-admin-midway/src/modules/performance/domain/states/asset-procurement.ts
+  - cool-admin-midway/src/modules/performance/domain/states/asset-transfer.ts
+  - ... +11 more
+- frontend-performance-themes | 绩效前端主题实现 | medium | 12
+  - verify: cd cool-admin-vue && corepack pnpm run type-check && corepack pnpm run build
+  - cool-admin-vue/src/modules/performance/service/certificate-contract.ts
+  - cool-admin-vue/src/modules/performance/service/course-learning-contract.ts
+  - cool-admin-vue/src/modules/performance/service/hiring-contract.ts
+  - cool-admin-vue/src/modules/performance/service/material-stock-contract.ts
+  - cool-admin-vue/src/modules/performance/service/recruit-plan-contract.ts
+  - cool-admin-vue/src/modules/performance/shared/contract-enums.ts
+  - cool-admin-vue/src/modules/performance/types.ts
+  - cool-admin-vue/src/modules/performance/views/goals/index.vue
+  - ... +4 more
+- docs-evidence | 文档与交付证据 | medium | 10
+  - verify: 校对事实源与实现一致，必要时回写 verification record / delivery report。
+  - docs/superpowers/specs/2026-04-22-performance-domain-ssot-coverage.md
+  - performance-management-system/docs/04-API设计.md
+  - performance-management-system/docs/06-权限矩阵.md
+  - performance-management-system/docs/10-路由与菜单映射.md
+  - performance-management-system/docs/12-数据权限与脱敏规则.md
+  - performance-management-system/docs/24-自动化测试策略与脚本规划.md
+  - performance-management-system/test/repo-guard-scripts.test.mjs
+  - reports/delivery/worktree-split-audit.latest.json
+  - ... +2 more
+- backend-base-user-dict | 后端基础权限与用户字典 | high | 2
+  - verify: cd cool-admin-midway && npm run lint && npm run build && 相关 base/user/dict 定向测试
+  - cool-admin-midway/src/domain-registry/catalog.ts
+  - cool-admin-midway/src/modules/dict/domain/dicts/catalog.ts
+- frontend-contract-base | 前端共享基础与契约层 | high | 2
+  - verify: cd cool-admin-vue && corepack pnpm run type-check && corepack pnpm run build
+  - cool-admin-vue/build/cool/eps.ssot.d.ts
+  - cool-admin-vue/src/modules/performance/generated/capability.ts
+- frontend-shell-mobile | 前端视觉壳层与移动端 | medium | 1
+  - verify: cd cool-admin-vue && corepack pnpm run type-check && corepack pnpm run build；如命中 cool-uni，再跑对应 type-check。
+  - cool-uni/generated/performance-capability.generated.ts
+- local-runtime-env | 本地运行时环境文件 | medium | 1
+  - verify: 不纳入仓库级 SSOT 交付批次；仅确认变量名仍受 environment-config catalog 治理，且不提交真实本地真值。
+  - cool-admin-vue/.env
+
+## Uncategorized
+- cool-admin-midway/src/modules/plugin/domain/index.ts | ??
+- cool-admin-midway/src/modules/plugin/domain/registry/index.ts | ??
+- cool-admin-midway/src/modules/space/domain/index.ts | ??
+- cool-admin-midway/src/modules/space/domain/registry/index.ts | ??
+- cool-admin-midway/src/modules/task/domain/index.ts | ??
+- cool-admin-midway/src/modules/task/domain/registry/index.ts | ??
+
+## Suggestions
+- 高风险基础权限层与绩效主题实现不要混成同一提交。
+- 治理 / SSOT 变更先独立提交，再提交业务主题实现。
+- 视觉壳层与移动端改动拆到最后，避免掩盖主链 correctness 风险。
+- 存在未归类文件，提交前需要人工定批或补脚本规则。

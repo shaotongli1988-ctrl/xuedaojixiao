@@ -123,12 +123,15 @@
 <script lang="ts" setup>
 import { computed, reactive, ref, watch } from 'vue';
 import type { FormInstance, FormRules } from 'element-plus';
+import { useDict } from '/$/dict';
 import {
 	type FeedbackRelationType,
 	type FeedbackTaskRecord,
 	type UserOption,
 	createEmptyFeedbackTask
 } from '../types';
+
+const FEEDBACK_RELATION_TYPE_DICT_KEY = 'performance.feedback.relationType';
 
 const props = defineProps<{
 	modelValue: FeedbackTaskRecord;
@@ -145,13 +148,14 @@ const emit = defineEmits<{
 const formRef = ref<FormInstance>();
 const assessmentIdInput = ref<number | undefined>(undefined);
 const localValue = reactive(createEmptyFeedbackTask());
+const { dict } = useDict();
 
-const relationOptions: Array<{ label: string; value: FeedbackRelationType }> = [
-	{ label: '上级', value: '上级' },
-	{ label: '同级', value: '同级' },
-	{ label: '下级', value: '下级' },
-	{ label: '协作人', value: '协作人' }
-];
+const relationOptions = computed<Array<{ label: string; value: FeedbackRelationType }>>(() =>
+	dict.get(FEEDBACK_RELATION_TYPE_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: item.value as FeedbackRelationType
+	}))
+);
 
 const rules: FormRules = {
 	assessmentId: [{ required: true, message: '请输入来源评估单 ID', trigger: 'blur' }],
@@ -268,39 +272,44 @@ async function handleSubmit() {
 </script>
 
 <style lang="scss" scoped>
+@use '../../../styles/patterns.overlay-responsive.scss' as overlayResponsive;
+
 .feedback-task-form {
 	&__relation-header {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 12px;
+		gap: var(--app-space-3);
 	}
 
 	&__relation-list {
 		display: grid;
-		gap: 12px;
+		gap: var(--app-space-3);
 	}
 
 	&__relation-item {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 12px;
-		padding: 12px;
-		border-radius: 8px;
-		background: var(--el-fill-color-light);
+		gap: var(--app-space-3);
+		padding: var(--app-space-3);
+		border-radius: var(--app-radius-sm);
+		background: var(--app-surface-muted);
+		border: 1px solid var(--app-border-soft);
 	}
 
 	&__relation-user {
 		font-weight: 500;
-		color: var(--el-text-color-primary);
+		color: var(--app-text-primary);
 	}
 
 	&__footer {
 		display: flex;
 		justify-content: flex-end;
-		gap: 12px;
-		padding-top: 20px;
+		gap: var(--app-space-3);
+		padding-top: var(--app-space-5);
 	}
+
+	@include overlayResponsive.overlay-responsive;
 }
 </style>

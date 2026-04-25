@@ -24,6 +24,15 @@ import { CachingFactory, MidwayCache } from '@midwayjs/cache-manager';
 import { Utils } from '../../../../comm/utils';
 import * as svgCaptcha from 'svg-captcha';
 import { BaseSysRoleEntity } from '../../entity/sys/role';
+import { resolveRuntimePermissionMask } from './permission-ssot';
+import {
+  buildUserAdminTokenPayload,
+  buildUserAuthCacheKey,
+  isUserAdminRefreshToken,
+  resolveUserAdminPasswordVersion,
+  resolveUserAdminUserId,
+  verifyUserAdminToken,
+} from '../../../user/domain';
 
 const resolveBaseModuleConfig = (app?: IMidwayApplication) => {
   return require('../../config').default({
@@ -101,33 +110,49 @@ export class BaseSysLoginService extends BaseService {
         throw new CoolCommException('该用户未设置任何角色，无法登录~');
       }
       const isAdmin = await this.resolveIsAdmin(roleIds);
+      const perms = await this.baseSysMenuService.getPerms(roleIds);
+      const permissionMask = resolveRuntimePermissionMask({ perms, isAdmin });
 
       // 生成token
       const { expire, refreshExpire } = this.jwtConfig.token;
       const result = {
         expire,
-        token: await this.generateToken(user, roleIds, expire, false, isAdmin),
+        permissionMask,
+        token: await this.generateToken(
+          user,
+          roleIds,
+          expire,
+          false,
+          isAdmin,
+          permissionMask
+        ),
         refreshExpire,
         refreshToken: await this.generateToken(
           user,
           roleIds,
           refreshExpire,
           true,
-          isAdmin
+          isAdmin,
+          permissionMask
         ),
       };
 
       // 将用户相关信息保存到缓存
-      const perms = await this.baseSysMenuService.getPerms(roleIds);
       const departments = await this.baseSysDepartmentService.getByRoleIds(
         roleIds,
         isAdmin
       );
-      await this.midwayCache.set(`admin:department:${user.id}`, departments);
-      await this.midwayCache.set(`admin:perms:${user.id}`, perms);
-      await this.midwayCache.set(`admin:token:${user.id}`, result.token);
       await this.midwayCache.set(
-        `admin:token:refresh:${user.id}`,
+        buildUserAuthCacheKey('departmentIds', user.id),
+        departments
+      );
+      await this.midwayCache.set(buildUserAuthCacheKey('perms', user.id), perms);
+      await this.midwayCache.set(
+        buildUserAuthCacheKey('accessToken', user.id),
+        result.token
+      );
+      await this.midwayCache.set(
+        buildUserAuthCacheKey('refreshToken', user.id),
         result.token
       );
 
@@ -188,11 +213,11 @@ export class BaseSysLoginService extends BaseService {
   async logout() {
     if (!this.jwtConfig.sso) return;
     const { userId } = this.ctx.admin;
-    await this.midwayCache.del(`admin:department:${userId}`);
-    await this.midwayCache.del(`admin:perms:${userId}`);
-    await this.midwayCache.del(`admin:token:${userId}`);
-    await this.midwayCache.del(`admin:token:refresh:${userId}`);
-    await this.midwayCache.del(`admin:passwordVersion:${userId}`);
+    await this.midwayCache.del(buildUserAuthCacheKey('departmentIds', userId));
+    await this.midwayCache.del(buildUserAuthCacheKey('perms', userId));
+    await this.midwayCache.del(buildUserAuthCacheKey('accessToken', userId));
+    await this.midwayCache.del(buildUserAuthCacheKey('refreshToken', userId));
+    await this.midwayCache.del(buildUserAuthCacheKey('passwordVersion', userId));
   }
 
   /**
@@ -217,23 +242,28 @@ export class BaseSysLoginService extends BaseService {
    * @param expire 过期
    * @param isRefresh 是否是刷新
    */
-  async generateToken(user, roleIds, expire, isRefresh?, isAdmin = false) {
+  async generateToken(
+    user,
+    roleIds,
+    expire,
+    isRefresh?,
+    isAdmin = false,
+    permissionMask = '0'
+  ) {
     await this.midwayCache.set(
-      `admin:passwordVersion:${user.id}`,
+      buildUserAuthCacheKey('passwordVersion', user.id),
       user.passwordV
     );
-    const tokenInfo = {
-      isRefresh: false,
+    const tokenInfo = buildUserAdminTokenPayload({
+      isRefresh,
       roleIds,
       isAdmin,
       username: user.username,
       userId: user.id,
       passwordVersion: user.passwordV,
+      permissionMask,
       tenantId: user['tenantId'],
-    };
-    if (isRefresh) {
-      tokenInfo.isRefresh = true;
-    }
+    });
     return jwt.sign(tokenInfo, this.jwtConfig.secret, {
       expiresIn: expire,
     });
@@ -244,7 +274,7 @@ export class BaseSysLoginService extends BaseService {
       return false;
     }
     const roles = await this.baseSysRoleEntity.findBy({ id: In(roleIds) });
-    return roles.some(role => role.label === 'admin');
+    return roles.some(role => role.isSuperAdmin === true);
   }
 
   /**
@@ -252,8 +282,8 @@ export class BaseSysLoginService extends BaseService {
    * @param token
    */
   async refreshToken(token: string) {
-    const decoded = jwt.verify(token, this.jwtConfig.secret);
-    if (decoded && decoded['isRefresh']) {
+    const decoded = verifyUserAdminToken(token, this.jwtConfig.secret);
+    if (decoded && isUserAdminRefreshToken(decoded)) {
       delete decoded['exp'];
       delete decoded['iat'];
 
@@ -271,15 +301,21 @@ export class BaseSysLoginService extends BaseService {
       result.refreshToken = jwt.sign(decoded, this.jwtConfig.secret, {
         expiresIn: refreshExpire,
       });
+      const decodedUserId = resolveUserAdminUserId(decoded);
+      const decodedPasswordVersion = resolveUserAdminPasswordVersion(decoded);
+      if (decodedUserId == null || decodedPasswordVersion == null) {
+        throw new CoolCommException('登录失效~', 401);
+      }
       await this.midwayCache.set(
-        `admin:passwordVersion:${decoded['userId']}`,
-        decoded['passwordVersion']
+        buildUserAuthCacheKey('passwordVersion', decodedUserId),
+        decodedPasswordVersion
       );
       await this.midwayCache.set(
-        `admin:token:${decoded['userId']}`,
+        buildUserAuthCacheKey('accessToken', decodedUserId),
         result.token
       );
       return result;
     }
+    throw new CoolCommException('登录失效~', 401);
   }
 }

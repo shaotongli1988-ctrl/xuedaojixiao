@@ -4,6 +4,28 @@
  * 这里只验证模块 4 的关键权限与校验规则，不覆盖真实数据库或共享鉴权链路。
  */
 import { PerformanceIndicatorService } from '../../src/modules/performance/service/indicator';
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
+
+function attachAccessContextService(service: any) {
+  if (!service.baseSysMenuService) {
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue([]),
+    };
+  }
+  if (!service.baseSysPermsService) {
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+  }
+  service.performanceAccessContextService = Object.assign(
+    new PerformanceAccessContextService(),
+    {
+      ctx: service.ctx,
+      baseSysMenuService: service.baseSysMenuService,
+      baseSysPermsService: service.baseSysPermsService,
+    }
+  );
+}
 
 describe('performance indicator service', () => {
   test('should filter indicator page by status', async () => {
@@ -45,9 +67,13 @@ describe('performance indicator service', () => {
         .fn()
         .mockResolvedValue(['performance:indicator:page', 'performance:indicator:info']),
     };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
     service.performanceIndicatorEntity = {
       createQueryBuilder: jest.fn().mockReturnValue(qb),
     };
+    attachAccessContextService(service);
 
     const result = await service.page({ page: 1, size: 10, status: 1 });
 
@@ -90,9 +116,13 @@ describe('performance indicator service', () => {
     service.baseSysMenuService = {
       getPerms: jest.fn().mockResolvedValue(['performance:indicator:add']),
     };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
     service.performanceIndicatorEntity = {
       findOneBy: jest.fn().mockResolvedValue({ id: 9, code: 'TEAM_WORK' }),
     };
+    attachAccessContextService(service);
 
     await expect(
       service.add({
@@ -118,6 +148,10 @@ describe('performance indicator service', () => {
     service.baseSysMenuService = {
       getPerms: jest.fn().mockResolvedValue([]),
     };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+    attachAccessContextService(service);
 
     await expect(service.page({})).rejects.toThrow('无权限查看指标库');
   });

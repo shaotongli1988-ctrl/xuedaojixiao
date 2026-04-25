@@ -21,17 +21,13 @@
 					{{ task.deadline || '未设置' }}
 				</el-descriptions-item>
 				<el-descriptions-item label="任务状态">
-					{{ task.status || '-' }}
+					{{ taskStatusLabel(task.status) }}
 				</el-descriptions-item>
 			</el-descriptions>
 
 			<el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
 				<el-form-item label="评价关系" prop="relationType">
-					<el-select
-						v-model="form.relationType"
-						placeholder="请选择评价关系"
-						clearable
-					>
+					<el-select v-model="form.relationType" placeholder="请选择评价关系" clearable>
 						<el-option
 							v-for="item in relationOptions"
 							:key="item.value"
@@ -73,9 +69,13 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, ref, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import type { FormInstance, FormRules } from 'element-plus';
+import { useDict } from '/$/dict';
 import type { FeedbackTaskRecord } from '../types';
+
+const FEEDBACK_TASK_STATUS_DICT_KEY = 'performance.feedback.taskStatus';
+const FEEDBACK_RELATION_TYPE_DICT_KEY = 'performance.feedback.relationType';
 
 const props = defineProps<{
 	modelValue: boolean;
@@ -85,22 +85,26 @@ const props = defineProps<{
 
 const emit = defineEmits<{
 	(e: 'update:modelValue', value: boolean): void;
-	(e: 'submit', value: { taskId: number; score: number; content?: string; relationType: string }): void;
+	(
+		e: 'submit',
+		value: { taskId: number; score: number; content?: string; relationType: string }
+	): void;
 }>();
 
 const formRef = ref<FormInstance>();
+const { dict } = useDict();
 const form = reactive({
 	score: 80,
 	content: '',
 	relationType: ''
 });
 
-const relationOptions = [
-	{ label: '上级', value: '上级' },
-	{ label: '同级', value: '同级' },
-	{ label: '下级', value: '下级' },
-	{ label: '协作人', value: '协作人' }
-];
+const relationOptions = computed<Array<{ label: string; value: string }>>(() =>
+	dict.get(FEEDBACK_RELATION_TYPE_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: String(item.value)
+	}))
+);
 
 const rules: FormRules = {
 	relationType: [{ required: true, message: '请选择评价关系', trigger: 'change' }],
@@ -117,6 +121,10 @@ watch(
 		}
 	}
 );
+
+function taskStatusLabel(value?: string) {
+	return dict.getLabel(FEEDBACK_TASK_STATUS_DICT_KEY, value) || value || '-';
+}
 
 async function handleSubmit() {
 	if (!props.task?.id) {
@@ -135,14 +143,18 @@ async function handleSubmit() {
 </script>
 
 <style lang="scss" scoped>
+@use '../../../styles/patterns.overlay-responsive.scss' as overlayResponsive;
+
 .feedback-submit-drawer {
 	display: grid;
-	gap: 16px;
+	gap: var(--app-space-4);
 
 	&__footer {
 		display: flex;
 		justify-content: flex-end;
-		gap: 12px;
+		gap: var(--app-space-3);
 	}
+
+	@include overlayResponsive.overlay-responsive;
 }
 </style>

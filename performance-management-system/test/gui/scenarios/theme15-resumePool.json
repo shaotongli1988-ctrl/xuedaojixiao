@@ -1,0 +1,175 @@
+{
+  "meta": {
+    "name": "theme15-resumePool-gui",
+    "description": "Theme15 招聘简历池最小 GUI 点测"
+  },
+  "defaults": {
+    "uiBaseUrl": "http://127.0.0.1:9006",
+    "apiBaseUrl": "http://127.0.0.1:8031",
+    "chromeDebugUrl": "http://127.0.0.1:9222",
+    "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/theme15-gui",
+    "password": "123456",
+    "viewport": {
+      "width": 1440,
+      "height": 1100,
+      "deviceScaleFactor": 1,
+      "mobile": false
+    }
+  },
+  "scenarios": [
+    {
+      "name": "hr-resumePool",
+      "username": "hr_admin",
+      "route": "/performance/resumePool",
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "招聘简历池管理",
+            "联调-主题15平台简历"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "导出"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme15-hr-list.png"
+        },
+        {
+          "type": "clickText",
+          "text": "详情",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "简历详情",
+            "简历正文"
+          ],
+          "timeoutMs": 5000
+        },
+        {
+          "type": "assertBodyText",
+          "includes": [
+            "13812340001",
+            "theme15-rd@example.com",
+            "主题15联调-平台简历全文"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme15-hr-detail.png"
+        }
+      ]
+    },
+    {
+      "name": "manager-resumePool",
+      "username": "manager_rd",
+      "route": "/performance/resumePool",
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "招聘简历池管理",
+            "联调-主题15平台简历"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "新建简历"
+          ],
+          "excludes": [
+            "导出",
+            "下载",
+            "联调-主题15销售简历"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme15-manager-list.png"
+        },
+        {
+          "type": "clickText",
+          "text": "详情",
+          "index": 0,
+          "waitAfterMs": 1200
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "简历详情",
+            "简历正文"
+          ],
+          "timeoutMs": 5000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "关闭"
+          ],
+          "excludes": [
+            "下载"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme15-manager-detail.png"
+        }
+      ]
+    },
+    {
+      "name": "employee-resumePool",
+      "username": "employee_platform",
+      "route": "/",
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "我的考核"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": [
+            "招聘简历池"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme15-employee-home.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/resumePool",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "assertBodyText",
+          "includes": [
+            "404",
+            "找不到您要查找的页面"
+          ],
+          "excludes": [
+            "招聘简历池管理"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "theme15-employee-route.png"
+        }
+      ]
+    }
+  ]
+}

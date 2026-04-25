@@ -16,8 +16,6 @@ import {
 import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { EntityManager, In, Repository } from 'typeorm';
-import { BaseSysMenuService } from '../../base/service/sys/menu';
-import { BaseSysPermsService } from '../../base/service/sys/perms';
 import { BaseSysDepartmentEntity } from '../../base/entity/sys/department';
 import { BaseSysUserEntity } from '../../base/entity/sys/user';
 import { PerformanceAssessmentEntity } from '../entity/assessment';
@@ -25,6 +23,15 @@ import { PerformanceAssessmentScoreEntity } from '../entity/assessment-score';
 import { PerformanceApprovalFlowService } from './approval-flow';
 import { PerformanceSuggestionService } from './suggestion';
 import * as jwt from 'jsonwebtoken';
+import { ASSESSMENT_STATUS_VALUES } from './assessment-dict';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  PerformanceAccessContextService,
+  PerformanceResolvedAccessContext,
+} from './access-context';
 import {
   AssessmentScoreInput,
   AssessmentStatus,
@@ -34,6 +41,29 @@ import {
   normalizeAssessmentScores,
   resolveAssessmentGrade,
 } from './assessment-helper';
+
+const [
+  ASSESSMENT_DRAFT_STATUS,
+  ASSESSMENT_SUBMITTED_STATUS,
+  ASSESSMENT_APPROVED_STATUS,
+  ASSESSMENT_REJECTED_STATUS,
+] = ASSESSMENT_STATUS_VALUES;
+const PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resourceNotFound
+  );
+const PERFORMANCE_EMPLOYEE_DEPARTMENT_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.employeeDepartmentNotFound
+  );
+const PERFORMANCE_STATE_EDIT_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateEditNotAllowed
+  );
+const PERFORMANCE_STATE_DELETE_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateDeleteNotAllowed
+  );
 
 const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
   return require('../../base/config').default({
@@ -58,16 +88,13 @@ export class PerformanceAssessmentService extends BaseService {
   baseSysDepartmentEntity: Repository<BaseSysDepartmentEntity>;
 
   @Inject()
-  baseSysMenuService: BaseSysMenuService;
-
-  @Inject()
-  baseSysPermsService: BaseSysPermsService;
-
-  @Inject()
   performanceSuggestionService: PerformanceSuggestionService;
 
   @Inject()
   performanceApprovalFlowService: PerformanceApprovalFlowService;
+
+  @Inject()
+  performanceAccessContextService: PerformanceAccessContextService;
 
   @Inject()
   ctx;
@@ -106,29 +133,14 @@ export class PerformanceAssessmentService extends BaseService {
     }
   }
 
-  private readonly perms = {
-    myPage: 'performance:assessment:myPage',
-    page: 'performance:assessment:page',
-    pendingPage: 'performance:assessment:pendingPage',
-    info: 'performance:assessment:info',
-    add: 'performance:assessment:add',
-    update: 'performance:assessment:update',
-    delete: 'performance:assessment:delete',
-    submit: 'performance:assessment:submit',
-    approve: 'performance:assessment:approve',
-    reject: 'performance:assessment:reject',
-    export: 'performance:assessment:export',
-  };
-
   async page(query: any) {
-    const perms = await this.currentPerms();
+    const access = await this.performanceAccessContextService.resolveAccessContext();
     const userId = this.currentAdmin.userId;
     const mode = query.mode || 'initiated';
     const page = Number(query.page || 1);
     const size = Number(query.size || 20);
-    const departmentIds = await this.departmentScopeIds();
 
-    this.assertPageModePermission(mode, perms);
+    this.assertPageModePermission(mode, access);
 
     const qb = this.performanceAssessmentEntity
       .createQueryBuilder('assessment')
@@ -199,25 +211,28 @@ export class PerformanceAssessmentService extends BaseService {
         break;
       case 'pending':
         qb.andWhere('assessment.status = :pendingStatus', {
-          pendingStatus: 'submitted',
+          pendingStatus: ASSESSMENT_SUBMITTED_STATUS,
         });
 
-        if (this.hasPerm(perms, this.perms.approve)) {
-          if (departmentIds.length) {
-            qb.andWhere(
-              '(assessment.assessorId = :userId or assessment.departmentId in (:...departmentIds))',
-              { userId, departmentIds }
-            );
-          } else {
-            qb.andWhere('assessment.assessorId = :userId', { userId });
-          }
-        }
+        this.applyCapabilityScopeFilter(
+          qb,
+          access,
+          this.performanceAccessContextService.capabilityScopes(
+            access,
+            'assessment.review.read'
+          ),
+          userId
+        );
 
         qb.orderBy('assessment.submitTime', 'ASC');
         break;
       case 'initiated':
       default:
-        if (!this.isHr(perms)) {
+        if (
+          !this.performanceAccessContextService
+            .capabilityScopes(access, 'assessment.manage.read')
+            .includes('company')
+        ) {
           qb.andWhere('assessment.assessorId = :userId', { userId });
         }
         qb.orderBy('assessment.createTime', 'DESC');
@@ -242,17 +257,22 @@ export class PerformanceAssessmentService extends BaseService {
 
   async info(id: number) {
     const assessment = await this.requireAssessment(id);
-    const perms = await this.currentPerms();
+    const access = await this.performanceAccessContextService.resolveAccessContext();
 
-    this.assertCanViewAssessment(assessment, perms);
+    this.assertCanViewAssessment(assessment, access);
 
     return this.buildAssessmentDetail(assessment);
   }
 
   async add(payload: any) {
-    const perms = await this.currentPerms();
+    const access = await this.performanceAccessContextService.resolveAccessContext();
 
-    if (!this.hasPerm(perms, this.perms.add)) {
+    if (
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        'assessment.manage.create'
+      )
+    ) {
       throw new CoolCommException('无权限发起评估单');
     }
 
@@ -264,10 +284,20 @@ export class PerformanceAssessmentService extends BaseService {
       Number(payload.departmentId)
     );
 
+    const assessorId = Number(payload.assessorId || this.currentAdmin.userId);
+
+    this.assertCanCreateAssessment(
+      {
+        assessorId,
+        departmentId,
+      },
+      access
+    );
+
     const entity = this.performanceAssessmentEntity.create({
       code: payload.code || this.generateAssessmentCode(),
       employeeId: Number(payload.employeeId),
-      assessorId: Number(payload.assessorId || this.currentAdmin.userId),
+      assessorId,
       departmentId,
       periodType: payload.periodType || 'quarter',
       periodValue: payload.periodValue,
@@ -276,7 +306,7 @@ export class PerformanceAssessmentService extends BaseService {
       grade: summary.grade,
       selfEvaluation: payload.selfEvaluation || '',
       managerFeedback: '',
-      status: 'draft',
+      status: ASSESSMENT_DRAFT_STATUS,
       submitTime: null,
       approveTime: null,
     });
@@ -293,10 +323,10 @@ export class PerformanceAssessmentService extends BaseService {
   }
 
   async updateAssessment(payload: any) {
-    const perms = await this.currentPerms();
+    const access = await this.performanceAccessContextService.resolveAccessContext();
     const assessment = await this.requireAssessment(Number(payload.id));
 
-    this.assertCanUpdateAssessment(assessment, perms);
+    this.assertCanUpdateAssessment(assessment, access);
 
     const scores = normalizeAssessmentScores(payload.scoreItems || []);
     const summary = this.buildAssessmentSummary(scores);
@@ -305,11 +335,11 @@ export class PerformanceAssessmentService extends BaseService {
       grade: summary.grade,
     };
 
-    if (this.isSelfEditor(assessment, perms)) {
+    if (this.isSelfEditor(assessment, access)) {
       updateData.selfEvaluation = payload.selfEvaluation || '';
       updateData.targetCompletion = Number(payload.targetCompletion || 0);
-      if (assessment.status === 'rejected') {
-        updateData.status = 'draft';
+      if (assessment.status === ASSESSMENT_REJECTED_STATUS) {
+        updateData.status = ASSESSMENT_DRAFT_STATUS;
         updateData.approveTime = null;
         updateData.managerFeedback = '';
       }
@@ -341,20 +371,25 @@ export class PerformanceAssessmentService extends BaseService {
   }
 
   async delete(ids: number[]) {
-    const perms = await this.currentPerms();
+    const access = await this.performanceAccessContextService.resolveAccessContext();
 
-    if (!this.hasPerm(perms, this.perms.delete)) {
+    if (
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        'assessment.manage.delete'
+      )
+    ) {
       throw new CoolCommException('无权限删除评估单');
     }
 
     for (const id of ids) {
       const assessment = await this.requireAssessment(Number(id));
 
-      if (assessment.status !== 'draft') {
-        throw new CoolCommException('当前状态不允许删除');
+      if (assessment.status !== ASSESSMENT_DRAFT_STATUS) {
+        throw new CoolCommException(PERFORMANCE_STATE_DELETE_NOT_ALLOWED_MESSAGE);
       }
 
-      this.assertManageScope(assessment, perms);
+      this.assertManageScope(assessment, access);
     }
 
     await this.performanceAssessmentEntity.manager.transaction(async manager => {
@@ -366,10 +401,15 @@ export class PerformanceAssessmentService extends BaseService {
   }
 
   async submit(id: number) {
-    const perms = await this.currentPerms();
+    const access = await this.performanceAccessContextService.resolveAccessContext();
     const assessment = await this.requireAssessment(id);
 
-    if (!this.hasPerm(perms, this.perms.submit)) {
+    if (
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        'assessment.submit'
+      )
+    ) {
       throw new CoolCommException('无权限提交评估单');
     }
 
@@ -398,9 +438,14 @@ export class PerformanceAssessmentService extends BaseService {
   }
 
   async export(query: any) {
-    const perms = await this.currentPerms();
+    const access = await this.performanceAccessContextService.resolveAccessContext();
 
-    if (!this.hasPerm(perms, this.perms.export)) {
+    if (
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        'assessment.export'
+      )
+    ) {
       throw new CoolCommException('无权限导出评估单');
     }
 
@@ -434,10 +479,17 @@ export class PerformanceAssessmentService extends BaseService {
     action: 'approve' | 'reject',
     comment?: string
   ) {
-    const perms = await this.currentPerms();
+    const access = await this.performanceAccessContextService.resolveAccessContext();
     const assessment = await this.requireAssessment(id);
 
-    if (!this.hasPerm(perms, this.perms[action])) {
+    if (
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        action === 'approve'
+          ? 'assessment.review.approve'
+          : 'assessment.review.reject'
+      )
+    ) {
       throw new CoolCommException('无权限执行审批操作');
     }
 
@@ -446,14 +498,17 @@ export class PerformanceAssessmentService extends BaseService {
       assessment.id
     );
     assertAssessmentTransition(assessment.status as AssessmentStatus, action);
-    this.assertCanReviewAssessment(assessment, perms);
+    await this.assertCanReviewAssessment(assessment, access);
 
     await this.performanceAssessmentEntity.manager.transaction(
       async (manager: EntityManager) => {
         await manager.getRepository(PerformanceAssessmentEntity).update(
           { id: assessment.id },
           {
-            status: action === 'approve' ? 'approved' : 'rejected',
+            status:
+              action === 'approve'
+                ? ASSESSMENT_APPROVED_STATUS
+                : ASSESSMENT_REJECTED_STATUS,
             managerFeedback: comment || '',
             approveTime: this.now(),
           }
@@ -468,7 +523,7 @@ export class PerformanceAssessmentService extends BaseService {
               departmentId: Number(assessment.departmentId),
               periodType: assessment.periodType,
               periodValue: assessment.periodValue,
-              status: 'approved',
+              status: ASSESSMENT_APPROVED_STATUS,
               grade: assessment.grade,
               totalScore: Number(assessment.totalScore || 0),
               tenantId: assessment.tenantId ?? null,
@@ -553,75 +608,90 @@ export class PerformanceAssessmentService extends BaseService {
     const assessment = await this.performanceAssessmentEntity.findOneBy({ id });
 
     if (!assessment) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     return assessment;
   }
 
-  private async currentPerms() {
-    return this.baseSysMenuService.getPerms(this.currentAdmin.roleIds);
-  }
-
-  private hasPerm(perms: string[], perm: string) {
-    return perms.includes(perm);
-  }
-
-  private isHr(perms: string[]) {
-    return this.hasPerm(perms, this.perms.export);
-  }
-
   private isSelfEditor(
     assessment: PerformanceAssessmentEntity,
-    perms: string[]
+    access: PerformanceResolvedAccessContext
   ) {
     return (
-      this.hasPerm(perms, this.perms.submit) &&
+      this.performanceAccessContextService.hasCapability(
+        access,
+        'assessment.self.edit'
+      ) &&
       assessment.employeeId === this.currentAdmin.userId
     );
   }
 
-  private assertPageModePermission(mode: string, perms: string[]) {
-    if (mode === 'my' && !this.hasPerm(perms, this.perms.myPage)) {
+  private assertPageModePermission(
+    mode: string,
+    access: PerformanceResolvedAccessContext
+  ) {
+    if (
+      mode === 'my' &&
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        'assessment.self.read'
+      )
+    ) {
       throw new CoolCommException('无权限查看我的考核');
     }
 
-    if (mode === 'initiated' && !this.hasPerm(perms, this.perms.page)) {
+    if (
+      mode === 'initiated' &&
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        'assessment.manage.read'
+      )
+    ) {
       throw new CoolCommException('无权限查看已发起考核');
     }
 
-    if (mode === 'pending' && !this.hasPerm(perms, this.perms.pendingPage)) {
+    if (
+      mode === 'pending' &&
+      !this.performanceAccessContextService.hasCapability(
+        access,
+        'assessment.review.read'
+      )
+    ) {
       throw new CoolCommException('无权限查看待我审批');
     }
   }
 
-  private async departmentScopeIds() {
-    const ids = await this.baseSysPermsService.departmentIds(
-      this.currentAdmin.userId
-    );
-    return Array.isArray(ids) ? ids.map(item => Number(item)) : [];
-  }
-
   private async assertCanViewAssessment(
     assessment: PerformanceAssessmentEntity,
-    perms: string[]
+    access: PerformanceResolvedAccessContext
   ) {
-    if (!this.hasPerm(perms, this.perms.info)) {
+    const selfScopes = this.performanceAccessContextService.capabilityScopes(
+      access,
+      'assessment.self.read'
+    );
+    const manageScopes = this.performanceAccessContextService.capabilityScopes(
+      access,
+      'assessment.manage.read'
+    );
+    const reviewScopes = this.performanceAccessContextService.capabilityScopes(
+      access,
+      'assessment.review.read'
+    );
+
+    if (!selfScopes.length && !manageScopes.length && !reviewScopes.length) {
       throw new CoolCommException('无权限查看评估单详情');
     }
 
-    if (this.isHr(perms)) {
+    if (this.matchesAssessmentScope(access, selfScopes, assessment)) {
       return;
     }
 
-    const departmentIds = await this.departmentScopeIds();
-    const userId = this.currentAdmin.userId;
+    if (this.matchesAssessmentScope(access, manageScopes, assessment)) {
+      return;
+    }
 
-    if (
-      assessment.employeeId === userId ||
-      assessment.assessorId === userId ||
-      departmentIds.includes(assessment.departmentId)
-    ) {
+    if (this.matchesAssessmentScope(access, reviewScopes, assessment)) {
       return;
     }
 
@@ -630,58 +700,135 @@ export class PerformanceAssessmentService extends BaseService {
 
   private async assertCanUpdateAssessment(
     assessment: PerformanceAssessmentEntity,
-    perms: string[]
+    access: PerformanceResolvedAccessContext
   ) {
-    if (!this.hasPerm(perms, this.perms.update)) {
+    if (
+      !this.performanceAccessContextService.hasAnyCapability(access, [
+        'assessment.self.edit',
+        'assessment.manage.update',
+      ])
+    ) {
       throw new CoolCommException('无权限修改评估单');
     }
 
-    if (this.isSelfEditor(assessment, perms)) {
-      if (!['draft', 'rejected'].includes(assessment.status)) {
-        throw new CoolCommException('当前状态不允许编辑');
+    if (this.isSelfEditor(assessment, access)) {
+      if (
+        !(
+          assessment.status === ASSESSMENT_DRAFT_STATUS ||
+          assessment.status === ASSESSMENT_REJECTED_STATUS
+        )
+      ) {
+        throw new CoolCommException(PERFORMANCE_STATE_EDIT_NOT_ALLOWED_MESSAGE);
       }
       return;
     }
 
-    if (assessment.status !== 'draft') {
-      throw new CoolCommException('当前状态不允许编辑');
+    if (assessment.status !== ASSESSMENT_DRAFT_STATUS) {
+      throw new CoolCommException(PERFORMANCE_STATE_EDIT_NOT_ALLOWED_MESSAGE);
     }
 
-    this.assertManageScope(assessment, perms);
+    this.assertManageScope(assessment, access);
   }
 
   private assertManageScope(
     assessment: PerformanceAssessmentEntity,
-    perms: string[]
+    access: PerformanceResolvedAccessContext
   ) {
-    if (this.isHr(perms)) {
-      return;
-    }
+    const manageScopes = this.performanceAccessContextService.capabilityScopes(
+      access,
+      'assessment.manage.update'
+    );
 
-    if (assessment.assessorId !== this.currentAdmin.userId) {
+    if (!this.matchesAssessmentScope(access, manageScopes, assessment)) {
       throw new CoolCommException('仅允许修改本人负责的评估单');
     }
   }
 
   private async assertCanReviewAssessment(
     assessment: PerformanceAssessmentEntity,
-    perms: string[]
+    access: PerformanceResolvedAccessContext
   ) {
-    const departmentIds = await this.departmentScopeIds();
-    const userId = this.currentAdmin.userId;
+    const reviewScopes = this.performanceAccessContextService.capabilityScopes(
+      access,
+      'assessment.review.approve'
+    );
 
-    if (
-      assessment.assessorId === userId ||
-      departmentIds.includes(assessment.departmentId)
-    ) {
+    if (this.matchesAssessmentScope(access, reviewScopes, assessment)) {
       return;
     }
 
-    if (this.isHr(perms)) {
-      throw new CoolCommException('HR 首期不允许执行审批');
+    throw new CoolCommException('无权审批该评估单');
+  }
+
+  private assertCanCreateAssessment(
+    target: { assessorId: number; departmentId: number },
+    access: PerformanceResolvedAccessContext
+  ) {
+    const createScopes = this.performanceAccessContextService.capabilityScopes(
+      access,
+      'assessment.manage.create'
+    );
+
+    if (
+      !this.performanceAccessContextService.matchesScope(access, createScopes, {
+        ownerUserId: target.assessorId,
+        departmentId: target.departmentId,
+      })
+    ) {
+      throw new CoolCommException('仅允许发起本人负责范围内的评估单');
+    }
+  }
+
+  private matchesAssessmentScope(
+    access: PerformanceResolvedAccessContext,
+    scopes: readonly string[],
+    assessment: PerformanceAssessmentEntity
+  ) {
+    return this.performanceAccessContextService.matchesScope(access, scopes as any, {
+      subjectUserId: Number(assessment.employeeId),
+      ownerUserId: Number(assessment.assessorId),
+      departmentId: Number(assessment.departmentId),
+    });
+  }
+
+  private applyCapabilityScopeFilter(
+    qb: any,
+    access: PerformanceResolvedAccessContext,
+    scopes: readonly string[],
+    userId: number
+  ) {
+    if (scopes.includes('company')) {
+      return;
     }
 
-    throw new CoolCommException('无权审批该评估单');
+    const hasAssignedScope = scopes.includes('assigned_domain');
+    const hasDepartmentScope =
+      scopes.includes('department') || scopes.includes('department_tree');
+
+    if (hasAssignedScope && hasDepartmentScope && access.departmentIds.length) {
+      qb.andWhere(
+        '(assessment.assessorId = :userId or assessment.departmentId in (:...departmentIds))',
+        {
+          userId,
+          departmentIds: access.departmentIds,
+        }
+      );
+      return;
+    }
+
+    if (hasDepartmentScope && access.departmentIds.length) {
+      qb.andWhere('assessment.departmentId in (:...departmentIds)', {
+        departmentIds: access.departmentIds,
+      });
+      return;
+    }
+
+    if (hasAssignedScope) {
+      qb.andWhere('assessment.assessorId = :userId', { userId });
+      return;
+    }
+
+    qb.andWhere('1 = 0');
   }
 
   private async resolveDepartmentId(employeeId: number, departmentId?: number) {
@@ -692,7 +839,7 @@ export class PerformanceAssessmentService extends BaseService {
     const employee = await this.baseSysUserEntity.findOneBy({ id: employeeId });
 
     if (!employee?.departmentId) {
-      throw new CoolCommException('员工所属部门不存在');
+      throw new CoolCommException(PERFORMANCE_EMPLOYEE_DEPARTMENT_NOT_FOUND_MESSAGE);
     }
 
     return employee.departmentId;

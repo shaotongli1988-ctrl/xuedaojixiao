@@ -51,6 +51,7 @@ import {
 	isPermissionDeniedError,
 } from "/@/types/performance-goal";
 import GoalState from "./components/goal-state.vue";
+import { PERMISSIONS } from "/@/generated/permissions.generated";
 
 const { service, router } = useCool();
 const { user } = useStore();
@@ -95,7 +96,11 @@ const stateTips = computed(() => {
 });
 
 const stateAction = computed(() => {
-	return state.value.mode === "error" ? "重试" : state.value.mode === "denied" ? "返回详情" : "返回工作台";
+	return state.value.mode === "error"
+		? "重试"
+		: state.value.mode === "denied"
+			? "返回详情"
+			: "返回工作台";
 });
 
 async function load() {
@@ -104,7 +109,7 @@ async function load() {
 		return;
 	}
 
-	if (!user.hasPerm("performance:goal:progressUpdate")) {
+	if (!user.hasPerm(PERMISSIONS.performance.goal.progressUpdate)) {
 		state.value = { mode: "denied", error: "" };
 		return;
 	}

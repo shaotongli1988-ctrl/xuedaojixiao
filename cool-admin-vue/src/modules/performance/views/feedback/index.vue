@@ -87,13 +87,23 @@
 					</el-table-column>
 					<el-table-column prop="status" label="状态" width="120">
 						<template #default="{ row }">
-							<el-tag :type="statusTagType(row.status)">{{ statusLabel(row.status) }}</el-tag>
+							<el-tag :type="statusTagType(row.status)">{{
+								statusLabel(row.status)
+							}}</el-tag>
 						</template>
 					</el-table-column>
 					<el-table-column prop="updateTime" label="更新时间" min-width="170" />
-					<el-table-column label="操作" fixed="right" min-width="260">
+					<el-table-column label="操作" fixed="right" min-width="340">
 						<template #default="{ row }">
 							<el-button text @click="inspectTask(row)">查看任务</el-button>
+							<el-button
+								v-if="canViewSourceAssessment(row)"
+								text
+								type="primary"
+								@click="goSourceAssessment(row.assessmentId!)"
+							>
+								来源评估单
+							</el-button>
 							<el-button
 								v-if="canSubmitFeedback(row)"
 								text
@@ -144,10 +154,7 @@
 					</div>
 				</template>
 
-				<el-empty
-					v-if="!selectedTask"
-					description="请选择一条环评任务查看后端汇总结果"
-				/>
+				<el-empty v-if="!selectedTask" description="请选择一条环评任务查看后端汇总结果" />
 
 				<div v-else class="feedback-page__summary-panel" v-loading="summaryLoading">
 					<el-descriptions :column="1" border>
@@ -178,7 +185,11 @@
 							<el-card shadow="never">
 								<div class="feedback-page__metric-label">已提交</div>
 								<div class="feedback-page__metric-value">
-									{{ selectedSummary?.submittedCount ?? selectedTask.submittedCount ?? 0 }}
+									{{
+										selectedSummary?.submittedCount ??
+										selectedTask.submittedCount ??
+										0
+									}}
 								</div>
 							</el-card>
 						</el-col>
@@ -186,7 +197,9 @@
 							<el-card shadow="never">
 								<div class="feedback-page__metric-label">应提交</div>
 								<div class="feedback-page__metric-value">
-									{{ selectedSummary?.totalCount ?? selectedTask.totalCount ?? 0 }}
+									{{
+										selectedSummary?.totalCount ?? selectedTask.totalCount ?? 0
+									}}
 								</div>
 							</el-card>
 						</el-col>
@@ -225,12 +238,7 @@
 			</el-card>
 		</div>
 
-		<el-dialog
-			v-model="formVisible"
-			title="发起环评任务"
-			width="860px"
-			destroy-on-close
-		>
+		<el-dialog v-model="formVisible" title="发起环评任务" width="860px" destroy-on-close>
 			<feedback-task-form
 				:model-value="form"
 				:users="userOptions"
@@ -270,11 +278,20 @@ defineOptions({
 import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { checkPerm } from '/$/base/utils/permission';
-import { export_json_to_excel } from '/@/plugins/excel/utils';
+import { useDict } from '/$/dict';
+import { exportJsonToExcel } from '/@/plugins/excel/utils';
 import { service } from '/@/cool';
+import { useRoute, useRouter } from 'vue-router';
 import FeedbackSubmitDrawer from '../../components/feedback-submit-drawer.vue';
 import FeedbackSummaryDrawer from '../../components/feedback-summary-drawer.vue';
 import FeedbackTaskForm from '../../components/feedback-task-form.vue';
+import { useListPage } from '../../composables/use-list-page.js';
+import { performanceAssessmentService } from '../../service/assessment';
+import {
+	createElementWarningFromErrorHandler,
+	resolveErrorMessage,
+	showElementErrorFromError
+} from '../shared/error-message';
 import {
 	type FeedbackExportRow,
 	type FeedbackSummary,
@@ -283,10 +300,21 @@ import {
 	createEmptyFeedbackTask
 } from '../../types';
 import { performanceFeedbackService } from '../../service/feedback';
+import { loadUserOptions } from '../../utils/lookup-options.js';
+import {
+	consumeRoutePreset,
+	firstQueryValue,
+	normalizeQueryNumber
+} from '../../utils/route-preset.js';
 
-const rows = ref<FeedbackTaskRecord[]>([]);
+const FEEDBACK_TASK_STATUS_DICT_KEY = 'performance.feedback.taskStatus';
+const FEEDBACK_RECORD_STATUS_DICT_KEY = 'performance.feedback.recordStatus';
+const FEEDBACK_RELATION_TYPE_DICT_KEY = 'performance.feedback.relationType';
+
+const route = useRoute();
+const router = useRouter();
 const userOptions = ref<UserOption[]>([]);
-const tableLoading = ref(false);
+const { dict } = useDict();
 const submitLoading = ref(false);
 const summaryLoading = ref(false);
 const formVisible = ref(false);
@@ -299,23 +327,43 @@ const selectedSummary = ref<FeedbackSummary | null>(null);
 const summaryRecord = ref<FeedbackSummary | null>(null);
 const form = reactive(createEmptyFeedbackTask());
 
-const filters = reactive({
-	title: '',
-	employeeId: undefined as number | undefined,
-	status: ''
+let feedbackList: ReturnType<typeof useListPage> | null = null;
+feedbackList = useListPage({
+	createFilters: () => ({
+		title: '',
+		employeeId: undefined,
+		status: ''
+	}),
+	canLoad: () => canAccess.value,
+	fetchPage: params =>
+		performanceFeedbackService.fetchPage({
+			page: params.page,
+			size: params.size,
+			keyword: params.title || undefined,
+			employeeId: params.employeeId || undefined,
+			status: params.status || undefined
+		}),
+	onError: (error: unknown) => {
+		if (feedbackList) {
+			feedbackList.rows.value = [];
+			feedbackList.pager.total = 0;
+		}
+		selectedTask.value = null;
+		selectedSummary.value = null;
+		showElementErrorFromError(error, '环评任务列表加载失败');
+	}
 });
+const rows = feedbackList.rows;
+const tableLoading = feedbackList.loading;
+const filters = feedbackList.filters;
+const pagination = feedbackList.pager;
 
-const pagination = reactive({
-	page: 1,
-	size: 10,
-	total: 0
-});
-
-const statusOptions = [
-	{ label: '草稿', value: 'draft' },
-	{ label: '进行中', value: 'running' },
-	{ label: '已关闭', value: 'closed' }
-];
+const statusOptions = computed<Array<{ label: string; value: string }>>(() =>
+	dict.get(FEEDBACK_TASK_STATUS_DICT_KEY).value.map(item => ({
+		label: item.label,
+		value: String(item.value)
+	}))
+);
 
 const canAccess = computed(() => checkPerm(performanceFeedbackService.permission.page));
 const canCreateTask = computed(() => checkPerm(performanceFeedbackService.permission.add));
@@ -324,48 +372,43 @@ const showExportButton = computed(() => checkPerm(performanceFeedbackService.per
 const canViewRecordDetails = computed(() => canCreateTask.value);
 
 onMounted(async () => {
+	await dict.refresh([
+		FEEDBACK_TASK_STATUS_DICT_KEY,
+		FEEDBACK_RECORD_STATUS_DICT_KEY,
+		FEEDBACK_RELATION_TYPE_DICT_KEY
+	]);
 	await loadUsers();
 	await refresh();
+	await consumeCreatePresetQuery();
 });
 
 async function loadUsers() {
-	try {
-		const result = await service.base.sys.user.page({
-			page: 1,
-			size: 200
-		});
-
-		userOptions.value = (result.list || []).map((item: any) => ({
-			id: Number(item.id),
-			name: item.name,
-			departmentId: item.departmentId,
-			departmentName: item.departmentName
-		}));
-	} catch (error: any) {
-		ElMessage.warning(error.message || '用户选项加载失败');
-	}
+	userOptions.value = await loadUserOptions(
+		() =>
+			service.base.sys.user.page({
+				page: 1,
+				size: 200
+			}),
+		createElementWarningFromErrorHandler('用户选项加载失败')
+	);
 }
 
 async function refresh() {
-	if (!canAccess.value) {
+	const result = await feedbackList.reload();
+	if (!result || !rows.value.length) {
+		selectedTask.value = null;
+		selectedSummary.value = null;
 		return;
 	}
 
-	tableLoading.value = true;
+	const currentId = selectedTask.value?.id;
+	const fallback = rows.value.find(item => item.id === currentId) || rows.value[0];
+	await inspectTask(fallback, false);
+}
 
-	try {
-		const result = await performanceFeedbackService.fetchPage({
-			page: pagination.page,
-			size: pagination.size,
-			keyword: filters.title || undefined,
-			employeeId: filters.employeeId || undefined,
-			status: filters.status || undefined
-		});
-
-		rows.value = result.list || [];
-		pagination.total = result.pagination?.total || 0;
-
-		if (!rows.value.length) {
+function changePage(page: number) {
+	void feedbackList.goToPage(page).then(async result => {
+		if (!result || !rows.value.length) {
 			selectedTask.value = null;
 			selectedSummary.value = null;
 			return;
@@ -374,24 +417,31 @@ async function refresh() {
 		const currentId = selectedTask.value?.id;
 		const fallback = rows.value.find(item => item.id === currentId) || rows.value[0];
 		await inspectTask(fallback, false);
-	} catch (error: any) {
-		rows.value = [];
-		selectedTask.value = null;
-		selectedSummary.value = null;
-		ElMessage.error(error.message || '环评任务列表加载失败');
-	} finally {
-		tableLoading.value = false;
-	}
-}
-
-function changePage(page: number) {
-	pagination.page = page;
-	refresh();
+	});
 }
 
 function openCreate() {
 	Object.assign(form, createEmptyFeedbackTask());
 	formVisible.value = true;
+}
+
+async function consumeCreatePresetQuery() {
+	await consumeRoutePreset({
+		route,
+		router,
+		keys: ['openCreate', 'assessmentId', 'employeeId'],
+		parse: query => ({
+			shouldOpenCreate: firstQueryValue(query.openCreate) === '1',
+			assessmentId: normalizeQueryNumber(query.assessmentId),
+			employeeId: normalizeQueryNumber(query.employeeId)
+		}),
+		shouldConsume: payload => Boolean(payload.shouldOpenCreate && canCreateTask.value),
+		consume: payload => {
+			openCreate();
+			form.assessmentId = payload.assessmentId ?? null;
+			form.employeeId = payload.employeeId;
+		}
+	});
 }
 
 function updateForm(value: FeedbackTaskRecord) {
@@ -406,8 +456,8 @@ async function submitTask(record: FeedbackTaskRecord) {
 		ElMessage.success('环评任务创建成功');
 		formVisible.value = false;
 		await refresh();
-	} catch (error: any) {
-		ElMessage.error(error.message || '环评任务创建失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '环评任务创建失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -436,8 +486,8 @@ async function inspectTask(row: FeedbackTaskRecord, openDrawer = false) {
 			summaryRecord.value = summary;
 			summaryVisible.value = true;
 		}
-	} catch (error: any) {
-		ElMessage.error(error.message || '环评任务详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '环评任务详情加载失败');
 	} finally {
 		summaryLoading.value = false;
 	}
@@ -461,8 +511,8 @@ async function openSubmit(row: FeedbackTaskRecord) {
 			id: row.id
 		});
 		submitVisible.value = true;
-	} catch (error: any) {
-		ElMessage.error(error.message || '环评任务详情加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '环评任务详情加载失败');
 	}
 }
 
@@ -482,8 +532,8 @@ async function submitFeedback(payload: {
 		if (selectedTask.value?.id === payload.taskId) {
 			await inspectTask(selectedTask.value, false);
 		}
-	} catch (error: any) {
-		ElMessage.error(error.message || '反馈提交失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '反馈提交失败');
 	} finally {
 		submitLoading.value = false;
 	}
@@ -505,8 +555,8 @@ async function openSummary(row: FeedbackTaskRecord) {
 		summaryTask.value = task;
 		summaryRecord.value = summary;
 		summaryVisible.value = true;
-	} catch (error: any) {
-		ElMessage.error(error.message || '环评汇总加载失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '环评汇总加载失败');
 	} finally {
 		summaryLoading.value = false;
 	}
@@ -520,7 +570,7 @@ async function handleExport() {
 			status: filters.status || undefined
 		});
 
-		export_json_to_excel({
+		exportJsonToExcel({
 			header: [
 				'任务ID',
 				'来源评估单',
@@ -543,8 +593,8 @@ async function handleExport() {
 			]),
 			filename: `feedback-summary-${Date.now()}`
 		});
-	} catch (error: any) {
-		ElMessage.error(error.message || '导出失败');
+	} catch (error: unknown) {
+		showElementErrorFromError(error, '导出失败');
 	}
 }
 
@@ -552,20 +602,48 @@ function canSubmitFeedback(row: FeedbackTaskRecord) {
 	return checkPerm(performanceFeedbackService.permission.submit) && row.status !== 'closed';
 }
 
+function canViewSourceAssessment(row: FeedbackTaskRecord) {
+	return Boolean(row.assessmentId) && resolveAssessmentPagePath() !== '';
+}
+
+async function goSourceAssessment(assessmentId: number) {
+	const path = resolveAssessmentPagePath();
+
+	if (!path) {
+		return;
+	}
+
+	await router.push({
+		path,
+		query: {
+			openDetail: '1',
+			assessmentId: String(assessmentId)
+		}
+	});
+}
+
+function resolveAssessmentPagePath() {
+	if (checkPerm(performanceAssessmentService.permission.page)) {
+		return '/performance/initiated';
+	}
+
+	if (checkPerm(performanceAssessmentService.permission.myPage)) {
+		return '/performance/my-assessment';
+	}
+
+	if (checkPerm(performanceAssessmentService.permission.pendingPage)) {
+		return '/performance/pending';
+	}
+
+	return '';
+}
+
 function statusLabel(status?: string) {
-	const item = statusOptions.find(option => option.value === status);
-	return item?.label || status || '-';
+	return dict.getLabel(FEEDBACK_TASK_STATUS_DICT_KEY, status) || status || '-';
 }
 
 function statusTagType(status?: string) {
-	switch (status) {
-		case 'running':
-			return 'warning';
-		case 'closed':
-			return 'success';
-		default:
-			return 'info';
-	}
+	return dict.getMeta(FEEDBACK_TASK_STATUS_DICT_KEY, status)?.tone || 'info';
 }
 
 function formatScore(value?: number) {
@@ -574,28 +652,15 @@ function formatScore(value?: number) {
 </script>
 
 <style lang="scss" scoped>
+@use '../../../../styles/patterns.management-workspace.scss' as managementWorkspace;
+
 .feedback-page {
-	display: grid;
-	gap: 16px;
-
-	&__toolbar {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 16px;
-	}
-
-	&__toolbar-left,
-	&__toolbar-right {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 12px;
-	}
+	@include managementWorkspace.management-workspace-shell(1180px);
 
 	&__content {
 		display: grid;
 		grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1fr);
-		gap: 16px;
+		gap: var(--app-space-4);
 		align-items: start;
 	}
 
@@ -604,51 +669,15 @@ function formatScore(value?: number) {
 		min-width: 0;
 	}
 
-	&__header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-	}
-
-	&__header-main {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-
-		h2 {
-			margin: 0;
-			font-size: 18px;
-		}
-	}
-
-	&__pagination {
-		display: flex;
-		justify-content: flex-end;
-		padding-top: 16px;
-	}
-
 	&__summary-panel {
 		display: grid;
-		gap: 16px;
-	}
-
-	&__metric-label {
-		font-size: 12px;
-		color: var(--el-text-color-secondary);
-	}
-
-	&__metric-value {
-		margin-top: 8px;
-		font-size: 28px;
-		font-weight: 600;
-		color: var(--el-text-color-primary);
+		gap: var(--app-space-4);
 	}
 
 	&__actions {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 12px;
+		gap: var(--app-space-3);
 	}
 }
 

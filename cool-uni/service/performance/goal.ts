@@ -3,6 +3,8 @@
  */
 import { createServiceRequester } from "/@/cool/service/requester";
 import type {
+	GoalInfoQuery,
+	GoalPageQuery,
 	GoalPageResult,
 	GoalProgressPayload,
 	GoalRecord,
@@ -16,11 +18,11 @@ export default class PerformanceGoalService {
 		this.requester = createServiceRequester("admin/performance/goal");
 	}
 
-	fetchPage(data: any) {
+	fetchPage(data: GoalPageQuery) {
 		return this.requester.page(data) as Promise<GoalPageResult>;
 	}
 
-	fetchInfo(params: { id: number }) {
+	fetchInfo(params: GoalInfoQuery) {
 		return this.requester.info(params) as Promise<GoalRecord>;
 	}
 

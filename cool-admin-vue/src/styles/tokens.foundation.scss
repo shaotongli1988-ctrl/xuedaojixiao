@@ -1,0 +1,159 @@
+/* 文件职责：定义仓库级样式基础 token，包括 light/dark 原始颜色、阴影、圆角、间距与字体；不负责组件皮肤映射或业务页面布局；维护重点是原始视觉事实只能收敛在这里，避免再次散落到业务组件。 */
+
+:root {
+	--foundation-color-brand-100: #eef2ff;
+	--foundation-color-brand-200: #dbe5ff;
+	--foundation-color-brand-300: #b9cbff;
+	--foundation-color-brand-500: #4165d7;
+	--foundation-color-brand-700: #3051bc;
+	--foundation-color-brand-900: #1b2b61;
+	--foundation-color-brand-soft: #edf2ff;
+
+	--foundation-color-success-500: #1f9d6b;
+	--foundation-color-success-soft: #e9f7f1;
+	--foundation-color-warning-500: #d98c1f;
+	--foundation-color-warning-soft: #fff5e8;
+	--foundation-color-danger-500: #e05a5a;
+	--foundation-color-danger-soft: #fdeeee;
+	--foundation-color-upload-media-500: #826aec;
+	--foundation-color-upload-doc-500: #53b7f4;
+	--foundation-color-upload-sheet-500: #53d39c;
+	--foundation-color-upload-pdf-500: #8f3500;
+	--foundation-color-upload-archive-500: #ffc757;
+
+	--foundation-color-neutral-0: #ffffff;
+	--foundation-color-neutral-50: #f7f9fc;
+	--foundation-color-neutral-100: #eef2f7;
+	--foundation-color-neutral-200: #dbe4f0;
+	--foundation-color-neutral-300: #c5d1df;
+	--foundation-color-neutral-500: #6a768a;
+	--foundation-color-neutral-700: #314154;
+	--foundation-color-neutral-900: #18202f;
+
+	--foundation-gradient-page:
+		radial-gradient(circle at top right, rgba(65, 101, 215, 0.08), transparent 34%),
+		linear-gradient(180deg, rgba(247, 250, 255, 0.98) 0%, rgba(241, 246, 255, 0.98) 100%);
+	--foundation-gradient-surface-hero:
+		radial-gradient(circle at top right, rgba(65, 101, 215, 0.12), transparent 36%),
+		linear-gradient(135deg, #f8faff 0%, #ffffff 56%, #eef3ff 100%);
+	--foundation-gradient-surface-card: linear-gradient(
+		180deg,
+		rgba(255, 255, 255, 0.99) 0%,
+		rgba(247, 250, 255, 0.99) 100%
+	);
+	--foundation-gradient-surface-spotlight: linear-gradient(
+		180deg,
+		rgba(233, 242, 255, 0.98) 0%,
+		rgba(214, 229, 255, 0.98) 100%
+	);
+
+	--foundation-color-surface-muted: #f3f6fb;
+	--foundation-color-surface-soft: #f7f9fd;
+
+	--foundation-shadow-surface-md: 0 12px 36px rgba(24, 49, 83, 0.06);
+	--foundation-shadow-hover-md: 0 12px 28px rgba(31, 35, 41, 0.08);
+	--foundation-shadow-inset-soft: inset 0 0 0 1px rgba(219, 228, 243, 0.92);
+
+	--foundation-radius-sm: 10px;
+	--foundation-radius-md: 14px;
+	--foundation-radius-lg: 18px;
+	--foundation-radius-xl: 24px;
+
+	--foundation-space-2: 8px;
+	--foundation-space-3: 12px;
+	--foundation-space-4: 16px;
+	--foundation-space-5: 20px;
+	--foundation-space-6: 24px;
+
+	--foundation-font-sans:
+		'IBM Plex Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+	--foundation-font-mono: 'IBM Plex Mono', 'SFMono-Regular', 'Roboto Mono', 'Menlo', monospace;
+
+	--foundation-font-size-caption: 12px;
+	--foundation-font-size-body: 14px;
+	--foundation-font-size-title: 20px;
+	--foundation-font-size-heading: 28px;
+	--foundation-font-size-kpi: clamp(32px, 3vw, 48px);
+
+	--foundation-nav-surface: #2c3147;
+	--foundation-nav-text: #e5eaf3;
+	--foundation-nav-title: #ffffff;
+	--foundation-nav-section-bg: rgba(255, 255, 255, 0.06);
+	--foundation-nav-section-border: rgba(255, 255, 255, 0.08);
+	--foundation-nav-search-bg: rgba(200, 200, 200, 0.1);
+	--foundation-nav-badge-bg: rgba(255, 255, 255, 0.2);
+	--foundation-nav-badge-text: #ffffff;
+	--foundation-nav-hover-bg: rgba(0, 0, 0, 0.25);
+	--foundation-nav-hover-text: #ffffff;
+}
+
+html.dark {
+	--foundation-color-brand-100: #16223f;
+	--foundation-color-brand-200: #1f3156;
+	--foundation-color-brand-300: #2a4374;
+	--foundation-color-brand-500: #5e87f1;
+	--foundation-color-brand-700: #8aa8ff;
+	--foundation-color-brand-900: #d9e5ff;
+	--foundation-color-brand-soft: #1b2846;
+
+	--foundation-color-success-500: #38c793;
+	--foundation-color-success-soft: #182c24;
+	--foundation-color-warning-500: #f2b24f;
+	--foundation-color-warning-soft: #342715;
+	--foundation-color-danger-500: #f56c6c;
+	--foundation-color-danger-soft: #351d22;
+	--foundation-color-upload-media-500: #a98bff;
+	--foundation-color-upload-doc-500: #6fc7ff;
+	--foundation-color-upload-sheet-500: #65ddb1;
+	--foundation-color-upload-pdf-500: #d08a54;
+	--foundation-color-upload-archive-500: #ffd369;
+
+	--foundation-color-neutral-0: #0f1521;
+	--foundation-color-neutral-50: #141b29;
+	--foundation-color-neutral-100: #1a2232;
+	--foundation-color-neutral-200: #263247;
+	--foundation-color-neutral-300: #40506b;
+	--foundation-color-neutral-500: #95a5c6;
+	--foundation-color-neutral-700: #c7d2e5;
+	--foundation-color-neutral-900: #eef3ff;
+
+	--foundation-gradient-page:
+		radial-gradient(circle at top right, rgba(94, 135, 241, 0.16), transparent 34%),
+		linear-gradient(180deg, rgba(15, 21, 33, 0.98) 0%, rgba(12, 18, 29, 1) 100%);
+	--foundation-gradient-surface-hero:
+		radial-gradient(circle at top right, rgba(94, 135, 241, 0.16), transparent 34%),
+		linear-gradient(
+			135deg,
+			rgba(24, 31, 46, 0.96) 0%,
+			rgba(18, 24, 36, 0.98) 58%,
+			rgba(15, 20, 31, 1) 100%
+		);
+	--foundation-gradient-surface-card: linear-gradient(
+		180deg,
+		rgba(28, 35, 50, 0.95) 0%,
+		rgba(20, 26, 39, 0.98) 100%
+	);
+	--foundation-gradient-surface-spotlight: linear-gradient(
+		180deg,
+		rgba(33, 47, 72, 0.98) 0%,
+		rgba(23, 34, 52, 0.98) 100%
+	);
+
+	--foundation-color-surface-muted: #161d2a;
+	--foundation-color-surface-soft: #1b2436;
+
+	--foundation-shadow-surface-md: 0 18px 44px rgba(4, 10, 20, 0.28);
+	--foundation-shadow-hover-md: 0 14px 30px rgba(5, 8, 15, 0.36);
+	--foundation-shadow-inset-soft: inset 0 0 0 1px rgba(103, 126, 176, 0.16);
+
+	--foundation-nav-surface: var(--foundation-color-neutral-50);
+	--foundation-nav-text: var(--foundation-color-neutral-900);
+	--foundation-nav-title: var(--foundation-color-neutral-900);
+	--foundation-nav-section-bg: rgba(255, 255, 255, 0.04);
+	--foundation-nav-section-border: rgba(148, 163, 184, 0.16);
+	--foundation-nav-search-bg: rgba(255, 255, 255, 0.06);
+	--foundation-nav-badge-bg: rgba(255, 255, 255, 0.16);
+	--foundation-nav-badge-text: var(--foundation-color-neutral-900);
+	--foundation-nav-hover-bg: rgba(255, 255, 255, 0.08);
+	--foundation-nav-hover-text: var(--foundation-color-neutral-900);
+}

@@ -6,6 +6,7 @@ import { useDark } from '@vueuse/core';
 import { mix } from '../utils';
 import { assign } from 'lodash-es';
 import { config } from '/@/config';
+import { themeBlendTargets } from '/@/styles/runtime-design';
 
 export const useTheme = defineStore('theme', () => {
 	const { app } = useBase();
@@ -44,13 +45,54 @@ export const useTheme = defineStore('theme', () => {
 		const pre = '--el-color-primary';
 
 		// 白色混合色
-		const mixWhite = '#ffffff';
+		const mixWhite = themeBlendTargets.light;
 
 		// 黑色混合色
-		const mixBlack = '#131313';
+		const mixBlack = themeBlendTargets.dark;
 
 		// 元素
 		const el = document.documentElement;
+
+		function setRootVar(name: string, value: string) {
+			el.style.setProperty(name, value);
+		}
+
+		function setBrandSemanticTokens(nextColor: string) {
+			const lightMixTarget = isDark.value ? mixBlack : mixWhite;
+			const darkMixTarget = isDark.value ? mixWhite : mixBlack;
+			const softColor = mix(nextColor, lightMixTarget, isDark.value ? 0.76 : 0.88);
+			const lineColor = mix(nextColor, lightMixTarget, isDark.value ? 0.52 : 0.7);
+			const emphasisColor = mix(nextColor, darkMixTarget, isDark.value ? 0.18 : 0.12);
+
+			setRootVar(
+				'--foundation-color-brand-100',
+				mix(nextColor, lightMixTarget, isDark.value ? 0.86 : 0.92)
+			);
+			setRootVar(
+				'--foundation-color-brand-200',
+				mix(nextColor, lightMixTarget, isDark.value ? 0.78 : 0.82)
+			);
+			setRootVar(
+				'--foundation-color-brand-300',
+				mix(nextColor, lightMixTarget, isDark.value ? 0.68 : 0.68)
+			);
+			setRootVar('--foundation-color-brand-500', nextColor);
+			setRootVar(
+				'--foundation-color-brand-700',
+				mix(nextColor, darkMixTarget, isDark.value ? 0.16 : 0.1)
+			);
+			setRootVar(
+				'--foundation-color-brand-900',
+				mix(nextColor, darkMixTarget, isDark.value ? 0.56 : 0.54)
+			);
+			setRootVar('--foundation-color-brand-soft', softColor);
+
+			setRootVar('--app-accent-brand', nextColor);
+			setRootVar('--app-accent-brand-soft', softColor);
+			setRootVar('--app-border-hover', lineColor);
+			setRootVar('--app-text-emphasis', emphasisColor);
+			setRootVar('--app-chart-series-brand', nextColor);
+		}
 
 		// 主题
 		if (name) {
@@ -68,18 +110,20 @@ export const useTheme = defineStore('theme', () => {
 
 		// 设置主色
 		if (color) {
-			el.style.setProperty(pre, color);
+			setRootVar(pre, color);
 
 			// 设置辅色
 			for (let i = 1; i < 10; i += 1) {
 				if (isDark.value) {
-					el.style.setProperty(`${pre}-light-${i}`, mix(color, mixBlack, i * 0.1));
-					el.style.setProperty(`${pre}-dark-${i}`, mix(color, mixWhite, i * 0.1));
+					setRootVar(`${pre}-light-${i}`, mix(color, mixBlack, i * 0.1));
+					setRootVar(`${pre}-dark-${i}`, mix(color, mixWhite, i * 0.1));
 				} else {
-					el.style.setProperty(`${pre}-light-${i}`, mix(color, mixWhite, i * 0.1));
-					el.style.setProperty(`${pre}-dark-${i}`, mix(color, mixBlack, i * 0.1));
+					setRootVar(`${pre}-light-${i}`, mix(color, mixWhite, i * 0.1));
+					setRootVar(`${pre}-dark-${i}`, mix(color, mixBlack, i * 0.1));
 				}
 			}
+
+			setBrandSemanticTokens(color);
 
 			theme.color = color;
 		}

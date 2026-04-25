@@ -17,14 +17,22 @@ import {
 import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { In, Repository } from 'typeorm';
-import { BaseSysMenuService } from '../../base/service/sys/menu';
-import { BaseSysPermsService } from '../../base/service/sys/perms';
 import { BaseSysUserEntity } from '../../base/entity/sys/user';
 import { PerformanceAssessmentEntity } from '../entity/assessment';
 import { PerformancePromotionEntity } from '../entity/promotion';
 import { PerformancePromotionRecordEntity } from '../entity/promotion-record';
+import { PerformanceSuggestionEntity } from '../entity/suggestion';
 import { PerformanceApprovalFlowService } from './approval-flow';
 import * as jwt from 'jsonwebtoken';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
 import {
   assertPromotionTransition,
   normalizeNullableNumber,
@@ -40,6 +48,43 @@ const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
     env: app?.getEnv?.(),
   }).jwt;
 };
+const PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resourceNotFound
+  );
+const PERFORMANCE_SOURCE_SUGGESTION_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.sourceSuggestionNotFound
+  );
+const PERFORMANCE_EMPLOYEE_DEPARTMENT_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.employeeDepartmentNotFound,
+    '员工部门不存在'
+  );
+const PERFORMANCE_STATE_EDIT_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.stateEditNotAllowed
+  );
+const PERFORMANCE_SUGGESTION_LINKED_ENTITY_TYPE_MISMATCH_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.suggestionLinkedEntityTypeMismatch
+  );
+const PERFORMANCE_SUGGESTION_ACCEPTED_ONLY_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.suggestionAcceptedOnly
+  );
+const PERFORMANCE_SUGGESTION_EMPLOYEE_MISMATCH_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.suggestionEmployeeMismatch
+  );
+const PERFORMANCE_SUGGESTION_ASSESSMENT_MISMATCH_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.suggestionAssessmentMismatch
+  );
+const PERFORMANCE_SUGGESTION_ALREADY_LINKED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.suggestionAlreadyLinked
+  );
 
 @Provide()
 @Scope(ScopeEnum.Request, { allowDowngrade: true })
@@ -53,14 +98,14 @@ export class PerformancePromotionService extends BaseService {
   @InjectEntityModel(PerformanceAssessmentEntity)
   performanceAssessmentEntity: Repository<PerformanceAssessmentEntity>;
 
+  @InjectEntityModel(PerformanceSuggestionEntity)
+  performanceSuggestionEntity: Repository<PerformanceSuggestionEntity>;
+
   @InjectEntityModel(BaseSysUserEntity)
   baseSysUserEntity: Repository<BaseSysUserEntity>;
 
   @Inject()
-  baseSysMenuService: BaseSysMenuService;
-
-  @Inject()
-  baseSysPermsService: BaseSysPermsService;
+  performanceAccessContextService: PerformanceAccessContextService;
 
   @Inject()
   ctx;
@@ -102,25 +147,12 @@ export class PerformancePromotionService extends BaseService {
     }
   }
 
-  private readonly perms = {
-    page: 'performance:promotion:page',
-    info: 'performance:promotion:info',
-    add: 'performance:promotion:add',
-    update: 'performance:promotion:update',
-    submit: 'performance:promotion:submit',
-    review: 'performance:promotion:review',
-  };
-
   async page(query: any) {
-    const perms = await this.currentPerms();
-
-    if (!this.hasPerm(perms, this.perms.page)) {
-      throw new CoolCommException('无权限查看晋升列表');
-    }
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    this.assertHasCapability(access, 'promotion.read', '无权限查看晋升列表');
 
     const page = Number(query.page || 1);
     const size = Number(query.size || 20);
-    const departmentIds = await this.departmentScopeIds();
     const qb = this.performancePromotionEntity
       .createQueryBuilder('promotion')
       .leftJoin(BaseSysUserEntity, 'employee', 'employee.id = promotion.employeeId')
@@ -143,7 +175,7 @@ export class PerformancePromotionService extends BaseService {
         'sponsor.name as sponsorName',
       ]);
 
-    this.applyScope(qb, departmentIds);
+    this.applyScope(qb, access, 'promotion.read');
 
     if (query.employeeId) {
       qb.andWhere('promotion.employeeId = :employeeId', {
@@ -186,58 +218,69 @@ export class PerformancePromotionService extends BaseService {
   }
 
   async info(id: number) {
-    const perms = await this.currentPerms();
+    const access = await this.performanceAccessContextService.resolveAccessContext();
     const promotion = await this.requirePromotion(id);
 
-    if (!this.hasPerm(perms, this.perms.info)) {
-      throw new CoolCommException('无权限查看晋升详情');
-    }
+    this.assertHasCapability(access, 'promotion.read', '无权限查看晋升详情');
 
-    await this.assertPromotionInScope(promotion.employeeId);
+    await this.assertPromotionInScope(promotion.employeeId, access, 'promotion.read');
     return this.buildPromotionDetail(promotion);
   }
 
   async add(payload: any) {
-    const perms = await this.currentPerms();
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    this.assertHasCapability(access, 'promotion.create', '无权限创建晋升单');
 
-    if (!this.hasPerm(perms, this.perms.add)) {
-      throw new CoolCommException('无权限创建晋升单');
-    }
+    const normalized = await this.normalizePayload(payload, access, 'promotion.create');
+    const saved = await this.performancePromotionEntity.manager.transaction(
+      async manager => {
+        const entity = this.performancePromotionEntity.create({
+          assessmentId: normalized.assessmentId,
+          employeeId: normalized.employeeId,
+          sponsorId: normalized.sponsorId,
+          fromPosition: normalized.fromPosition,
+          toPosition: normalized.toPosition,
+          reason: normalized.reason,
+          sourceReason: normalized.sourceReason,
+          status: 'draft',
+          reviewTime: null,
+        });
+        const created = await manager.save(PerformancePromotionEntity, entity);
 
-    const normalized = await this.normalizePayload(payload);
-    const entity = this.performancePromotionEntity.create({
-      assessmentId: normalized.assessmentId,
-      employeeId: normalized.employeeId,
-      sponsorId: normalized.sponsorId,
-      fromPosition: normalized.fromPosition,
-      toPosition: normalized.toPosition,
-      reason: normalized.reason,
-      sourceReason: normalized.sourceReason,
-      status: 'draft',
-      reviewTime: null,
-    });
-    const saved = await this.performancePromotionEntity.save(entity);
+        await this.linkSuggestionIfPresent(manager, payload, {
+          entityType: 'promotion',
+          entityId: Number(created.id),
+          assessmentId: normalized.assessmentId || null,
+          employeeId: normalized.employeeId,
+        });
+
+        return created;
+      }
+    );
+
     return this.info(saved.id);
   }
 
   async updatePromotion(payload: any) {
-    const perms = await this.currentPerms();
+    const access = await this.performanceAccessContextService.resolveAccessContext();
     const promotion = await this.requirePromotion(Number(payload.id));
 
-    if (!this.hasPerm(perms, this.perms.update)) {
-      throw new CoolCommException('无权限修改晋升单');
-    }
+    this.assertHasCapability(access, 'promotion.update', '无权限修改晋升单');
 
     if (promotion.status !== 'draft') {
-      throw new CoolCommException('当前状态不允许编辑');
+      throw new CoolCommException(PERFORMANCE_STATE_EDIT_NOT_ALLOWED_MESSAGE);
     }
 
     this.assertIsSponsor(promotion.sponsorId);
-    const normalized = await this.normalizePayload({
-      ...promotion,
-      ...payload,
-      sponsorId: promotion.sponsorId,
-    });
+    const normalized = await this.normalizePayload(
+      {
+        ...promotion,
+        ...payload,
+        sponsorId: promotion.sponsorId,
+      },
+      access,
+      'promotion.update'
+    );
 
     await this.performancePromotionEntity.update(
       { id: promotion.id },
@@ -256,14 +299,17 @@ export class PerformancePromotionService extends BaseService {
   }
 
   async submit(id: number) {
-    const perms = await this.currentPerms();
+    const access = await this.performanceAccessContextService.resolveAccessContext();
     const promotion = await this.requirePromotion(id);
 
-    if (!this.hasPerm(perms, this.perms.submit)) {
-      throw new CoolCommException('无权限提交晋升单');
-    }
+    this.assertHasCapability(access, 'promotion.submit', '无权限提交晋升单');
 
     this.assertIsSponsor(promotion.sponsorId);
+    await this.assertPromotionInScope(
+      promotion.employeeId,
+      access,
+      'promotion.submit'
+    );
     assertPromotionTransition(promotion.status as PromotionStatus, 'submit');
 
     await this.performanceApprovalFlowService.submitPromotion(promotion);
@@ -272,18 +318,16 @@ export class PerformancePromotionService extends BaseService {
   }
 
   async review(id: number, decision: any, comment?: string) {
-    const perms = await this.currentPerms();
+    const access = await this.performanceAccessContextService.resolveAccessContext();
     const promotion = await this.requirePromotion(id);
 
-    if (!this.hasPerm(perms, this.perms.review)) {
-      throw new CoolCommException('无权限评审晋升单');
-    }
+    this.assertHasCapability(access, 'promotion.review', '无权限评审晋升单');
 
     await this.performanceApprovalFlowService.assertManualReviewAllowed(
       'promotion',
       promotion.id
     );
-    await this.assertPromotionInScope(promotion.employeeId);
+    await this.assertPromotionInScope(promotion.employeeId, access, 'promotion.review');
 
     const normalizedDecision = normalizePromotionDecision(decision);
     assertPromotionTransition(
@@ -315,7 +359,11 @@ export class PerformancePromotionService extends BaseService {
     return this.info(promotion.id);
   }
 
-  private async normalizePayload(payload: any) {
+  private async normalizePayload(
+    payload: any,
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
+  ) {
     const assessmentId = normalizeNullableNumber(payload.assessmentId);
     let employeeId = Number(payload.employeeId || 0);
 
@@ -325,7 +373,7 @@ export class PerformancePromotionService extends BaseService {
       });
 
       if (!assessment) {
-        throw new CoolCommException('数据不存在');
+        throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
       }
 
       if (employeeId && employeeId !== Number(assessment.employeeId)) {
@@ -351,7 +399,7 @@ export class PerformancePromotionService extends BaseService {
       throw new CoolCommException('发起人必须是当前登录人');
     }
 
-    await this.assertPromotionInScope(employeeId);
+    await this.assertPromotionInScope(employeeId, access, capabilityKey);
 
     return {
       assessmentId,
@@ -364,6 +412,66 @@ export class PerformancePromotionService extends BaseService {
         ? String(payload.sourceReason).trim()
         : '',
     };
+  }
+
+  private async linkSuggestionIfPresent(
+    manager: any,
+    payload: any,
+    context: {
+      entityType: 'promotion';
+      entityId: number;
+      assessmentId: number | null;
+      employeeId: number;
+    }
+  ) {
+    const suggestionId = Number(payload?.suggestionId || 0);
+
+    if (!suggestionId) {
+      return;
+    }
+
+    const suggestion = await manager
+      .getRepository(PerformanceSuggestionEntity)
+      .findOneBy({ id: suggestionId });
+
+    if (!suggestion) {
+      throw new CoolCommException(PERFORMANCE_SOURCE_SUGGESTION_NOT_FOUND_MESSAGE);
+    }
+
+    if (suggestion.suggestionType !== context.entityType) {
+      throw new CoolCommException(
+        PERFORMANCE_SUGGESTION_LINKED_ENTITY_TYPE_MISMATCH_MESSAGE
+      );
+    }
+
+    if (suggestion.status !== 'accepted') {
+      throw new CoolCommException(PERFORMANCE_SUGGESTION_ACCEPTED_ONLY_MESSAGE);
+    }
+
+    if (Number(suggestion.employeeId) !== Number(context.employeeId)) {
+      throw new CoolCommException(PERFORMANCE_SUGGESTION_EMPLOYEE_MISMATCH_MESSAGE);
+    }
+
+    if (
+      context.assessmentId &&
+      Number(suggestion.assessmentId) !== Number(context.assessmentId)
+    ) {
+      throw new CoolCommException(
+        PERFORMANCE_SUGGESTION_ASSESSMENT_MISMATCH_MESSAGE
+      );
+    }
+
+    if (suggestion.linkedEntityType || suggestion.linkedEntityId) {
+      throw new CoolCommException(PERFORMANCE_SUGGESTION_ALREADY_LINKED_MESSAGE);
+    }
+
+    await manager.getRepository(PerformanceSuggestionEntity).update(
+      { id: suggestionId },
+      {
+        linkedEntityType: context.entityType,
+        linkedEntityId: context.entityId,
+      }
+    );
   }
 
   private async buildPromotionDetail(promotion: PerformancePromotionEntity) {
@@ -422,68 +530,84 @@ export class PerformancePromotionService extends BaseService {
     const promotion = await this.performancePromotionEntity.findOneBy({ id });
 
     if (!promotion) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     return promotion;
   }
 
-  private async currentPerms() {
-    const roleIds = this.currentAdmin?.roleIds;
-
-    if (!Array.isArray(roleIds) || !roleIds.length) {
-      throw new CoolCommException('登录上下文缺失');
+  private assertHasCapability(
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey,
+    message: string
+  ) {
+    if (!this.performanceAccessContextService.hasCapability(access, capabilityKey)) {
+      throw new CoolCommException(message);
     }
-
-    return this.baseSysMenuService.getPerms(roleIds);
   }
 
-  private hasPerm(perms: string[], perm: string) {
-    return perms.includes(perm);
-  }
+  private applyScope(
+    qb: any,
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
+  ) {
+    const scopes = this.performanceAccessContextService.capabilityScopes(
+      access,
+      capabilityKey
+    );
 
-  private async departmentScopeIds() {
-    if (this.currentAdmin?.username === 'admin') {
-      return null;
-    }
-
-    const userId = Number(this.currentAdmin?.userId || 0);
-
-    if (!userId) {
-      throw new CoolCommException('登录上下文缺失');
-    }
-
-    const ids = await this.baseSysPermsService.departmentIds(userId);
-    return Array.isArray(ids) ? ids.map(item => Number(item)) : [];
-  }
-
-  private applyScope(qb: any, departmentIds: number[] | null) {
-    if (departmentIds === null) {
+    if (scopes.includes('company')) {
       return;
     }
 
-    if (!departmentIds.length) {
+    if (
+      !scopes.some(scope => scope === 'department' || scope === 'department_tree') ||
+      !access.departmentIds.length
+    ) {
       qb.andWhere('1 = 0');
       return;
     }
 
-    qb.andWhere('employee.departmentId in (:...departmentIds)', { departmentIds });
+    qb.andWhere('employee.departmentId in (:...departmentIds)', {
+      departmentIds: access.departmentIds,
+    });
   }
 
-  private async assertPromotionInScope(employeeId: number) {
-    if (this.currentAdmin?.username === 'admin') {
-      return;
-    }
-
+  private async assertPromotionInScope(
+    employeeId: number,
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
+  ) {
     const employee = await this.baseSysUserEntity.findOneBy({ id: employeeId });
 
     if (!employee) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
-    const departmentIds = await this.departmentScopeIds();
+    if (
+      this.performanceAccessContextService.matchesScope(
+        access,
+        this.performanceAccessContextService.capabilityScopes(access, capabilityKey),
+        {
+          departmentId: Number(employee.departmentId),
+        }
+      )
+    ) {
+      return;
+    }
 
-    if (!departmentIds?.length || !departmentIds.includes(Number(employee.departmentId))) {
+    if (
+      capabilityKey === 'promotion.submit' &&
+      Number(this.currentAdmin?.userId || 0) === Number(employeeId)
+    ) {
+      return;
+    }
+
+    if (
+      !this.performanceAccessContextService
+        .capabilityScopes(access, capabilityKey)
+        .includes('company')
+    ) {
       throw new CoolCommException('无权访问该晋升单');
     }
   }
@@ -512,7 +636,9 @@ export class PerformancePromotionService extends BaseService {
     });
 
     if (!employee?.departmentId) {
-      throw new CoolCommException('员工部门不存在');
+      throw new CoolCommException(
+        PERFORMANCE_EMPLOYEE_DEPARTMENT_NOT_FOUND_MESSAGE
+      );
     }
 
     return Number(employee.departmentId);

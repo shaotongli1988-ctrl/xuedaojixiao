@@ -4,6 +4,7 @@
  * 这里负责验证模块 3 的聚合结果结构和基础范围裁剪，不负责数据库或真实联调。
  */
 import * as jwt from 'jsonwebtoken';
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
 
 const {
   PerformanceDashboardService,
@@ -28,6 +29,14 @@ const createQueryBuilder = (result: {
 
   return qb;
 };
+
+function attachAccessContextService(service: any) {
+  const accessContextService = new PerformanceAccessContextService() as any;
+  accessContextService.ctx = service.ctx;
+  accessContextService.baseSysMenuService = service.baseSysMenuService;
+  accessContextService.baseSysPermsService = service.baseSysPermsService;
+  service.performanceAccessContextService = accessContextService;
+}
 
 describe('performance dashboard service', () => {
   test('should reject crossSummary when current role has no cross dashboard permission', async () => {
@@ -59,6 +68,7 @@ describe('performance dashboard service', () => {
       get: jest.fn(),
       set: jest.fn(),
     };
+    attachAccessContextService(service);
 
     await expect(service.crossSummary({})).rejects.toMatchObject({
       message: '无权限查看跨模块驾驶舱',
@@ -108,6 +118,7 @@ describe('performance dashboard service', () => {
         departmentIds: jest.fn().mockResolvedValue(departmentIds),
       };
       service.midwayCache = midwayCache;
+      attachAccessContextService(service);
       return { service, midwayCache };
     };
 
@@ -177,15 +188,13 @@ describe('performance dashboard service', () => {
     expect(hr.midwayCache.set).toHaveBeenCalledTimes(1);
     expect(manager.midwayCache.get).toHaveBeenCalledTimes(1);
     expect(manager.midwayCache.set).toHaveBeenCalledTimes(1);
-    expect(hr.midwayCache.get.mock.calls[0][0]).toContain(
-      'performance:dashboard:crossSummary:'
-    );
-    expect(manager.midwayCache.get.mock.calls[0][0]).toContain(
-      'performance:dashboard:crossSummary:'
-    );
-    expect(hr.midwayCache.get.mock.calls[0][0]).not.toBe(
-      manager.midwayCache.get.mock.calls[0][0]
-    );
+    const hrCacheKey = hr.midwayCache.get.mock.calls[0][0];
+    const managerCacheKey = manager.midwayCache.get.mock.calls[0][0];
+    expect(hrCacheKey).toMatch(/^dashboard-cross-summary:[a-f0-9]{32}$/);
+    expect(managerCacheKey).toMatch(/^dashboard-cross-summary:[a-f0-9]{32}$/);
+    expect(hr.midwayCache.set.mock.calls[0][0]).toBe(hrCacheKey);
+    expect(manager.midwayCache.set.mock.calls[0][0]).toBe(managerCacheKey);
+    expect(hrCacheKey).not.toBe(managerCacheKey);
   });
 
   test('should reject crossSummary when manager requests out-of-scope department or unknown metric code', async () => {
@@ -217,6 +226,7 @@ describe('performance dashboard service', () => {
       get: jest.fn(),
       set: jest.fn(),
     };
+    attachAccessContextService(service);
 
     await expect(
       service.crossSummary({
@@ -276,6 +286,7 @@ describe('performance dashboard service', () => {
     service.performanceSalaryEntity = {
       createQueryBuilder: jest.fn(),
     };
+    attachAccessContextService(service);
 
     await expect(service.summary({})).rejects.toMatchObject({
       message: '无权限查看绩效驾驶舱',
@@ -383,6 +394,7 @@ describe('performance dashboard service', () => {
     service.performanceSalaryEntity = {
       createQueryBuilder: jest.fn().mockReturnValue(salaryQb),
     };
+    attachAccessContextService(service);
 
     const result = await service.summary({
       periodType: 'quarter',
@@ -508,6 +520,7 @@ describe('performance dashboard service', () => {
     service.performanceSalaryEntity = {
       createQueryBuilder: jest.fn(),
     };
+    attachAccessContextService(service);
 
     const result = await service.summary({
       departmentId: 99,

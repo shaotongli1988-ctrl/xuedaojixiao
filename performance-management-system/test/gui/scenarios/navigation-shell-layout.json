@@ -1,0 +1,466 @@
+{
+  "meta": {
+    "name": "navigation-shell-layout-gui",
+    "description": "导航栏与侧栏改造最小 GUI 点测"
+  },
+  "defaults": {
+    "uiBaseUrl": "http://127.0.0.1:9000",
+    "apiBaseUrl": "http://127.0.0.1:8129",
+    "chromeDebugUrl": "http://127.0.0.1:9222",
+    "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/navigation-shell-layout",
+    "password": "123456",
+    "viewport": {
+      "width": 1440,
+      "height": 1100,
+      "deviceScaleFactor": 1,
+      "mobile": false
+    }
+  },
+  "scenarios": [
+    {
+      "name": "hr-navigation-shell",
+      "username": "hr_admin",
+      "route": "/data-center/dashboard",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "screenshot",
+          "file": "nav-shell-hr-initial.png"
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "绩效驾驶舱",
+            "当前业务域菜单"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "绩效中心",
+            "人才中心",
+            "目标&计划",
+            "行政协同",
+            "采购&资产"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "nav-shell-hr-dashboard.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/talentAsset",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "招聘人才资产",
+            "当前业务域菜单"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "人才中心",
+            "新建人才资产"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "nav-shell-hr-recruit-talent.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/course",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "培训课程管理",
+            "当前业务域菜单"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "人才中心",
+            "新增课程",
+            "HR 管理"
+          ]
+        },
+        {
+          "type": "clickText",
+          "text": "能力地图",
+          "index": 0,
+          "waitAfterMs": 1600
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "能力地图",
+            "HR 管理"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "screenshot",
+          "file": "nav-shell-hr-training.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/goals",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "目标地图",
+            "当前业务域菜单"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "目标&计划",
+            "目标&计划总览",
+            "班主任化"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "nav-shell-hr-goal-plan-overview.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/teacher-channel/dashboard",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "班主任渠道合作看板",
+            "当前业务域菜单"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "目标&计划",
+            "班主任化",
+            "首页看板"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "nav-shell-hr-goal-plan-teacher-dashboard.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/meeting",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "会议管理",
+            "新建会议"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "行政协同",
+            "会议管理",
+            "合同管理"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "nav-shell-hr-office-meeting.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/purchase-order",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "采购管理",
+            "创建采购单"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "采购&资产",
+            "创建采购单"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "nav-shell-hr-procurement.png"
+        },
+        {
+          "type": "clickText",
+          "text": "供应商",
+          "index": 0,
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "供应商管理",
+            "新增供应商"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "screenshot",
+          "file": "nav-shell-hr-procurement-supplier.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/asset/dashboard",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "资产首页"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "采购&资产",
+            "资产台账"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "nav-shell-hr-procurement-asset-dashboard.png"
+        }
+      ]
+    },
+    {
+      "name": "manager-navigation-shell",
+      "username": "manager_rd",
+      "route": "/performance/course",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "screenshot",
+          "file": "nav-shell-manager-initial.png"
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "培训课程管理",
+            "当前业务域菜单"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "人才中心",
+            "经理只读"
+          ],
+          "excludes": [
+            "新增课程"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "nav-shell-manager-course.png"
+        },
+        {
+          "type": "clickText",
+          "text": "能力地图",
+          "index": 0,
+          "waitAfterMs": 1600
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "能力地图",
+            "经理只读"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "经理只读"
+          ],
+          "excludes": [
+            "新增能力模型"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "nav-shell-manager-capability.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/goals",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "目标地图",
+            "当前业务域菜单"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "目标&计划",
+            "目标&计划总览"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "nav-shell-manager-goal-plan.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/salary",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "assertBodyText",
+          "includes": [
+            "404",
+            "找不到您要查找的页面"
+          ],
+          "excludes": [
+            "薪资管理"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "nav-shell-manager-salary-404.png"
+        }
+      ]
+    },
+    {
+      "name": "employee-navigation-shell",
+      "username": "employee_platform",
+      "route": "/performance/my-assessment",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "screenshot",
+          "file": "nav-shell-employee-initial.png"
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "我的考核",
+            "当前业务域菜单"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "绩效中心",
+            "人才中心",
+            "目标&计划"
+          ],
+          "excludes": [
+            "行政协同",
+            "采购&资产"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "nav-shell-employee-assessment.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/goals",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "目标地图"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "目标&计划",
+            "目标&计划总览"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "nav-shell-employee-goals.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/course-learning",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "培训学习与考试增强",
+            "进入课程学习"
+          ],
+          "timeoutMs": 10000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "员工自助"
+          ],
+          "excludes": [
+            "培训课程管理"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "nav-shell-employee-learning.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/data-center/dashboard",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "assertBodyText",
+          "includes": [
+            "404",
+            "找不到您要查找的页面"
+          ],
+          "excludes": [
+            "绩效驾驶舱"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "nav-shell-employee-dashboard-404.png"
+        }
+      ]
+    }
+  ]
+}

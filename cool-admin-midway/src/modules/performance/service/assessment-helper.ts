@@ -3,9 +3,21 @@
  * 这里只放总分、等级和状态流转等可测试规则，不处理数据库访问或权限上下文。
  */
 import { CoolCommException } from '@cool-midway/core';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain';
+import { ASSESSMENT_STATUS_VALUES } from './assessment-dict';
 
-export type AssessmentStatus = 'draft' | 'submitted' | 'approved' | 'rejected';
+export type AssessmentStatus = (typeof ASSESSMENT_STATUS_VALUES)[number];
 export type AssessmentAction = 'save' | 'submit' | 'approve' | 'reject';
+
+const [
+  ASSESSMENT_DRAFT_STATUS,
+  ASSESSMENT_SUBMITTED_STATUS,
+  ASSESSMENT_APPROVED_STATUS,
+  ASSESSMENT_REJECTED_STATUS,
+] = ASSESSMENT_STATUS_VALUES;
 
 export interface AssessmentScoreInput {
   indicatorId?: number | null;
@@ -96,13 +108,17 @@ export function assertAssessmentTransition(
     AssessmentAction,
     AssessmentStatus[]
   > = {
-    save: ['draft', 'rejected'],
-    submit: ['draft'],
-    approve: ['submitted'],
-    reject: ['submitted'],
+    save: [ASSESSMENT_DRAFT_STATUS, ASSESSMENT_REJECTED_STATUS],
+    submit: [ASSESSMENT_DRAFT_STATUS],
+    approve: [ASSESSMENT_SUBMITTED_STATUS],
+    reject: [ASSESSMENT_SUBMITTED_STATUS],
   };
 
   if (!transitionMap[action].includes(currentStatus)) {
-    throw new CoolCommException('当前状态不允许执行该操作');
+    throw new CoolCommException(
+      resolvePerformanceDomainErrorMessage(
+        PERFORMANCE_DOMAIN_ERROR_CODES.assessmentInvalidTransition
+      )
+    );
   }
 }

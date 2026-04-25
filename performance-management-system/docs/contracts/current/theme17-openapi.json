@@ -1,0 +1,388 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Theme 17 Job Standard Contract Snapshot",
+    "version": "0.1.0",
+    "description": "Frozen contract evidence for theme 17 jobStandard APIs."
+  },
+  "tags": [
+    {
+      "name": "performance.jobStandard",
+      "description": "Theme 17 job standard management APIs."
+    }
+  ],
+  "paths": {
+    "/admin/performance/jobStandard/page": {
+      "post": {
+        "tags": [
+          "performance.jobStandard"
+        ],
+        "operationId": "performanceJobStandardPage",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobStandardPageQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "职位标准分页结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_JobStandardPageResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/jobStandard/info": {
+      "get": {
+        "tags": [
+          "performance.jobStandard"
+        ],
+        "operationId": "performanceJobStandardInfo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "职位标准详情结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_JobStandardRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/jobStandard/add": {
+      "post": {
+        "tags": [
+          "performance.jobStandard"
+        ],
+        "operationId": "performanceJobStandardAdd",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobStandardSaveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "新增职位标准结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_JobStandardRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/jobStandard/update": {
+      "post": {
+        "tags": [
+          "performance.jobStandard"
+        ],
+        "operationId": "performanceJobStandardUpdate",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobStandardSaveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "修改职位标准结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_JobStandardRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/performance/jobStandard/setStatus": {
+      "post": {
+        "tags": [
+          "performance.jobStandard"
+        ],
+        "operationId": "performanceJobStandardSetStatus",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobStandardStatusUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新职位标准状态结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_JobStandardRecord"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PagePagination": {
+        "type": "object",
+        "required": [
+          "page",
+          "size",
+          "total"
+        ],
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        }
+      },
+      "ApiResponse_JobStandardPageResult": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/JobStandardPageResult"
+          }
+        }
+      },
+      "ApiResponse_JobStandardRecord": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/JobStandardRecord"
+          }
+        }
+      },
+      "JobStandardStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "active",
+          "inactive"
+        ]
+      },
+      "JobStandardPageQuery": {
+        "type": "object",
+        "required": [
+          "page",
+          "size"
+        ],
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "keyword": {
+            "type": "string"
+          },
+          "targetDepartmentId": {
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStandardStatus"
+          }
+        }
+      },
+      "JobStandardRecord": {
+        "type": "object",
+        "required": [
+          "positionName",
+          "targetDepartmentId",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "positionName": {
+            "type": "string"
+          },
+          "targetDepartmentId": {
+            "type": "integer"
+          },
+          "targetDepartmentName": {
+            "type": "string"
+          },
+          "jobLevel": {
+            "type": "string",
+            "nullable": true
+          },
+          "profileSummary": {
+            "type": "string",
+            "nullable": true
+          },
+          "requirementSummary": {
+            "type": "string",
+            "nullable": true
+          },
+          "skillTagList": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "interviewTemplateSummary": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStandardStatus"
+          },
+          "createTime": {
+            "type": "string"
+          },
+          "updateTime": {
+            "type": "string"
+          }
+        }
+      },
+      "JobStandardSaveRequest": {
+        "type": "object",
+        "required": [
+          "positionName",
+          "targetDepartmentId"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "positionName": {
+            "type": "string"
+          },
+          "targetDepartmentId": {
+            "type": "integer"
+          },
+          "jobLevel": {
+            "type": "string",
+            "nullable": true
+          },
+          "profileSummary": {
+            "type": "string",
+            "nullable": true
+          },
+          "requirementSummary": {
+            "type": "string",
+            "nullable": true
+          },
+          "skillTagList": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "interviewTemplateSummary": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStandardStatus"
+          }
+        }
+      },
+      "JobStandardStatusUpdateRequest": {
+        "type": "object",
+        "required": [
+          "id",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStandardStatus"
+          }
+        }
+      },
+      "JobStandardPageResult": {
+        "type": "object",
+        "required": [
+          "list",
+          "pagination"
+        ],
+        "properties": {
+          "list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JobStandardRecord"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PagePagination"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+/* 文件职责：把全局语义 token 统一映射到 Element Plus 变量，作为系统层唯一适配器；不负责业务页面局部覆盖；维护重点是业务模块不得再重复定义这些 `--el-*`。 */
+
+:root {
+	--el-bg-color-overlay: var(--app-surface-card);
+	--el-fill-color-light: var(--app-surface-muted);
+	--el-fill-color-lighter: var(--app-surface-muted);
+	--el-border-color-light: var(--app-border-strong);
+	--el-border-color-lighter: var(--app-border-soft);
+	--el-table-header-bg-color: var(--app-surface-muted);
+	--el-table-tr-bg-color: var(--app-surface-card);
+	--el-table-border-color: var(--app-border-soft);
+	--el-text-color-primary: var(--app-text-primary);
+	--el-text-color-regular: var(--app-text-secondary);
+	--el-text-color-secondary: var(--app-text-tertiary);
+}

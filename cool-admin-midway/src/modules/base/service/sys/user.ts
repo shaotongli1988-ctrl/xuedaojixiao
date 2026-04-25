@@ -20,7 +20,11 @@ import { BaseSysDepartmentEntity } from '../../entity/sys/department';
 import { CachingFactory, MidwayCache } from '@midwayjs/cache-manager';
 import { BaseSysRoleEntity } from '../../entity/sys/role';
 import { Context } from '@midwayjs/koa';
-import * as jwt from 'jsonwebtoken';
+import {
+  buildUserAuthCacheKey,
+  resolveUserAdminRuntimeContext,
+  verifyUserAdminToken,
+} from '../../../user/domain';
 
 const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
   return require('../../config').default({
@@ -82,11 +86,38 @@ export class BaseSysUserService extends BaseService {
     if (!token) {
       return undefined;
     }
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
+    return verifyUserAdminToken(token, resolveBaseJwtConfig(this.app).secret);
+  }
+
+  private async listSystemSuperAdminUserIds() {
+    const rows: Array<{ userId?: number | string }> = await this.nativeQuery(
+      `SELECT DISTINCT a.userId as userId
+       FROM base_sys_user_role a
+       INNER JOIN base_sys_role b ON a.roleId = b.id
+       WHERE b.isSuperAdmin = ?`,
+      [1]
+    );
+
+    return rows
+      .map(item => Number(item.userId))
+      .filter(item => Number.isInteger(item) && item > 0);
+  }
+
+  private async isSystemSuperAdminUser(userId: number) {
+    if (!Number.isInteger(userId) || userId <= 0) {
+      return false;
     }
+
+    const rows = await this.nativeQuery(
+      `SELECT a.userId as userId
+       FROM base_sys_user_role a
+       INNER JOIN base_sys_role b ON a.roleId = b.id
+       WHERE a.userId = ? AND b.isSuperAdmin = ?
+       LIMIT 1`,
+      [userId, 1]
+    );
+
+    return !_.isEmpty(rows);
   }
 
   /**
@@ -95,16 +126,17 @@ export class BaseSysUserService extends BaseService {
    */
   async page(query) {
     const { keyWord, status, departmentIds = [] } = query;
-    const currentAdmin = this.currentAdmin;
-    if (!currentAdmin?.userId) {
+    const currentAdmin = resolveUserAdminRuntimeContext(this.currentAdmin);
+    if (!currentAdmin.userId) {
       throw new CoolCommException('登录状态已失效，请重新登录');
     }
-    const userId = Number(currentAdmin.userId);
-    const roleIds = Array.isArray(currentAdmin.roleIds) ? currentAdmin.roleIds : [];
+    const userId = currentAdmin.userId;
+    const roleIds = currentAdmin.roleIds;
     const isAdmin =
       typeof currentAdmin.isAdmin === 'boolean'
         ? currentAdmin.isAdmin
         : await this.baseSysPermsService.isAdmin(roleIds);
+    const systemSuperAdminUserIds = await this.listSystemSuperAdminUserIds();
     const permsDepartmentArr = await this.baseSysPermsService.departmentIds(
       userId
     ); // 部门权限
@@ -126,7 +158,11 @@ export class BaseSysUserService extends BaseService {
               `%${keyWord}%`,
               `%${keyWord}%`,
             ])}
-            ${this.setSql(true, 'and a.username != ?', ['admin'])}
+            ${this.setSql(
+              !_.isEmpty(systemSuperAdminUserIds),
+              'and a.id not in (?)',
+              [systemSuperAdminUserIds]
+            )}
             ${this.setSql(
               !isAdmin,
               `and (a.departmentId in (?) or a.userId = ${userId})`,
@@ -172,6 +208,79 @@ export class BaseSysUserService extends BaseService {
   }
 
   /**
+   * 登录态用户下拉选项。
+   * 这里只返回绩效等业务页需要的最小字段，不暴露系统用户管理页的完整数据面。
+   */
+  async optionList(query: { keyWord?: string; size?: number } = {}) {
+    const currentAdmin = resolveUserAdminRuntimeContext(this.currentAdmin);
+    if (!currentAdmin.userId) {
+      throw new CoolCommException('登录状态已失效，请重新登录');
+    }
+
+    const userId = currentAdmin.userId;
+    const roleIds = currentAdmin.roleIds;
+    const isAdmin =
+      typeof currentAdmin.isAdmin === 'boolean'
+        ? currentAdmin.isAdmin
+        : await this.baseSysPermsService.isAdmin(roleIds);
+    const systemSuperAdminUserIds = await this.listSystemSuperAdminUserIds();
+    const permsDepartmentArr = await this.baseSysPermsService.departmentIds(userId);
+    const size = Math.min(Math.max(Number(query.size) || 200, 1), 500);
+    const keyWord = String(query.keyWord || '').trim();
+
+    const qb = this.baseSysUserEntity
+      .createQueryBuilder('user')
+      .leftJoin(
+        BaseSysDepartmentEntity,
+        'department',
+        'department.id = user.departmentId'
+      )
+      .select([
+        'user.id as id',
+        'user.name as name',
+        'user.nickName as nickName',
+        'user.departmentId as departmentId',
+        'department.name as departmentName',
+      ])
+      .where('user.status = :status', { status: 1 })
+      .andWhere(
+        !_.isEmpty(systemSuperAdminUserIds)
+          ? 'user.id not in (:...systemSuperAdminUserIds)'
+          : '1 = 1',
+        !_.isEmpty(systemSuperAdminUserIds)
+          ? { systemSuperAdminUserIds }
+          : {}
+      );
+
+    if (keyWord) {
+      qb.andWhere('(user.name like :keyword or user.username like :keyword)', {
+        keyword: `%${keyWord}%`,
+      });
+    }
+
+    if (!isAdmin) {
+      qb.andWhere(
+        '(user.departmentId in (:...departmentIds) or user.id = :userId)',
+        {
+          departmentIds: !_.isEmpty(permsDepartmentArr) ? permsDepartmentArr : [null],
+          userId,
+        }
+      );
+    }
+
+    qb.orderBy('user.name', 'ASC').addOrderBy('user.id', 'ASC').limit(size);
+
+    const list = await qb.getRawMany();
+
+    return list.map(item => ({
+      id: Number(item.id),
+      name: String(item.name || item.nickName || ''),
+      departmentId: item.departmentId == null ? null : Number(item.departmentId),
+      departmentName: item.departmentName ? String(item.departmentName) : null,
+    }));
+  }
+
+  /**
    * 更新用户角色关系
    * @param user
    */
@@ -179,7 +288,7 @@ export class BaseSysUserService extends BaseService {
     if (_.isEmpty(user.roleIdList)) {
       return;
     }
-    if (user.username === 'admin') {
+    if (await this.isSystemSuperAdminUser(Number(user.id))) {
       throw new CoolCommException('非法操作~');
     }
     await this.baseSysUserRoleEntity.delete({ userId: user.id });
@@ -241,7 +350,12 @@ export class BaseSysUserService extends BaseService {
    * @param param
    */
   public async personUpdate(param) {
-    param.id = this.ctx.admin.userId;
+    const currentAdmin = resolveUserAdminRuntimeContext(this.currentAdmin);
+    if (!currentAdmin.userId) {
+      throw new CoolCommException('登录状态已失效，请重新登录');
+    }
+    param.id = currentAdmin.userId;
+    delete param.activePerformancePersonaKey;
     if (!_.isEmpty(param.password)) {
       param.password = md5(param.password);
       const oldPassword = md5(param.oldPassword);
@@ -254,7 +368,7 @@ export class BaseSysUserService extends BaseService {
       }
       param.passwordV = userInfo.passwordV + 1;
       await this.midwayCache.set(
-        `admin:passwordVersion:${param.id}`,
+        buildUserAuthCacheKey('passwordVersion', param.id),
         param.passwordV
       );
     } else {
@@ -268,7 +382,7 @@ export class BaseSysUserService extends BaseService {
    * @param param 数据
    */
   async update(param) {
-    if (param.id && param.username === 'admin') {
+    if (await this.isSystemSuperAdminUser(Number(param.id))) {
       throw new CoolCommException('非法操作~');
     }
     if (!_.isEmpty(param.password)) {
@@ -279,7 +393,7 @@ export class BaseSysUserService extends BaseService {
       }
       param.passwordV = userInfo.passwordV + 1;
       await this.midwayCache.set(
-        `admin:passwordVersion:${param.id}`,
+        buildUserAuthCacheKey('passwordVersion', param.id),
         param.passwordV
       );
     } else {
@@ -297,6 +411,6 @@ export class BaseSysUserService extends BaseService {
    * @param userId
    */
   async forbidden(userId) {
-    await this.midwayCache.del(`admin:token:${userId}`);
+    await this.midwayCache.del(buildUserAuthCacheKey('accessToken', userId));
   }
 }

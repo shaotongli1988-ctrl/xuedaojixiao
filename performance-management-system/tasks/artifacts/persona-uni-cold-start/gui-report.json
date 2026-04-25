@@ -1,0 +1,73 @@
+{
+  "name": "cool-uni-persona-gui",
+  "description": "cool-uni H5 同账号读取数据库 persona 的最小 GUI 留痕",
+  "configPath": "/Users/shaotongli/Documents/xuedao/performance-management-system/test/gui/scenarios/cool-uni-persona.json",
+  "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/persona-uni-cold-start",
+  "uiBaseUrl": "http://127.0.0.1:9943/#",
+  "apiBaseUrl": "http://127.0.0.1:8001",
+  "chromeDebugUrl": "http://127.0.0.1:9222",
+  "generatedAt": "2026-04-23T02:44:10.939Z",
+  "scenarios": [
+    {
+      "name": "hr-admin-uni-home-performance-operator",
+      "username": "hr_admin",
+      "route": "/pages/index/home",
+      "status": "passed",
+      "steps": [
+        {
+          "index": 1,
+          "type": "waitBodyText",
+          "status": "passed",
+          "includes": [
+            "移动工作台",
+            "绩效运营视角",
+            "已发起考核",
+            "招聘计划"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 2,
+          "type": "assertBodyText",
+          "status": "passed",
+          "includes": [
+            "绩效运营视角",
+            "当前账号",
+            "移动工作台",
+            "已发起考核",
+            "薪资管理",
+            "指标库",
+            "招聘计划"
+          ],
+          "excludes": [
+            "HRBP 视角"
+          ]
+        },
+        {
+          "index": 3,
+          "type": "assertVisibleText",
+          "status": "passed",
+          "includes": [
+            "移动工作台",
+            "已发起考核",
+            "薪资管理",
+            "指标库",
+            "招聘计划",
+            "当前账号 · 绩效运营视角"
+          ],
+          "excludes": []
+        },
+        {
+          "index": 4,
+          "type": "screenshot",
+          "status": "passed",
+          "file": "tasks/artifacts/persona-uni-cold-start/cool-uni-hr-home-performance-operator.png"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "pass": 1,
+    "fail": 0
+  }
+}

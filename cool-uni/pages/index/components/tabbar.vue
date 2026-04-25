@@ -36,13 +36,14 @@ const list = computed(() => {
 
 	return arr.map((e) => {
 		const active = pagePath?.includes(e.pagePath);
+		const textKey = (e.text || "").replace(/%/g, "");
 
 		return {
 			...e,
 			icon: "/" + (active ? e.selectedIconPath : e.iconPath),
 			active,
 			number: 0,
-			text: t((e.text || "")?.replace(/%/g, "")!),
+			text: t(textKey),
 		};
 	});
 });

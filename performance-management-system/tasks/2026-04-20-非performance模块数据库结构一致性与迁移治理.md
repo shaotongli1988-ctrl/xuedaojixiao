@@ -1,0 +1,213 @@
+# 非 performance 模块数据库结构一致性与迁移治理
+
+## Before Starting Record
+
+- Scope:
+  - 将 `performance` 域之外的实体表统一纳入正式 migration 体系。
+  - 将本地 schema 入口从“performance 命名脚本”收口为仓库级 schema 入口。
+  - 保持 `db.json` 为数据初始化源，不再承担 schema 事实源职责。
+- Non-goals:
+  - 不重构 `base/dict/task` 的初始化导数逻辑。
+  - 不改动业务表字段语义、权限语义、状态语义。
+  - 不处理与本轮无关的前端、菜单、业务服务逻辑。
+- Affected modules:
+  - `base`
+  - `space`
+  - `demo`
+  - `dict`
+  - `plugin`
+  - `recycle`
+  - `task`
+  - `user`
+- Acceptance criteria:
+  - 非 `performance` 实体表全部存在正式 migration 基线。
+  - 空库执行 migration 后，表清单与实体清单一致。
+  - 本地 `dev / smoke / latest-reset` 入口统一走正式 migration。
+  - 旧的 `ensure-local-performance-schema.mjs` 兼容保留，但不再承担独立 schema 逻辑。
+- Impact surface:
+  - `cool-admin-midway/scripts/migrations/*.mjs`
+  - `cool-admin-midway/scripts/ensure-local-*.mjs`
+  - `cool-admin-midway/scripts/latest-reset-and-verify.mjs`
+  - `cool-admin-midway/package.json`
+  - `cool-admin-midway/src/config/config.local.ts`
+  - `cool-admin-midway/src/config/config.prod.ts`
+- Source of truth:
+  - Schema：`cool-admin-midway/scripts/migrations/*.mjs`
+  - Entity contract：`cool-admin-midway/src/modules/*/entity/*.ts`
+  - 数据初始化：`cool-admin-midway/src/modules/{base,dict,task}/db.json`
+- High-risk surfaces:
+  - migration
+  - local bootstrap / smoke startup path
+  - shared base tables
+  - runtime config behavior
+- Required delivery evidence:
+  - migration 语法校验
+  - 空库 migration apply 结果
+  - 表清单对齐结果
+  - 旧兼容入口验证
+  - 启动配置环境变量链路验证
+- Key assumptions and constraints:
+  - 默认数据库仍保持 `cool`，仅在显式传入 `LOCAL_DB_*` 时覆盖。
+  - 不回滚用户现有脏工作区改动。
+
+## During Implementation Record
+
+- Change summary:
+  - 新增 `20260420150000-add-base-space-cache-tables.mjs`，纳入 `base_sys_* / space_* / query-result-cache`。
+  - 新增 `20260420151000-add-module-support-tables.mjs`，纳入 `demo / dict / plugin / recycle / task / user` 相关表。
+  - 新增 `scripts/ensure-local-schema.mjs` 作为仓库级 schema 入口。
+  - `ensure-local-performance-schema.mjs` 改为兼容包装脚本。
+  - `dev / smoke / latest-reset` 改为统一走 `ensure-local-schema.mjs`。
+  - `config.local.ts / config.prod.ts` 改为 `LOCAL_DB_*` 环境变量优先、默认值兜底。
+- Reused modules or patterns:
+  - 复用现有 `run-migrations.mjs`。
+  - 延续 `performance` 域 migration 文件风格和注释口径。
+- New dependencies and why existing tools were insufficient:
+  - 无。
+- Verification run after each meaningful change:
+  - `node --check` 校验新增 migration 与 schema script。
+  - 空库执行 `ensure-local-schema.mjs`。
+  - 空库执行旧入口 `ensure-local-performance-schema.mjs`。
+  - 表清单比对脚本。
+  - `npx cool check`
+  - `npx mwtsc --cleanOutDir`
+  - `bootstrap.js` 启动链路验证。
+- Minimum regression matrix evidence:
+  - Normal path：空库 migration apply 成功。
+  - Error path：`LOCAL_DB_NAME=cool_schema_verify_missing node ./bootstrap.js` 明确报 `Unknown database`，证明应用启动链路已使用环境变量库名。
+  - Boundary path：旧兼容入口在空库上可完整执行 14 条 migration。
+- Permission checks:
+  - 无权限语义变更。
+- State-flow checks:
+  - 无状态机变更。
+- Contract checks:
+  - 无 API / DTO 契约变更。
+- High-risk trigger changes:
+  - migration
+  - shared base tables
+  - runtime config behavior
+- Privacy/PII review result:
+  - 未引入新增日志输出或敏感数据持久化。
+- Docs or operational updates made:
+  - 新增本治理记录。
+
+## Verification Evidence
+
+- 语法校验通过：
+  - `node --check cool-admin-midway/scripts/migrations/20260420150000-add-base-space-cache-tables.mjs`
+  - `node --check cool-admin-midway/scripts/migrations/20260420151000-add-module-support-tables.mjs`
+  - `node --check cool-admin-midway/scripts/ensure-local-schema.mjs`
+  - `node --check cool-admin-midway/scripts/ensure-local-performance-schema.mjs`
+  - `node --check cool-admin-midway/scripts/latest-reset-and-verify.mjs`
+- 空库 `cool_schema_verify_nonperf`：
+  - `LOCAL_DB_NAME=cool_schema_verify_nonperf node ./scripts/run-migrations.mjs status`
+  - `LOCAL_DB_NAME=cool_schema_verify_nonperf node ./scripts/ensure-local-schema.mjs`
+  - 结果：14 条 migration 全部应用成功。
+- 主库 `cool`：
+  - 执行前：`cool_schema_migration.count = 4`
+  - 执行：`node ./scripts/run-migrations.mjs up`
+  - 执行后：
+    - `node ./scripts/run-migrations.mjs status`
+    - `SELECT COUNT(*) FROM cool_schema_migration`
+  - 结果：
+    - `cool_schema_migration.count = 14`
+    - `status` 显示 14 条 migration 全部为 `APPLIED`
+    - 主库表数量保持 `95`，未发生额外表漂移
+- 表清单对齐：
+  - 对比源：`src/modules/*/entity/*.ts` + `query-result-cache` + `cool_schema_migration`
+  - 结果：
+    - `expectedCount = 95`
+    - `actualCount = 95`
+    - `missing = []`
+    - `extra = []`
+- 旧兼容入口 `cool_schema_verify_wrapper`：
+  - `LOCAL_DB_NAME=cool_schema_verify_wrapper node ./scripts/ensure-local-performance-schema.mjs`
+  - `SELECT COUNT(*) FROM cool_schema_migration`
+  - 结果：`count = 14`
+- 构建与生成：
+  - `npx cool check`
+  - `npx mwtsc --cleanOutDir`
+- 启动配置环境变量链路：
+  - `NODE_ENV=local LOCAL_DB_NAME=cool_schema_verify_missing node ./bootstrap.js`
+  - 结果：启动失败并报错 `Unknown database 'cool_schema_verify_missing'`
+  - 结论：应用启动链路已按 `LOCAL_DB_NAME` 读取数据库名，不再偷偷固定连接 `cool`
+
+## Observations
+
+- 已关闭观察项：
+  - 根因：
+    - `@cool-midway/core` 的 `LocationUtil.getRunPath()` 在 shared-deps 安装形态下解析到了 `.shared-deps/js/dist`，导致 `CoolModuleConfig.modules` 为空，`CoolModuleImport` 直接跳过了 `base/dict/task` 的 `db.json` 初始化。
+  - 修复：
+    - 在 `src/configuration.ts` 为 `LocationUtil.getRunPath()` 增加仓库 `dist/src` 回退，确保模块扫描始终落在当前项目目录。
+  - 验证：
+    - 容器内探针结果：
+      - `distPath = /Users/shaotongli/Documents/xuedao/cool-admin-midway/dist`
+      - `modules = [base, demo, dict, performance, plugin, recycle, space, swagger, task, user]`
+      - 启动日志出现：
+        - `init base database complete`
+        - `init dict database complete`
+        - `init task database complete`
+    - 实际启动入口验证：
+      - `NODE_ENV=local LOCAL_DB_NAME=cool_schema_verify_boot2 node ./bootstrap.js`
+      - `base_sys_conf` 中存在：
+        - `init_db_base`
+        - `init_db_dict`
+        - `init_db_task`
+      - 行数结果：
+        - `base_sys_user = 1`
+        - `dict_type = 2`
+        - `task_info = 2`
+  - 结论：
+    - `db.json` 初始化链路问题已关闭。
+    - 当前数据库结构与初始化数据链路均已与基座口径对齐。
+
+## Before Commit Record
+
+- Diff review result:
+  - 仅包含 migration、schema 入口、启动脚本和数据库配置相关文件。
+- Verification summary:
+  - migration 语法、空库 apply、表清单对齐、旧入口兼容、环境变量启动链路、`db.json` 初始化链路均有实测结果。
+- What was not run:
+  - 未跑完整业务 smoke。
+- Remaining risk:
+  - 未发现本轮数据库治理剩余结构性风险。
+- Open `P0` or `P1` blockers:
+  - 无。
+- Commit scope statement:
+  - 本提交只处理非 `performance` 模块 schema 唯一事实源与本地 schema 入口收口。
+- Commit summary:
+  - 新增非 `performance` 基线 migration，统一本地 schema 入口到 repo 级 migration runner，并使启动配置支持 `LOCAL_DB_*` 环境变量覆盖。
+
+## Before Release Record
+
+- Acceptance-to-verification mapping:
+  - “非 `performance` 表纳入 migration” -> 14 条 migration 空库 apply 成功
+  - “表结构与实体一致” -> `expectedCount=95 / actualCount=95 / missing=[] / extra=[]`
+  - “旧入口兼容” -> `cool_schema_verify_wrapper` 上 `cool_schema_migration.count=14`
+  - “启动链路走环境变量数据库” -> `Unknown database 'cool_schema_verify_missing'` 实测
+- Contract alignment result:
+  - 本轮无 API 契约变更。
+- Config changes:
+  - `config.local.ts / config.prod.ts` 支持 `LOCAL_DB_*` 覆盖默认连接参数。
+- Migration plan:
+  - 使用 `node ./scripts/run-migrations.mjs up`
+  - 本地统一入口：`node ./scripts/ensure-local-schema.mjs`
+- Rollout steps:
+  - `node ./scripts/local-db.mjs start`
+  - `node ./scripts/ensure-local-schema.mjs`
+  - 再执行 `dev / smoke / latest-reset`
+- Rollback path:
+  - `node ./scripts/run-migrations.mjs down --id 20260420151000`
+  - `node ./scripts/run-migrations.mjs down --id 20260420150000`
+- Feature flag, kill switch, or staged rollout plan:
+  - 不涉及运行时特性开关。
+- Data recovery path:
+  - 本轮为加性 migration 基线，不包含数据回填；回滚通过对应 migration `down`。
+- Monitoring and diagnostic entry points:
+  - `cool_schema_migration`
+  - `run-migrations.mjs status`
+  - `latest-reset-and-verify.mjs` 日志
+- Approved waivers:
+  - 无。
+- Final release risk statement:
+  - 当前主库 `cool` 与验证库都已补齐到 14 条 migration 记录，非 `performance` 模块的 schema 与初始化数据链路都已按基座口径收口，未见本轮未关闭的 `P0/P1`。

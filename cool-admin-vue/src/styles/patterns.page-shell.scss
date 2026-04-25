@@ -1,0 +1,23 @@
+/* 文件职责：提供页面壳层与卡片容器的共享 mixin，供业务页统一布局层级；不负责具体页面业务结构；维护重点是只消费全局语义 token，不回退到原始颜色。 */
+
+@mixin page-shell {
+	display: grid;
+	gap: var(--app-space-4);
+	padding: var(--app-space-4);
+	background: var(--app-surface-page);
+	min-height: 100%;
+}
+
+@mixin page-card {
+	border: 1px solid var(--app-border-strong);
+	border-radius: var(--app-radius-xl);
+	background: var(--app-surface-card);
+	box-shadow: var(--app-shadow-surface);
+}
+
+@mixin page-hero {
+	border: 1px solid var(--app-border-strong);
+	border-radius: var(--app-radius-xl);
+	background: var(--app-surface-hero);
+	box-shadow: var(--app-shadow-surface);
+}

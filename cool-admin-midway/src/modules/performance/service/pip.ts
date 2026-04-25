@@ -17,16 +17,123 @@ import { BaseService, CoolCommException } from '@cool-midway/core';
 import { InjectEntityModel } from '@midwayjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { BaseSysLogEntity } from '../../base/entity/sys/log';
-import { BaseSysMenuService } from '../../base/service/sys/menu';
-import { BaseSysPermsService } from '../../base/service/sys/perms';
 import { BaseSysUserEntity } from '../../base/entity/sys/user';
 import { PerformanceAssessmentEntity } from '../entity/assessment';
 import { PerformancePipEntity } from '../entity/pip';
 import { PerformancePipRecordEntity } from '../entity/pip-record';
+import { PerformanceSuggestionEntity } from '../entity/suggestion';
 import * as jwt from 'jsonwebtoken';
+import { PIP_STATUS_VALUES } from './pip-dict';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
 
-export type PipStatus = 'draft' | 'active' | 'completed' | 'closed';
+type PipStatus = (typeof PIP_STATUS_VALUES)[number];
 export type PipAction = 'start' | 'track' | 'complete' | 'close';
+const [PIP_DRAFT_STATUS, PIP_ACTIVE_STATUS, PIP_COMPLETED_STATUS, PIP_CLOSED_STATUS] =
+  PIP_STATUS_VALUES;
+const PERFORMANCE_EMPLOYEE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.employeeNotFound
+  );
+const PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resourceNotFound
+  );
+const PERFORMANCE_ASSESSMENT_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.assessmentNotFound
+  );
+const PERFORMANCE_EMPLOYEE_DEPARTMENT_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.employeeDepartmentNotFound
+  );
+const PERFORMANCE_SOURCE_SUGGESTION_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.sourceSuggestionNotFound
+  );
+const PERFORMANCE_OWNER_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.ownerRequired
+  );
+const PERFORMANCE_EMPLOYEE_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.employeeRequired
+  );
+const PERFORMANCE_OWNER_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.ownerNotFound
+  );
+const PERFORMANCE_DATE_RANGE_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.dateRangeRequired
+  );
+const PERFORMANCE_DATE_RANGE_INVALID_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.dateRangeInvalid
+  );
+const PERFORMANCE_PIP_ACTION_UNSUPPORTED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.pipActionUnsupported
+  );
+const PERFORMANCE_PIP_TITLE_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.pipTitleRequired
+  );
+const PERFORMANCE_PIP_IMPROVEMENT_GOAL_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.pipImprovementGoalRequired
+  );
+const PERFORMANCE_PIP_SOURCE_REASON_REQUIRED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.pipSourceReasonRequired
+  );
+const PERFORMANCE_PIP_START_DRAFT_ONLY_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.pipStartDraftOnly
+  );
+const PERFORMANCE_PIP_TRACK_ACTIVE_ONLY_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.pipTrackActiveOnly
+  );
+const PERFORMANCE_PIP_COMPLETE_ACTIVE_ONLY_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.pipCompleteActiveOnly
+  );
+const PERFORMANCE_PIP_CLOSE_ACTIVE_ONLY_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.pipCloseActiveOnly
+  );
+const PERFORMANCE_PIP_EDIT_NOT_ALLOWED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.pipEditNotAllowed
+  );
+const PERFORMANCE_SUGGESTION_LINKED_ENTITY_TYPE_MISMATCH_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.suggestionLinkedEntityTypeMismatch
+  );
+const PERFORMANCE_SUGGESTION_ACCEPTED_ONLY_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.suggestionAcceptedOnly
+  );
+const PERFORMANCE_SUGGESTION_EMPLOYEE_MISMATCH_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.suggestionEmployeeMismatch
+  );
+const PERFORMANCE_SUGGESTION_ASSESSMENT_MISMATCH_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.suggestionAssessmentMismatch
+  );
+const PERFORMANCE_SUGGESTION_ALREADY_LINKED_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.suggestionAlreadyLinked
+  );
 
 const PIP_EXPORT_LIMIT = 5000;
 const PIP_EXPORT_ACTION = '/admin/performance/pip/export';
@@ -45,8 +152,8 @@ const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
 };
 
 export function assertPipEditable(status?: string) {
-  if ((status || 'draft') !== 'draft') {
-    throw new CoolCommException('当前状态不允许编辑 PIP');
+  if ((status || PIP_DRAFT_STATUS) !== PIP_DRAFT_STATUS) {
+    throw new CoolCommException(PERFORMANCE_PIP_EDIT_NOT_ALLOWED_MESSAGE);
   }
 }
 
@@ -59,23 +166,23 @@ export function validatePipPayload(payload: {
   endDate?: string;
 }) {
   if (!String(payload.title || '').trim()) {
-    throw new CoolCommException('PIP 标题不能为空');
+    throw new CoolCommException(PERFORMANCE_PIP_TITLE_REQUIRED_MESSAGE);
   }
 
   if (!String(payload.improvementGoal || '').trim()) {
-    throw new CoolCommException('改进目标不能为空');
+    throw new CoolCommException(PERFORMANCE_PIP_IMPROVEMENT_GOAL_REQUIRED_MESSAGE);
   }
 
   if (!payload.assessmentId && !String(payload.sourceReason || '').trim()) {
-    throw new CoolCommException('独立创建必须填写来源原因');
+    throw new CoolCommException(PERFORMANCE_PIP_SOURCE_REASON_REQUIRED_MESSAGE);
   }
 
   if (!payload.startDate || !payload.endDate) {
-    throw new CoolCommException('开始日期和结束日期不能为空');
+    throw new CoolCommException(PERFORMANCE_DATE_RANGE_REQUIRED_MESSAGE);
   }
 
   if (payload.startDate > payload.endDate) {
-    throw new CoolCommException('开始日期不能晚于结束日期');
+    throw new CoolCommException(PERFORMANCE_DATE_RANGE_INVALID_MESSAGE);
   }
 }
 
@@ -85,27 +192,27 @@ export function resolvePipStatusTransition(
 ): PipStatus {
   switch (action) {
     case 'start':
-      if (currentStatus !== 'draft') {
-        throw new CoolCommException('只有草稿状态的 PIP 可以启动');
+      if (currentStatus !== PIP_DRAFT_STATUS) {
+        throw new CoolCommException(PERFORMANCE_PIP_START_DRAFT_ONLY_MESSAGE);
       }
-      return 'active';
+      return PIP_ACTIVE_STATUS;
     case 'track':
-      if (currentStatus !== 'active') {
-        throw new CoolCommException('只有进行中的 PIP 可以提交跟进');
+      if (currentStatus !== PIP_ACTIVE_STATUS) {
+        throw new CoolCommException(PERFORMANCE_PIP_TRACK_ACTIVE_ONLY_MESSAGE);
       }
-      return 'active';
+      return PIP_ACTIVE_STATUS;
     case 'complete':
-      if (currentStatus !== 'active') {
-        throw new CoolCommException('只有进行中的 PIP 可以完成');
+      if (currentStatus !== PIP_ACTIVE_STATUS) {
+        throw new CoolCommException(PERFORMANCE_PIP_COMPLETE_ACTIVE_ONLY_MESSAGE);
       }
-      return 'completed';
+      return PIP_COMPLETED_STATUS;
     case 'close':
-      if (currentStatus !== 'active') {
-        throw new CoolCommException('只有进行中的 PIP 可以关闭');
+      if (currentStatus !== PIP_ACTIVE_STATUS) {
+        throw new CoolCommException(PERFORMANCE_PIP_CLOSE_ACTIVE_ONLY_MESSAGE);
       }
-      return 'closed';
+      return PIP_CLOSED_STATUS;
     default:
-      throw new CoolCommException('不支持的 PIP 动作');
+      throw new CoolCommException(PERFORMANCE_PIP_ACTION_UNSUPPORTED_MESSAGE);
   }
 }
 
@@ -127,6 +234,9 @@ export class PerformancePipService extends BaseService {
   @InjectEntityModel(PerformanceAssessmentEntity)
   performanceAssessmentEntity: Repository<PerformanceAssessmentEntity>;
 
+  @InjectEntityModel(PerformanceSuggestionEntity)
+  performanceSuggestionEntity: Repository<PerformanceSuggestionEntity>;
+
   @InjectEntityModel(BaseSysUserEntity)
   baseSysUserEntity: Repository<BaseSysUserEntity>;
 
@@ -134,29 +244,13 @@ export class PerformancePipService extends BaseService {
   baseSysLogEntity: Repository<BaseSysLogEntity>;
 
   @Inject()
-  baseSysMenuService: BaseSysMenuService;
-
-  @Inject()
-  baseSysPermsService: BaseSysPermsService;
+  performanceAccessContextService: PerformanceAccessContextService;
 
   @Inject()
   ctx;
 
   @App()
   app: IMidwayApplication;
-
-  private readonly perms = {
-    page: 'performance:pip:page',
-    info: 'performance:pip:info',
-    add: 'performance:pip:add',
-    update: 'performance:pip:update',
-    start: 'performance:pip:start',
-    track: 'performance:pip:track',
-    complete: 'performance:pip:complete',
-    close: 'performance:pip:close',
-    export: 'performance:pip:export',
-    hrPage: 'performance:salary:page',
-  };
 
   private get currentCtx() {
     if (this.ctx?.admin) {
@@ -190,13 +284,11 @@ export class PerformancePipService extends BaseService {
   }
 
   async page(query: any) {
-    const perms = await this.currentPerms();
+    const access = await this.performanceAccessContextService.resolveAccessContext();
     const page = Number(query.page || 1);
     const size = Number(query.size || 20);
 
-    if (!this.hasPerm(perms, this.perms.page)) {
-      throw new CoolCommException('无权限查看 PIP');
-    }
+    this.assertHasCapability(access, 'pip.read', '无权限查看 PIP');
 
     const qb = this.performancePipEntity
       .createQueryBuilder('pip')
@@ -220,7 +312,7 @@ export class PerformancePipService extends BaseService {
         'owner.name as ownerName',
       ]);
 
-    await this.applyPipScope(qb, perms);
+    await this.applyPipScope(qb, access);
 
     if (query.employeeId) {
       qb.andWhere('pip.employeeId = :employeeId', {
@@ -269,59 +361,77 @@ export class PerformancePipService extends BaseService {
   }
 
   async info(id: number) {
-    const perms = await this.currentPerms();
+    const access = await this.performanceAccessContextService.resolveAccessContext();
     const pip = await this.requirePip(id);
 
-    await this.assertCanViewPip(pip, perms);
+    this.assertHasCapability(access, 'pip.read', '无权限查看 PIP 详情');
+    await this.assertCanViewPip(pip, access);
 
     return this.buildPipDetail(pip);
   }
 
   async add(payload: any) {
-    const perms = await this.currentPerms();
-
-    if (!this.hasPerm(perms, this.perms.add)) {
-      throw new CoolCommException('无权限新建 PIP');
-    }
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    this.assertHasCapability(access, 'pip.create', '无权限新建 PIP');
 
     const normalized = await this.normalizePipPayload(payload);
-    await this.assertCanManageEmployee(normalized.employeeId, perms);
+    await this.assertCanManageEmployee(
+      normalized.employeeId,
+      access,
+      'pip.create',
+      '无权管理该员工 PIP'
+    );
 
-    const pip = await this.performancePipEntity.save(
-      this.performancePipEntity.create({
+    const pip = await this.performancePipEntity.manager.transaction(async manager => {
+      const saved = await manager.save(
+        PerformancePipEntity,
+        this.performancePipEntity.create({
+          assessmentId: normalized.assessmentId || null,
+          employeeId: normalized.employeeId,
+          ownerId: normalized.ownerId,
+          title: normalized.title,
+          improvementGoal: normalized.improvementGoal,
+          sourceReason: normalized.sourceReason,
+          startDate: normalized.startDate,
+          endDate: normalized.endDate,
+          status: PIP_DRAFT_STATUS,
+          resultSummary: '',
+        })
+      );
+
+      await this.linkSuggestionIfPresent(manager, payload, {
+        entityType: 'pip',
+        entityId: Number(saved.id),
         assessmentId: normalized.assessmentId || null,
         employeeId: normalized.employeeId,
-        ownerId: normalized.ownerId,
-        title: normalized.title,
-        improvementGoal: normalized.improvementGoal,
-        sourceReason: normalized.sourceReason,
-        startDate: normalized.startDate,
-        endDate: normalized.endDate,
-        status: 'draft',
-        resultSummary: '',
-      })
-    );
+      });
+
+      return saved;
+    });
 
     return this.info(pip.id);
   }
 
   async updatePip(payload: any) {
-    const perms = await this.currentPerms();
+    const access = await this.performanceAccessContextService.resolveAccessContext();
     const pip = await this.requirePip(Number(payload.id));
 
-    if (!this.hasPerm(perms, this.perms.update)) {
-      throw new CoolCommException('无权限修改 PIP');
-    }
+    this.assertHasCapability(access, 'pip.update', '无权限修改 PIP');
 
     assertPipEditable(pip.status);
-    await this.assertCanManagePip(pip, perms);
+    await this.assertCanManagePip(pip, access, 'pip.update');
 
     const normalized = await this.normalizePipPayload({
       ...pip,
       ...payload,
     });
 
-    await this.assertCanManageEmployee(normalized.employeeId, perms);
+    await this.assertCanManageEmployee(
+      normalized.employeeId,
+      access,
+      'pip.update',
+      '无权管理该员工 PIP'
+    );
 
     await this.performancePipEntity.update(
       { id: pip.id },
@@ -345,14 +455,12 @@ export class PerformancePipService extends BaseService {
   }
 
   async track(payload: any) {
-    const perms = await this.currentPerms();
+    const access = await this.performanceAccessContextService.resolveAccessContext();
     const pip = await this.requirePip(Number(payload.id));
 
-    if (!this.hasPerm(perms, this.perms.track)) {
-      throw new CoolCommException('无权限提交 PIP 跟进');
-    }
+    this.assertHasCapability(access, 'pip.track', '无权限提交 PIP 跟进');
 
-    await this.assertCanManagePip(pip, perms);
+    await this.assertCanManagePip(pip, access, 'pip.track');
     resolvePipStatusTransition(pip.status as PipStatus, 'track');
 
     if (!payload.recordDate) {
@@ -385,14 +493,11 @@ export class PerformancePipService extends BaseService {
   }
 
   async export(query: any) {
-    let perms: string[] = [];
+    let access: PerformanceResolvedAccessContext | null = null;
 
     try {
-      perms = await this.currentPerms();
-
-      if (!this.hasPerm(perms, this.perms.export)) {
-        throw new CoolCommException(PIP_EXPORT_ERRORS.denied);
-      }
+      access = await this.performanceAccessContextService.resolveAccessContext();
+      this.assertHasCapability(access, 'pip.export', PIP_EXPORT_ERRORS.denied);
 
       const qb = this.performancePipEntity
         .createQueryBuilder('pip')
@@ -414,7 +519,7 @@ export class PerformancePipService extends BaseService {
           'owner.name as ownerName',
         ]);
 
-      await this.applyPipExportScope(qb, perms);
+      await this.applyPipExportScope(qb, access);
 
       if (query.employeeId) {
         qb.andWhere('pip.employeeId = :employeeId', {
@@ -468,14 +573,14 @@ export class PerformancePipService extends BaseService {
           title: item.title || '',
           startDate: item.startDate || '',
           endDate: item.endDate || '',
-          status: item.status || 'draft',
+          status: item.status || PIP_DRAFT_STATUS,
           createTime: item.createTime || '',
           updateTime: item.updateTime || '',
         };
       });
 
       await this.recordExportAudit({
-        perms,
+        access,
         query,
         rowCount: result.length,
         resultStatus: 'success',
@@ -484,7 +589,7 @@ export class PerformancePipService extends BaseService {
       return result;
     } catch (error) {
       await this.recordExportAudit({
-        perms,
+        access,
         query,
         rowCount: 0,
         resultStatus: 'failed',
@@ -500,15 +605,13 @@ export class PerformancePipService extends BaseService {
     action: Exclude<PipAction, 'track'>,
     resultSummary?: string
   ) {
-    const perms = await this.currentPerms();
+    const access = await this.performanceAccessContextService.resolveAccessContext();
     const pip = await this.requirePip(id);
-    const actionPerm = this.perms[action];
+    const capabilityKey = this.resolveActionCapability(action);
 
-    if (!this.hasPerm(perms, actionPerm)) {
-      throw new CoolCommException(`无权限执行 PIP ${action} 动作`);
-    }
+    this.assertHasCapability(access, capabilityKey, `无权限执行 PIP ${action} 动作`);
 
-    await this.assertCanManagePip(pip, perms);
+    await this.assertCanManagePip(pip, access, capabilityKey);
 
     const nextStatus = resolvePipStatusTransition(pip.status as PipStatus, action);
 
@@ -590,11 +693,11 @@ export class PerformancePipService extends BaseService {
     const ownerId = assessment ? Number(assessment.assessorId) : Number(payload.ownerId);
 
     if (!employeeId) {
-      throw new CoolCommException('员工不能为空');
+      throw new CoolCommException(PERFORMANCE_EMPLOYEE_REQUIRED_MESSAGE);
     }
 
     if (!ownerId) {
-      throw new CoolCommException('负责人不能为空');
+      throw new CoolCommException(PERFORMANCE_OWNER_REQUIRED_MESSAGE);
     }
 
     const [employee, owner] = await Promise.all([
@@ -603,11 +706,11 @@ export class PerformancePipService extends BaseService {
     ]);
 
     if (!employee) {
-      throw new CoolCommException('员工不存在');
+      throw new CoolCommException(PERFORMANCE_EMPLOYEE_NOT_FOUND_MESSAGE);
     }
 
     if (!owner) {
-      throw new CoolCommException('负责人不存在');
+      throw new CoolCommException(PERFORMANCE_OWNER_NOT_FOUND_MESSAGE);
     }
 
     const normalized = {
@@ -628,6 +731,66 @@ export class PerformancePipService extends BaseService {
     return normalized;
   }
 
+  private async linkSuggestionIfPresent(
+    manager: any,
+    payload: any,
+    context: {
+      entityType: 'pip';
+      entityId: number;
+      assessmentId: number | null;
+      employeeId: number;
+    }
+  ) {
+    const suggestionId = Number(payload?.suggestionId || 0);
+
+    if (!suggestionId) {
+      return;
+    }
+
+    const suggestion = await manager
+      .getRepository(PerformanceSuggestionEntity)
+      .findOneBy({ id: suggestionId });
+
+    if (!suggestion) {
+      throw new CoolCommException(PERFORMANCE_SOURCE_SUGGESTION_NOT_FOUND_MESSAGE);
+    }
+
+    if (suggestion.suggestionType !== context.entityType) {
+      throw new CoolCommException(
+        PERFORMANCE_SUGGESTION_LINKED_ENTITY_TYPE_MISMATCH_MESSAGE
+      );
+    }
+
+    if (suggestion.status !== 'accepted') {
+      throw new CoolCommException(PERFORMANCE_SUGGESTION_ACCEPTED_ONLY_MESSAGE);
+    }
+
+    if (Number(suggestion.employeeId) !== Number(context.employeeId)) {
+      throw new CoolCommException(PERFORMANCE_SUGGESTION_EMPLOYEE_MISMATCH_MESSAGE);
+    }
+
+    if (
+      context.assessmentId &&
+      Number(suggestion.assessmentId) !== Number(context.assessmentId)
+    ) {
+      throw new CoolCommException(
+        PERFORMANCE_SUGGESTION_ASSESSMENT_MISMATCH_MESSAGE
+      );
+    }
+
+    if (suggestion.linkedEntityType || suggestion.linkedEntityId) {
+      throw new CoolCommException(PERFORMANCE_SUGGESTION_ALREADY_LINKED_MESSAGE);
+    }
+
+    await manager.getRepository(PerformanceSuggestionEntity).update(
+      { id: suggestionId },
+      {
+        linkedEntityType: context.entityType,
+        linkedEntityId: context.entityId,
+      }
+    );
+  }
+
   private async resolveLinkedAssessment(assessmentId?: number | string | null) {
     const id = Number(assessmentId || 0);
 
@@ -638,7 +801,12 @@ export class PerformancePipService extends BaseService {
     const assessment = await this.performanceAssessmentEntity.findOneBy({ id });
 
     if (!assessment) {
-      throw new CoolCommException('来源评估单不存在');
+      throw new CoolCommException(
+        resolvePerformanceDomainErrorMessage(
+          PERFORMANCE_DOMAIN_ERROR_CODES.assessmentNotFound,
+          '来源评估单不存在'
+        )
+      );
     }
 
     return assessment;
@@ -648,99 +816,103 @@ export class PerformancePipService extends BaseService {
     const pip = await this.performancePipEntity.findOneBy({ id });
 
     if (!pip) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     return pip;
   }
 
-  private async currentPerms() {
-    return this.baseSysMenuService.getPerms(this.currentAdmin.roleIds);
+  private assertHasCapability(
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey,
+    message: string
+  ) {
+    if (!this.performanceAccessContextService.hasCapability(access, capabilityKey)) {
+      throw new CoolCommException(message);
+    }
   }
 
-  private hasPerm(perms: string[], perm: string) {
-    return perms.includes(perm);
-  }
-
-  private isHr(perms: string[]) {
-    return (
-      this.currentAdmin.isAdmin === true ||
-      this.hasPerm(perms, this.perms.hrPage)
+  private async applyPipScope(
+    qb: any,
+    access: PerformanceResolvedAccessContext
+  ) {
+    const readScopes = this.performanceAccessContextService.capabilityScopes(
+      access,
+      'pip.read'
     );
-  }
 
-  private async departmentScopeIds() {
-    const ids = await this.baseSysPermsService.departmentIds(
-      this.currentAdmin.userId
-    );
-    return Array.isArray(ids) ? ids.map(item => Number(item)) : [];
-  }
-
-  private async applyPipScope(qb: any, perms: string[]) {
-    if (this.isHr(perms)) {
+    if (readScopes.includes('company')) {
       return;
     }
 
     const userId = this.currentAdmin.userId;
 
     if (
-      !this.hasPerm(perms, this.perms.add) &&
-      !this.hasPerm(perms, this.perms.update) &&
-      !this.hasPerm(perms, this.perms.start) &&
-      !this.hasPerm(perms, this.perms.track) &&
-      !this.hasPerm(perms, this.perms.complete) &&
-      !this.hasPerm(perms, this.perms.close)
+      !this.performanceAccessContextService.hasAnyCapability(access, [
+        'pip.create',
+        'pip.update',
+        'pip.start',
+        'pip.track',
+        'pip.complete',
+        'pip.close',
+      ])
     ) {
       qb.andWhere('pip.employeeId = :userId', { userId });
       return;
     }
 
-    const departmentIds = await this.resolveScopeDepartmentIds();
-
-    if (!departmentIds.length) {
+    if (!access.departmentIds.length) {
       qb.andWhere('1 = 0');
       return;
     }
 
-    qb.andWhere('employee.departmentId in (:...departmentIds)', { departmentIds });
+    qb.andWhere('employee.departmentId in (:...departmentIds)', {
+      departmentIds: access.departmentIds,
+    });
   }
 
-  private async applyPipExportScope(qb: any, perms: string[]) {
-    if (this.isHr(perms)) {
+  private async applyPipExportScope(
+    qb: any,
+    access: PerformanceResolvedAccessContext
+  ) {
+    const exportScopes = this.performanceAccessContextService.capabilityScopes(
+      access,
+      'pip.export'
+    );
+
+    if (exportScopes.includes('company')) {
       return;
     }
 
-    const departmentIds = await this.resolveScopeDepartmentIds();
-
-    if (!departmentIds.length) {
+    if (!access.departmentIds.length) {
       qb.andWhere('1 = 0');
       return;
     }
 
-    qb.andWhere('employee.departmentId in (:...departmentIds)', { departmentIds });
+    qb.andWhere('employee.departmentId in (:...departmentIds)', {
+      departmentIds: access.departmentIds,
+    });
   }
 
-  private async assertCanViewPip(pip: PerformancePipEntity, perms: string[]) {
-    if (!this.hasPerm(perms, this.perms.info)) {
-      throw new CoolCommException('无权限查看 PIP 详情');
-    }
-
-    if (this.isHr(perms)) {
-      return;
-    }
-
-    const userId = this.currentAdmin.userId;
+  private async assertCanViewPip(
+    pip: PerformancePipEntity,
+    access: PerformanceResolvedAccessContext
+  ) {
     const employee = await this.baseSysUserEntity.findOneBy({ id: pip.employeeId });
 
     if (!employee) {
-      throw new CoolCommException('员工不存在');
+      throw new CoolCommException(PERFORMANCE_EMPLOYEE_NOT_FOUND_MESSAGE);
     }
 
-    const departmentIds = await this.resolveScopeDepartmentIds();
-
     if (
-      Number(pip.employeeId) === Number(userId) ||
-      departmentIds.includes(Number(employee.departmentId))
+      this.performanceAccessContextService.matchesScope(
+        access,
+        this.performanceAccessContextService.capabilityScopes(access, 'pip.read'),
+        {
+          subjectUserId: Number(pip.employeeId),
+          departmentId: Number(employee.departmentId),
+        }
+      )
     ) {
       return;
     }
@@ -748,42 +920,42 @@ export class PerformancePipService extends BaseService {
     throw new CoolCommException('无权查看该 PIP');
   }
 
-  private async assertCanManagePip(pip: PerformancePipEntity, perms: string[]) {
-    if (this.isHr(perms)) {
-      return;
-    }
-
-    await this.assertCanManageEmployee(Number(pip.employeeId), perms);
+  private async assertCanManagePip(
+    pip: PerformancePipEntity,
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey
+  ) {
+    await this.assertCanManageEmployee(
+      Number(pip.employeeId),
+      access,
+      capabilityKey,
+      '无权管理该员工 PIP'
+    );
   }
 
-  private async assertCanManageEmployee(employeeId: number, perms: string[]) {
-    if (this.isHr(perms)) {
-      return;
-    }
-
+  private async assertCanManageEmployee(
+    employeeId: number,
+    access: PerformanceResolvedAccessContext,
+    capabilityKey: PerformanceCapabilityKey,
+    message: string
+  ) {
     const employee = await this.baseSysUserEntity.findOneBy({ id: employeeId });
 
     if (!employee?.departmentId) {
-      throw new CoolCommException('员工所属部门不存在');
+      throw new CoolCommException(PERFORMANCE_EMPLOYEE_DEPARTMENT_NOT_FOUND_MESSAGE);
     }
 
-    const departmentIds = await this.resolveScopeDepartmentIds();
-
-    if (!departmentIds.includes(Number(employee.departmentId))) {
-      throw new CoolCommException('无权管理该员工 PIP');
+    if (
+      !this.performanceAccessContextService.matchesScope(
+        access,
+        this.performanceAccessContextService.capabilityScopes(access, capabilityKey),
+        {
+          departmentId: Number(employee.departmentId),
+        }
+      )
+    ) {
+      throw new CoolCommException(message);
     }
-  }
-
-  private async resolveScopeDepartmentIds() {
-    const cached = this.currentCtx?.pipDepartmentIds;
-
-    if (Array.isArray(cached)) {
-      return cached.map(item => Number(item));
-    }
-
-    const departmentIds = await this.departmentScopeIds();
-    this.currentCtx.pipDepartmentIds = departmentIds;
-    return departmentIds;
   }
 
   private resolveExportFailureReason(error: any) {
@@ -801,23 +973,34 @@ export class PerformancePipService extends BaseService {
     }
   }
 
-  private resolveExportOperatorRole(perms: string[]) {
+  private resolveExportOperatorRole(access: PerformanceResolvedAccessContext | null) {
     if (this.currentAdmin?.isAdmin === true) {
       return 'admin';
     }
 
-    if (this.isHr(perms)) {
+    if (
+      access &&
+      (this.performanceAccessContextService
+        .capabilityScopes(access, 'pip.read')
+        .includes('company') ||
+        this.performanceAccessContextService
+          .capabilityScopes(access, 'pip.export')
+          .includes('company'))
+    ) {
       return 'hr';
     }
 
     if (
-      this.hasPerm(perms, this.perms.export) ||
-      this.hasPerm(perms, this.perms.add) ||
-      this.hasPerm(perms, this.perms.update) ||
-      this.hasPerm(perms, this.perms.start) ||
-      this.hasPerm(perms, this.perms.track) ||
-      this.hasPerm(perms, this.perms.complete) ||
-      this.hasPerm(perms, this.perms.close)
+      access &&
+      this.performanceAccessContextService.hasAnyCapability(access, [
+        'pip.export',
+        'pip.create',
+        'pip.update',
+        'pip.start',
+        'pip.track',
+        'pip.complete',
+        'pip.close',
+      ])
     ) {
       return 'manager';
     }
@@ -836,7 +1019,7 @@ export class PerformancePipService extends BaseService {
   }
 
   private async recordExportAudit(input: {
-    perms: string[];
+    access: PerformanceResolvedAccessContext | null;
     query: any;
     rowCount: number;
     resultStatus: 'success' | 'failed';
@@ -849,7 +1032,7 @@ export class PerformancePipService extends BaseService {
     const operatorId = Number(this.currentAdmin?.userId || 0) || null;
     const params = {
       operatorId,
-      operatorRole: this.resolveExportOperatorRole(input.perms || []),
+      operatorRole: this.resolveExportOperatorRole(input.access),
       moduleKey: 'pip',
       filterSummary: this.buildExportFilterSummary(input.query),
       exportFieldVersion: PIP_EXPORT_FIELD_VERSION,
@@ -875,6 +1058,21 @@ export class PerformancePipService extends BaseService {
   }
 
   async initPipScope() {
-    this.currentCtx.pipDepartmentIds = await this.departmentScopeIds();
+    return;
+  }
+
+  private resolveActionCapability(
+    action: Exclude<PipAction, 'track'>
+  ): PerformanceCapabilityKey {
+    switch (action) {
+      case 'start':
+        return 'pip.start';
+      case 'complete':
+        return 'pip.complete';
+      case 'close':
+        return 'pip.close';
+      default:
+        throw new CoolCommException(PERFORMANCE_PIP_ACTION_UNSUPPORTED_MESSAGE);
+    }
   }
 }

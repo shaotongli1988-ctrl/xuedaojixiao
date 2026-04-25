@@ -3,11 +3,6 @@
  * 这里只负责指标分页、详情和 CRUD 校验，不负责共享鉴权链路或其他绩效模块联动逻辑。
  */
 import {
-  App,
-  ASYNC_CONTEXT_KEY,
-  ASYNC_CONTEXT_MANAGER_KEY,
-  AsyncContextManager,
-  IMidwayApplication,
   Inject,
   Provide,
   Scope,
@@ -18,18 +13,24 @@ import { InjectEntityModel } from '@midwayjs/typeorm';
 import { Brackets, Repository } from 'typeorm';
 import { BaseSysMenuService } from '../../base/service/sys/menu';
 import { PerformanceIndicatorEntity } from '../entity/indicator';
-import * as jwt from 'jsonwebtoken';
-
-const resolveBaseJwtConfig = (app?: IMidwayApplication) => {
-  return require('../../base/config').default({
-    app,
-    env: app?.getEnv?.(),
-  }).jwt;
-};
-
-const INDICATOR_CATEGORIES = ['assessment', 'goal', 'feedback'];
-const INDICATOR_APPLY_SCOPES = ['all', 'department', 'employee'];
-const INDICATOR_STATUS = [0, 1];
+import {
+  INDICATOR_APPLY_SCOPE_VALUES,
+  INDICATOR_CATEGORY_VALUES,
+  INDICATOR_STATUS_VALUES,
+} from './indicator-dict';
+import {
+  PERFORMANCE_DOMAIN_ERROR_CODES,
+  resolvePerformanceDomainErrorMessage,
+} from '../domain/errors/catalog';
+import {
+  PerformanceAccessContextService,
+  PerformanceCapabilityKey,
+  PerformanceResolvedAccessContext,
+} from './access-context';
+const PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE =
+  resolvePerformanceDomainErrorMessage(
+    PERFORMANCE_DOMAIN_ERROR_CODES.resourceNotFound
+  );
 
 @Provide()
 @Scope(ScopeEnum.Request, { allowDowngrade: true })
@@ -41,53 +42,10 @@ export class PerformanceIndicatorService extends BaseService {
   baseSysMenuService: BaseSysMenuService;
 
   @Inject()
-  ctx;
-
-  @App()
-  app: IMidwayApplication;
-
-  private readonly perms = {
-    page: 'performance:indicator:page',
-    info: 'performance:indicator:info',
-    add: 'performance:indicator:add',
-    update: 'performance:indicator:update',
-    delete: 'performance:indicator:delete',
-  };
-
-  private get currentCtx() {
-    if (this.ctx?.admin) {
-      return this.ctx;
-    }
-    try {
-      const contextManager: AsyncContextManager = this.app
-        .getApplicationContext()
-        .get(ASYNC_CONTEXT_MANAGER_KEY);
-      return contextManager.active().getValue(ASYNC_CONTEXT_KEY) as any;
-    } catch (error) {
-      return this.ctx;
-    }
-  }
-
-  private get currentAdmin() {
-    if (this.currentCtx?.admin) {
-      return this.currentCtx.admin;
-    }
-    const token =
-      this.currentCtx?.get?.('Authorization') ||
-      this.currentCtx?.headers?.authorization;
-    if (!token) {
-      return undefined;
-    }
-    try {
-      return jwt.verify(token, resolveBaseJwtConfig(this.app).secret);
-    } catch (error) {
-      return undefined;
-    }
-  }
+  performanceAccessContextService: PerformanceAccessContextService;
 
   async page(query: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.page, '无权限查看指标库');
+    await this.requireAccess('indicator.read', '无权限查看指标库');
 
     const page = Number(query.page || 1);
     const size = Number(query.size || 20);
@@ -149,15 +107,13 @@ export class PerformanceIndicatorService extends BaseService {
   }
 
   async info(id: number) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.info, '无权限查看指标详情');
+    await this.requireAccess('indicator.read', '无权限查看指标详情');
 
     return this.normalizeIndicator(await this.requireIndicator(id));
   }
 
   async add(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.add, '无权限新增指标');
+    await this.requireAccess('indicator.create', '无权限新增指标');
 
     const normalized = await this.normalizePayload(payload);
     await this.assertCodeUnique(normalized.code);
@@ -170,8 +126,7 @@ export class PerformanceIndicatorService extends BaseService {
   }
 
   async updateIndicator(payload: any) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.update, '无权限修改指标');
+    await this.requireAccess('indicator.update', '无权限修改指标');
 
     const id = Number(payload.id);
     await this.requireIndicator(id);
@@ -185,8 +140,7 @@ export class PerformanceIndicatorService extends BaseService {
   }
 
   async delete(ids: number[]) {
-    const perms = await this.currentPerms();
-    this.assertPerm(perms, this.perms.delete, '无权限删除指标');
+    await this.requireAccess('indicator.delete', '无权限删除指标');
 
     const validIds = (ids || [])
       .map(item => Number(item))
@@ -199,27 +153,22 @@ export class PerformanceIndicatorService extends BaseService {
     await this.performanceIndicatorEntity.delete(validIds);
   }
 
-  private async currentPerms() {
-    const admin = this.currentAdmin;
-
-    if (!admin?.roleIds) {
-      throw new CoolCommException('登录状态已失效');
-    }
-
-    return this.baseSysMenuService.getPerms(admin.roleIds);
-  }
-
-  private assertPerm(perms: string[], perm: string, message: string) {
-    if (!perms.includes(perm)) {
+  private async requireAccess(
+    capabilityKey: PerformanceCapabilityKey,
+    message: string
+  ): Promise<PerformanceResolvedAccessContext> {
+    const access = await this.performanceAccessContextService.resolveAccessContext();
+    if (!this.performanceAccessContextService.hasCapability(access, capabilityKey)) {
       throw new CoolCommException(message);
     }
+    return access;
   }
 
   private async requireIndicator(id: number) {
     const indicator = await this.performanceIndicatorEntity.findOneBy({ id });
 
     if (!indicator) {
-      throw new CoolCommException('数据不存在');
+      throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
     return indicator;
@@ -253,11 +202,11 @@ export class PerformanceIndicatorService extends BaseService {
       throw new CoolCommException('指标编码不能为空');
     }
 
-    if (!INDICATOR_CATEGORIES.includes(category)) {
+    if (!INDICATOR_CATEGORY_VALUES.includes(category as any)) {
       throw new CoolCommException('指标类型不合法');
     }
 
-    if (!INDICATOR_APPLY_SCOPES.includes(applyScope)) {
+    if (!INDICATOR_APPLY_SCOPE_VALUES.includes(applyScope as any)) {
       throw new CoolCommException('适用范围不合法');
     }
 
@@ -269,7 +218,7 @@ export class PerformanceIndicatorService extends BaseService {
       throw new CoolCommException('满分必须为正整数');
     }
 
-    if (!INDICATOR_STATUS.includes(status)) {
+    if (!INDICATOR_STATUS_VALUES.includes(status as any)) {
       throw new CoolCommException('指标状态不合法');
     }
 

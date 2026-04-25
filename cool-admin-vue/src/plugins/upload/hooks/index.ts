@@ -12,6 +12,13 @@ export function useUpload() {
 	const { user } = useBase();
 	const { t } = useI18n();
 
+	function requireUploadField(value: string | undefined, field: string, provider: string) {
+		if (!value) {
+			throw new Error(`[upload] ${provider} response missing ${field}`);
+		}
+		return value;
+	}
+
 	// 上传
 	async function toUpload(file: File, opts: Upload.Options = {}): Upload.Response {
 		return new Promise((resolve, reject) => {
@@ -129,14 +136,14 @@ export function useUpload() {
 									// 腾讯
 									case 'cos':
 										next({
-											host: res.url,
+											host: requireUploadField(res.url, 'url', 'cos'),
 											data: res.credentials
 										});
 										break;
 									// 阿里
 									case 'oss':
 										next({
-											host: res.host,
+											host: requireUploadField(res.host, 'host', 'oss'),
 											preview: res.publicDomain,
 											data: {
 												OSSAccessKeyId: res.OSSAccessKeyId,
@@ -148,7 +155,11 @@ export function useUpload() {
 									// 七牛
 									case 'qiniu':
 										next({
-											host: res.uploadUrl,
+											host: requireUploadField(
+												res.uploadUrl,
+												'uploadUrl',
+												'qiniu'
+											),
 											preview: res.publicDomain,
 											data: {
 												token: res.token
@@ -158,14 +169,14 @@ export function useUpload() {
 									// aws
 									case 'aws':
 										next({
-											host: res.url,
+											host: requireUploadField(res.url, 'url', 'aws'),
 											data: res.fields
 										});
 										break;
 
 									default:
 										next({
-											host: res.url,
+											host: requireUploadField(res.url, 'url', type),
 											preview: res.previewUrl
 										});
 										break;

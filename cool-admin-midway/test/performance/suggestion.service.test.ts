@@ -9,6 +9,28 @@ import {
   validateRevokePayload,
 } from '../../src/modules/performance/service/suggestion-helper';
 import { PerformanceSuggestionService } from '../../src/modules/performance/service/suggestion';
+import { PerformanceAccessContextService } from '../../src/modules/performance/service/access-context';
+
+function attachAccessContextService(service: any) {
+  if (!service.baseSysMenuService) {
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue([]),
+    };
+  }
+  if (!service.baseSysPermsService) {
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+  }
+  service.performanceAccessContextService = Object.assign(
+    new PerformanceAccessContextService(),
+    {
+      ctx: service.ctx,
+      baseSysMenuService: service.baseSysMenuService,
+      baseSysPermsService: service.baseSysPermsService,
+    }
+  );
+}
 
 describe('performance suggestion helper', () => {
   test('should derive pip suggestion from approved C result', () => {
@@ -155,8 +177,10 @@ describe('performance suggestion service', () => {
         }),
       },
     };
-    await service.ensureSuggestions({}, ['performance:suggestion:page']);
-    await service.ensureSuggestions({}, ['performance:suggestion:page']);
+    attachAccessContextService(service);
+
+    await service.ensureSuggestions({});
+    await service.ensureSuggestions({});
 
     expect(suggestionRepo.create).toHaveBeenCalledTimes(1);
     expect(suggestionRepo.create).toHaveBeenCalledWith(
@@ -203,6 +227,7 @@ describe('performance suggestion service', () => {
         departmentId: 11,
       }),
     };
+    attachAccessContextService(service);
 
     await expect(service.accept({ id: 501 })).rejects.toThrow('无权限采用该建议');
   });
@@ -233,6 +258,7 @@ describe('performance suggestion service', () => {
         departmentId: 11,
       }),
     };
+    attachAccessContextService(service);
 
     await expect(service.ignore({ id: 601 })).rejects.toThrow(
       '当前状态不允许执行该操作'
@@ -287,6 +313,7 @@ describe('performance suggestion service', () => {
       findOneBy: jest.fn().mockResolvedValue(suggestion),
       save: jest.fn().mockImplementation(async payload => payload),
     };
+    attachAccessContextService(service);
 
     await expect(service.revoke({ id: 701 })).rejects.toThrow('撤销原因编码不合法');
 
@@ -370,6 +397,7 @@ describe('performance suggestion service', () => {
         linkedEntityId: null,
       }),
     };
+    attachAccessContextService(service);
 
     await expect(service.info(801)).resolves.toEqual({
       id: 801,
@@ -409,6 +437,9 @@ describe('performance suggestion service', () => {
         'performance:suggestion:info',
       ]),
     };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([11]),
+    };
     service.performanceSuggestionEntity = {
       findOneBy: jest.fn().mockResolvedValue({
         id: 901,
@@ -429,6 +460,7 @@ describe('performance suggestion service', () => {
         linkedEntityId: null,
       }),
     };
+    attachAccessContextService(service);
 
     await expect(service.info(901)).rejects.toThrow('无权访问该建议');
   });

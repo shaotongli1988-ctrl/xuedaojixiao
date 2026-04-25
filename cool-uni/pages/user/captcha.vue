@@ -74,7 +74,7 @@ function next() {
 
 	service.user.login
 		.phone(form)
-		.then(async (res) => {
+		.then(async (res: any) => {
 			// 设置token
 			user.setToken(res);
 
@@ -84,7 +84,7 @@ function next() {
 			// 登录跳转
 			router.nextLogin();
 		})
-		.catch((err) => {
+		.catch((err: { message?: string }) => {
 			ui.showTips(err.message || t("登录失效，请重试~"));
 			saving.value = false;
 			form.smsCode = "";

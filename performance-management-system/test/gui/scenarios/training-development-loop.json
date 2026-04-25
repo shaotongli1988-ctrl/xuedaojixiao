@@ -1,0 +1,179 @@
+{
+  "meta": {
+    "name": "training-development-loop-gui",
+    "description": "培训与发展闭环最小 GUI 点测"
+  },
+  "defaults": {
+    "uiBaseUrl": "http://127.0.0.1:9007",
+    "apiBaseUrl": "http://127.0.0.1:8006",
+    "chromeDebugUrl": "http://127.0.0.1:9222",
+    "outputDir": "/Users/shaotongli/Documents/xuedao/performance-management-system/tasks/artifacts/training-development-loop",
+    "password": "123456",
+    "viewport": {
+      "width": 1440,
+      "height": 1100,
+      "deviceScaleFactor": 1,
+      "mobile": false
+    }
+  },
+  "scenarios": [
+    {
+      "name": "hr-training-development-loop",
+      "username": "hr_admin",
+      "route": "/performance/course",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "培训课程管理",
+            "新增课程"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "training-loop-hr-course.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/capability",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "能力地图",
+            "新增能力模型"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "training-loop-hr-capability.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/certificate",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "证书管理",
+            "新增证书"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "training-loop-hr-certificate.png"
+        }
+      ]
+    },
+    {
+      "name": "manager-training-development-loop",
+      "username": "manager_rd",
+      "route": "/performance/course",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "培训课程管理",
+            "经理只读"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "培训课程管理",
+            "经理只读"
+          ],
+          "excludes": [
+            "新增课程"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "training-loop-manager-course.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/capability",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "能力地图",
+            "经理只读"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "能力地图",
+            "经理只读"
+          ],
+          "excludes": [
+            "新增能力模型"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "training-loop-manager-capability.png"
+        }
+      ]
+    },
+    {
+      "name": "employee-training-learning-loop",
+      "username": "employee_platform",
+      "route": "/",
+      "waitAfterNavigateMs": 3000,
+      "steps": [
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "我的考核"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "assertVisibleText",
+          "includes": [
+            "我的考核"
+          ],
+          "excludes": [
+            "培训课程管理",
+            "能力地图",
+            "证书管理"
+          ]
+        },
+        {
+          "type": "screenshot",
+          "file": "training-loop-employee-no-admin-entry.png"
+        },
+        {
+          "type": "navigate",
+          "route": "/performance/course-learning",
+          "waitAfterMs": 1800
+        },
+        {
+          "type": "waitBodyText",
+          "includes": [
+            "培训学习与考试增强",
+            "员工自助"
+          ],
+          "timeoutMs": 12000
+        },
+        {
+          "type": "screenshot",
+          "file": "training-loop-employee-learning.png"
+        }
+      ]
+    }
+  ]
+}

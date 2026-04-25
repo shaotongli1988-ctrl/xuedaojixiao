@@ -1,15 +1,13 @@
 /**
  * 文件职责：提供环评页面共享的状态文案、来源校验和任务可操作判断；不负责接口请求、页面渲染或权限最终裁决；依赖反馈 service 类型；维护重点是二级页来源丢失时必须回工作台，提交与汇总可见性只做前端守卫而不替代后端校验。
  */
-import type { FeedbackTaskRecord } from "/@/service/performance/feedback";
+import type { FeedbackTaskRecord } from "/@/types/performance-feedback";
 
 export const FEEDBACK_LIST_PATH = "/pages/performance/feedback/list";
 export const FEEDBACK_DETAIL_PATH = "/pages/performance/feedback/detail";
 export const FEEDBACK_SUBMIT_PATH = "/pages/performance/feedback/submit";
 export const FEEDBACK_SUMMARY_PATH = "/pages/performance/feedback/summary";
 export const PERFORMANCE_HOME_PATH = "/pages/index/home";
-
-export const FEEDBACK_RELATION_OPTIONS = ["上级", "同级", "下级", "协作人"];
 
 export function buildFeedbackDetailQuery(id: number) {
 	return {
@@ -50,9 +48,7 @@ export function canSubmitFeedbackTask(task?: Partial<FeedbackTaskRecord> | null)
 	}
 
 	const hasCurrentRecord = Boolean(
-		task.currentUserRecord?.id ||
-			task.currentUserRecordStatus ||
-			task.currentUserRelationType
+		task.currentUserRecord?.id || task.currentUserRecordStatus || task.currentUserRelationType,
 	);
 
 	if (!hasCurrentRecord) {
@@ -67,8 +63,7 @@ export function canSubmitFeedbackTask(task?: Partial<FeedbackTaskRecord> | null)
 		return false;
 	}
 
-	const recordStatus =
-		task.currentUserRecord?.status || task.currentUserRecordStatus || "draft";
+	const recordStatus = task.currentUserRecord?.status || task.currentUserRecordStatus || "draft";
 
 	return String(recordStatus) !== "submitted";
 }
@@ -87,9 +82,7 @@ export function getSubmitDisabledReason(task?: Partial<FeedbackTaskRecord> | nul
 	}
 
 	const hasCurrentRecord = Boolean(
-		task.currentUserRecord?.id ||
-			task.currentUserRecordStatus ||
-			task.currentUserRelationType
+		task.currentUserRecord?.id || task.currentUserRecordStatus || task.currentUserRelationType,
 	);
 
 	if (!hasCurrentRecord) {
@@ -104,8 +97,7 @@ export function getSubmitDisabledReason(task?: Partial<FeedbackTaskRecord> | nul
 		return "当前环评任务已超过截止时间";
 	}
 
-	const recordStatus =
-		task.currentUserRecord?.status || task.currentUserRecordStatus || "draft";
+	const recordStatus = task.currentUserRecord?.status || task.currentUserRecordStatus || "draft";
 
 	if (String(recordStatus) === "submitted") {
 		return "当前账号已提交过本次反馈";

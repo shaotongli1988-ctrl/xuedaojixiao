@@ -2,6 +2,7 @@ import { CoolController, BaseController } from '@cool-midway/core';
 import { Body, Get, Inject, Post } from '@midwayjs/core';
 import { UserInfoService } from '../../service/info';
 import { UserInfoEntity } from '../../entity/info';
+import { resolveUserAppRuntimeContext } from '../../domain';
 
 /**
  * 用户信息
@@ -17,16 +18,18 @@ export class AppUserInfoController extends BaseController {
   @Inject()
   userInfoService: UserInfoService;
 
+  private get currentUserId() {
+    return resolveUserAppRuntimeContext(this.ctx.user).userId;
+  }
+
   @Get('/person', { summary: '获取用户信息' })
   async person() {
-    return this.ok(await this.userInfoService.person(this.ctx.user.id));
+    return this.ok(await this.userInfoService.person(this.currentUserId));
   }
 
   @Post('/updatePerson', { summary: '更新用户信息' })
   async updatePerson(@Body() body) {
-    return this.ok(
-      await this.userInfoService.updatePerson(this.ctx.user.id, body)
-    );
+    return this.ok(await this.userInfoService.updatePerson(this.currentUserId, body));
   }
 
   @Post('/updatePassword', { summary: '更新用户密码' })
@@ -34,19 +37,19 @@ export class AppUserInfoController extends BaseController {
     @Body('password') password: string,
     @Body('code') code: string
   ) {
-    await this.userInfoService.updatePassword(this.ctx.user.id, password, code);
+    await this.userInfoService.updatePassword(this.currentUserId, password, code);
     return this.ok();
   }
 
   @Post('/logoff', { summary: '注销' })
   async logoff() {
-    await this.userInfoService.logoff(this.ctx.user.id);
+    await this.userInfoService.logoff(this.currentUserId);
     return this.ok();
   }
 
   @Post('/bindPhone', { summary: '绑定手机号' })
   async bindPhone(@Body('phone') phone: string, @Body('code') code: string) {
-    await this.userInfoService.bindPhone(this.ctx.user.id, phone, code);
+    await this.userInfoService.bindPhone(this.currentUserId, phone, code);
     return this.ok();
   }
 
@@ -55,7 +58,7 @@ export class AppUserInfoController extends BaseController {
     const { code, encryptedData, iv } = body;
     return this.ok(
       await this.userInfoService.miniPhone(
-        this.ctx.user.id,
+        this.currentUserId,
         code,
         encryptedData,
         iv
