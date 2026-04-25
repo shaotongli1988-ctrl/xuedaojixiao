@@ -22,6 +22,7 @@ function parseArgs(argv) {
 		cwd: process.cwd(),
 		reportMd: '',
 		reportJson: '',
+		reportPaths: '',
 		batchId: '',
 		output: 'markdown'
 	};
@@ -41,6 +42,11 @@ function parseArgs(argv) {
 		}
 		if (current === '--report-json' && next) {
 			args.reportJson = path.resolve(next);
+			index += 1;
+			continue;
+		}
+		if (current === '--report-paths' && next) {
+			args.reportPaths = path.resolve(next);
 			index += 1;
 			continue;
 		}
@@ -527,7 +533,12 @@ function main() {
 		return 0;
 	}
 	if (args.output === 'paths') {
-		process.stdout.write(renderBatchPaths(audit, args.batchId));
+		const pathsContent = renderBatchPaths(audit, args.batchId);
+		const reportPaths =
+			args.reportPaths ||
+			resolveDefaultReportPath(args.cwd, `worktree-split-audit.${args.batchId}.latest.paths`);
+		writeReport(reportPaths, pathsContent);
+		process.stdout.write(pathsContent);
 		return 0;
 	}
 	process.stdout.write(markdown);

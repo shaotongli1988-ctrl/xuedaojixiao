@@ -5118,7 +5118,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_CapabilityModelRecord"
+                  "$ref": "#/components/schemas/ApiResponse_GeneratedCapabilityModelRecord"
                 }
               }
             }
@@ -5149,7 +5149,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_CapabilityModelRecord"
+                  "$ref": "#/components/schemas/ApiResponse_GeneratedCapabilityModelRecord"
                 }
               }
             }
@@ -5181,7 +5181,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_CapabilityModelFetchPageResult"
+                  "$ref": "#/components/schemas/ApiResponse_GeneratedCapabilityModelPageResponse"
                 }
               }
             }
@@ -5212,7 +5212,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_CapabilityModelRecord"
+                  "$ref": "#/components/schemas/ApiResponse_GeneratedCapabilityModelRecord"
                 }
               }
             }
@@ -17369,98 +17369,6 @@
           }
         }
       },
-      "ApiResponse_CapabilityModelFetchPageResult": {
-        "type": "object",
-        "required": [
-          "code",
-          "message",
-          "data"
-        ],
-        "properties": {
-          "code": {
-            "type": "integer"
-          },
-          "message": {
-            "type": "string"
-          },
-          "data": {
-            "type": "object",
-            "properties": {
-              "list": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/CapabilityModelRecord"
-                }
-              },
-              "pagination": {
-                "$ref": "#/components/schemas/PagePagination"
-              }
-            },
-            "required": [
-              "list",
-              "pagination"
-            ]
-          }
-        }
-      },
-      "ApiResponse_CapabilityModelRecord": {
-        "type": "object",
-        "required": [
-          "code",
-          "message",
-          "data"
-        ],
-        "properties": {
-          "code": {
-            "type": "integer"
-          },
-          "message": {
-            "type": "string"
-          },
-          "data": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "number",
-                "nullable": false
-              },
-              "name": {
-                "type": "string"
-              },
-              "code": {
-                "type": "string",
-                "nullable": false
-              },
-              "category": {
-                "type": "string",
-                "nullable": false
-              },
-              "description": {
-                "type": "string",
-                "nullable": false
-              },
-              "status": {
-                "$ref": "#/components/schemas/CapabilityModelStatus"
-              },
-              "itemCount": {
-                "type": "number",
-                "nullable": false
-              },
-              "createTime": {
-                "type": "string",
-                "nullable": false
-              },
-              "updateTime": {
-                "type": "string",
-                "nullable": false
-              }
-            },
-            "required": [
-              "name"
-            ]
-          }
-        }
-      },
       "ApiResponse_CapabilityPortraitRecord": {
         "type": "object",
         "required": [
@@ -19796,6 +19704,46 @@
                 ]
               }
             ]
+          }
+        }
+      },
+      "ApiResponse_GeneratedCapabilityModelPageResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "ApiResponse_GeneratedCapabilityModelRecord": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": true
           }
         }
       },
@@ -31316,24 +31264,6 @@
           "name"
         ]
       },
-      "CapabilityModelFetchPageResult": {
-        "type": "object",
-        "properties": {
-          "list": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CapabilityModelRecord"
-            }
-          },
-          "pagination": {
-            "$ref": "#/components/schemas/PagePagination"
-          }
-        },
-        "required": [
-          "list",
-          "pagination"
-        ]
-      },
       "CapabilityModelInfoQuery": {
         "type": "object",
         "properties": {
@@ -31369,48 +31299,6 @@
         "required": [
           "page",
           "size"
-        ]
-      },
-      "CapabilityModelRecord": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "number",
-            "nullable": false
-          },
-          "name": {
-            "type": "string"
-          },
-          "code": {
-            "type": "string",
-            "nullable": false
-          },
-          "category": {
-            "type": "string",
-            "nullable": false
-          },
-          "description": {
-            "type": "string",
-            "nullable": false
-          },
-          "status": {
-            "$ref": "#/components/schemas/CapabilityModelStatus"
-          },
-          "itemCount": {
-            "type": "number",
-            "nullable": false
-          },
-          "createTime": {
-            "type": "string",
-            "nullable": false
-          },
-          "updateTime": {
-            "type": "string",
-            "nullable": false
-          }
-        },
-        "required": [
-          "name"
         ]
       },
       "CapabilityModelSaveRequest": {
@@ -35994,6 +35882,14 @@
             ]
           }
         ]
+      },
+      "GeneratedCapabilityModelPageResponse": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "GeneratedCapabilityModelRecord": {
+        "type": "object",
+        "additionalProperties": true
       },
       "GeneratedCoursePageResponse": {
         "type": "object",

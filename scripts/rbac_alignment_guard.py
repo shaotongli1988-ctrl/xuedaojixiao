@@ -124,7 +124,6 @@ KNOWN_ROLE_TOKENS = {
     "operator",
     "teacher",
     "student",
-    "user",
     "guest",
     "auditor",
     "maintainer",
@@ -143,6 +142,22 @@ KNOWN_NON_ROLE_TOKENS = {
     "patch",
     "options",
     "head",
+}
+BACKEND_INTERNAL_ONLY_ROLE_TOKENS = {
+    "admin",
+    "superadmin",
+    "owner",
+    "maintainer",
+    "operator",
+    "guest",
+    "auditor",
+    "teacher",
+    "student",
+    "管理员",
+    "超级管理员",
+    "访客",
+    "教师",
+    "学生",
 }
 
 
@@ -686,7 +701,8 @@ def build_report(
                 fix_hint="确认前端角色映射、菜单路由和按钮显隐规则已更新。",
             )
 
-    backend_only_roles = sorted(scan.backend_roles - scan.frontend_roles)
+    comparable_backend_roles = scan.backend_roles - BACKEND_INTERNAL_ONLY_ROLE_TOKENS
+    backend_only_roles = sorted(comparable_backend_roles - scan.frontend_roles)
     frontend_only_roles = sorted(scan.frontend_roles - scan.backend_roles)
     if not is_full_inventory:
         if backend_only_roles and scan.frontend_roles:

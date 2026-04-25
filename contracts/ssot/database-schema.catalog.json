@@ -1,12 +1,32 @@
 {
-  "version": "1.0",
+  "version": "1.4",
   "owner": "repo-governance",
-  "scope": "migration-first additive schema ownership",
+  "scope": "migration-first additive schema ownership with table-level parity coverage plus configured field/index parity",
   "notes": [
-    "This catalog is the repository-level SSOT for schema ownership boundaries, migration entrypoints, and entity aggregation roots.",
-    "It does not enumerate every table or column yet; phase-1 only locks ownership, migration coverage, and entity-root coverage.",
-    "The current repository standard is migration-first for durable schema history, with entities acting as runtime consumers that must remain aligned."
+    "This catalog is the repository-level SSOT for schema ownership boundaries, migration entrypoints, entity aggregation roots, and table-level parity coverage.",
+    "Field/index parity stays additive-first and machine-derived from entity decorators plus migration CREATE TABLE DDL; it must not fall back to hand-maintained per-column lists.",
+    "The current phase enables field/index parity for all declared ownership groups, and parses forward migration DDL without letting rollback-only down() branches corrupt runtime parity baselines.",
+    "The current repository standard is migration-first for durable schema history, with entities acting as runtime consumers that must remain aligned to declared table ownership."
   ],
+  "fieldIndexParity": {
+    "enabledOwnershipGroups": [
+      "platform-foundation",
+      "module-support",
+      "performance-domain"
+    ],
+    "baseEntityColumns": [
+      "id",
+      "createTime",
+      "updateTime",
+      "tenantId"
+    ],
+    "excludedTablesByOwnershipGroup": {
+      "platform-foundation": [],
+      "module-support": [],
+      "performance-domain": []
+    },
+    "notes": "Only groups listed here are checked for machine-derived column/index parity; other groups still run table-level parity only. Exclusion lists may be empty once a group has been fully aligned."
+  },
   "sourcePaths": {
     "entityAggregator": "cool-admin-midway/src/entities.ts",
     "migrationRunner": "cool-admin-midway/scripts/run-migrations.mjs",
@@ -34,7 +54,26 @@
       "tableNamespaces": [
         "base_",
         "space_",
+        "query-result-cache",
         "cool_schema_migration"
+      ],
+      "entityTables": [
+        "base_sys_conf",
+        "base_sys_department",
+        "base_sys_log",
+        "base_sys_menu",
+        "base_sys_param",
+        "base_sys_role",
+        "base_sys_role_department",
+        "base_sys_role_menu",
+        "base_sys_user",
+        "base_sys_user_role",
+        "space_info",
+        "space_type"
+      ],
+      "migrationOnlyTables": [
+        "query-result-cache",
+        "cool_schema_migration_state"
       ],
       "notes": "Base and space operational schema plus repository migration bookkeeping."
     },
@@ -59,6 +98,19 @@
         "task_",
         "user_"
       ],
+      "entityTables": [
+        "demo_goods",
+        "dict_info",
+        "dict_type",
+        "plugin_info",
+        "recycle_data",
+        "task_info",
+        "task_log",
+        "user_address",
+        "user_info",
+        "user_wx"
+      ],
+      "migrationOnlyTables": [],
       "notes": "Additive support-module schema that is not part of the performance business domain."
     },
     {
@@ -83,6 +135,80 @@
       "tableNamespaces": [
         "performance_"
       ],
+      "entityTables": [
+        "performance_approval_action_log",
+        "performance_approval_config",
+        "performance_approval_config_node",
+        "performance_approval_instance",
+        "performance_approval_instance_node",
+        "performance_assessment",
+        "performance_assessment_score",
+        "performance_asset_assignment",
+        "performance_asset_assignment_request",
+        "performance_asset_depreciation",
+        "performance_asset_disposal",
+        "performance_asset_info",
+        "performance_asset_inventory",
+        "performance_asset_maintenance",
+        "performance_asset_procurement",
+        "performance_asset_transfer",
+        "performance_capability_item",
+        "performance_capability_model",
+        "performance_capability_portrait",
+        "performance_certificate",
+        "performance_certificate_record",
+        "performance_contract",
+        "performance_course",
+        "performance_course_enrollment",
+        "performance_course_exam",
+        "performance_course_practice",
+        "performance_course_recite",
+        "performance_document_center",
+        "performance_feedback_record",
+        "performance_feedback_task",
+        "performance_goal",
+        "performance_goal_ops_department_config",
+        "performance_goal_ops_plan",
+        "performance_goal_ops_report",
+        "performance_goal_progress",
+        "performance_hiring",
+        "performance_indicator",
+        "performance_intellectual_property",
+        "performance_interview",
+        "performance_job_standard",
+        "performance_knowledge_base",
+        "performance_knowledge_qa",
+        "performance_material_catalog",
+        "performance_material_inbound",
+        "performance_material_issue",
+        "performance_material_stock",
+        "performance_material_stock_log",
+        "performance_meeting",
+        "performance_office_collab",
+        "performance_pip",
+        "performance_pip_record",
+        "performance_promotion",
+        "performance_promotion_record",
+        "performance_purchase_order",
+        "performance_recruit_plan",
+        "performance_resume_pool",
+        "performance_salary",
+        "performance_salary_change",
+        "performance_suggestion",
+        "performance_supplier",
+        "performance_talent_asset",
+        "performance_teacher_agent",
+        "performance_teacher_agent_audit",
+        "performance_teacher_agent_relation",
+        "performance_teacher_attribution",
+        "performance_teacher_attribution_conflict",
+        "performance_teacher_class",
+        "performance_teacher_follow",
+        "performance_teacher_info",
+        "performance_vehicle",
+        "performance_work_plan"
+      ],
+      "migrationOnlyTables": [],
       "notes": "Primary performance schema baseline, including stage-2 theme tables and teacher-channel extensions."
     }
   ]

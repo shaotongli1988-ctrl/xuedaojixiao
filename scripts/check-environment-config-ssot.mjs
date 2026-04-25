@@ -4,7 +4,7 @@
  * 负责校验仓库级环境变量 catalog 与受治理 runtime/config/automation roots 的变量命名是否一致。
  * 不负责修改任何配置文件，也不替代具体工作区对环境值合法性的业务校验。
  * 依赖 contracts/ssot/environment-config.catalog.json 与仓库内真实的 config/script 入口文件。
- * 维护重点：第一阶段只校验 curated scan roots，发现新入口时先补 catalog 再扩大扫描范围。
+ * 维护重点：默认按 catalog 声明做全仓扫描，但必须通过 excludeRoots 显式排除 vendored/generated 区域，避免静默漏扫。
  */
 
 import fs from 'node:fs';
@@ -23,10 +23,21 @@ function loadCatalog() {
 }
 
 function normalizePath(value) {
-  return value.replaceAll('\\', '/');
+  return value.replaceAll('\\', '/').replace(/^\.\//, '');
 }
 
-function collectFiles(relativePath) {
+function isExcluded(relativePath, excludeRoots) {
+  return excludeRoots.some(excludeRoot =>
+    relativePath === excludeRoot || relativePath.startsWith(`${excludeRoot}/`)
+  );
+}
+
+function collectFiles(relativePath, excludeRoots) {
+  const normalizedRelativePath = normalizePath(relativePath);
+  if (normalizedRelativePath && isExcluded(normalizedRelativePath, excludeRoots)) {
+    return [];
+  }
+
   const fullPath = resolveSsotRepoPath(relativePath);
   if (!fs.existsSync(fullPath)) {
     return [];
@@ -43,8 +54,11 @@ function collectFiles(relativePath) {
       continue;
     }
     const childRelative = normalizePath(path.join(relativePath, entry.name));
+    if (isExcluded(childRelative, excludeRoots)) {
+      continue;
+    }
     if (entry.isDirectory()) {
-      files.push(...collectFiles(childRelative));
+      files.push(...collectFiles(childRelative, excludeRoots));
       continue;
     }
     if (allowedFilePattern.test(entry.name)) {
@@ -54,7 +68,7 @@ function collectFiles(relativePath) {
   return files;
 }
 
-function collectDiscoveredVariables(scanRoots) {
+function collectDiscoveredVariables(scanRoots, excludeRoots) {
   const variables = new Map();
   const patterns = [
     /process\.env\.([A-Z0-9_]+)/g,
@@ -65,7 +79,7 @@ function collectDiscoveredVariables(scanRoots) {
   ];
 
   for (const scanRoot of scanRoots) {
-    for (const filePath of collectFiles(scanRoot)) {
+    for (const filePath of collectFiles(scanRoot, excludeRoots)) {
       const text = fs.readFileSync(resolveSsotRepoPath(filePath), 'utf8');
       for (const pattern of patterns) {
         let match;
@@ -102,6 +116,10 @@ function main() {
       failures.push(`scanRoot 不存在: ${scanRoot}`);
     }
   }
+
+  const excludeRoots = Array.isArray(catalog.excludeRoots)
+    ? catalog.excludeRoots.map(normalizePath).filter(Boolean)
+    : [];
 
   const exactVariables = catalog.exactVariables || {};
   const patternVariables = Array.isArray(catalog.patternVariables) ? catalog.patternVariables : [];
@@ -152,7 +170,7 @@ function main() {
     }
   }
 
-  const discoveredVariables = collectDiscoveredVariables(catalog.scanRoots || []);
+  const discoveredVariables = collectDiscoveredVariables(catalog.scanRoots || [], excludeRoots);
   for (const [variableName, fileSet] of [...discoveredVariables.entries()].sort((left, right) =>
     left[0].localeCompare(right[0])
   )) {
@@ -172,7 +190,7 @@ function main() {
   }
 
   console.log(
-    `[${guardName}] PASS: 已校验 ${(catalog.scanRoots || []).length} 个 scan roots，覆盖 ${discoveredVariables.size} 个变量名。`
+    `[${guardName}] PASS: 已校验 ${(catalog.scanRoots || []).length} 个 scan roots，排除 ${excludeRoots.length} 个 roots，覆盖 ${discoveredVariables.size} 个变量名。`
   );
 }
 

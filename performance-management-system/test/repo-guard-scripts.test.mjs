@@ -99,6 +99,10 @@ test("normal: local guard scripts exist", () => {
     "check-shared-error-semantics.mjs",
     "check-performance-contract-closure.mjs",
     "check-performance-domain-model-ssot.mjs",
+    "check-business-dict-binding-ssot.mjs",
+    "check-rbac-domain-ssot.mjs",
+    "check-performance-role-ssot.mjs",
+    "check-state-machine-coverage-ssot.mjs",
     "check-xuedao-ssot-conformance.mjs",
     "sync-eps-openapi-ssot.mjs",
     "check-global-domain-ssot.mjs",
@@ -140,9 +144,28 @@ test("normal: repo consistency guard runs ssot sync stages in write mode before 
   assert.equal(script.includes("script: 'openapi-contract-sync.mjs'"), true);
   assert.equal(script.includes("script: 'check-performance-contract-closure.mjs'"), true);
   assert.equal(script.includes("script: 'check-global-domain-ssot.mjs'"), true);
+  assert.equal(script.includes("script: 'check-business-dict-binding-ssot.mjs'"), true);
   assert.equal(script.includes("script: 'check-base-permission-domain-ssot.mjs'"), true);
+  assert.equal(script.includes("script: 'check-rbac-domain-ssot.mjs'"), true);
+  assert.equal(script.includes("script: 'check-performance-role-ssot.mjs'"), true);
+  assert.equal(script.includes("script: 'check-state-machine-coverage-ssot.mjs'"), true);
   assert.equal(script.includes("script: 'sync-eps-openapi-ssot.mjs'"), true);
   assert.equal(script.includes("args: ['--write']"), true, "repo consistency guard should self-heal SSOT outputs before strict checks");
+  assert.equal(
+    script.includes("supportsChangedFiles: true"),
+    true,
+    "repo consistency guard should mark changed-aware child guards explicitly"
+  );
+  assert.equal(
+    script.includes("if (current === '--files-from' && next)"),
+    true,
+    "repo consistency guard should support reading scoped file lists from a batch file"
+  );
+  assert.equal(
+    script.includes("...parsedArgs.changedFiles.flatMap(filePath => ['--file', filePath])"),
+    true,
+    "repo consistency guard should forward explicit file scopes only to changed-aware child guards"
+  );
 });
 
 test("normal: xuedao ssot manifest loader resolves repository artifact root and command-backed paths", async () => {
@@ -176,10 +199,24 @@ test("normal: xuedao ssot manifest loader resolves repository artifact root and 
     true
   );
   assert.equal(
+    manifest.sourceOfTruth.rbacDomain.sourceFile,
+    "contracts/ssot/rbac-domain.catalog.json"
+  );
+  assert.equal(
+    manifest.sourceOfTruth.performanceRoles.sourceFiles.includes(
+      "cool-admin-midway/src/modules/performance/domain/roles/catalog.ts"
+    ),
+    true
+  );
+  assert.equal(
     manifest.sourceOfTruth.stateMachines.sourceFiles.includes(
       "cool-admin-midway/src/modules/performance/domain/states/approval-flow.ts"
     ),
     true
+  );
+  assert.equal(
+    manifest.sourceOfTruth.stateMachineCoverage.sourceFile,
+    "contracts/ssot/state-machine-coverage.catalog.json"
   );
   assert.equal(
     manifest.sourceOfTruth.userAuthSemantics.sourceFiles.includes(
@@ -212,6 +249,10 @@ test("normal: xuedao ssot manifest loader resolves repository artifact root and 
   assert.equal(
     manifest.sourceOfTruth.businessDictionaries.sourceFile,
     "cool-admin-midway/src/modules/performance/domain/dicts/catalog.ts"
+  );
+  assert.equal(
+    manifest.sourceOfTruth.businessDictBinding.sourceFile,
+    "contracts/ssot/business-dict-binding.catalog.json"
   );
   assert.equal(
     manifest.sourceOfTruth.dictBusinessCatalog.sourceFiles.includes(
@@ -268,6 +309,36 @@ test("normal: database schema ssot script passes with current repository binding
   assert.match(result.stdout, /\[database-schema-ssot\] PASS/);
 });
 
+test("normal: database schema catalog enables full ownership-group field/index parity without residual exclusions", () => {
+  const catalog = JSON.parse(
+    readFileSync(`${repoRoot}/contracts/ssot/database-schema.catalog.json`, "utf8")
+  );
+  assert.equal(catalog.version, "1.4");
+  assert.deepEqual(catalog.fieldIndexParity.enabledOwnershipGroups, [
+    "platform-foundation",
+    "module-support",
+    "performance-domain",
+  ]);
+  assert.deepEqual(catalog.fieldIndexParity.baseEntityColumns, [
+    "id",
+    "createTime",
+    "updateTime",
+    "tenantId",
+  ]);
+  assert.deepEqual(
+    catalog.fieldIndexParity.excludedTablesByOwnershipGroup["platform-foundation"],
+    []
+  );
+  assert.deepEqual(
+    catalog.fieldIndexParity.excludedTablesByOwnershipGroup["module-support"],
+    []
+  );
+  assert.deepEqual(
+    catalog.fieldIndexParity.excludedTablesByOwnershipGroup["performance-domain"],
+    []
+  );
+});
+
 test("normal: performance contract closure script passes with current repository bindings", () => {
   const result = run(["node", "./scripts/check-performance-contract-closure.mjs"]);
   assert.equal(result.status, 0, result.stderr || result.stdout);
@@ -278,6 +349,30 @@ test("normal: performance domain model ssot script passes with current repositor
   const result = run(["node", "./scripts/check-performance-domain-model-ssot.mjs"]);
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.match(result.stdout, /\[performance-domain-model-ssot\] passed/);
+});
+
+test("normal: business dict binding ssot script passes with current repository bindings", () => {
+  const result = run(["node", "./scripts/check-business-dict-binding-ssot.mjs"]);
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /\[business-dict-binding-ssot\] PASS/);
+});
+
+test("normal: performance role ssot script passes with current repository bindings", () => {
+  const result = run(["node", "./scripts/check-performance-role-ssot.mjs"]);
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /\[performance-role-ssot\] PASS/);
+});
+
+test("normal: rbac domain ssot script passes with current repository bindings", () => {
+  const result = run(["node", "./scripts/check-rbac-domain-ssot.mjs"]);
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /\[rbac-domain-ssot\] PASS/);
+});
+
+test("normal: state machine coverage ssot script passes with current repository bindings", () => {
+  const result = run(["node", "./scripts/check-state-machine-coverage-ssot.mjs"]);
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /\[state-machine-coverage-ssot\] PASS/);
 });
 
 test("normal: performance contract source promotes capability shared-service modules into serviceModules", () => {
@@ -329,6 +424,180 @@ test("normal: shared error semantics script passes with current repository bindi
   const result = run(["node", "./scripts/check-shared-error-semantics.mjs"]);
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.match(result.stdout, /\[shared-error-semantics\] PASS/);
+});
+
+test("normal: rbac alignment guard no longer treats generic user token as canonical role", () => {
+  const script = readFileSync(`${scriptsRoot}/rbac_alignment_guard.py`, "utf8");
+  assert.equal(script.includes('    "user",'), false);
+  assert.equal(script.includes("BACKEND_INTERNAL_ONLY_ROLE_TOKENS"), true);
+});
+
+test("normal: state machine guard ignores generic description and location field names", () => {
+  const script = readFileSync(`${scriptsRoot}/state_machine_guard.py`, "utf8");
+  assert.equal(script.includes('    "description",'), true);
+  assert.equal(script.includes('    "location",'), true);
+});
+
+test("normal: repo rbac domain catalog binds topology, permission bits, and role sources", () => {
+  const catalog = JSON.parse(
+    readFileSync(`${repoRoot}/contracts/ssot/rbac-domain.catalog.json`, "utf8")
+  );
+  assert.equal(catalog.menuTopologySource, "contracts/ssot/menu-route-topology.catalog.json");
+  assert.deepEqual(catalog.permissionBitsSourceFiles, [
+    "cool-admin-midway/src/modules/base/domain/permissions/source.json",
+    "cool-admin-midway/src/modules/base/domain/permissions/source.mjs"
+  ]);
+  assert.deepEqual(catalog.roleCatalogSourceFiles, [
+    "cool-admin-midway/src/modules/performance/domain/roles/catalog.ts"
+  ]);
+});
+
+test("normal: state machine coverage catalog registers implemented and planned aggregates", () => {
+  const catalog = JSON.parse(
+    readFileSync(`${repoRoot}/contracts/ssot/state-machine-coverage.catalog.json`, "utf8")
+  );
+  assert.deepEqual(catalog.implementedAggregates, [
+    "approval-flow",
+    "asset-assignment-request",
+    "asset-disposal",
+    "asset-inventory",
+    "asset-maintenance",
+    "asset-procurement",
+    "asset-transfer",
+    "assessment",
+    "feedback",
+    "goal",
+    "job-standard",
+    "pip",
+    "promotion",
+    "purchase-order",
+    "salary",
+    "suggestion",
+    "teacher-class",
+    "teacher-cooperation",
+    "work-plan"
+  ]);
+  assert.deepEqual(catalog.plannedAggregates, []);
+  assert.equal(catalog.plannedAggregates.includes("asset-assignment-request"), false);
+  assert.equal(catalog.plannedAggregates.includes("asset-disposal"), false);
+  assert.equal(catalog.plannedAggregates.includes("asset-inventory"), false);
+  assert.equal(catalog.plannedAggregates.includes("asset-maintenance"), false);
+  assert.equal(catalog.plannedAggregates.includes("asset-procurement"), false);
+  assert.equal(catalog.plannedAggregates.includes("asset-transfer"), false);
+  assert.equal(catalog.outOfScopeAggregates.includes("dashboard"), true);
+});
+
+test("normal: business dict binding catalog registers registry and provider coverage partitions", () => {
+  const catalog = JSON.parse(
+    readFileSync(`${repoRoot}/contracts/ssot/business-dict-binding.catalog.json`, "utf8")
+  );
+  assert.deepEqual(catalog.registryKeysBackedByProviders, [
+    "performance.assessment.status",
+    "performance.approvalFlow.status",
+    "performance.capability.status",
+    "performance.certificate.recordStatus",
+    "performance.certificate.status",
+    "performance.contract.status",
+    "performance.contract.type",
+    "performance.courseLearning.examStatus",
+    "performance.courseLearning.taskStatus",
+    "performance.course.status",
+    "performance.dashboard.scope",
+    "performance.documentCenter.category",
+    "performance.documentCenter.confidentiality",
+    "performance.documentCenter.fileType",
+    "performance.documentCenter.status",
+    "performance.documentCenter.storage",
+    "performance.feedback.recordStatus",
+    "performance.feedback.relationType",
+    "performance.feedback.taskStatus",
+    "performance.goal.periodType",
+    "performance.goal.planStatus",
+    "performance.goal.reportStatus",
+    "performance.goal.sourceType",
+    "performance.goal.status",
+    "performance.hiring.sourceType",
+    "performance.hiring.status",
+    "performance.indicator.applyScope",
+    "performance.indicator.category",
+    "performance.indicator.status",
+    "performance.interview.status",
+    "performance.interview.type",
+    "performance.jobStandard.status",
+    "performance.knowledgeBase.status",
+    "performance.meeting.status",
+    "performance.pip.status",
+    "performance.purchaseOrder.status",
+    "performance.promotion.status",
+    "performance.recruitPlan.status",
+    "performance.resumePool.sourceType",
+    "performance.resumePool.status",
+    "performance.salary.status",
+    "performance.suggestion.revokeReasonCode",
+    "performance.suggestion.status",
+    "performance.suggestion.type",
+    "performance.supplier.status",
+    "performance.talentAsset.status",
+    "performance.teacherChannel.classStatus",
+    "performance.teacherChannel.cooperationStatus",
+    "performance.teacherChannel.todoBucket",
+    "performance.workbench.persona",
+    "performance.workPlan.priority",
+    "performance.workPlan.sourceStatus",
+    "performance.workPlan.sourceType",
+    "performance.workPlan.status"
+  ]);
+  assert.deepEqual(catalog.registryKeysPlannedWithoutProviders, []);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.approval_flow"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.capability"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.certificate"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.dashboard"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.goal"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.contract"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.course"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.course_learning"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.document_center"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.feedback"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.hiring"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.indicator"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.interview"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.knowledge_base"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.meeting"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.pip"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.purchase_order"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.promotion"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.recruit_plan"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.resume_pool"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.salary"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.suggestion"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.supplier"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.talent_asset"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.teacher_channel"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.workbench"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.work_plan"), true);
+  assert.equal(catalog.providerFamiliesWithRegistryBinding.includes("performance.job_standard"), true);
+  assert.equal(catalog.providerFamiliesWithoutRegistryBinding.includes("performance.goal"), false);
+  assert.equal(catalog.providerFamiliesWithoutRegistryBinding.includes("performance.capability"), false);
+  assert.equal(catalog.providerFamiliesWithoutRegistryBinding.includes("performance.certificate"), false);
+  assert.equal(catalog.providerFamiliesWithoutRegistryBinding.includes("performance.course"), false);
+  assert.equal(catalog.providerFamiliesWithoutRegistryBinding.includes("performance.course_learning"), false);
+  assert.equal(catalog.providerFamiliesWithoutRegistryBinding.includes("performance.document_center"), false);
+  assert.equal(catalog.providerFamiliesWithoutRegistryBinding.includes("performance.feedback"), false);
+  assert.equal(catalog.providerFamiliesWithoutRegistryBinding.includes("performance.hiring"), false);
+  assert.equal(catalog.providerFamiliesWithoutRegistryBinding.includes("performance.indicator"), false);
+  assert.equal(catalog.providerFamiliesWithoutRegistryBinding.includes("performance.interview"), false);
+  assert.equal(catalog.providerFamiliesWithoutRegistryBinding.includes("performance.knowledge_base"), false);
+  assert.equal(catalog.providerFamiliesWithoutRegistryBinding.includes("performance.meeting"), false);
+  assert.equal(catalog.providerFamiliesWithoutRegistryBinding.includes("performance.pip"), false);
+  assert.equal(catalog.providerFamiliesWithoutRegistryBinding.includes("performance.salary"), false);
+  assert.equal(catalog.providerFamiliesWithoutRegistryBinding.includes("performance.promotion"), false);
+  assert.equal(catalog.providerFamiliesWithoutRegistryBinding.includes("performance.recruit_plan"), false);
+  assert.equal(catalog.providerFamiliesWithoutRegistryBinding.includes("performance.resume_pool"), false);
+  assert.equal(catalog.providerFamiliesWithoutRegistryBinding.includes("performance.suggestion"), false);
+  assert.equal(catalog.providerFamiliesWithoutRegistryBinding.includes("performance.supplier"), false);
+  assert.equal(catalog.providerFamiliesWithoutRegistryBinding.includes("performance.talent_asset"), false);
+  assert.equal(catalog.providerFamiliesWithoutRegistryBinding.includes("performance.work_plan"), false);
+  assert.deepEqual(catalog.providerFamiliesWithoutRegistryBinding, []);
 });
 
 test("normal: xuedao ssot conformance script writes markdown and json reports", () => {
@@ -624,6 +893,16 @@ test("normal: pre-push gate runs repo guard tests for workflow, script, and gove
     prePushGate.includes("filePath.startsWith('performance-management-system/test/')"),
     true,
     "pre-push gate should run repo guard tests when repo-guard tests change"
+  );
+  assert.equal(
+    prePushGate.includes("scopeMatchedFiles: true"),
+    true,
+    "pre-push gate should mark repo consistency guards as scope-aware"
+  );
+  assert.equal(
+    prePushGate.includes("...group.matchedFiles.flatMap(filePath => ['--file', filePath])"),
+    true,
+    "pre-push gate should pass matched file paths into repo consistency guards"
   );
   for (const commandId of [
     "id: 'midway-build'",
@@ -6705,6 +6984,13 @@ test("normal: worktree split audit can print paths for a single batch", () => {
 
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.equal(result.stdout.trim(), "README.md");
+  assert.equal(
+    readFileSync(
+      join(fixtureRoot, "reports", "delivery", "worktree-split-audit.governance-ssot.latest.paths"),
+      "utf8"
+    ).trim(),
+    "README.md"
+  );
 });
 
 test("normal: mobile shared contract script fails on missing page and missing permission drift", () => {

@@ -49,6 +49,16 @@ function getRegisteredMachineSources(manifest) {
 			requiredSourceFields: ['sourceFiles']
 		},
 		{
+			label: 'rbacDomain',
+			entry: manifest.sourceOfTruth?.rbacDomain,
+			requiredSourceFields: ['sourceFile']
+		},
+		{
+			label: 'performanceRoles',
+			entry: manifest.sourceOfTruth?.performanceRoles,
+			requiredSourceFields: ['sourceFiles']
+		},
+		{
 			label: 'performanceContractSource',
 			entry: manifest.sourceOfTruth?.performanceContractSource,
 			requiredSourceFields: ['sourceFiles']
@@ -57,6 +67,11 @@ function getRegisteredMachineSources(manifest) {
 			label: 'stateMachines',
 			entry: manifest.sourceOfTruth?.stateMachines,
 			requiredSourceFields: ['sourceFiles']
+		},
+		{
+			label: 'stateMachineCoverage',
+			entry: manifest.sourceOfTruth?.stateMachineCoverage,
+			requiredSourceFields: ['sourceFile']
 		},
 		{
 			label: 'userAuthSemantics',
@@ -91,6 +106,11 @@ function getRegisteredMachineSources(manifest) {
 		{
 			label: 'businessDictionaries',
 			entry: manifest.sourceOfTruth?.businessDictionaries,
+			requiredSourceFields: ['sourceFile']
+		},
+		{
+			label: 'businessDictBinding',
+			entry: manifest.sourceOfTruth?.businessDictBinding,
 			requiredSourceFields: ['sourceFile']
 		},
 		{

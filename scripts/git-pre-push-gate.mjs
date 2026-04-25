@@ -48,6 +48,7 @@ const commandGroups = [
     description: '仓库一致性守卫（OpenAPI/EPS 类型、目录命名、菜单路由、权限键、文档回写、状态流、实现层收敛）',
     cwd: '.',
     command: ['node', './scripts/run-repo-consistency-guards.mjs'],
+    scopeMatchedFiles: true,
     matches(filePath) {
       return (
         filePath.startsWith('contracts/') ||
@@ -451,7 +452,24 @@ function getBlockedMatches(files) {
 }
 
 function getTriggeredCommands(files) {
-  return commandGroups.filter(group => files.some(filePath => group.matches(filePath)));
+  return commandGroups.flatMap(group => {
+    const matchedFiles = files.filter(filePath => group.matches(filePath));
+    if (matchedFiles.length === 0) {
+      return [];
+    }
+    return [{ ...group, matchedFiles: [...new Set(matchedFiles)] }];
+  });
+}
+
+function buildGroupCommand(group) {
+  if (!group.scopeMatchedFiles || !group.matchedFiles?.length) {
+    return [...group.command];
+  }
+
+  return [
+    ...group.command,
+    ...group.matchedFiles.flatMap(filePath => ['--file', filePath]),
+  ];
 }
 
 function tryExec(command, args, options = {}) {
@@ -571,7 +589,8 @@ function resolveStage2SmokeBaseUrl(options = {}) {
 }
 
 function runCommandGroup(group, dryRun) {
-  const commandPreview = `${group.command.join(' ')} (cwd=${group.cwd})`;
+  const command = buildGroupCommand(group);
+  const commandPreview = `${command.join(' ')} (cwd=${group.cwd})`;
   if (dryRun) {
     info(`DRY RUN ${group.id}: ${commandPreview}`);
     return;
@@ -588,13 +607,13 @@ function runCommandGroup(group, dryRun) {
           ...(allowRuntimeMismatch ? { STAGE2_SMOKE_ALLOW_RUNTIME_MISMATCH: '1' } : {}),
         }
       : process.env;
-  const result = spawnSync(group.command[0], group.command.slice(1), {
+  const scopedResult = spawnSync(command[0], command.slice(1), {
     cwd: path.join(repoRoot, group.cwd),
     stdio: 'inherit',
     env,
   });
 
-  if (result.status !== 0) {
+  if (scopedResult.status !== 0) {
     fail(`${group.id} 执行失败，请先修复再推送。`);
   }
 }

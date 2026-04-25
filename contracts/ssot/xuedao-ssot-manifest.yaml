@@ -52,6 +52,32 @@ sourceOfTruth:
       - "cool-admin-midway/src/modules/base/generated/permissions.generated.ts"
       - "cool-admin-midway/src/modules/base/generated/route-permissions.generated.ts"
 
+  rbacDomain:
+    sourceFile: "contracts/ssot/rbac-domain.catalog.json"
+    validators:
+      - "node ./scripts/check-rbac-domain-ssot.mjs"
+    generatedConsumers:
+      - "contracts/ssot/menu-route-topology.catalog.json"
+      - "cool-admin-midway/src/modules/base/domain/permissions/source.json"
+      - "cool-admin-midway/src/modules/performance/domain/roles/catalog.ts"
+      - "scripts/run-repo-consistency-guards.mjs"
+
+  performanceRoles:
+    sourceFiles:
+      - "cool-admin-midway/src/modules/performance/domain/roles/catalog.ts"
+    validators:
+      - "node ./scripts/check-performance-role-ssot.mjs"
+      - "node --test ./cool-admin-midway/test/performance/domain-registry.test.ts"
+      - "node --test ./cool-admin-vue/test/workbench-service.test.mjs"
+      - "node --test ./cool-uni/test/performance-role-fact.test.mjs"
+    generatedConsumers:
+      - "cool-admin-midway/src/modules/performance/domain/registry/index.ts"
+      - "cool-admin-midway/src/modules/performance/service"
+      - "cool-admin-vue/src/modules/performance/service"
+      - "cool-admin-vue/src/modules/performance/workbench"
+      - "cool-uni/cool/utils/performance-role-fact.ts"
+      - "cool-uni/types/performance-mobile.ts"
+
   userAuthSemantics:
     sourceFiles:
       - "cool-admin-midway/src/modules/user/domain/auth/catalog.ts"
@@ -133,14 +159,41 @@ sourceOfTruth:
   stateMachines:
     sourceFiles:
       - "cool-admin-midway/src/modules/performance/domain/states/approval-flow.ts"
+      - "cool-admin-midway/src/modules/performance/domain/states/asset-assignment-request.ts"
+      - "cool-admin-midway/src/modules/performance/domain/states/asset-disposal.ts"
+      - "cool-admin-midway/src/modules/performance/domain/states/asset-inventory.ts"
+      - "cool-admin-midway/src/modules/performance/domain/states/asset-maintenance.ts"
+      - "cool-admin-midway/src/modules/performance/domain/states/asset-procurement.ts"
+      - "cool-admin-midway/src/modules/performance/domain/states/asset-transfer.ts"
       - "cool-admin-midway/src/modules/performance/domain/states/assessment.ts"
+      - "cool-admin-midway/src/modules/performance/domain/states/feedback.ts"
+      - "cool-admin-midway/src/modules/performance/domain/states/goal.ts"
+      - "cool-admin-midway/src/modules/performance/domain/states/job-standard.ts"
+      - "cool-admin-midway/src/modules/performance/domain/states/pip.ts"
+      - "cool-admin-midway/src/modules/performance/domain/states/promotion.ts"
+      - "cool-admin-midway/src/modules/performance/domain/states/purchase-order.ts"
+      - "cool-admin-midway/src/modules/performance/domain/states/salary.ts"
+      - "cool-admin-midway/src/modules/performance/domain/states/suggestion.ts"
+      - "cool-admin-midway/src/modules/performance/domain/states/teacher-class.ts"
+      - "cool-admin-midway/src/modules/performance/domain/states/teacher-cooperation.ts"
       - "cool-admin-midway/src/modules/performance/domain/states/types.ts"
+      - "cool-admin-midway/src/modules/performance/domain/states/work-plan.ts"
     validators:
       - "node ./scripts/check-state-machine-alignment.mjs --phase batch --force"
     generatedConsumers:
       - "cool-admin-midway/src/modules/performance/service/"
       - "cool-admin-midway/src/modules/performance/controller/admin/"
       - "cool-admin-vue/src/modules/performance/views/"
+      - "performance-management-system/docs/05-状态机与流转规则.md"
+
+  stateMachineCoverage:
+    sourceFile: "contracts/ssot/state-machine-coverage.catalog.json"
+    validators:
+      - "node ./scripts/check-state-machine-coverage-ssot.mjs"
+    generatedConsumers:
+      - "cool-admin-midway/src/modules/performance/domain/states"
+      - "cool-admin-midway/src/modules/performance/domain/registry/index.ts"
+      - "scripts/run-repo-consistency-guards.mjs"
       - "performance-management-system/docs/05-状态机与流转规则.md"
 
   businessDictionaries:
@@ -151,6 +204,17 @@ sourceOfTruth:
       - "cool-admin-midway/src/modules/performance/service/"
       - "cool-admin-vue/src/modules/performance/types.ts"
       - "performance-management-system/docs/04-API设计.md"
+
+  businessDictBinding:
+    sourceFile: "contracts/ssot/business-dict-binding.catalog.json"
+    validators:
+      - "node ./scripts/check-business-dict-binding-ssot.mjs"
+    generatedConsumers:
+      - "cool-admin-midway/src/modules/dict/domain/dicts/catalog.ts"
+      - "cool-admin-midway/src/modules/dict/service/info.ts"
+      - "cool-admin-vue/src/modules/dict/store/dict.ts"
+      - "cool-uni/cool/store/dict.ts"
+      - "scripts/run-repo-consistency-guards.mjs"
 
   dictBusinessCatalog:
     sourceFiles:
@@ -191,6 +255,10 @@ sourceOfTruth:
     guardEntry: "node ./scripts/run-repo-consistency-guards.mjs"
     subGuards:
       - "node ./scripts/check-xuedao-ssot-conformance.mjs"
+      - "node ./scripts/check-rbac-domain-ssot.mjs"
+      - "node ./scripts/check-performance-role-ssot.mjs"
+      - "node ./scripts/check-state-machine-coverage-ssot.mjs"
+      - "node ./scripts/check-business-dict-binding-ssot.mjs"
       - "node ./scripts/check-rbac-alignment.mjs --phase batch --force"
       - "node ./scripts/check-state-machine-alignment.mjs --phase batch --force"
       - "node ./scripts/check-component-reuse.mjs --phase batch --force"

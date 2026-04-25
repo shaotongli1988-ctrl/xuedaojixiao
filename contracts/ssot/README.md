@@ -52,6 +52,12 @@
 
 - [xuedao-ssot-inventory.md](/Users/shaotongli/Documents/xuedao/contracts/ssot/xuedao-ssot-inventory.md)
 
+如果要继续推进 9 类 SSOT 治理，统一从 `xuedao-ssot-inventory.md` 的以下部分进入：
+
+1. `9 类 SSOT 映射`
+2. `当前已知缺口`
+3. `当前整改优先级与收口计划`
+
 当前真实记录：
 
 1. `records/change-record.yaml`

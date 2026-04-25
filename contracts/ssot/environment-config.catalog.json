@@ -5,21 +5,18 @@
   "notes": [
     "This catalog is the repository-level SSOT for environment variable names and namespaces that are allowed in runtime entrypoints and governance automation.",
     "It does not replace code-level runtime config objects; it governs variable identity, sensitivity, and allowed discovery roots.",
-    "Phase-1 governance only covers curated runtime/config/automation roots and intentionally excludes vendor, generated, and historical scratch files."
+    "Phase-2 governance scans the full repository source tree with explicit exclude roots so new runtime entrypoints cannot bypass SSOT registration silently."
   ],
   "scanRoots": [
-    "cool-admin-midway/src/config",
-    "cool-admin-midway/src/comm/port.ts",
-    "cool-admin-midway/src/modules/performance/service/workPlan.ts",
-    "cool-admin-midway/scripts",
-    "cool-admin-vue/src/config",
-    "cool-admin-vue/src/cool/service/request.ts",
-    "cool-admin-vue/env.d.ts",
-    "cool-admin-vue/vite.config.ts",
-    "cool-admin-vue/test",
-    "cool-uni/config",
-    "cool-uni/vite.config.ts",
-    "scripts"
+    "."
+  ],
+  "excludeRoots": [
+    "contracts/openapi",
+    "cool-admin-vue/build/cool",
+    "cool-admin-vue/dist",
+    "cool-uni/dist",
+    "cool-uni/uni_modules",
+    "reports/delivery"
   ],
   "exactVariables": {
     "BASE_URL": {
@@ -112,6 +109,12 @@
       "required": false,
       "description": "Vite runtime mode consumed by cool-admin-vue and cool-uni config."
     },
+    "NODE_ENV": {
+      "classification": "runtime-builtin",
+      "sensitive": false,
+      "required": false,
+      "description": "Node runtime mode used by vendored validation helpers that still execute inside the repository toolchain."
+    },
     "PORT": {
       "classification": "backend-runtime",
       "sensitive": false,
@@ -153,6 +156,12 @@
       "sensitive": false,
       "required": false,
       "description": "Uni/Vite build root override injected by cool-uni vite config."
+    },
+    "UNI_UTS_PLATFORM": {
+      "classification": "runtime-builtin",
+      "sensitive": false,
+      "required": false,
+      "description": "Vite plugin runtime target used by the local admin package bridge for uni UTS builds."
     },
     "VITE_DEV_PROXY_TARGET": {
       "classification": "frontend-runtime",

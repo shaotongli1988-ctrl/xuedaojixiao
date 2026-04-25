@@ -1,11 +1,12 @@
 # xuedao repo-level verification record.
-# Captures executed evidence for the fifth-batch performance contract residual-risk closure rollout.
+# Captures executed evidence for the thirty-second-batch governance rollout
+# that writes worktree-split paths artifacts for scoped guard handoff.
 
 recordVersion: "1.0"
-verificationId: "XUEDAO-VER-20260424-002"
-changeId: "XUEDAO-CHG-20260424-001"
+verificationId: "XUEDAO-VER-20260425-029"
+changeId: "XUEDAO-CHG-20260425-028"
 owner: "codex"
-executedAt: "2026-04-24T01:07:12+08:00"
+executedAt: "2026-04-25T08:30:15+08:00"
 overallStatus: "passed"
 
 coverage:
@@ -14,107 +15,53 @@ coverage:
     normalPath: "covered"
     errorPath: "covered"
     boundary: "covered"
-    permission: "covered"
-    stateFlow: "covered"
-    contract: "covered"
+    permission: "not_run"
+    stateFlow: "not_run"
+    contract: "not_run"
     releaseReadiness: "covered"
 
 checks:
-  - name: "performance-openapi-sync"
-    type: "quality"
-    command: "node ./scripts/sync-performance-openapi-ssot.mjs --write"
-    scope: "capability shared-service promotion plus registry-driven producer coverage into contracts/openapi/xuedao.openapi.json"
-    status: "passed"
-    artifacts: []
-
-  - name: "performance-generated-contract-sync"
-    type: "quality"
-    command: "node ./scripts/openapi-contract-sync.mjs --write"
-    scope: "registry-driven web/uni generated contract consumers after capability producer promotion"
-    status: "passed"
-    artifacts: []
-
-  - name: "performance-contract-closure"
-    type: "quality"
-    command: "node ./scripts/check-performance-contract-closure.mjs"
-    scope: "service-capable publishOnly drift + generated target + shared support adapter + uni wrapper closure"
-    status: "passed"
-    artifacts: []
-
-  - name: "performance-domain-model-ssot"
-    type: "quality"
-    command: "node ./scripts/check-performance-domain-model-ssot.mjs"
-    scope: "full performance contract adapter enum centralization and generated-derived model closure"
-    status: "passed"
-    artifacts: []
-
   - name: "ssot-manifest-path-check"
     type: "quality"
     command: "node ./scripts/check-xuedao-ssot-manifest.mjs"
-    scope: "repo manifest path + machine source registration"
+    scope: "repo manifest path 与 artifact root 关键路径校验"
+    status: "passed"
+    artifacts: []
+
+  - name: "worktree-split-batch-paths"
+    type: "quality"
+    command: "node ./scripts/audit-worktree-split.mjs --batch-id governance-ssot --output paths"
+    scope: "验证按批次导出路径时既打印结果，也默认写出 `.paths` 产物"
+    status: "passed"
+    artifacts:
+      - "reports/delivery/worktree-split-audit.governance-ssot.latest.paths"
+
+  - name: "repo-guard-script-regression"
+    type: "test"
+    command: "node --test ./performance-management-system/test/repo-guard-scripts.test.mjs"
+    scope: "repo guard regression after worktree-split paths artifact rollout"
     status: "passed"
     artifacts: []
 
   - name: "ssot-conformance-check"
     type: "quality"
     command: "node ./scripts/check-xuedao-ssot-conformance.mjs"
-    scope: "repo ssot conformance after batch-4 record/doc updates"
+    scope: "repo ssot conformance after docs, records, and worktree-split artifact updates"
     status: "passed"
     artifacts:
       - "reports/delivery/xuedao-ssot-conformance.latest.md"
       - "reports/delivery/xuedao-ssot-conformance.latest.json"
 
-  - name: "repo-guard-script-regression"
-    type: "test"
-    command: "node --test ./performance-management-system/test/repo-guard-scripts.test.mjs"
-    scope: "repo guard regression including publishOnly promotion, domain-model guard and local-runtime-env audit"
-    status: "passed"
-    artifacts: []
-
-  - name: "repo-consistency-guards"
-    type: "quality"
-    command: "node ./scripts/run-repo-consistency-guards.mjs"
-    scope: "manifest + conformance + openapi sync + generated consumer sync + closure/domain/rbac/state/component/doc guards"
-    status: "passed"
-    artifacts: []
-
-  - name: "vue-typecheck"
-    type: "build"
-    command: "cd /Users/shaotongli/Documents/xuedao/cool-admin-vue && corepack pnpm run type-check"
-    scope: "admin frontend type baseline after contract-enums centralization"
-    status: "passed"
-    artifacts: []
-
-  - name: "vue-build"
-    type: "build"
-    command: "cd /Users/shaotongli/Documents/xuedao/cool-admin-vue && corepack pnpm run build"
-    scope: "admin frontend build baseline after contract adapter refactor"
-    status: "passed"
-    artifacts: []
-
-  - name: "uni-typecheck"
-    type: "build"
-    command: "cd /Users/shaotongli/Documents/xuedao/cool-uni && corepack pnpm run type-check"
-    scope: "cool-uni type baseline after generated contract refresh"
-    status: "passed"
-    artifacts: []
-
 skipped: []
 
 findings:
   blockers: []
-  followUps:
-    - severity: "P2"
-      scope: "rbac-role-catalog"
-      problem: "repo consistency guard 仍提示 backend `user` 与 frontend `manager` 角色集合差异。"
-      owner: "repo-governance"
-      due: "2026-04-30"
-      cleanup: "统一前后端角色目录，或在守卫中把仅单侧存在的角色显式登记为内部别名。"
+  followUps: []
 
 residualRisk:
-  - "仓库级 SSOT 仍有更高层残余项：菜单/RBAC 分层事实源、状态机覆盖不足、字典/provider 未完全同源、数据库 parity 与环境变量全仓漏扫。"
+  - "worktree split 只负责产出批次建议与路径清单，不自动判定批次是否真的可直接合并提交，人工 review 仍是最后一道边界。"
 
 summary:
-  passedChecks: 11
+  passedChecks: 4
   failedChecks: 0
   skippedChecks: 0

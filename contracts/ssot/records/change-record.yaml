@@ -1,14 +1,15 @@
 # xuedao repo-level change record.
-# Captures the fourth-batch SSOT governance rollout that reduces performance contract residual risk.
+# Captures the thirty-second-batch SSOT governance rollout that closes
+# the worktree-split paths artifact handoff into scoped repo guards.
 
 recordVersion: "1.0"
-changeId: "XUEDAO-CHG-20260424-001"
-title: "Close remaining performance contract residual risk with capability shared-service promotion and full decoder enum centralization"
+changeId: "XUEDAO-CHG-20260425-028"
+title: "Write worktree-split batch path artifacts for direct repo-consistency guard consumption"
 owner: "codex"
 status: "verified"
 reviewers:
   - "codex-self-review"
-requestedAt: "2026-04-24"
+requestedAt: "2026-04-25"
 targetRelease: "2026.04.r2"
 
 classification:
@@ -16,125 +17,104 @@ classification:
   severityGate: "strict-change-template"
   triggers:
     - "shared_module"
-    - "api_contract"
     - "repo_guard"
-    - "generated_consumer"
     - "documentation_sync"
 
 scope:
-  outcome: "在第四批仓库级 SSOT 治理基础上，完成 performance contract 两个剩余缺口的闭环：把 capability 三模块提升到 serviceModules 并补齐 shared service discovery 表达；把全部 performance contract adapter 的 runtime enum 常量收敛到共享入口。"
+  outcome: "让 worktree split 在按批次导出路径时默认落盘 `.paths` 产物，直接接上 repo-consistency 的 `--files-from` 输入链路。"
   nonGoals:
-    - "不改业务 API path、字段、状态、错误语义。"
-    - "不扩写 RBAC、状态机、字典、数据库 parity 或环境变量漏扫治理范围。"
+    - "不改变 batch 分类规则本身。"
+    - "不改变 repo-consistency 或 pre-push 的范围透传语义。"
+    - "不引入新的业务功能、CI 工作流或依赖。"
   affectedModules:
-    - "cool-admin-midway/src/modules/performance/domain/registry"
-    - "cool-admin-vue/src/modules/performance/service"
     - "scripts"
     - "performance-management-system/test"
-    - "contracts/openapi"
-    - "contracts/ssot"
     - "performance-management-system/docs"
+    - "README.md"
+    - "contracts/ssot"
 
 sourceOfTruth:
   primaryDocs:
-    - "contracts/openapi/xuedao.openapi.json"
-    - "cool-admin-midway/src/modules/performance/domain/registry/contract-source.json"
-    - "cool-admin-midway/src/modules/performance/domain/registry/contract-source.mjs"
-    - "cool-admin-midway/src/modules/performance/domain/registry/contracts.ts"
+    - "scripts/audit-worktree-split.mjs"
+    - "README.md"
+    - "performance-management-system/docs/24-自动化测试策略与脚本规划.md"
     - "contracts/ssot/xuedao-ssot-inventory.md"
   linkedDocs:
-    - "performance-management-system/docs/24-自动化测试策略与脚本规划.md"
+    - "contracts/ssot/records/verification-record.yaml"
   machineSourcesTouched:
-    - "cool-admin-midway/src/modules/performance/domain/registry/contract-source.json"
-    - "contracts/openapi/xuedao.openapi.json"
+    - "scripts/audit-worktree-split.mjs"
   generatedConsumers:
-    - "cool-admin-vue/src/modules/performance/generated"
-    - "cool-uni/generated"
-    - "cool-uni/types"
+    - "reports/delivery/worktree-split-audit.<batch-id>.latest.paths"
+    - "scripts/run-repo-consistency-guards.mjs"
 
 impactSurface:
   code:
-    - "cool-admin-midway/src/modules/performance/domain/registry/contract-source.json"
-    - "cool-admin-vue/src/modules/performance/shared/contract-enums.ts"
-    - "cool-admin-vue/src/modules/performance/service/*-contract.ts"
-    - "contracts/openapi/xuedao.openapi.json"
+    - "scripts/audit-worktree-split.mjs"
   tests:
     - "performance-management-system/test/repo-guard-scripts.test.mjs"
   docs:
-    - "contracts/ssot/xuedao-ssot-inventory.md"
+    - "README.md"
     - "performance-management-system/docs/24-自动化测试策略与脚本规划.md"
+    - "contracts/ssot/xuedao-ssot-inventory.md"
+    - "contracts/ssot/records/change-record.yaml"
+    - "contracts/ssot/records/verification-record.yaml"
   scripts:
-    - "scripts/sync-performance-openapi-ssot.mjs"
-    - "scripts/openapi-contract-sync.mjs"
-    - "scripts/check-performance-contract-closure.mjs"
-    - "scripts/check-performance-domain-model-ssot.mjs"
     - "scripts/audit-worktree-split.mjs"
+    - "scripts/check-xuedao-ssot-conformance.mjs"
   config: []
   migrations: []
 
 acceptance:
   normal:
-    - "capabilityItem/capabilityModel/capabilityPortrait 必须从 publishOnlyModules 收敛到 serviceModules，且允许复用同一个 capability.ts service wrapper。"
-    - "sync-performance-openapi-ssot.mjs 必须能稳定从单 capability.ts 为三个 moduleRoot 生成对应 OpenAPI paths。"
-    - "全部 performance contract adapter 不再手写局部 runtime enum 常量，统一复用 shared/contract-enums.ts。"
+    - "运行 `node ./scripts/audit-worktree-split.mjs --batch-id <id> --output paths` 时，终端输出路径清单的同时，默认写出 `reports/delivery/worktree-split-audit.<id>.latest.paths`。"
+    - "README 与自动化测试策略文档必须展示从 worktree split 到 repo-consistency `--files-from` 的闭环命令。"
+    - "repo guard regression 必须验证 `.paths` 产物默认落盘。"
   error:
-    - "若 service-capable 模块仍留在 publishOnlyModules，closure guard 必须 FAIL。"
-    - "若任一 performance *-contract.ts 再次出现局部 const enum source，performance-domain-model guard 必须 FAIL。"
+    - "若 `--output paths` 不再写出 `.paths` 产物，repo guard regression 必须 FAIL。"
+    - "若文档示例重新指向不存在的旧 `.paths` 命名，conformance/doc 回写守卫必须 FAIL。"
   boundary:
-    - "允许多个 moduleRoot 复用同一个 serviceFile，但必须在 registry 中显式登记并能被脚本稳定发现。"
-    - "本轮不新增独立 capabilityItem/capabilityPortrait 前端 service wrapper 文件。"
+    - "本轮不改变 batch 归类优先级、risk level 或推荐验证命令。"
+    - "本轮不把 worktree split 自动接线到 pre-push。"
   permission:
     - "本次治理不改变业务权限语义。"
   stateFlow:
-    - "本次治理不新增业务状态。"
+    - "本次治理不改变业务状态流语义。"
 
 deliveryEvidenceRequired:
   - "verification_record"
-  - "performance_openapi_sync_pass"
-  - "performance_contract_sync_pass"
-  - "contract_closure_guard_pass"
-  - "domain_model_guard_pass"
+  - "worktree_split_paths_artifact_pass"
   - "repo_guard_regression"
-  - "repo_consistency_guard_pass"
-  - "frontend_typecheck"
-  - "frontend_build"
-  - "mobile_typecheck"
+  - "manifest_guard_pass"
+  - "conformance_guard_pass"
 
 releaseAndRollback:
   rolloutSteps:
-    - "调整 performance contract-source producer 分类并补齐 capability 共享 service 发现能力"
-    - "同步 OpenAPI 与 generated consumer"
-    - "扩展 contract-enums.ts 并改造剩余 contract adapter"
-    - "升级 closure/domain-model guards 与 repo guard regression"
-    - "回写 inventory 与 records"
+    - "给 audit-worktree-split 增加 `.paths` 默认落盘能力"
+    - "回写 README、自动化测试策略与 inventory"
+    - "补 repo guard regression 并执行 conformance"
   rollbackPath:
-    - "回退 contract-source producer 分类、contract-enums.ts、相关 adapter/guard/test/doc 改动"
-    - "重新执行 sync 与 repo consistency guards，确认恢复到第三批稳定状态"
+    - "回退 audit-worktree-split、文档与 repo regression 改动"
+    - "重新执行 manifest、repo guard regression 与 conformance，确认恢复到第三十一批稳定状态"
   monitoring:
-    - "scripts/check-performance-contract-closure.mjs 输出"
-    - "scripts/check-performance-domain-model-ssot.mjs 输出"
+    - "reports/delivery/worktree-split-audit.<batch-id>.latest.paths"
+    - "scripts/audit-worktree-split.mjs --output paths 输出"
     - "reports/delivery/xuedao-ssot-conformance.latest.{md,json}"
 
 waivers: []
 notes:
-  - "本次是第五批 performance contract 残余风险收敛，不扩到 RBAC、状态机全覆盖、schema parity、环境变量全仓漏扫。"
-  - "cool-admin-vue/.env 仍可能存在本地改动，但不再作为仓库级 SSOT 交付残余风险记录。"
+  - "本次是第三十二批 repo-level SSOT 治理，目标是把拆批报告和 scoped 守卫真正连成可复用链路。"
+  - "这批仍只补交付闭环，不改变分类算法。"
 
 delivery:
   requiredCommands:
-    - "node ./scripts/sync-performance-openapi-ssot.mjs --write"
-    - "node ./scripts/openapi-contract-sync.mjs --write"
-    - "node ./scripts/check-performance-contract-closure.mjs"
-    - "node ./scripts/check-performance-domain-model-ssot.mjs"
     - "node ./scripts/check-xuedao-ssot-manifest.mjs"
-    - "node ./scripts/check-xuedao-ssot-conformance.mjs"
+    - "node ./scripts/audit-worktree-split.mjs --batch-id governance-ssot --output paths"
     - "node --test ./performance-management-system/test/repo-guard-scripts.test.mjs"
-    - "node ./scripts/run-repo-consistency-guards.mjs"
-    - "cd /Users/shaotongli/Documents/xuedao/cool-admin-vue && corepack pnpm run type-check"
-    - "cd /Users/shaotongli/Documents/xuedao/cool-admin-vue && corepack pnpm run build"
-    - "cd /Users/shaotongli/Documents/xuedao/cool-uni && corepack pnpm run type-check"
+    - "node ./scripts/check-xuedao-ssot-conformance.mjs"
   expectedArtifacts:
+    - "reports/delivery/worktree-split-audit.governance-ssot.latest.paths"
     - "reports/delivery/xuedao-ssot-conformance.latest.md"
     - "reports/delivery/xuedao-ssot-conformance.latest.json"
+
 residualRisk:
-  - "仓库级 SSOT 剩余缺口仍集中在菜单/RBAC 分层事实源、状态机覆盖不足、字典/provider 未完全同源、数据库 parity 与环境变量全仓漏扫。"
+  - "worktree split 只负责产出批次建议与路径清单，不自动判定批次是否真的可直接合并提交，人工 review 仍是最后一道边界。"

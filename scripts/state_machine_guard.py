@@ -123,6 +123,7 @@ IGNORE_STATE_TOKENS = {
     "message",
     "data",
     "code",
+    "description",
     "route",
     "page",
     "button",
@@ -202,6 +203,7 @@ IGNORE_STATE_TOKENS = {
     "update",
     "value",
     "withdraw",
+    "location",
 }
 ALLOWED_CAMEL_CASE_STATES = {
     "inProgress",

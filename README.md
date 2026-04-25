@@ -146,6 +146,7 @@ git config core.hooksPath .githooks
 默认策略：
 
 1. 本地 `pre-push` 命中敏感路径时，会通过 `scripts/run-repo-consistency-guards.mjs` 先做 `manifest + conformance` 基线检查，再串行触发 RBAC、状态机和实现层收敛守卫。
+   命中 `repo-consistency-guards` 时，pre-push 会把本次命中的仓库相对路径逐条透传给聚合入口，避免历史脏工作区把 changed-aware 守卫范围放大。
 2. PR / 手工触发时，CI 会执行 `batch` 级统一交付门禁；未显式传入报告路径时，默认把报告写到 `reports/delivery/unified-delivery-batch.latest.{md,json}`。
 3. CI 在 batch / final 两条作业里，都会先执行 `cool-admin-midway` 的 `lint/build`，以及基于 `scripts/check-changed-workspace-quality.mjs` 的 Vue / Uni 变更文件 `prettier + eslint` 检查，再进入前端 `type-check/build` 和仓库守卫。
 4. 推送到 `main/master` 时，CI 会执行 `final` 级统一交付门禁；未显式传入报告路径时，默认把报告写到 `reports/delivery/unified-delivery-final.latest.{md,json}`，作为发布前最后一道仓库级交付阻断。
@@ -174,6 +175,9 @@ CI 也会执行这条检查，并把结果上传到 `reports/delivery/`。
 手工执行示例：
 
 ```bash
+node ./scripts/run-repo-consistency-guards.mjs --file scripts/run-repo-consistency-guards.mjs --file scripts/git-pre-push-gate.mjs
+node ./scripts/audit-worktree-split.mjs --batch-id governance-ssot --output paths
+node ./scripts/run-repo-consistency-guards.mjs --files-from reports/delivery/worktree-split-audit.governance-ssot.latest.paths
 node ./scripts/check-rbac-alignment.mjs --phase batch --force
 node ./scripts/check-rbac-alignment.mjs --phase final --force
 node ./scripts/check-state-machine-alignment.mjs --phase batch --force
