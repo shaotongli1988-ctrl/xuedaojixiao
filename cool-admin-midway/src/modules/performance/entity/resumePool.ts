@@ -19,9 +19,11 @@ export class PerformanceResumePoolEntity extends BaseEntity {
   @Column({ comment: '目标岗位', length: 100, nullable: true })
   targetPosition: string | null;
 
+  @Index()
   @Column({ comment: '联系电话', length: 30 })
   phone: string;
 
+  @Index()
   @Column({ comment: '联系邮箱', length: 100, nullable: true })
   email: string | null;
 
@@ -58,11 +60,9 @@ export class PerformanceResumePoolEntity extends BaseEntity {
   @Column({ comment: '最近发起面试 ID', nullable: true })
   latestInterviewId: number | null;
 
-  @Index()
   @Column({ comment: '招聘计划 ID', nullable: true })
   recruitPlanId: number | null;
 
-  @Index()
   @Column({ comment: '职位标准 ID', nullable: true })
   jobStandardId: number | null;
 

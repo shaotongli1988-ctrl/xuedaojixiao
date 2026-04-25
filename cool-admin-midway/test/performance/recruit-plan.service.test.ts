@@ -439,6 +439,31 @@ describe('performance recruit plan service', () => {
     await expect(service.exportPlans({})).rejects.toThrow('无权限导出招聘计划');
   });
 
+  test('should reject out-of-scope manager state transitions', async () => {
+    const { service } = createService({
+      perms: MANAGER_PERMS,
+      departmentIds: [11],
+      plan: {
+        id: 5,
+        title: '主题16-跨部门状态流转',
+        targetDepartmentId: 12,
+        positionName: '销售顾问',
+        headcount: 1,
+        startDate: '2026-04-20',
+        endDate: '2026-05-31',
+        recruiterId: 102,
+        requirementSummary: '跨部门状态流转样例',
+        status: 'draft',
+      },
+    });
+
+    await expect(service.submitPlan({ id: 5 })).rejects.toThrow('无权提交该招聘计划');
+    await expect(service.closePlan({ id: 5 })).rejects.toThrow('无权关闭该招聘计划');
+    await expect(service.voidPlan({ id: 5 })).rejects.toThrow('无权作废该招聘计划');
+    await expect(service.reopenPlan({ id: 5 })).rejects.toThrow('无权重新开启该招聘计划');
+    expect(service.performanceRecruitPlanEntity.update).not.toHaveBeenCalled();
+  });
+
   test('should reject employee page access and illegal state transitions', async () => {
     const { service } = createService({
       perms: [],

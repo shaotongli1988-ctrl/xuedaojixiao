@@ -101,7 +101,15 @@ export const DOCUMENT_CENTER_CATEGORY = [
 	'other'
 ] as const;
 export const DOCUMENT_CENTER_STATUS = ['draft', 'published', 'review', 'archived'] as const;
-export const DOCUMENT_CENTER_FILE_TYPE = ['other', 'pdf', 'doc', 'xls', 'ppt', 'img', 'zip'] as const;
+export const DOCUMENT_CENTER_FILE_TYPE = [
+	'other',
+	'pdf',
+	'doc',
+	'xls',
+	'ppt',
+	'img',
+	'zip'
+] as const;
 export const DOCUMENT_CENTER_STORAGE = ['local', 'cloud', 'hybrid'] as const;
 export const DOCUMENT_CENTER_CONFIDENTIALITY = ['public', 'internal', 'secret'] as const;
 
@@ -177,5 +185,11 @@ export const TEACHER_AGENT_RELATION_STATUS = ['active', 'inactive'] as const;
 export const TEACHER_CLASS_STATUS = ['draft', 'closed', 'active'] as const;
 export const TEACHER_TODO_BUCKET = ['today', 'overdue'] as const;
 
-export const WORK_PLAN_STATUS = ['draft', 'cancelled', 'completed', 'inProgress', 'planned'] as const;
+export const WORK_PLAN_STATUS = [
+	'draft',
+	'cancelled',
+	'completed',
+	'inProgress',
+	'planned'
+] as const;
 export const WORK_PLAN_PRIORITY = ['low', 'medium', 'high', 'urgent'] as const;

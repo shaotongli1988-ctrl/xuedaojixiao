@@ -455,6 +455,37 @@ describe('performance interview service', () => {
     await expect(hrService.delete([7])).rejects.toThrow('当前状态不允许删除');
   });
 
+  test('should allow company-scoped delete for scheduled interview with null department', async () => {
+    const service = new PerformanceInterviewService() as any;
+    service.ctx = {
+      admin: {
+        userId: 1,
+        username: 'hr_admin',
+        roleIds: [1],
+      },
+    };
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue(['performance:interview:delete']),
+    };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+    service.performanceInterviewEntity = {
+      findBy: jest.fn().mockResolvedValue([
+        {
+          id: 8,
+          departmentId: null,
+          status: 'scheduled',
+        },
+      ]),
+      delete: jest.fn().mockResolvedValue(undefined),
+    };
+    attachAccessContext(service);
+
+    await expect(service.delete([8])).resolves.toBeUndefined();
+    expect(service.performanceInterviewEntity.delete).toHaveBeenCalledWith([8]);
+  });
+
   test('should reject employee page access', async () => {
     const service = new PerformanceInterviewService() as any;
     service.ctx = {

@@ -304,11 +304,12 @@ export class PerformanceInterviewService extends BaseService {
       throw new CoolCommException(PERFORMANCE_RESOURCE_NOT_FOUND_MESSAGE);
     }
 
-    interviews.forEach(item => {
+    for (const item of interviews) {
+      await this.assertInterviewInScope(item, access, 'interview.delete');
       if (item.status !== 'scheduled') {
         throw new CoolCommException(PERFORMANCE_STATE_DELETE_NOT_ALLOWED_MESSAGE);
       }
-    });
+    }
 
     await this.performanceInterviewEntity.delete(validIds);
   }
@@ -385,16 +386,22 @@ export class PerformanceInterviewService extends BaseService {
     capabilityKey: PerformanceCapabilityKey
   ) {
     const departmentId = this.normalizeNullableNumber(interview.departmentId);
+    const scopes = this.performanceAccessContextService.capabilityScopes(
+      access,
+      capabilityKey
+    );
+
+    if (!departmentId) {
+      if (scopes.includes('company')) {
+        return;
+      }
+      throw new CoolCommException('无权访问该面试');
+    }
 
     if (
-      !departmentId ||
-      !this.performanceAccessContextService.matchesScope(
-        access,
-        this.performanceAccessContextService.capabilityScopes(access, capabilityKey),
-        {
-          departmentId,
-        }
-      )
+      !this.performanceAccessContextService.matchesScope(access, scopes, {
+        departmentId,
+      })
     ) {
       throw new CoolCommException('无权访问该面试');
     }

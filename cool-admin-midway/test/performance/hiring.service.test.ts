@@ -367,6 +367,49 @@ describe('performance hiring service', () => {
     ).rejects.toThrow('无权操作该录用单');
   });
 
+  test('should reject manager status change and close outside department scope', async () => {
+    const service = new PerformanceHiringService() as any;
+    service.ctx = {
+      admin: {
+        userId: 9,
+        username: 'manager_rd',
+        roleIds: [2],
+      },
+    };
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue(MANAGER_PERMS),
+    };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([11]),
+    };
+    service.performanceHiringEntity = {
+      findOneBy: jest.fn().mockResolvedValue(
+        createHiringRecord(9, {
+          targetDepartmentId: 99,
+          status: 'offered',
+        })
+      ),
+      update: jest.fn(),
+    };
+    attachAccessContext(service);
+
+    await expect(
+      service.updateStatus({
+        id: 9,
+        status: 'accepted',
+      })
+    ).rejects.toThrow('无权操作该录用单');
+
+    await expect(
+      service.close({
+        id: 9,
+        closeReason: '越权关闭',
+      })
+    ).rejects.toThrow('无权操作该录用单');
+
+    expect(service.performanceHiringEntity.update).not.toHaveBeenCalled();
+  });
+
   test('should reject employee access', async () => {
     const service = new PerformanceHiringService() as any;
     service.ctx = {

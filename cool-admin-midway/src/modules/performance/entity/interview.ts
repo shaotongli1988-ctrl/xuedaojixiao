@@ -39,11 +39,9 @@ export class PerformanceInterviewEntity extends BaseEntity {
   })
   score: number | null;
 
-  @Index()
   @Column({ comment: '简历池 ID', nullable: true })
   resumePoolId: number | null;
 
-  @Index()
   @Column({ comment: '招聘计划 ID', nullable: true })
   recruitPlanId: number | null;
 

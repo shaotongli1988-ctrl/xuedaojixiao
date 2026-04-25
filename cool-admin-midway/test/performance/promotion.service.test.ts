@@ -305,6 +305,47 @@ describe('performance promotion service', () => {
     );
   });
 
+  test('should reject submit when sponsor no longer has employee scope', async () => {
+    const service = new PerformancePromotionService() as any;
+    service.ctx = {
+      admin: {
+        userId: 9,
+        username: 'manager_rd',
+        roleIds: [2],
+      },
+    };
+    service.baseSysMenuService = {
+      getPerms: jest
+        .fn()
+        .mockResolvedValue(['performance:promotion:submit']),
+    };
+    service.performancePromotionEntity = {
+      findOneBy: jest.fn().mockResolvedValue({
+        id: 102,
+        employeeId: 2,
+        sponsorId: 9,
+        status: 'draft',
+        tenantId: 1,
+      }),
+    };
+    service.baseSysUserEntity = {
+      findOneBy: jest.fn().mockResolvedValue({
+        id: 2,
+        departmentId: 99,
+      }),
+    };
+    service.performanceApprovalFlowService = {
+      submitPromotion: jest.fn().mockResolvedValue(undefined),
+    };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([11]),
+    };
+    attachAccessContextService(service);
+
+    await expect(service.submit(102)).rejects.toThrow('无权访问该晋升单');
+    expect(service.performanceApprovalFlowService.submitPromotion).not.toHaveBeenCalled();
+  });
+
   test('should block legacy manual review when active approval instance exists', async () => {
     const service = new PerformancePromotionService() as any;
     service.ctx = {

@@ -20,7 +20,6 @@ export class PerformanceTeacherAgentRelationEntity extends BaseEntity {
   @Column({ comment: '关系状态', length: 20, default: 'active' })
   status: string;
 
-  @Index()
   @Column({ comment: '生效时间', type: 'varchar', length: 19, nullable: true })
   effectiveTime: string | null;
 

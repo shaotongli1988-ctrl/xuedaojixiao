@@ -16,11 +16,9 @@ export class PerformanceGoalOpsPlanEntity extends BaseEntity {
   @Column({ comment: '员工ID' })
   employeeId: number;
 
-  @Index()
   @Column({ comment: '周期类型', length: 16 })
   periodType: string;
 
-  @Index()
   @Column({ comment: '计划日期', type: 'varchar', length: 10, nullable: true })
   planDate: string | null;
 

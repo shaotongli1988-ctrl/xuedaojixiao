@@ -419,6 +419,94 @@ describe('performance pip helper', () => {
     );
   });
 
+  test('should reject starting pip outside current scope', async () => {
+    const service = new PerformancePipService() as any;
+    service.ctx = {
+      admin: {
+        userId: 2001,
+        username: 'manager_platform',
+        roleIds: [2],
+        passwordVersion: 1,
+        isRefresh: false,
+      },
+    };
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue(['performance:pip:start']),
+    };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([11]),
+    };
+    service.baseSysUserEntity = {
+      findOneBy: jest.fn().mockResolvedValue({
+        id: 3001,
+        departmentId: 99,
+      }),
+    };
+    service.performancePipEntity = {
+      findOneBy: jest.fn().mockResolvedValue({
+        id: 61,
+        employeeId: 3001,
+        ownerId: 2001,
+        status: 'draft',
+        resultSummary: '',
+      }),
+      update: jest.fn(),
+    };
+    attachAccessContextService(service);
+
+    await expect(service.start({ id: 61 })).rejects.toThrow('无权管理该员工 PIP');
+    expect(service.performancePipEntity.update).not.toHaveBeenCalled();
+  });
+
+  test('should reject closing pip after it already reached completed state', async () => {
+    const service = new PerformancePipService() as any;
+    service.ctx = {
+      admin: {
+        userId: 1,
+        username: 'hr_admin',
+        roleIds: [1],
+        passwordVersion: 1,
+        isRefresh: false,
+        isAdmin: true,
+      },
+    };
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue([
+        'performance:pip:close',
+        'performance:salary:page',
+      ]),
+    };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([]),
+    };
+    service.baseSysUserEntity = {
+      findOneBy: jest.fn().mockResolvedValue({
+        id: 3001,
+        departmentId: 11,
+      }),
+    };
+    service.performancePipEntity = {
+      findOneBy: jest.fn().mockResolvedValue({
+        id: 62,
+        employeeId: 3001,
+        ownerId: 2001,
+        status: 'completed',
+        resultSummary: '已完成',
+      }),
+      update: jest.fn(),
+    };
+    attachAccessContextService(service);
+
+    await expect(
+      service.close({
+        id: 62,
+        resultSummary: '重复关闭',
+      })
+    ).rejects.toThrow('只有进行中的 PIP 可以关闭');
+
+    expect(service.performancePipEntity.update).not.toHaveBeenCalled();
+  });
+
   test('should export pip summary only and record success audit', async () => {
     const admin = {
       userId: 1,

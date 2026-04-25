@@ -757,9 +757,9 @@ async function submitForm() {
 			headcount: Number(form.headcount),
 			startDate: form.startDate,
 			endDate: form.endDate,
-			recruiterId: form.recruiterId || null,
+			recruiterId: form.recruiterId || undefined,
 			requirementSummary: normalizeOptionalText(form.requirementSummary),
-			jobStandardId: form.jobStandardId || null
+			jobStandardId: form.jobStandardId || undefined
 		};
 
 		if (editingRecord.value?.id) {

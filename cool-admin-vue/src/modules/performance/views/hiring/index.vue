@@ -412,6 +412,7 @@ import {
 	type HiringFormRecord,
 	type HiringRecord,
 	type HiringSaveRequest,
+	type HiringSourceSnapshot,
 	type HiringSourceType,
 	type HiringStatus,
 	type InterviewStatus,
@@ -605,7 +606,7 @@ async function submitForm() {
 			sourceType: normalizeSourceType(form.sourceType),
 			sourceId: form.sourceId ? Number(form.sourceId) : undefined,
 			sourceStatusSnapshot: normalizeOptionalText(form.sourceStatusSnapshot),
-			sourceSnapshot: form.sourceSnapshot || undefined,
+			sourceSnapshot: normalizeHiringSourceSnapshot(form.sourceSnapshot),
 			interviewId: form.interviewId || undefined,
 			resumePoolId: form.resumePoolId || undefined,
 			recruitPlanId: form.recruitPlanId || undefined,
@@ -763,6 +764,28 @@ function normalizeInterviewStatus(value: string | undefined): InterviewStatus | 
 	return normalized === 'scheduled' || normalized === 'completed' || normalized === 'cancelled'
 		? normalized
 		: null;
+}
+
+function normalizeHiringSourceSnapshot(
+	value?: HiringSourceSnapshot | null
+): HiringSaveRequest['sourceSnapshot'] {
+	if (!value) {
+		return undefined;
+	}
+
+	return {
+		sourceResource: value.sourceResource ?? undefined,
+		interviewId: value.interviewId ?? undefined,
+		resumePoolId: value.resumePoolId ?? undefined,
+		recruitPlanId: value.recruitPlanId ?? undefined,
+		recruitPlanTitle: value.recruitPlanTitle ?? undefined,
+		candidateName: value.candidateName ?? undefined,
+		targetDepartmentId: value.targetDepartmentId ?? undefined,
+		targetDepartmentName: value.targetDepartmentName ?? undefined,
+		targetPosition: value.targetPosition ?? undefined,
+		interviewStatus: value.interviewStatus ?? undefined,
+		sourceStatusSnapshot: value.sourceStatusSnapshot ?? undefined
+	};
 }
 
 async function consumeRoutePrefill() {

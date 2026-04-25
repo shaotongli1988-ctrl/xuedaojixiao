@@ -826,6 +826,127 @@ describe('performance resume pool service', () => {
     ).rejects.toThrow('无权操作该简历');
   });
 
+  test('should reject manager import overwrite outside scope', async () => {
+    const service = new PerformanceResumePoolService() as any;
+    service.ctx = {
+      admin: {
+        userId: 9,
+        username: 'manager_rd',
+        roleIds: [2],
+      },
+    };
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue(MANAGER_PERMS),
+    };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([11]),
+    };
+    service.spaceInfoEntity = {
+      findOneBy: jest.fn().mockResolvedValue({
+        id: 31,
+        name: 'import.xlsx',
+        url: 'https://files.example.com/import.xlsx',
+      }),
+    };
+    service.performanceResumePoolEntity = {
+      findOneBy: jest.fn().mockResolvedValue({
+        id: 60,
+        candidateName: '跨部门候选人',
+        targetDepartmentId: 22,
+        targetPosition: '销售顾问',
+        phone: '13600000100',
+        email: 'cross@example.com',
+        resumeText: 'resume',
+        sourceType: 'manual',
+        sourceRemark: null,
+        externalLink: null,
+        attachmentIdList: [],
+        status: 'screening',
+      }),
+      update: jest.fn(),
+      save: jest.fn(),
+      create: jest.fn(payload => payload),
+    };
+    attachAccessContext(service);
+
+    await expect(
+      service.importResume({
+        fileId: 31,
+        rows: [],
+        overwriteRows: [
+          {
+            id: 60,
+            candidateName: '跨部门候选人',
+            targetDepartmentId: 22,
+            targetPosition: '销售顾问',
+            phone: '13600000100',
+            resumeText: 'updated',
+          },
+        ],
+      })
+    ).rejects.toThrow('无权导入覆盖该简历');
+
+    expect(service.performanceResumePoolEntity.update).not.toHaveBeenCalled();
+    expect(service.performanceResumePoolEntity.save).not.toHaveBeenCalled();
+  });
+
+  test('should reject manager convert and createInterview outside scope', async () => {
+    const service = new PerformanceResumePoolService() as any;
+    service.ctx = {
+      admin: {
+        userId: 9,
+        username: 'manager_rd',
+        roleIds: [2],
+      },
+    };
+    service.baseSysMenuService = {
+      getPerms: jest.fn().mockResolvedValue(MANAGER_PERMS),
+    };
+    service.baseSysPermsService = {
+      departmentIds: jest.fn().mockResolvedValue([11]),
+    };
+    service.performanceResumePoolEntity = {
+      findOneBy: jest.fn().mockResolvedValue({
+        id: 61,
+        candidateName: '跨部门候选人',
+        targetDepartmentId: 22,
+        targetPosition: '销售顾问',
+        phone: '13600000101',
+        email: 'cross2@example.com',
+        resumeText: 'resume',
+        sourceType: 'manual',
+        sourceRemark: null,
+        externalLink: null,
+        attachmentIdList: [],
+        status: 'screening',
+        linkedTalentAssetId: null,
+        latestInterviewId: null,
+      }),
+      update: jest.fn(),
+    };
+    service.performanceTalentAssetEntity = {
+      findOneBy: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+    };
+    service.performanceInterviewEntity = {
+      create: jest.fn(),
+      save: jest.fn(),
+    };
+    attachAccessContext(service);
+
+    await expect(service.convertToTalentAsset({ id: 61 })).rejects.toThrow(
+      '无权转换该简历'
+    );
+    await expect(service.createInterview({ id: 61 })).rejects.toThrow(
+      '无权发起该简历面试'
+    );
+
+    expect(service.performanceTalentAssetEntity.save).not.toHaveBeenCalled();
+    expect(service.performanceInterviewEntity.save).not.toHaveBeenCalled();
+    expect(service.performanceResumePoolEntity.update).not.toHaveBeenCalled();
+  });
+
   test('should keep convert idempotent when linked talent asset already exists', async () => {
     const service = new PerformanceResumePoolService() as any;
     service.ctx = {

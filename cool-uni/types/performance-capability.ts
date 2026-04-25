@@ -4,8 +4,20 @@
  */
 export type {
 	CapabilityModelPageQuery,
-	CapabilityModelRecord,
+	CapabilityModelStatus,
 } from "/@/generated/performance-capability.generated";
+
+export interface CapabilityModelRecord {
+	id?: number;
+	name: string;
+	code?: string | null;
+	category?: string | null;
+	description?: string | null;
+	status?: import("/@/generated/performance-capability.generated").CapabilityModelStatus;
+	itemCount?: number;
+	createTime?: string;
+	updateTime?: string;
+}
 
 export interface PagePagination {
 	page: number;
@@ -14,7 +26,7 @@ export interface PagePagination {
 }
 
 export type CapabilityModelPageResult = {
-	list: import("/@/generated/performance-capability.generated").CapabilityModelRecord[];
+	list: CapabilityModelRecord[];
 	pagination: PagePagination;
 };
 

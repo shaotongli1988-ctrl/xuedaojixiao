@@ -1164,6 +1164,659 @@ describe('performance domain registry', () => {
     );
   });
 
+  test('should register feedback state machine from feedback task lifecycle rules', () => {
+    const feedbackMachine = PERFORMANCE_DOMAIN_REGISTRY.stateMachines.find(
+      item => item.aggregate === 'feedback'
+    );
+
+    expect(feedbackMachine).toBeDefined();
+    expect(feedbackMachine?.statuses).toEqual(
+      expect.arrayContaining(['draft', 'running', 'closed'])
+    );
+    expect(feedbackMachine?.transitions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          from: 'draft',
+          action: 'add',
+          to: 'running',
+        }),
+        expect.objectContaining({
+          from: 'running',
+          action: 'submit',
+          to: 'closed',
+        }),
+      ])
+    );
+  });
+
+  test('should register job-standard state machine from the frozen theme17 contract', () => {
+    const jobStandardMachine = PERFORMANCE_DOMAIN_REGISTRY.stateMachines.find(
+      item => item.aggregate === 'job-standard'
+    );
+
+    expect(jobStandardMachine).toBeDefined();
+    expect(jobStandardMachine?.statuses).toEqual(
+      expect.arrayContaining(['draft', 'active', 'inactive'])
+    );
+    expect(jobStandardMachine?.transitions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          from: 'draft',
+          action: 'activate',
+          to: 'active',
+        }),
+        expect.objectContaining({
+          from: 'active',
+          action: 'deactivate',
+          to: 'inactive',
+        }),
+        expect.objectContaining({
+          from: 'inactive',
+          action: 'reactivate',
+          to: 'active',
+        }),
+      ])
+    );
+  });
+
+  test('should register teacher-cooperation state machine from teacher-channel core transition rules', () => {
+    const teacherCooperationMachine =
+      PERFORMANCE_DOMAIN_REGISTRY.stateMachines.find(
+        item => item.aggregate === 'teacher-cooperation'
+      );
+
+    expect(teacherCooperationMachine).toBeDefined();
+    expect(teacherCooperationMachine?.statuses).toEqual(
+      expect.arrayContaining([
+        'uncontacted',
+        'contacted',
+        'negotiating',
+        'partnered',
+        'terminated',
+      ])
+    );
+    expect(teacherCooperationMachine?.transitions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          from: 'uncontacted',
+          action: 'firstFollow',
+          to: 'contacted',
+        }),
+        expect.objectContaining({
+          from: 'contacted',
+          action: 'markNegotiating',
+          to: 'negotiating',
+        }),
+        expect.objectContaining({
+          from: 'contacted',
+          action: 'markPartnered',
+          to: 'partnered',
+        }),
+        expect.objectContaining({
+          from: 'negotiating',
+          action: 'markPartnered',
+          to: 'partnered',
+        }),
+        expect.objectContaining({
+          from: 'partnered',
+          action: 'terminate',
+          to: 'terminated',
+        }),
+      ])
+    );
+  });
+
+  test('should register teacher-class state machine from teacher-channel class transition rules', () => {
+    const teacherClassMachine = PERFORMANCE_DOMAIN_REGISTRY.stateMachines.find(
+      item => item.aggregate === 'teacher-class'
+    );
+
+    expect(teacherClassMachine).toBeDefined();
+    expect(teacherClassMachine?.statuses).toEqual(
+      expect.arrayContaining(['draft', 'active', 'closed'])
+    );
+    expect(teacherClassMachine?.transitions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          from: 'draft',
+          action: 'saveDraft',
+          to: 'draft',
+        }),
+        expect.objectContaining({
+          from: 'draft',
+          action: 'activate',
+          to: 'active',
+        }),
+        expect.objectContaining({
+          from: 'active',
+          action: 'keepActive',
+          to: 'active',
+        }),
+        expect.objectContaining({
+          from: 'active',
+          action: 'close',
+          to: 'closed',
+        }),
+      ])
+    );
+  });
+
+  test('should register goal state machine from existing goal-helper flow rules', () => {
+    const goalMachine = PERFORMANCE_DOMAIN_REGISTRY.stateMachines.find(
+      item => item.aggregate === 'goal'
+    );
+
+    expect(goalMachine).toBeDefined();
+    expect(goalMachine?.statuses).toEqual(
+      expect.arrayContaining(['draft', 'in-progress', 'completed', 'cancelled'])
+    );
+    expect(goalMachine?.transitions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          from: 'draft',
+          action: 'startProgress',
+          to: 'in-progress',
+        }),
+        expect.objectContaining({
+          from: 'draft',
+          action: 'complete',
+          to: 'completed',
+        }),
+        expect.objectContaining({
+          from: 'in-progress',
+          action: 'cancel',
+          to: 'cancelled',
+        }),
+      ])
+    );
+  });
+
+  test('should register promotion state machine from promotion-helper flow rules', () => {
+    const promotionMachine = PERFORMANCE_DOMAIN_REGISTRY.stateMachines.find(
+      item => item.aggregate === 'promotion'
+    );
+
+    expect(promotionMachine).toBeDefined();
+    expect(promotionMachine?.statuses).toEqual(
+      expect.arrayContaining(['draft', 'reviewing', 'approved', 'rejected'])
+    );
+    expect(promotionMachine?.transitions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          from: 'draft',
+          action: 'submit',
+          to: 'reviewing',
+        }),
+        expect.objectContaining({
+          from: 'reviewing',
+          action: 'approve',
+          to: 'approved',
+        }),
+        expect.objectContaining({
+          from: 'reviewing',
+          action: 'reject',
+          to: 'rejected',
+        }),
+      ])
+    );
+  });
+
+  test('should register pip state machine from pip service transition rules', () => {
+    const pipMachine = PERFORMANCE_DOMAIN_REGISTRY.stateMachines.find(
+      item => item.aggregate === 'pip'
+    );
+
+    expect(pipMachine).toBeDefined();
+    expect(pipMachine?.statuses).toEqual(
+      expect.arrayContaining(['draft', 'active', 'completed', 'closed'])
+    );
+    expect(pipMachine?.transitions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          from: 'draft',
+          action: 'start',
+          to: 'active',
+        }),
+        expect.objectContaining({
+          from: 'active',
+          action: 'track',
+          to: 'active',
+        }),
+        expect.objectContaining({
+          from: 'active',
+          action: 'complete',
+          to: 'completed',
+        }),
+        expect.objectContaining({
+          from: 'active',
+          action: 'close',
+          to: 'closed',
+        }),
+      ])
+    );
+  });
+
+  test('should register suggestion state machine from suggestion helper flow rules', () => {
+    const suggestionMachine = PERFORMANCE_DOMAIN_REGISTRY.stateMachines.find(
+      item => item.aggregate === 'suggestion'
+    );
+
+    expect(suggestionMachine).toBeDefined();
+    expect(suggestionMachine?.statuses).toEqual(
+      expect.arrayContaining([
+        'pending',
+        'accepted',
+        'ignored',
+        'rejected',
+        'revoked',
+      ])
+    );
+    expect(suggestionMachine?.transitions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          from: 'pending',
+          action: 'accept',
+          to: 'accepted',
+        }),
+        expect.objectContaining({
+          from: 'pending',
+          action: 'ignore',
+          to: 'ignored',
+        }),
+        expect.objectContaining({
+          from: 'pending',
+          action: 'reject',
+          to: 'rejected',
+        }),
+        expect.objectContaining({
+          from: 'pending',
+          action: 'revoke',
+          to: 'revoked',
+        }),
+        expect.objectContaining({
+          from: 'accepted',
+          action: 'revoke',
+          to: 'revoked',
+        }),
+      ])
+    );
+  });
+
+  test('should register purchase-order state machine from purchase-order service transition rules', () => {
+    const purchaseOrderMachine = PERFORMANCE_DOMAIN_REGISTRY.stateMachines.find(
+      item => item.aggregate === 'purchase-order'
+    );
+
+    expect(purchaseOrderMachine).toBeDefined();
+    expect(purchaseOrderMachine?.statuses).toEqual(
+      expect.arrayContaining([
+        'draft',
+        'inquiring',
+        'pendingApproval',
+        'approved',
+        'received',
+        'closed',
+        'cancelled',
+      ])
+    );
+    expect(purchaseOrderMachine?.transitions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          from: 'draft',
+          action: 'submitInquiry',
+          to: 'inquiring',
+        }),
+        expect.objectContaining({
+          from: 'inquiring',
+          action: 'submitApproval',
+          to: 'pendingApproval',
+        }),
+        expect.objectContaining({
+          from: 'pendingApproval',
+          action: 'approve',
+          to: 'approved',
+        }),
+        expect.objectContaining({
+          from: 'pendingApproval',
+          action: 'reject',
+          to: 'draft',
+        }),
+        expect.objectContaining({
+          from: 'approved',
+          action: 'receive',
+          to: 'received',
+        }),
+        expect.objectContaining({
+          from: 'received',
+          action: 'receive',
+          to: 'received',
+        }),
+        expect.objectContaining({
+          from: 'approved',
+          action: 'close',
+          to: 'closed',
+        }),
+        expect.objectContaining({
+          from: 'received',
+          action: 'close',
+          to: 'closed',
+        }),
+      ])
+    );
+  });
+
+  test('should register work-plan state machine from workPlan service transition rules', () => {
+    const workPlanMachine = PERFORMANCE_DOMAIN_REGISTRY.stateMachines.find(
+      item => item.aggregate === 'work-plan'
+    );
+
+    expect(workPlanMachine).toBeDefined();
+    expect(workPlanMachine?.statuses).toEqual(
+      expect.arrayContaining([
+        'draft',
+        'planned',
+        'inProgress',
+        'completed',
+        'cancelled',
+      ])
+    );
+    expect(workPlanMachine?.transitions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          from: 'draft',
+          action: 'syncApproved',
+          to: 'planned',
+        }),
+        expect.objectContaining({
+          from: 'draft',
+          action: 'syncRejected',
+          to: 'cancelled',
+        }),
+        expect.objectContaining({
+          from: 'planned',
+          action: 'start',
+          to: 'inProgress',
+        }),
+        expect.objectContaining({
+          from: 'inProgress',
+          action: 'complete',
+          to: 'completed',
+        }),
+        expect.objectContaining({
+          from: 'inProgress',
+          action: 'cancel',
+          to: 'cancelled',
+        }),
+      ])
+    );
+  });
+
+  test('should register salary state machine from salary service transition rules', () => {
+    const salaryMachine = PERFORMANCE_DOMAIN_REGISTRY.stateMachines.find(
+      item => item.aggregate === 'salary'
+    );
+
+    expect(salaryMachine).toBeDefined();
+    expect(salaryMachine?.statuses).toEqual(
+      expect.arrayContaining(['draft', 'confirmed', 'archived'])
+    );
+    expect(salaryMachine?.transitions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          from: 'draft',
+          action: 'confirm',
+          to: 'confirmed',
+        }),
+        expect.objectContaining({
+          from: 'confirmed',
+          action: 'archive',
+          to: 'archived',
+        }),
+        expect.objectContaining({
+          from: 'confirmed',
+          action: 'changeAdd',
+          to: 'confirmed',
+        }),
+      ])
+    );
+  });
+
+  test('should register asset-assignment-request state machine from asset-domain and approval-flow rules', () => {
+    const assignmentRequestMachine =
+      PERFORMANCE_DOMAIN_REGISTRY.stateMachines.find(
+        item => item.aggregate === 'asset-assignment-request'
+      );
+
+    expect(assignmentRequestMachine).toBeDefined();
+    expect(assignmentRequestMachine?.statuses).toEqual(
+      expect.arrayContaining([
+        'draft',
+        'inApproval',
+        'rejected',
+        'withdrawn',
+        'approvedPendingAssignment',
+        'issuing',
+        'issued',
+        'cancelled',
+        'manualPending',
+      ])
+    );
+    expect(assignmentRequestMachine?.transitions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          from: 'draft',
+          action: 'submit',
+          to: 'inApproval',
+        }),
+        expect.objectContaining({
+          from: 'inApproval',
+          action: 'approve',
+          to: 'approvedPendingAssignment',
+        }),
+        expect.objectContaining({
+          from: 'inApproval',
+          action: 'reject',
+          to: 'rejected',
+        }),
+        expect.objectContaining({
+          from: 'inApproval',
+          action: 'withdraw',
+          to: 'withdrawn',
+        }),
+        expect.objectContaining({
+          from: 'inApproval',
+          action: 'fallback',
+          to: 'manualPending',
+        }),
+        expect.objectContaining({
+          from: 'approvedPendingAssignment',
+          action: 'assign',
+          to: 'issuing',
+        }),
+        expect.objectContaining({
+          from: 'issuing',
+          action: 'assign',
+          to: 'issued',
+        }),
+        expect.objectContaining({
+          from: 'manualPending',
+          action: 'cancel',
+          to: 'cancelled',
+        }),
+      ])
+    );
+  });
+
+  test('should register asset-procurement state machine from asset-domain transition rules', () => {
+    const assetProcurementMachine =
+      PERFORMANCE_DOMAIN_REGISTRY.stateMachines.find(
+        item => item.aggregate === 'asset-procurement'
+      );
+
+    expect(assetProcurementMachine).toBeDefined();
+    expect(assetProcurementMachine?.statuses).toEqual(
+      expect.arrayContaining(['draft', 'submitted', 'received', 'cancelled'])
+    );
+    expect(assetProcurementMachine?.transitions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          from: 'draft',
+          action: 'submit',
+          to: 'submitted',
+        }),
+        expect.objectContaining({
+          from: 'submitted',
+          action: 'receive',
+          to: 'received',
+        }),
+        expect.objectContaining({
+          from: 'submitted',
+          action: 'cancel',
+          to: 'cancelled',
+        }),
+      ])
+    );
+  });
+
+  test('should register asset-transfer state machine from asset-domain transition rules', () => {
+    const assetTransferMachine = PERFORMANCE_DOMAIN_REGISTRY.stateMachines.find(
+      item => item.aggregate === 'asset-transfer'
+    );
+
+    expect(assetTransferMachine).toBeDefined();
+    expect(assetTransferMachine?.statuses).toEqual(
+      expect.arrayContaining(['draft', 'inTransit', 'completed', 'cancelled'])
+    );
+    expect(assetTransferMachine?.transitions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          from: 'draft',
+          action: 'submit',
+          to: 'inTransit',
+        }),
+        expect.objectContaining({
+          from: 'inTransit',
+          action: 'complete',
+          to: 'completed',
+        }),
+        expect.objectContaining({
+          from: 'inTransit',
+          action: 'cancel',
+          to: 'cancelled',
+        }),
+      ])
+    );
+  });
+
+  test('should register asset-inventory state machine from asset-domain transition rules', () => {
+    const assetInventoryMachine =
+      PERFORMANCE_DOMAIN_REGISTRY.stateMachines.find(
+        item => item.aggregate === 'asset-inventory'
+      );
+
+    expect(assetInventoryMachine).toBeDefined();
+    expect(assetInventoryMachine?.statuses).toEqual(
+      expect.arrayContaining(['draft', 'counting', 'completed', 'closed'])
+    );
+    expect(assetInventoryMachine?.transitions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          from: 'draft',
+          action: 'start',
+          to: 'counting',
+        }),
+        expect.objectContaining({
+          from: 'counting',
+          action: 'complete',
+          to: 'completed',
+        }),
+        expect.objectContaining({
+          from: 'completed',
+          action: 'close',
+          to: 'closed',
+        }),
+      ])
+    );
+  });
+
+  test('should register asset-disposal state machine from asset-domain transition rules', () => {
+    const assetDisposalMachine =
+      PERFORMANCE_DOMAIN_REGISTRY.stateMachines.find(
+        item => item.aggregate === 'asset-disposal'
+      );
+
+    expect(assetDisposalMachine).toBeDefined();
+    expect(assetDisposalMachine?.statuses).toEqual(
+      expect.arrayContaining([
+        'draft',
+        'submitted',
+        'approved',
+        'scrapped',
+        'cancelled',
+      ])
+    );
+    expect(assetDisposalMachine?.transitions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          from: 'draft',
+          action: 'submit',
+          to: 'submitted',
+        }),
+        expect.objectContaining({
+          from: 'submitted',
+          action: 'approve',
+          to: 'approved',
+        }),
+        expect.objectContaining({
+          from: 'approved',
+          action: 'execute',
+          to: 'scrapped',
+        }),
+        expect.objectContaining({
+          from: 'approved',
+          action: 'cancel',
+          to: 'cancelled',
+        }),
+      ])
+    );
+  });
+
+  test('should register asset-maintenance state machine from asset-domain transition rules', () => {
+    const assetMaintenanceMachine =
+      PERFORMANCE_DOMAIN_REGISTRY.stateMachines.find(
+        item => item.aggregate === 'asset-maintenance'
+      );
+
+    expect(assetMaintenanceMachine).toBeDefined();
+    expect(assetMaintenanceMachine?.statuses).toEqual(
+      expect.arrayContaining([
+        'scheduled',
+        'inProgress',
+        'completed',
+        'cancelled',
+      ])
+    );
+    expect(assetMaintenanceMachine?.transitions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          from: 'scheduled',
+          action: 'complete',
+          to: 'completed',
+        }),
+        expect.objectContaining({
+          from: 'inProgress',
+          action: 'complete',
+          to: 'completed',
+        }),
+        expect.objectContaining({
+          from: 'scheduled',
+          action: 'cancel',
+          to: 'cancelled',
+        }),
+      ])
+    );
+  });
+
   test('should register first phase personas, capabilities and dict keys', () => {
     expect(
       PERFORMANCE_DOMAIN_REGISTRY.personas.map(item => item.key)

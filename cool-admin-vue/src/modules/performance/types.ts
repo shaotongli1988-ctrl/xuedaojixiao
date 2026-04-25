@@ -54,11 +54,14 @@ import type {
 	DashboardCrossSummaryQuery as GeneratedDashboardCrossSummaryQuery
 } from './generated/dashboard';
 import type {
-	ApiResponse_CapabilityModelPageResult as GeneratedCapabilityModelPageResponse,
-	CapabilityModelRecord as GeneratedCapabilityModelRecord,
-	CapabilityModelStatus as GeneratedCapabilityModelStatus
+	CapabilityModelInfoQuery as GeneratedCapabilityModelInfoQuery,
+	CapabilityItemInfoQuery as GeneratedCapabilityItemInfoQuery,
+	CapabilityPortraitInfoQuery as GeneratedCapabilityPortraitInfoQuery
 } from './generated/capability';
 import type {
+	CapabilityModelPageResult as GeneratedCapabilityModelPageResponse,
+	CapabilityModelRecord as GeneratedCapabilityModelRecord,
+	CapabilityModelStatus as GeneratedCapabilityModelStatus,
 	CapabilityItemRecord as GeneratedCapabilityItemRecord,
 	CapabilityPortraitRecord as GeneratedCapabilityPortraitRecord,
 	CertificateLedgerPageResult as GeneratedCertificateLedgerPageResponse,
@@ -1216,17 +1219,11 @@ export type SupplierUpdatePayload = Partial<SupplierRecord> & {
 export type SupplierRemovePayload = import('./generated/supplier').SupplierRemoveSupplierRequest;
 
 export type CapabilityModelRecord = GeneratedCapabilityModelRecord;
-export interface CapabilityModelInfoQuery {
-	id: number;
-}
-export interface CapabilityItemInfoQuery {
-	id: number;
-}
-export interface CapabilityPortraitInfoQuery {
-	employeeId: number;
-}
+export type CapabilityModelInfoQuery = GeneratedCapabilityModelInfoQuery;
+export type CapabilityItemInfoQuery = GeneratedCapabilityItemInfoQuery;
+export type CapabilityPortraitInfoQuery = GeneratedCapabilityPortraitInfoQuery;
 
-export type CapabilityModelPageResult = ApiResponseData<GeneratedCapabilityModelPageResponse>;
+export type CapabilityModelPageResult = GeneratedCapabilityModelPageResponse;
 
 export type CapabilityItemRecord = GeneratedCapabilityItemRecord;
 
@@ -1636,13 +1633,7 @@ export interface ResumePoolInfoQuery {
 
 export type MeetingRecord = Omit<
 	GeneratedMeetingRecord,
-	| 'code'
-	| 'type'
-	| 'description'
-	| 'location'
-	| 'organizerId'
-	| 'organizerName'
-	| 'status'
+	'code' | 'type' | 'description' | 'location' | 'organizerId' | 'organizerName' | 'status'
 > & {
 	code?: string | null;
 	type?: string | null;

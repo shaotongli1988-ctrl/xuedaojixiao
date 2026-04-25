@@ -437,13 +437,24 @@ async function submitForm() {
 	submitLoading.value = true;
 
 	try {
+		const payload = {
+			name: form.name,
+			code: form.code,
+			category: form.category,
+			weight: form.weight,
+			scoreScale: form.scoreScale,
+			applyScope: form.applyScope,
+			description: form.description ?? undefined,
+			status: form.status
+		};
+
 		if (editingIndicator.value?.id) {
 			await performanceIndicatorService.updateIndicator({
-				...form,
+				...payload,
 				id: editingIndicator.value.id
 			});
 		} else {
-			await performanceIndicatorService.createIndicator(form);
+			await performanceIndicatorService.createIndicator(payload);
 		}
 
 		ElMessage.success('保存成功');

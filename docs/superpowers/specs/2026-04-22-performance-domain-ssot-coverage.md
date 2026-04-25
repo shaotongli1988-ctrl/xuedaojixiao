@@ -3,7 +3,7 @@
 
 ## 结论
 
-截至 2026-04-22，`performance` 域中与 `access-context.ts` 直接相关的静态 capability-scope 真相，已经基本收敛到后端 registry/catalog。
+截至 2026-04-24，`performance` 域中与 `access-context.ts` 直接相关的静态 capability-scope 真相，已经基本收敛到后端 registry/catalog。
 
 当前最主要的唯一事实源入口是：
 
@@ -140,6 +140,59 @@
 5. `PERFORMANCE_CAPABILITY_SCOPE_RULE_GROUPS` 的 `capabilityKey` 不得重复
 6. `PERFORMANCE_CAPABILITY_SCOPE_RULE_GROUPS` 的 `scopePreset` 必须已在 preset 主表中声明
 7. `PERFORMANCE_CAPABILITY_SCOPE_RULE_GROUPS` 的 `legacyPermissionAliases` 必须已在 alias 主表中声明
+
+## 已补齐的服务层专项测试
+
+当前不只是“角色主源已经统一”，而且下面这批关键服务已经补了“谁能操作、越权是否被拒、终态还能不能推进”的专项测试。
+
+### 1. 角色主源与边界总表回归
+
+1. [cool-admin-midway/test/performance/access-context.service.test.ts](/Users/shaotongli/Documents/xuedao/cool-admin-midway/test/performance/access-context.service.test.ts)
+   验证 persona 推断、默认主视角、scope 解析和 capability 命中结果。
+2. [cool-admin-midway/test/performance/role-boundary-matrix.service.test.ts](/Users/shaotongli/Documents/xuedao/cool-admin-midway/test/performance/role-boundary-matrix.service.test.ts)
+   验证 5 个 persona 在 assessment、goal、approval-flow、dashboard、salary、招聘链、采购链、teacher-channel、office/document 等分组模块中的可见面与能力边界。
+
+### 2. 绩效主链专项测试
+
+1. [cool-admin-midway/test/performance/assessment.service.test.ts](/Users/shaotongli/Documents/xuedao/cool-admin-midway/test/performance/assessment.service.test.ts)
+   已覆盖“仅本人可提交”“非法状态不可审批”“范围外主管不可审批”。
+2. [cool-admin-midway/test/performance/approval-flow.service.test.ts](/Users/shaotongli/Documents/xuedao/cool-admin-midway/test/performance/approval-flow.service.test.ts)
+   已覆盖“非申请人不可撤回”“节点已处理后不可撤回”“非 HR 不可终止”“终止后不可再次终止”。
+3. [cool-admin-midway/test/performance/goal.service.test.ts](/Users/shaotongli/Documents/xuedao/cool-admin-midway/test/performance/goal.service.test.ts)
+   已覆盖“越权不可更新进度”“完成后不可继续更新进度”。
+4. [cool-admin-midway/test/performance/goal-operations.service.test.ts](/Users/shaotongli/Documents/xuedao/cool-admin-midway/test/performance/goal-operations.service.test.ts)
+   已覆盖“员工不能伪装主管管部门目标”“日报补零只处理 assigned”“已离开 assigned 状态的计划不可重复填报”。
+5. [cool-admin-midway/test/performance/feedback.service.test.ts](/Users/shaotongli/Documents/xuedao/cool-admin-midway/test/performance/feedback.service.test.ts)
+   已覆盖“重复提交拒绝”“截止后拒绝”“非该评价人不可提交”“无独立导出权限不可导出”。
+6. [cool-admin-midway/test/performance/work-plan.service.test.ts](/Users/shaotongli/Documents/xuedao/cool-admin-midway/test/performance/work-plan.service.test.ts)
+   已覆盖“来源审批未通过不能开始”“范围外不能开始”“已完成后不能取消”。
+
+### 3. 晋升 / PIP 专项测试
+
+1. [cool-admin-midway/test/performance/promotion.service.test.ts](/Users/shaotongli/Documents/xuedao/cool-admin-midway/test/performance/promotion.service.test.ts)
+   已覆盖“已绑定建议不可重复关联”“审批流开启时禁止旧手工评审”“失去范围后不能再提交晋升单”。
+2. [cool-admin-midway/test/performance/pip.service.test.ts](/Users/shaotongli/Documents/xuedao/cool-admin-midway/test/performance/pip.service.test.ts)
+   已覆盖“已绑定建议不可重复关联”“范围外不能启动”“completed 后不能再 close”“导出超限拒绝”。
+
+### 4. 招聘链专项测试
+
+1. [cool-admin-midway/test/performance/interview.service.test.ts](/Users/shaotongli/Documents/xuedao/cool-admin-midway/test/performance/interview.service.test.ts)
+   已覆盖“部门经理无归属部门不能新建”“终态不可编辑”“删除必须符合权限与状态”“公司级可删除空部门 scheduled 面试”。
+2. [cool-admin-midway/test/performance/recruit-plan.service.test.ts](/Users/shaotongli/Documents/xuedao/cool-admin-midway/test/performance/recruit-plan.service.test.ts)
+   已覆盖“下游引用时不可删除”“范围外不能查看/新增/提交/关闭/作废/重开”“非法状态不可流转”。
+3. [cool-admin-midway/test/performance/resumePool.service.test.ts](/Users/shaotongli/Documents/xuedao/cool-admin-midway/test/performance/resumePool.service.test.ts)
+   已覆盖“归档后不可编辑/上传/转人才资产”“面试中不可重复发起面试”“范围外不可新增、不可导入覆盖、不可转人才资产、不可发起面试”。
+4. [cool-admin-midway/test/performance/hiring.service.test.ts](/Users/shaotongli/Documents/xuedao/cool-admin-midway/test/performance/hiring.service.test.ts)
+   已覆盖“范围外不可新增/改状态/关闭”“终态后不可再改状态或关闭”“非法新增状态拒绝”。
+
+### 5. 当前这份覆盖面文档的人话结论
+
+现在 `performance` 域已经不是只有一份“角色设计稿”，而是至少形成了下面这条闭环：
+
+1. `roles/catalog.ts` 定义 persona、capability、scope 和 state guard 主源
+2. `access-context.ts` 把登录人真正解析成运行时 access context
+3. `role-boundary-matrix` 把角色边界翻译成人话总表
+4. 关键服务测试把“越权要失败、非法状态要失败”压成可回归的事实
 
 ## 还没完全统一的事实源
 

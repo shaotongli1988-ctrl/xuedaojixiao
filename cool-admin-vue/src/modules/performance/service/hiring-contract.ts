@@ -21,11 +21,7 @@ import {
 	expectPerformanceServiceRecord,
 	expectPerformanceServiceString
 } from './service-contract';
-import {
-	HIRING_SOURCE_TYPE,
-	HIRING_STATUS,
-	INTERVIEW_STATUS
-} from '../shared/contract-enums';
+import { HIRING_SOURCE_TYPE, HIRING_STATUS, INTERVIEW_STATUS } from '../shared/contract-enums';
 
 function decodeOptionalNullableString(value: unknown, field: string) {
 	if (value === undefined) {

@@ -20,10 +20,7 @@ import {
 	expectPerformanceServiceRecord,
 	expectPerformanceServiceString
 } from './service-contract';
-import {
-	COURSE_LEARNING_TASK_STATUS,
-	COURSE_LEARNING_TASK_TYPE
-} from '../shared/contract-enums';
+import { COURSE_LEARNING_TASK_STATUS, COURSE_LEARNING_TASK_TYPE } from '../shared/contract-enums';
 
 function decodeOptionalNullableString(value: unknown, field: string) {
 	if (value === undefined) {

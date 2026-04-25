@@ -14,6 +14,14 @@
 2. `base`、`demo`、`dict`、`plugin`、`recycle`、`space`、`task`、`user` 当前使用 `EPS snapshot -> OpenAPI -> eps.ssot.d.ts` 的仓库级收敛链路。
 3. 非 `performance` 模块前端当前仍保留动态 EPS 消费，不把本页误写成“已经全部切到静态 service wrapper”；但其方法签名、请求类型和响应类型已经通过 `cool-admin-vue/build/cool/eps.ssot.d.ts` 受主源驱动。
 
+### Batch 4 治理回写
+
+2026-04-24 的第四批 SSOT 治理只做 `performance` contract producer 分类收敛与前端 decoder runtime enum 共享化：
+
+1. `assessment`、`certificate`、`contract`、`goal`、`hiring`、`indicator`、`interview`、`jobStandard`、`meeting`、`recruitPlan`、`resumePool`、`talentAsset` 从 `publishOnlyModules` 提升到 `serviceModules`。
+2. 高优先级 `performance` contract adapter 改为统一复用共享 runtime enum 入口，不再各自散落局部常量。
+3. 本轮不新增、不删除、不改写任何业务 API path、请求字段、响应字段或错误语义；本页冻结口径继续有效。
+
 它只负责定义：
 
 1. 接口路径

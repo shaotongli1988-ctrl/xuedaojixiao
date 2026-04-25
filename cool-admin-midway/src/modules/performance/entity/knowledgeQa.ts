@@ -4,10 +4,11 @@
  * 维护重点是关联知识/文件 ID 只允许引用主题21正式表中的记录。
  */
 import { BaseEntity } from '../../base/entity/base';
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, Index } from 'typeorm';
 
 @Entity('performance_knowledge_qa')
 export class PerformanceKnowledgeQaEntity extends BaseEntity {
+  @Index()
   @Column({ comment: '问题', length: 500 })
   question: string;
 

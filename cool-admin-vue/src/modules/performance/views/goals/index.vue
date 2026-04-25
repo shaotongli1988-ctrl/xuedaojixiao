@@ -1809,9 +1809,20 @@ async function handleSavePlan() {
 
 	try {
 		await performanceGoalService.saveOpsPlan({
-			...planForm,
 			id: editingPlanId.value || undefined,
-			departmentId: scopedDepartmentId.value || planForm.departmentId
+			departmentId: scopedDepartmentId.value || planForm.departmentId || undefined,
+			employeeId: planForm.employeeId || undefined,
+			periodType: planForm.periodType,
+			planDate: planForm.planDate ?? undefined,
+			periodStartDate: planForm.periodStartDate,
+			periodEndDate: planForm.periodEndDate,
+			sourceType: planForm.sourceType,
+			title: planForm.title,
+			description: planForm.description ?? undefined,
+			targetValue: planForm.targetValue,
+			unit: planForm.unit ?? undefined,
+			parentPlanId: planForm.parentPlanId ?? undefined,
+			isSystemGenerated: planForm.isSystemGenerated
 		});
 		ElMessage.success('目标计划已保存');
 		planDialogVisible.value = false;

@@ -346,6 +346,99 @@ describe('performance asset domain service', () => {
     expect(repos.assetInfoRepo.rows[1].status).toBe('available');
   });
 
+  test('should submit and complete asset transfer with asset status recovery', async () => {
+    const { service, repos } = createService(
+      [
+        'performance:assetTransfer:add',
+        'performance:assetTransfer:submit',
+        'performance:assetTransfer:complete',
+        'performance:assetTransfer:info',
+        'performance:assetTransfer:page',
+      ],
+      [10]
+    );
+
+    const created = await service.assetTransferAdd({
+      assetId: 1,
+      toDepartmentId: 10,
+      toLocation: 'B-02',
+      remark: '部门内调拨',
+    });
+    const submitted = await service.assetTransferSubmit({ id: created.id });
+    const completed = await service.assetTransferComplete({
+      id: created.id,
+      completeTime: '2026-04-20 10:00:00',
+    });
+
+    expect(submitted.status).toBe('inTransit');
+    expect(completed.status).toBe('completed');
+    expect(repos.assetInfoRepo.rows[0].status).toBe('available');
+    expect(repos.assetInfoRepo.rows[0].location).toBe('B-02');
+  });
+
+  test('should start complete and close asset inventory in order', async () => {
+    const { service, repos } = createService(
+      [
+        'performance:assetInventory:add',
+        'performance:assetInventory:start',
+        'performance:assetInventory:complete',
+        'performance:assetInventory:close',
+        'performance:assetInventory:info',
+        'performance:assetInventory:page',
+      ],
+      [10]
+    );
+
+    const created = await service.assetInventoryAdd({
+      assetId: 1,
+      remark: '季度盘点',
+    });
+    const started = await service.assetInventoryStart({ id: created.id });
+    const completed = await service.assetInventoryComplete({
+      id: created.id,
+      completedDate: '2026-04-21 09:00:00',
+      resultSummary: '盘点一致',
+    });
+    const closed = await service.assetInventoryClose({
+      id: created.id,
+      remark: '盘点关闭',
+    });
+
+    expect(started.status).toBe('counting');
+    expect(completed.status).toBe('completed');
+    expect(closed.status).toBe('closed');
+    expect(repos.assetInfoRepo.rows[0].status).toBe('available');
+    expect(repos.assetInfoRepo.rows[0].lastInventoryTime).toBe(
+      '2026-04-21 09:00:00'
+    );
+  });
+
+  test('should complete scheduled asset maintenance and recover asset status', async () => {
+    const { service, repos } = createService(
+      [
+        'performance:assetMaintenance:add',
+        'performance:assetMaintenance:complete',
+      ],
+      [10]
+    );
+
+    const added = await service.assetMaintenanceAdd({
+      assetId: 1,
+      maintenanceType: '保养',
+      vendorName: '服务商B',
+      resultSummary: '待完成',
+    });
+    const completed = await service.assetMaintenanceComplete({
+      id: added.id,
+      completeDate: '2026-04-20 18:00:00',
+      resultSummary: '维护完成',
+    });
+
+    expect(added.status).toBe('scheduled');
+    expect(completed?.status).toBe('completed');
+    expect(repos.assetInfoRepo.rows[0].status).toBe('available');
+  });
+
   test('should mark asset as scrapped on disposal execute', async () => {
     const { service, repos } = createService(
       ['performance:assetDisposal:execute', 'performance:assetDisposal:info', 'performance:assetDisposal:page'],
@@ -359,6 +452,36 @@ describe('performance asset domain service', () => {
       status: 'scrapped',
     });
     expect(repos.assetInfoRepo.rows[0].status).toBe('scrapped');
+  });
+
+  test('should submit approve and cancel asset disposal within allowed states', async () => {
+    const { service } = createService(
+      [
+        'performance:assetDisposal:add',
+        'performance:assetDisposal:submit',
+        'performance:assetDisposal:approve',
+        'performance:assetDisposal:cancel',
+        'performance:assetDisposal:info',
+        'performance:assetDisposal:page',
+      ],
+      [10]
+    );
+
+    const created = await service.assetDisposalAdd({
+      assetId: 1,
+      reason: '设备淘汰',
+    });
+    const submitted = await service.assetDisposalSubmit({ id: created.id });
+    const approved = await service.assetDisposalApprove({ id: created.id });
+
+    expect(submitted.status).toBe('submitted');
+    expect(approved.status).toBe('approved');
+
+    const cancelled = await service.assetDisposalCancel({
+      id: created.id,
+      remark: '审批后撤销',
+    });
+    expect(cancelled.status).toBe('cancelled');
   });
 
   test('should reject assignment add outside manager scope', async () => {

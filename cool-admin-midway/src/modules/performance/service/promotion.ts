@@ -305,6 +305,11 @@ export class PerformancePromotionService extends BaseService {
     this.assertHasCapability(access, 'promotion.submit', '无权限提交晋升单');
 
     this.assertIsSponsor(promotion.sponsorId);
+    await this.assertPromotionInScope(
+      promotion.employeeId,
+      access,
+      'promotion.submit'
+    );
     assertPromotionTransition(promotion.status as PromotionStatus, 'submit');
 
     await this.performanceApprovalFlowService.submitPromotion(promotion);

@@ -21,10 +21,7 @@ import {
 	expectPerformanceServiceRecord,
 	expectPerformanceServiceString
 } from './service-contract';
-import {
-	CERTIFICATE_RECORD_STATUS,
-	CERTIFICATE_STATUS
-} from '../shared/contract-enums';
+import { CERTIFICATE_RECORD_STATUS, CERTIFICATE_STATUS } from '../shared/contract-enums';
 
 function decodeOptionalNullableString(value: unknown, field: string) {
 	if (value === undefined) {

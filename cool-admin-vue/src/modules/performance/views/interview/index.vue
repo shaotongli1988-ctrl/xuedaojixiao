@@ -666,7 +666,7 @@ async function submitForm() {
 			score: form.score == null ? undefined : Number(form.score),
 			resumePoolId: form.resumePoolId || undefined,
 			recruitPlanId: form.recruitPlanId || undefined,
-			sourceSnapshot: form.sourceSnapshot || undefined,
+			sourceSnapshot: normalizeInterviewSourceSnapshot(form.sourceSnapshot),
 			status: form.status || undefined
 		};
 
@@ -977,6 +977,33 @@ async function goCreateHiring(record?: InterviewApiRecord | null) {
 function normalizeNumberOrUndefined(value: unknown) {
 	const parsed = Number(value);
 	return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+function normalizeInterviewSourceSnapshot(
+	value: InterviewApiRecord['sourceSnapshot']
+): InterviewSaveRequest['sourceSnapshot'] {
+	if (!value) {
+		return undefined;
+	}
+
+	return {
+		sourceResource: value.sourceResource ?? undefined,
+		talentAssetId: value.talentAssetId ?? undefined,
+		jobStandardId: value.jobStandardId ?? undefined,
+		jobStandardPositionName: value.jobStandardPositionName ?? undefined,
+		jobStandardRequirementSummary: value.jobStandardRequirementSummary ?? undefined,
+		recruitPlanId: value.recruitPlanId ?? undefined,
+		recruitPlanTitle: value.recruitPlanTitle ?? undefined,
+		recruitPlanStatus: value.recruitPlanStatus ?? undefined,
+		resumePoolId: value.resumePoolId ?? undefined,
+		interviewId: value.interviewId ?? undefined,
+		candidateName: value.candidateName ?? undefined,
+		targetDepartmentId: value.targetDepartmentId ?? undefined,
+		targetDepartmentName: value.targetDepartmentName ?? undefined,
+		targetPosition: value.targetPosition ?? undefined,
+		interviewStatus: value.interviewStatus ?? undefined,
+		sourceStatusSnapshot: value.sourceStatusSnapshot ?? undefined
+	};
 }
 </script>
 
